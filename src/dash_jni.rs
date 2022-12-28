@@ -3,13 +3,21 @@ use jni::{
     sys::{jlong},
     JNIEnv,
 };
+use once_cell::sync::OnceCell;
+use crate::dash::Dash;
+
+static mut CACHE: OnceCell<Dash<i64, i64>> = OnceCell::new();
+
+fn shared_cache() -> &'static mut Dash<i64, i64> {
+    unsafe { CACHE.get_mut().expect("The cache is not initialized") }
+}
 
 #[no_mangle]
 pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initCache(
     _env: JNIEnv,
     _class: JClass,
 ) {
-
+    unsafe { CACHE.set(Dash::new()).expect(""); }
 }
 
 #[no_mangle]
@@ -18,7 +26,11 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     _class: JClass,
     key: jlong,
 ) -> jlong {
-    -1
+    let res = shared_cache().get(&key);
+    match res {
+        None => -1,
+        Some(n) => n.clone()
+    }
 }
 
 #[no_mangle]
@@ -28,5 +40,5 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     key: jlong,
     value: jlong,
 ) {
-
+    shared_cache().put(key as i64, value as i64);
 }
