@@ -1,5 +1,5 @@
 use std::hash::Hash;
-use crate::dash_settings::EvictionPolicy;
+use crate::dash_settings::{DashSettings, EvictionPolicy};
 use super::data::Data;
 
 
@@ -10,7 +10,9 @@ where
     V: Eq + Clone,
 {
     datas: Vec<Data<K, V>>,
-    size: usize
+    size: usize,
+    // TODO: make this a reference with a lifetime
+    settings: DashSettings
 }
 
 impl<K, V> Bucket<K, V>
@@ -18,10 +20,11 @@ where
     K: Hash + Eq + Clone,
     V: Eq + Clone
 {
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: usize, settings: DashSettings) -> Self {
         Bucket {
             datas: Vec::new(),
-            size
+            size,
+            settings
         }
     }
 
@@ -38,7 +41,17 @@ where
         if self.is_full() {
             return
         } else if self.datas.contains(&new_data) {
-            return
+            match self.settings.eviction_policy {
+                EvictionPolicy::LRU => {
+                    self.datas.retain(|d| d.key != new_data.key);
+                    self.datas.push(new_data);
+                }
+                EvictionPolicy::LFU => {
+                    let mut data_in_vec = self.datas.iter_mut().find(|d| d.key == new_data.key).unwrap();
+                    data_in_vec.lfu_counter += 1;
+                }
+                EvictionPolicy::FIFO | EvictionPolicy::LIFO => {}
+            }
         } else {
             self.datas.push(new_data)
         }
@@ -64,18 +77,28 @@ where
         self.datas.retain(|d| d.key != *key)
     }
 
-    pub fn evict_item(&mut self, eviction_policy: EvictionPolicy) {
+    pub fn evict_item(&mut self, eviction_policy: &EvictionPolicy) {
         if self.datas.is_empty() {
             return;
         }
         match eviction_policy {
-            EvictionPolicy::MoveAhead | EvictionPolicy::FIFO | EvictionPolicy::LRU => {
+            EvictionPolicy::FIFO | EvictionPolicy::LRU => {
                 // TODO: this is in O(n). there could be a more performant way to do that
                 self.datas.remove(0);
             }
             EvictionPolicy::LIFO => { self.datas.pop(); }
-            // TODO: implement
-            EvictionPolicy::LFU | EvictionPolicy::LFUDisp => ()
+            // TODO: implement better
+            EvictionPolicy::LFU => {
+                let mut min_lfu_counter = self.datas[0].lfu_counter;
+                let mut min_lfu_counter_index = 0;
+                for (i, data) in self.datas.iter().enumerate() {
+                    if data.lfu_counter < min_lfu_counter {
+                        min_lfu_counter = data.lfu_counter;
+                        min_lfu_counter_index = i;
+                    }
+                }
+                self.datas.remove(min_lfu_counter_index);
+            }
         }
     }
 }
@@ -86,36 +109,106 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    const SETTINGS: DashSettings = DashSettings {
+        dash_size: 1,
+        segment_size: 1,
+        bucket_size: 100,
+        eviction_policy: EvictionPolicy::LRU,
+        debug_mode: 0,
+    };
+
+    mod insert {
+        use super::*;
+
+        #[test]
+        fn insert_one_item() {
+            let mut bucket = Bucket::new(10, SETTINGS);
+            let value = 1;
+            bucket.insert(value, value);
+            assert_eq!(bucket.size(), 1);
+            assert_eq!(bucket.get(&value).unwrap().value, value);
+        }
+
+        #[test]
+        fn insert_multiple_items() {
+            let mut bucket = Bucket::new(10, SETTINGS);
+            let num_of_bucket_items = 5;
+
+            for i in 0..num_of_bucket_items {
+                bucket.insert(i, i);
+            }
+            assert_eq!(bucket.size(), num_of_bucket_items);
+        }
+
+        #[test]
+        fn insert_duplicate_items() {
+            let mut bucket = Bucket::new(10, SETTINGS);
+            let num_of_bucket_items = 5;
+
+            for i in 0..num_of_bucket_items {
+                bucket.insert(i, i);
+            }
+            for i in 0..num_of_bucket_items {
+                bucket.insert(i, i);
+            }
+            assert_eq!(bucket.size(), num_of_bucket_items);
+        }
+
+        #[test]
+        fn insert_more_items_than_bucket_size() {
+            let mut bucket = Bucket::new(10, SETTINGS);
+            let num_of_bucket_items = 15;
+
+            for i in 0..num_of_bucket_items {
+                bucket.insert(i, i);
+            }
+            assert_eq!(bucket.size(), 10);
+        }
+    }
 
     #[test]
     fn is_full() {
-        let mut bucket = Bucket::new(10);
-        for _ in 0..10 {
+        let bucket_size = 10;
+        let mut bucket = Bucket::new(bucket_size, SETTINGS);
+        for i in 0..bucket_size {
             assert_eq!(bucket.is_full(), false);
-            bucket.insert(0,0);
+            bucket.insert(i,i);
         }
         assert_eq!(bucket.is_full(), true);
     }
 
     #[test]
     fn size() {
-        let mut bucket = Bucket::new(10);
-        for _ in 0..5 {
-            bucket.insert(0,0);
+        let mut bucket = Bucket::new(10, SETTINGS);
+        let num_of_bucket_items = 5;
+
+        for i in 0..num_of_bucket_items {
+            bucket.insert(i,i);
         }
-        assert_eq!(bucket.size(), 5);
+        assert_eq!(bucket.size(), num_of_bucket_items);
     }
 
-    #[test]
-    fn evict_item_lru() {
-        let mut bucket = Bucket::new(10);
-        for i in 0..5 {
-            bucket.insert(i,0);
+    mod evict_item {
+        use super::*;
 
+        #[test]
+        fn evict_item_fifo() {
+            // TODO: implement
         }
-        bucket.evict_item(EvictionPolicy::LRU);
-        assert_eq!(bucket.size(), 5);
-        // FIXME
-        // assert_eq!(bucket.data_list.iter().any(|&data| data.value == 0), false);
+
+        #[test]
+        fn evict_item_lifo() {
+            // TODO: implement
+        }
+
+        #[test]
+        fn evict_item_lfu() {
+            // TODO: implement
+        }
+
+        #[test]
+        fn evict_item_lru() {
+            // TODO: implement
+        }
     }
 }

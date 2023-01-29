@@ -5,10 +5,9 @@ const SETTINGS: DashSettings = DashSettings {
     dash_size: 1,
     segment_size: 1,
     bucket_size: 100,
-    eviction_policy: EvictionPolicy::FIFO,
+    eviction_policy: EvictionPolicy::LRU,
     debug_mode: 0,
 };
-
 
 #[test]
 fn get_without_put() {

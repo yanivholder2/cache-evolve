@@ -21,8 +21,8 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     unsafe { CACHE.set(Dash::new(DashSettings {
         dash_size: 1,
         segment_size: 1,
-        bucket_size: 100,
-        eviction_policy: EvictionPolicy::FIFO,
+        bucket_size: 50,
+        eviction_policy: EvictionPolicy::LRU,
         debug_mode: 0,
     })).expect(""); }
 }

@@ -1,14 +1,12 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EvictionPolicy {
-    MoveAhead,
     LRU,
     LIFO,
     LFU,
-    LFUDisp,
     FIFO
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DashSettings {
     pub dash_size: usize,
     pub segment_size: usize,
