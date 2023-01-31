@@ -1,5 +1,17 @@
-pub fn get_index(hash: u64, size: usize) -> usize {
-    (hash as usize) % size
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
+
+pub fn get_index(hash: usize, size: usize) -> usize {
+    hash % size
+}
+
+pub fn hash<K>(key: &K) -> usize
+where
+    K: std::hash::Hash,
+{
+    let mut hasher = DefaultHasher::new();
+    key.hash(&mut hasher);
+    hasher.finish() as usize
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use jni::{
 };
 use once_cell::sync::OnceCell;
 use crate::dash::Dash;
-use crate::dash_settings::{DashSettings, EvictionPolicy};
+use crate::dash_settings::{DashSettings, DEFAULT_SETTINGS, EvictionPolicy};
 
 static mut CACHE: OnceCell<Dash<i64, i64>> = OnceCell::new();
 
@@ -18,13 +18,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     _env: JNIEnv,
     _class: JClass,
 ) {
-    unsafe { CACHE.set(Dash::new(DashSettings {
-        dash_size: 1,
-        segment_size: 1,
-        bucket_size: 50,
-        eviction_policy: EvictionPolicy::LRU,
-        debug_mode: 0,
-    })).expect(""); }
+    unsafe { CACHE.set(Dash::new(DEFAULT_SETTINGS)).expect(""); }
 }
 
 #[no_mangle]

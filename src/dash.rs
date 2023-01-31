@@ -4,7 +4,7 @@ use crate::dash::bucket::Bucket;
 
 use crate::dash::data::Data;
 use crate::dash::segment::Segment;
-use crate::dash::utils::get_index;
+use crate::dash::utils::{get_index, hash};
 use crate::dash_settings::DashSettings;
 
 #[cfg(test)]
@@ -39,19 +39,8 @@ where
     }
 
     pub fn put(&mut self, key: K, value: V) {
-        let data = self.get_data(&key);
-        let eviction_policy = self.settings.eviction_policy.clone();
-        if data.is_some() {
-            // TODO: move this out from this is_some scope
-            let bucket = self.get_bucket_mut(&key);
-            // TODO: think about how to do that without cloning
-            bucket.evict_item(&eviction_policy);
-            bucket.insert(key, value);
-            return;
-        } else {
-            let bucket = self.get_bucket_mut(&key);
-            bucket.insert(key, value);
-        }
+        let bucket = self.get_bucket_mut(&key);
+        bucket.insert(key, value);
     }
 
     pub fn get(&self, key: &K) -> Option<&V> {
@@ -70,19 +59,13 @@ where
         }
     }
 
-    fn hash(&self, key: &K) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        key.hash(&mut hasher);
-        hasher.finish()
-    }
-
     fn get_data(&self, key: &K) -> Option<&Data<K, V>> {
         let bucket = self.get_bucket(&key);
         return bucket.get(key);
     }
 
     fn get_bucket(&self, key: &K) -> &Bucket<K, V> {
-        let hash = self.hash(&key);
+        let hash = hash(&key);
         let segment_index = get_index(hash, self.settings.dash_size);
         let bucket_index = get_index(hash, self.settings.segment_size);
         return &self.segments[segment_index].buckets[bucket_index];
@@ -90,7 +73,7 @@ where
 
     // TODO: think about a better way to combine this logic with get_bucket
     fn get_bucket_mut(&mut self, key: &K) -> &mut Bucket<K, V> {
-        let hash = self.hash(&key);
+        let hash = hash(&key);
         let segment_index = get_index(hash, self.settings.dash_size);
         let bucket_index = get_index(hash, self.settings.segment_size);
         return &mut self.segments[segment_index].buckets[bucket_index];
