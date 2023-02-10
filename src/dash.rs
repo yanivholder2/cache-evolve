@@ -40,8 +40,8 @@ where
     }
 
     pub fn put(&mut self, key: K, value: V) {
-        let bucket = self.get_bucket_mut(&key);
-        bucket.insert(key, value);
+        let segment = self.get_mut_segment(&key);
+        segment.insert(key, value);
     }
 
     pub fn get(&self, key: &K) -> Option<&V> {
@@ -61,22 +61,21 @@ where
     }
 
     fn get_data(&self, key: &K) -> Option<&Data<K, V>> {
-        let bucket = self.get_bucket(&key);
-        return bucket.get(key);
+        let segment = self.get_segment(&key);
+        segment.get(&key)
     }
 
-    fn get_bucket(&self, key: &K) -> &Bucket<K, V> {
+    fn get_segment(&self, key: &K) -> &Segment<K, V> {
         let hash = hash(&key);
-        let segment_index = get_index(hash, self.settings.dash_size);
-        let bucket_index = get_index(hash, self.settings.segment_size);
-        return &self.segments[segment_index].buckets[bucket_index];
+        let segment_len = self.segments.len();
+        let segment_index = get_index(hash, segment_len);
+        return &self.segments[segment_index];
     }
 
-    // TODO: think about a better way to combine this logic with get_bucket
-    fn get_bucket_mut(&mut self, key: &K) -> &mut Bucket<K, V> {
+    fn get_mut_segment(&mut self, key: &K) -> &mut Segment<K, V> {
         let hash = hash(&key);
-        let segment_index = get_index(hash, self.settings.dash_size);
-        let bucket_index = get_index(hash, self.settings.segment_size);
-        return &mut self.segments[segment_index].buckets[bucket_index];
+        let segment_len = self.segments.len();
+        let segment_index = get_index(hash, segment_len);
+        return &mut self.segments[segment_index];
     }
 }
