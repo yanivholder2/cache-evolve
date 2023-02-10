@@ -34,6 +34,9 @@ where
         self.data_vec.retain(|d| d.key != *key)
     }
 
+    /**
+     * This function updates the data if it already exists
+     */
     pub fn insert(&mut self, key: K, val: V) {
         if self.contains(&key) {
             if self.get(&key).unwrap().value != val {

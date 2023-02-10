@@ -33,6 +33,7 @@ where
         // TODO: think about maybe using Vec::with_capacity
         let mut segments = Vec::new();
         for _ in 0..settings.dash_size {
+            // TODO: pass the settings as a reference
             segments.push(Segment::new(settings.segment_size, settings.bucket_size, settings.clone()));
         }
         Self { settings, segments }
