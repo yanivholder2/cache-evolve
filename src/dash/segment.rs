@@ -45,15 +45,16 @@ where
         }
     }
 
-    pub fn get(&self, key: &K) -> Option<&Data<K, V>> {
+    pub fn get(&mut self, key: &K) -> Option<&Data<K, V>> {
         let hash = hash(&key);
-        let stash_bucket: &Bucket<K, V> = &self.stash_buckets[get_index(hash, self.stash_size)];
-        let bucket: &Bucket<K, V> = &self.buckets[get_index(hash, self.segment_size)];
+        let stash_bucket = &mut self.stash_buckets[get_index(hash, self.stash_size)];
+        
         // The order assumes that the data is more likely to be in the stash bucket, this
         // assumption should be tested
         match stash_bucket.get(&key) {
             Some(data) => Some(data),
             None => {
+                let bucket = &mut self.buckets[get_index(hash, self.segment_size)];
                 match bucket.get(&key) {
                     Some(data) => Some(data),
                     None => None

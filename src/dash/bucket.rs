@@ -51,16 +51,19 @@ where
         }
     }
 
-    pub fn get(&self, key: &K) -> Option<&Data<K, V>> {
+    pub fn get(&mut self, key: &K) -> Option<&Data<K, V>> {
         if self.data_vec.is_empty() {
-            None
-        } else {
-            let data_in_vec = self.data_vec.iter().find(|&d| d.key == *key);
-            match data_in_vec {
-                Some(d) => Some(d),
-                None => None
-            }
+            return None;
+        } 
+        // TODO: this is not performant, thea any, find and the update should be done in one iteration
+        let is_data_in_vec = self.contains(key);
+        if !is_data_in_vec {
+            return None;
         }
+
+        self.update(&key);
+        let data_in_vec = self.data_vec.iter().find(|&d| d.key == *key).unwrap();
+        Some(data_in_vec)
     }
 
     // This function assumes that the key exists
@@ -68,7 +71,8 @@ where
         let key_index = self.data_vec.iter().position(|d| d.key == *key).unwrap();
 
         match self.settings.eviction_policy {
-            EvictionPolicy::FIFO | EvictionPolicy::LRU | EvictionPolicy::LIFO => {
+            EvictionPolicy::FIFO | EvictionPolicy::LIFO => {}
+            EvictionPolicy::LRU => {
                 let data = self.data_vec.remove(key_index);
                 self.data_vec.push(data);
             }

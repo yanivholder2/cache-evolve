@@ -44,7 +44,7 @@ where
         segment.insert(key, value);
     }
 
-    pub fn get(&self, key: &K) -> Option<&V> {
+    pub fn get(&mut self, key: &K) -> Option<&V> {
         let data = self.get_data(&key);
         match data {
             Some(data) => Some(&data.value),
@@ -52,16 +52,8 @@ where
         }
     }
 
-    pub fn contains(&self, key: &K) -> bool {
-        let data = self.get_data(&key);
-        match data {
-            Some(d) => d.key == *key,
-            None => false,
-        }
-    }
-
-    fn get_data(&self, key: &K) -> Option<&Data<K, V>> {
-        let segment = self.get_segment(&key);
+    fn get_data(&mut self, key: &K) -> Option<&Data<K, V>> {
+        let segment = self.get_mut_segment(&key);
         segment.get(&key)
     }
 

@@ -5,7 +5,7 @@ use jni::{
 };
 use once_cell::sync::OnceCell;
 use crate::dash::Dash;
-use crate::dash_settings::{DashSettings, DEFAULT_SETTINGS, EvictionPolicy};
+use crate::dash_settings::DEFAULT_SETTINGS;
 
 static mut CACHE: OnceCell<Dash<i64, i64>> = OnceCell::new();
 
@@ -30,7 +30,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     let res = shared_cache().get(&key);
     match res {
         None => -1,
-        Some(n) => n.clone()
+        Some(value) => value.clone()
     }
 }
 
