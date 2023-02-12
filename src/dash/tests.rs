@@ -1,4 +1,4 @@
-use crate::dash_settings::{DEFAULT_SETTINGS, EvictionPolicy};
+use crate::dash_settings::{DEFAULT_SETTINGS};
 use super::*;
 
 #[test]

@@ -1,6 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use crate::dash::bucket::Bucket;
+use std::hash::Hash;
 
 use crate::dash::data::Data;
 use crate::dash::segment::Segment;
@@ -55,13 +53,6 @@ where
     fn get_data(&mut self, key: &K) -> Option<&Data<K, V>> {
         let segment = self.get_mut_segment(&key);
         segment.get(&key)
-    }
-
-    fn get_segment(&self, key: &K) -> &Segment<K, V> {
-        let hash = hash(&key);
-        let segment_len = self.segments.len();
-        let segment_index = get_index(hash, segment_len);
-        return &self.segments[segment_index];
     }
 
     fn get_mut_segment(&mut self, key: &K) -> &mut Segment<K, V> {

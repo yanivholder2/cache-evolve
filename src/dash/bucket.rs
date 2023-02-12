@@ -34,9 +34,7 @@ where
         self.data_vec.retain(|d| d.key != *key)
     }
 
-    /**
-     * This function updates the data if it already exists
-     */
+    /// This function updates the data if it already exists
     pub fn insert(&mut self, key: K, val: V) {
         if self.contains(&key) {
             if self.get(&key).unwrap().value != val {
@@ -61,23 +59,28 @@ where
             return None;
         }
 
-        self.update(&key);
-        let data_in_vec = self.data_vec.iter().find(|&d| d.key == *key).unwrap();
-        Some(data_in_vec)
+        return Some(self.update(&key));
     }
 
-    // This function assumes that the key exists
-    fn update(&mut self, key: &K) {
+    /// Updates the data in the bucket according to the eviction policy.
+    /// Returns the updated data.
+    /// 
+    /// This function assumes that the key exists in the bucket
+    fn update(&mut self, key: &K) -> &Data<K, V> {
         let key_index = self.data_vec.iter().position(|d| d.key == *key).unwrap();
 
         match self.settings.eviction_policy {
-            EvictionPolicy::FIFO | EvictionPolicy::LIFO => {}
+            EvictionPolicy::FIFO | EvictionPolicy::LIFO => {
+                &self.data_vec[key_index]
+            }
             EvictionPolicy::LRU => {
                 let data = self.data_vec.remove(key_index);
                 self.data_vec.push(data);
+                self.data_vec.last().unwrap()
             }
             EvictionPolicy::LFU => {
                 self.data_vec[key_index].lfu_counter += 1;
+                &self.data_vec[key_index]
             }
         }
     }
