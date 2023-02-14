@@ -1,11 +1,7 @@
-use jni::{
-    objects::JClass,
-    sys::{jlong},
-    JNIEnv,
-};
-use once_cell::sync::OnceCell;
 use crate::dash::Dash;
 use crate::dash_settings::DEFAULT_SETTINGS;
+use jni::{objects::JClass, sys::jlong, JNIEnv};
+use once_cell::sync::OnceCell;
 
 static mut CACHE: OnceCell<Dash<i64, i64>> = OnceCell::new();
 
@@ -18,7 +14,9 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     _env: JNIEnv,
     _class: JClass,
 ) {
-    unsafe { CACHE.set(Dash::new(DEFAULT_SETTINGS)).expect(""); }
+    unsafe {
+        CACHE.set(Dash::new(DEFAULT_SETTINGS)).expect("");
+    }
 }
 
 #[no_mangle]
@@ -30,7 +28,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     let res = shared_cache().get(&key);
     match res {
         None => -1,
-        Some(value) => value.clone()
+        Some(value) => value.clone(),
     }
 }
 

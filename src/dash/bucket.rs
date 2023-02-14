@@ -1,6 +1,6 @@
-use std::hash::Hash;
-use crate::dash_settings::{DashSettings, EvictionPolicy};
 use super::data::Data;
+use crate::dash_settings::{DashSettings, EvictionPolicy};
+use std::hash::Hash;
 
 #[derive(Debug)]
 pub struct Bucket<K, V>
@@ -11,19 +11,19 @@ where
     data_vec: Vec<Data<K, V>>,
     max_size: usize,
     // TODO: make this a reference with a lifetime
-    settings: DashSettings
+    settings: DashSettings,
 }
 
 impl<K, V> Bucket<K, V>
 where
     K: Hash + Eq + Clone,
-    V: Eq + Clone
+    V: Eq + Clone,
 {
     pub fn new(max_size: usize, settings: DashSettings) -> Self {
         Bucket {
             data_vec: Vec::new(),
             max_size,
-            settings
+            settings,
         }
     }
 
@@ -52,7 +52,7 @@ where
     pub fn get(&mut self, key: &K) -> Option<&Data<K, V>> {
         if self.data_vec.is_empty() {
             return None;
-        } 
+        }
         // TODO: this is not performant, thea any, find and the update should be done in one iteration
         let is_data_in_vec = self.contains(key);
         if !is_data_in_vec {
@@ -64,15 +64,13 @@ where
 
     /// Updates the data in the bucket according to the eviction policy.
     /// Returns the updated data.
-    /// 
+    ///
     /// This function assumes that the key exists in the bucket
     fn update(&mut self, key: &K) -> &Data<K, V> {
         let key_index = self.data_vec.iter().position(|d| d.key == *key).unwrap();
 
         match self.settings.eviction_policy {
-            EvictionPolicy::FIFO | EvictionPolicy::LIFO => {
-                &self.data_vec[key_index]
-            }
+            EvictionPolicy::FIFO | EvictionPolicy::LIFO => &self.data_vec[key_index],
             EvictionPolicy::LRU => {
                 let data = self.data_vec.remove(key_index);
                 self.data_vec.push(data);
@@ -94,7 +92,9 @@ where
                 // TODO: this is in O(n). there could be a more performant way to do that
                 self.data_vec.remove(0);
             }
-            EvictionPolicy::LIFO => { self.data_vec.pop(); }
+            EvictionPolicy::LIFO => {
+                self.data_vec.pop();
+            }
             // TODO: implement better
             EvictionPolicy::LFU => {
                 let mut min_lfu_counter = self.data_vec[0].lfu_counter;
@@ -122,8 +122,6 @@ where
         self.data_vec.len()
     }
 }
-
-
 
 // TODO: implement more tests
 #[cfg(test)]
@@ -240,7 +238,7 @@ mod tests {
         let mut bucket = Bucket::new(bucket_size, DEFAULT_SETTINGS);
         for i in 0..bucket_size {
             assert_eq!(bucket.is_full(), false);
-            bucket.insert(i,i);
+            bucket.insert(i, i);
         }
         assert_eq!(bucket.is_full(), true);
     }
@@ -251,7 +249,7 @@ mod tests {
         let num_of_bucket_items = 5;
 
         for i in 0..num_of_bucket_items {
-            bucket.insert(i,i);
+            bucket.insert(i, i);
         }
         assert_eq!(bucket.size(), num_of_bucket_items);
     }

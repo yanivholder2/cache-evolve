@@ -14,7 +14,7 @@ where
 impl<K, V> PartialEq for Data<K, V>
 where
     K: Hash + Eq + Clone,
-    V : Eq + Clone
+    V: Eq + Clone,
 {
     fn eq(&self, other: &Data<K, V>) -> bool {
         self.key == other.key && self.value == other.value
@@ -24,14 +24,16 @@ where
 impl<K, V> Eq for Data<K, V>
 where
     K: Hash + Eq + Clone,
-    V : Eq + Clone {}
+    V: Eq + Clone,
+{
+}
 
 impl<K, V> Data<K, V>
 where
     K: Hash + Eq + Clone,
-    V : Eq + Clone
+    V: Eq + Clone,
 {
-    pub fn new(key:K, value: V) -> Self {
+    pub fn new(key: K, value: V) -> Self {
         Self {
             key,
             value,
