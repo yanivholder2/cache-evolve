@@ -75,7 +75,7 @@ where
             } else {
                 // If the key is not in the target bucket, we need to check the probing bucket
 
-                if target_bucket_index == self.segment_size {
+                if target_bucket_index == self.buckets.len() - 1 {
                     // If the target bucket is the last bucket, there is not probing bucket
                     return None;
                 }
