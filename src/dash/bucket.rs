@@ -257,16 +257,15 @@ mod tests {
 
         #[test]
         fn insert_more_items_than_bucket_size() {
-            let mut bucket = Bucket::new(
-                DEFAULT_SETTINGS.bucket_size,
-                DEFAULT_SETTINGS.eviction_policy,
-            );
-            let num_of_bucket_items = 15;
+            let bucket_size = DEFAULT_SETTINGS.bucket_size;
+
+            let mut bucket = Bucket::new(bucket_size, DEFAULT_SETTINGS.eviction_policy);
+            let num_of_bucket_items = bucket_size + 1;
 
             for i in 0..num_of_bucket_items {
                 bucket.put(i, i);
             }
-            assert_eq!(bucket.size(), 10);
+            assert_eq!(bucket.size(), DEFAULT_SETTINGS.bucket_size);
         }
     }
 
