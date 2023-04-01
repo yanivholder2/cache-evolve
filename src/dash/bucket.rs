@@ -1,29 +1,30 @@
 use super::data::Data;
-use crate::dash_settings::{DashSettings, EvictionPolicy};
+use crate::dash_settings::EvictionPolicy;
 use std::hash::Hash;
 
 #[derive(Debug)]
 pub struct Bucket<K, V>
 where
-    K: Hash + Eq + Clone,
-    V: Eq + Clone,
+    K: Hash + Eq + Clone + Copy,
+    V: Eq + Clone + Copy,
 {
+    // TODO: consider using a linked list for O(1) changes
     data_vec: Vec<Data<K, V>>,
     max_size: usize,
     // TODO: make this a reference with a lifetime
-    settings: DashSettings,
+    eviction_policy: EvictionPolicy,
 }
 
 impl<K, V> Bucket<K, V>
 where
-    K: Hash + Eq + Clone,
-    V: Eq + Clone,
+    K: Hash + Eq + Clone + Copy,
+    V: Eq + Clone + Copy,
 {
-    pub fn new(max_size: usize, settings: DashSettings) -> Self {
+    pub fn new(max_size: usize, eviction_policy: EvictionPolicy) -> Self {
         Bucket {
             data_vec: Vec::new(),
             max_size,
-            settings,
+            eviction_policy,
         }
     }
 
@@ -35,12 +36,9 @@ where
     }
 
     /// This function updates the data if it already exists
-    pub fn insert(&mut self, key: K, val: V) {
-        if self.contains(&key) {
-            if self.get(&key).unwrap().value != val {
-                // TODO: what should we do if the assert fails?
-            }
-            self.update(&key);
+    pub fn put(&mut self, key: K, val: V) {
+        if let Some(position) = self.get_position(&key) {
+            self.update_key_in_index(position);
         } else {
             if self.is_full() {
                 self.evict_item();
@@ -49,36 +47,60 @@ where
         }
     }
 
-    pub fn get(&mut self, key: &K) -> Option<&Data<K, V>> {
+    pub fn put_data(&mut self, data: Data<K, V>) -> Option<&Data<K, V>> {
+        if let Some(position) = self.get_position(&data.key) {
+            return self.update_key_in_index(position);
+        } else {
+            if self.is_full() {
+                self.evict_item();
+            }
+            self.data_vec.push(data);
+            Some(&self.data_vec[self.data_vec.len() - 1])
+        }
+    }
+
+    pub fn get(&self, key: &K) -> Option<&Data<K, V>> {
         if self.data_vec.is_empty() {
             return None;
         }
-        // TODO: this is not performant, thea any, find and the update should be done in one iteration
-        let is_data_in_vec = self.contains(key);
-        if !is_data_in_vec {
+        let position = self.get_position(key)?;
+        Some(&self.data_vec[position])
+    }
+
+    pub fn get_from_position(&mut self, position: usize) -> Option<&Data<K, V>> {
+        if self.data_vec.is_empty() {
             return None;
         }
+        Some(&self.data_vec[position])
+    }
 
-        return Some(self.update(&key));
+    pub fn get_and_update(&mut self, key: &K) -> Option<&Data<K, V>> {
+        if self.data_vec.is_empty() {
+            return None;
+        }
+        let position = self.get_position(key)?;
+        self.update_key_in_index(position)
     }
 
     /// Updates the data in the bucket according to the eviction policy.
-    /// Returns the updated data.
     ///
-    /// This function assumes that the key exists in the bucket
-    fn update(&mut self, key: &K) -> &Data<K, V> {
-        let key_index = self.data_vec.iter().position(|d| d.key == *key).unwrap();
+    /// Returns the updated data and None if the data is not in the bucket.
+    pub fn update(&mut self, key: &K) -> Option<&Data<K, V>> {
+        let key_index = self.get_position(key)?;
+        self.update_key_in_index(key_index)
+    }
 
-        match self.settings.eviction_policy {
-            EvictionPolicy::FIFO | EvictionPolicy::LIFO => &self.data_vec[key_index],
+    pub fn update_key_in_index(&mut self, key_index: usize) -> Option<&Data<K, V>> {
+        match self.eviction_policy {
+            EvictionPolicy::FIFO | EvictionPolicy::LIFO => Some(&self.data_vec[key_index]),
             EvictionPolicy::LRU => {
                 let data = self.data_vec.remove(key_index);
                 self.data_vec.push(data);
-                self.data_vec.last().unwrap()
+                self.data_vec.last()
             }
             EvictionPolicy::LFU => {
                 self.data_vec[key_index].lfu_counter += 1;
-                &self.data_vec[key_index]
+                Some(&self.data_vec[key_index])
             }
         }
     }
@@ -87,7 +109,7 @@ where
         if self.data_vec.is_empty() {
             return;
         }
-        match self.settings.eviction_policy {
+        match self.eviction_policy {
             EvictionPolicy::FIFO | EvictionPolicy::LRU => {
                 // TODO: this is in O(n). there could be a more performant way to do that
                 self.data_vec.remove(0);
@@ -111,7 +133,11 @@ where
     }
 
     pub fn contains(&self, key: &K) -> bool {
-        self.data_vec.iter().any(|d| d.key == *key)
+        self.get_position(key).is_some()
+    }
+
+    pub fn get_position(&self, key: &K) -> Option<usize> {
+        self.data_vec.iter().position(|d| d.key == *key)
     }
 
     pub fn is_full(&self) -> bool {
@@ -188,45 +214,57 @@ mod tests {
 
         #[test]
         fn insert_one_item() {
-            let mut bucket = Bucket::new(10, DEFAULT_SETTINGS);
+            let mut bucket = Bucket::new(
+                DEFAULT_SETTINGS.bucket_size,
+                DEFAULT_SETTINGS.eviction_policy,
+            );
             let value = 1;
-            bucket.insert(value, value);
+            bucket.put(value, value);
             assert_eq!(bucket.size(), 1);
-            assert_eq!(bucket.get(&value).unwrap().value, value);
+            assert_eq!(bucket.get_and_update(&value).unwrap().value, value);
         }
 
         #[test]
         fn insert_multiple_items() {
-            let mut bucket = Bucket::new(10, DEFAULT_SETTINGS);
+            let mut bucket = Bucket::new(
+                DEFAULT_SETTINGS.bucket_size,
+                DEFAULT_SETTINGS.eviction_policy,
+            );
             let num_of_bucket_items = 5;
 
             for i in 0..num_of_bucket_items {
-                bucket.insert(i, i);
+                bucket.put(i, i);
             }
             assert_eq!(bucket.size(), num_of_bucket_items);
         }
 
         #[test]
         fn insert_duplicate_items() {
-            let mut bucket = Bucket::new(10, DEFAULT_SETTINGS);
+            let mut bucket = Bucket::new(
+                DEFAULT_SETTINGS.bucket_size,
+                DEFAULT_SETTINGS.eviction_policy,
+            );
             let num_of_bucket_items = 5;
 
             for i in 0..num_of_bucket_items {
-                bucket.insert(i, i);
+                bucket.put(i, i);
             }
             for i in 0..num_of_bucket_items {
-                bucket.insert(i, i);
+                bucket.put(i, i);
             }
             assert_eq!(bucket.size(), num_of_bucket_items);
         }
 
         #[test]
         fn insert_more_items_than_bucket_size() {
-            let mut bucket = Bucket::new(10, DEFAULT_SETTINGS);
+            let mut bucket = Bucket::new(
+                DEFAULT_SETTINGS.bucket_size,
+                DEFAULT_SETTINGS.eviction_policy,
+            );
             let num_of_bucket_items = 15;
 
             for i in 0..num_of_bucket_items {
-                bucket.insert(i, i);
+                bucket.put(i, i);
             }
             assert_eq!(bucket.size(), 10);
         }
@@ -235,21 +273,24 @@ mod tests {
     #[test]
     fn is_full() {
         let bucket_size = 10;
-        let mut bucket = Bucket::new(bucket_size, DEFAULT_SETTINGS);
+        let mut bucket = Bucket::new(bucket_size, DEFAULT_SETTINGS.eviction_policy);
         for i in 0..bucket_size {
             assert_eq!(bucket.is_full(), false);
-            bucket.insert(i, i);
+            bucket.put(i, i);
         }
         assert_eq!(bucket.is_full(), true);
     }
 
     #[test]
     fn size() {
-        let mut bucket = Bucket::new(10, DEFAULT_SETTINGS);
+        let mut bucket = Bucket::new(
+            DEFAULT_SETTINGS.bucket_size,
+            DEFAULT_SETTINGS.eviction_policy,
+        );
         let num_of_bucket_items = 5;
 
         for i in 0..num_of_bucket_items {
-            bucket.insert(i, i);
+            bucket.put(i, i);
         }
         assert_eq!(bucket.size(), num_of_bucket_items);
     }

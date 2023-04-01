@@ -25,7 +25,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
     _class: JClass,
     key: jlong,
 ) -> jlong {
-    let res = shared_cache().get(&key);
+    let res = shared_cache().get_and_update(&key);
     match res {
         None => -1,
         Some(value) => value.clone(),

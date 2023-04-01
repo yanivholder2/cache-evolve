@@ -6,7 +6,7 @@ fn get_without_put() {
     let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
     let key: i64 = 0;
 
-    assert_eq!(dash.get(&key), None);
+    assert_eq!(dash.get_and_update(&key), None);
 }
 
 #[test]
@@ -16,7 +16,7 @@ fn get_after_different_value_put() {
 
     dash.put(key + 1, key + 1);
 
-    assert_eq!(dash.get(&key), None);
+    assert_eq!(dash.get_and_update(&key), None);
 }
 
 #[test]
@@ -26,5 +26,5 @@ fn get_after_same_value_put() {
 
     dash.put(key, key);
 
-    assert_eq!(dash.get(&key), Some(&key));
+    assert_eq!(dash.get_and_update(&key), Some(&key));
 }
