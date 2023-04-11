@@ -2,6 +2,7 @@ use crate::dash::bucket::Bucket;
 use crate::dash::data::Data;
 use crate::dash::utils::{get_index, hash};
 use crate::dash_settings::{DashSettings, EvictionPolicy};
+use std::fmt::Display;
 use std::hash::Hash;
 
 #[derive(Debug)]
@@ -111,6 +112,27 @@ where
         } else {
             stash_bucket.put(key, val);
         }
+    }
+}
+
+impl<K, V> Display for Segment<K, V>
+where
+    K: Hash + Eq + Clone + Copy + Display,
+    V: Eq + Clone + Copy + Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Segment {{")?;
+        for bucket in &self.buckets {
+            writeln!(f, "  Bucket {{")?;
+            writeln!(f, "    {}", bucket)?;
+            writeln!(f, "  }}")?;
+        }
+        for bucket in &self.stash_buckets {
+            writeln!(f, "  Stash Bucket {{")?;
+            writeln!(f, "    {}", bucket)?;
+            writeln!(f, "  }}")?;
+        }
+        write!(f, "}}")
     }
 }
 

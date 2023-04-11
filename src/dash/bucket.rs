@@ -1,6 +1,9 @@
 use super::data::Data;
 use crate::dash_settings::EvictionPolicy;
-use std::hash::Hash;
+use std::{
+    fmt::{Display, Formatter},
+    hash::Hash,
+};
 
 #[derive(Debug)]
 pub struct Bucket<K, V>
@@ -146,6 +149,19 @@ where
 
     pub fn size(&self) -> usize {
         self.data_vec.len()
+    }
+}
+
+impl<K, V> Display for Bucket<K, V>
+where
+    K: Hash + Eq + Clone + Copy + Display,
+    V: Eq + Clone + Copy + Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for data in &self.data_vec {
+            write!(f, "{}, ", data)?;
+        }
+        Ok(())
     }
 }
 

@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 
 use crate::dash::segment::Segment;
@@ -51,6 +52,19 @@ where
     }
 }
 
+impl<K, V> Display for Dash<K, V>
+where
+    K: Hash + Eq + Clone + Copy + Display,
+    V: Eq + Clone + Copy + Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for segment in &self.segments {
+            writeln!(f, "{}", segment)?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -83,5 +97,15 @@ mod tests {
         dash.put(key, key);
 
         assert_eq!(dash.get_and_update(&key), Some(&key));
+    }
+
+    #[test]
+    fn print_dash() {
+        let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
+        let key: i64 = 0;
+
+        dash.put(key, key);
+
+        println!("{}", dash);
     }
 }
