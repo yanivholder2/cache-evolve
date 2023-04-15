@@ -69,7 +69,14 @@ where
 mod tests {
 
     use super::*;
-    use crate::dash_settings::DEFAULT_SETTINGS;
+    use crate::dash_settings::{EvictionPolicy, DEFAULT_SETTINGS};
+
+    fn record(dash: &mut Dash<i64, i64>, key: i64, value: i64) {
+        let res = dash.get_and_update(&key);
+        if res.is_none() {
+            dash.put(key, value);
+        }
+    }
 
     #[test]
     fn get_without_put() {
@@ -106,6 +113,27 @@ mod tests {
 
         dash.put(key, key);
 
-        println!("{}", dash);
+        println!("{dash}");
+    }
+
+    #[test]
+    fn big_test() {
+        let mut dash: Dash<i64, i64> = Dash::new(DashSettings {
+            dash_size: 1,
+            segment_size: 2,
+            stash_size: 1,
+            bucket_size: 3,
+            eviction_policy: EvictionPolicy::LRU,
+            debug_mode: 0,
+        });
+
+        // put in dash random values
+        for _ in 0..40 {
+            // make a random number from 1 to 10
+            let random_number = rand::random::<i64>().abs() % 10 + 1;
+            println!("############# {random_number} #############");
+            record(&mut dash, random_number, random_number);
+            println!("{dash}");
+        }
     }
 }

@@ -159,7 +159,7 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for data in &self.data_vec {
-            write!(f, "{}, ", data)?;
+            writeln!(f, "    {}", data)?;
         }
         Ok(())
     }

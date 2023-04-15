@@ -18,9 +18,9 @@ pub struct DashSettings {
 
 pub const DEFAULT_SETTINGS: DashSettings = DashSettings {
     dash_size: 1,
-    segment_size: 3,
-    stash_size: 1,
-    bucket_size: 128,
+    segment_size: 56,
+    stash_size: 4,
+    bucket_size: 14,
     eviction_policy: EvictionPolicy::LRU,
     debug_mode: 0,
 };

@@ -124,12 +124,12 @@ where
         writeln!(f, "Segment {{")?;
         for bucket in &self.buckets {
             writeln!(f, "  Bucket {{")?;
-            writeln!(f, "    {}", bucket)?;
+            write!(f, "{}", bucket)?;
             writeln!(f, "  }}")?;
         }
         for bucket in &self.stash_buckets {
             writeln!(f, "  Stash Bucket {{")?;
-            writeln!(f, "    {}", bucket)?;
+            write!(f, "{}", bucket)?;
             writeln!(f, "  }}")?;
         }
         write!(f, "}}")
@@ -145,5 +145,23 @@ mod tests {
     fn test_segment_length() {
         let segment: Segment<i32, i32> = Segment::new(DEFAULT_SETTINGS);
         assert_eq!(segment.buckets.len(), DEFAULT_SETTINGS.segment_size);
+    }
+
+    #[test]
+    fn lfu_counter_increase() {
+        let mut settings = DEFAULT_SETTINGS;
+        settings.eviction_policy = EvictionPolicy::LFU;
+
+        let mut segment: Segment<i32, i32> = Segment::new(settings);
+        let key = 1;
+
+        segment.put(key, key);
+        // First time the key is touched it is moved to the target bucket
+        segment.get_and_update(&key).unwrap();
+        // Rest of the times the key is touched the LFU counter is increased
+        let data = segment.get_and_update(&key).unwrap();
+        assert_eq!(data.lfu_counter, 1);
+        let data = segment.get_and_update(&key).unwrap();
+        assert_eq!(data.lfu_counter, 2);
     }
 }
