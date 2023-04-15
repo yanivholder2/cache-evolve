@@ -91,7 +91,7 @@ mod tests {
         let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
         let key: i64 = 0;
 
-        dash.put(key + 1, key + 1);
+        dash.put(key, key);
 
         assert_eq!(dash.get_and_update(&key), None);
     }

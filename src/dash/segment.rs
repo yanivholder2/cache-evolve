@@ -95,23 +95,11 @@ where
     }
 
     /// Insert the key, value pair into the segment.
-    /// If the key already exists in the segment, the value and position will be updated.
+    /// This function assumes that the key is not already in the segment.
     pub fn put(&mut self, key: K, val: V) {
         let hash = hash(&key);
         let stash_bucket = &mut self.stash_buckets[get_index(hash, self.stash_size)];
-        let bucket = &mut self.buckets[get_index(hash, self.segment_size)];
-        // The order assumes that the data is more likely to be in the stash bucket,
-        // this assumption should be tested
-        if stash_bucket.get_and_update(&key).is_some() {
-            // TODO: consider what to do if data.val != val
-            stash_bucket.remove(&key);
-            bucket.put(key, val);
-        } else if bucket.get_and_update(&key).is_some() {
-            // TODO: move the data to the probing bucket
-            bucket.put(key, val);
-        } else {
-            stash_bucket.put(key, val);
-        }
+        stash_bucket.put(key, val);
     }
 }
 
