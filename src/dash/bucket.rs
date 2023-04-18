@@ -39,7 +39,7 @@ where
     }
 
     /// This function updates the data if it already exists
-    pub fn put(&mut self, key: K, val: V) {
+    pub fn put_key_and_val(&mut self, key: K, val: V) {
         if let Some(position) = self.get_position(&key) {
             self.update_key_in_index(position);
         } else {
@@ -50,15 +50,23 @@ where
         }
     }
 
-    pub fn put_data(&mut self, data: Data<K, V>) -> Option<&Data<K, V>> {
+    /// Puts data into the bucket.
+    ///
+    /// Returns a tuple of the data pushed to the bucket and the data evicted from the bucket accordingly.
+    /// If no data is evicted, a None will be returned
+    pub fn put_data(&mut self, data: Data<K, V>) -> (&Data<K, V>, Option<Data<K, V>>) {
         if let Some(position) = self.get_position(&data.key) {
-            return self.update_key_in_index(position);
+            return (self.update_key_in_index(position), None);
         } else {
-            if self.is_full() {
-                self.evict_item();
-            }
+            let evicted_data = if self.is_full() {
+                self.evict_item()
+            } else {
+                None
+            };
+
             self.data_vec.push(data);
-            Some(&self.data_vec[self.data_vec.len() - 1])
+            let pushed_data = &self.data_vec[self.data_vec.len() - 1];
+            (pushed_data, evicted_data)
         }
     }
 
@@ -82,7 +90,7 @@ where
             return None;
         }
         let position = self.get_position(key)?;
-        self.update_key_in_index(position)
+        Some(self.update_key_in_index(position))
     }
 
     /// Updates the data in the bucket according to the eviction policy.
@@ -90,36 +98,34 @@ where
     /// Returns the updated data and None if the data is not in the bucket.
     pub fn update(&mut self, key: &K) -> Option<&Data<K, V>> {
         let key_index = self.get_position(key)?;
-        self.update_key_in_index(key_index)
+        Some(self.update_key_in_index(key_index))
     }
 
-    pub fn update_key_in_index(&mut self, key_index: usize) -> Option<&Data<K, V>> {
+    pub fn update_key_in_index(&mut self, key_index: usize) -> &Data<K, V> {
         match self.eviction_policy {
-            EvictionPolicy::FIFO | EvictionPolicy::LIFO => Some(&self.data_vec[key_index]),
+            EvictionPolicy::FIFO | EvictionPolicy::LIFO => &self.data_vec[key_index],
             EvictionPolicy::LRU => {
                 let data = self.data_vec.remove(key_index);
                 self.data_vec.push(data);
-                self.data_vec.last()
+                self.data_vec.last().unwrap()
             }
             EvictionPolicy::LFU => {
                 self.data_vec[key_index].lfu_counter += 1;
-                Some(&self.data_vec[key_index])
+                &self.data_vec[key_index]
             }
         }
     }
 
-    fn evict_item(&mut self) {
+    fn evict_item(&mut self) -> Option<Data<K, V>> {
         if self.data_vec.is_empty() {
-            return;
+            return None;
         }
         match self.eviction_policy {
             EvictionPolicy::FIFO | EvictionPolicy::LRU => {
                 // TODO: this is in O(n). there could be a more performant way to do that
-                self.data_vec.remove(0);
+                Some(self.data_vec.remove(0))
             }
-            EvictionPolicy::LIFO => {
-                self.data_vec.pop();
-            }
+            EvictionPolicy::LIFO => self.data_vec.pop(),
             // TODO: implement better
             EvictionPolicy::LFU => {
                 let mut min_lfu_counter = self.data_vec[0].lfu_counter;
@@ -130,7 +136,7 @@ where
                         min_lfu_counter_index = i;
                     }
                 }
-                self.data_vec.remove(min_lfu_counter_index);
+                Some(self.data_vec.remove(min_lfu_counter_index))
             }
         }
     }
@@ -235,7 +241,7 @@ mod tests {
                 DEFAULT_SETTINGS.eviction_policy,
             );
             let value = 1;
-            bucket.put(value, value);
+            bucket.put_key_and_val(value, value);
             assert_eq!(bucket.size(), 1);
             assert_eq!(bucket.get_and_update(&value).unwrap().value, value);
         }
@@ -249,7 +255,7 @@ mod tests {
             let num_of_bucket_items = 5;
 
             for i in 0..num_of_bucket_items {
-                bucket.put(i, i);
+                bucket.put_key_and_val(i, i);
             }
             assert_eq!(bucket.size(), num_of_bucket_items);
         }
@@ -263,10 +269,10 @@ mod tests {
             let num_of_bucket_items = 5;
 
             for i in 0..num_of_bucket_items {
-                bucket.put(i, i);
+                bucket.put_key_and_val(i, i);
             }
             for i in 0..num_of_bucket_items {
-                bucket.put(i, i);
+                bucket.put_key_and_val(i, i);
             }
             assert_eq!(bucket.size(), num_of_bucket_items);
         }
@@ -279,7 +285,7 @@ mod tests {
             let num_of_bucket_items = bucket_size + 1;
 
             for i in 0..num_of_bucket_items {
-                bucket.put(i, i);
+                bucket.put_key_and_val(i, i);
             }
             assert_eq!(bucket.size(), DEFAULT_SETTINGS.bucket_size);
         }
@@ -291,7 +297,7 @@ mod tests {
         let mut bucket = Bucket::new(bucket_size, DEFAULT_SETTINGS.eviction_policy);
         for i in 0..bucket_size {
             assert_eq!(bucket.is_full(), false);
-            bucket.put(i, i);
+            bucket.put_key_and_val(i, i);
         }
         assert_eq!(bucket.is_full(), true);
     }
@@ -305,7 +311,7 @@ mod tests {
         let num_of_bucket_items = 5;
 
         for i in 0..num_of_bucket_items {
-            bucket.put(i, i);
+            bucket.put_key_and_val(i, i);
         }
         assert_eq!(bucket.size(), num_of_bucket_items);
     }

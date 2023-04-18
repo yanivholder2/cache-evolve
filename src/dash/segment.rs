@@ -63,7 +63,11 @@ where
             mut_stash_bucket.remove(key);
 
             let mut_target_bucket = &mut self.buckets[target_bucket_index];
-            return mut_target_bucket.put_data(data);
+            let (pushed_data, evicted_data) = mut_target_bucket.put_data(data);
+            if let Some(data) = evicted_data {
+                mut_stash_bucket.put_data(data);
+            }
+            Some(pushed_data)
         } else {
             // If the key is not in the stash bucket, we need to check the target bucket
             let target_bucket_index = get_index(hash, self.segment_size);
@@ -72,7 +76,7 @@ where
             if let Some(position) = target_bucket.get_position(key) {
                 // If the key is in the target bucket, we need to update the position
                 let mut_target_bucket = &mut self.buckets[target_bucket_index];
-                mut_target_bucket.update_key_in_index(position)
+                Some(mut_target_bucket.update_key_in_index(position))
             } else {
                 // If the key is not in the target bucket, we need to check the probing bucket
 
@@ -86,7 +90,7 @@ where
                     // If the key is in the probing bucket, we need to update the position
 
                     let mut_probing_bucket = &mut self.buckets[probing_bucket_index];
-                    mut_probing_bucket.update_key_in_index(position)
+                    Some(mut_probing_bucket.update_key_in_index(position))
                 } else {
                     None
                 }
@@ -99,7 +103,7 @@ where
     pub fn put(&mut self, key: K, val: V) {
         let hash = hash(&key);
         let stash_bucket = &mut self.stash_buckets[get_index(hash, self.stash_size)];
-        stash_bucket.put(key, val);
+        stash_bucket.put_key_and_val(key, val);
     }
 }
 
