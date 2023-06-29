@@ -40,15 +40,15 @@ where
 	}
 
 	pub fn get_and_update(&mut self, key: &K) -> Option<&V> {
-		let segment = self.get_mut_segment(&key);
-		let data = segment.get_and_update(&key)?;
+		let segment = self.get_mut_segment(key);
+		let data = segment.get_and_update(key)?;
 		Some(&data.value)
 	}
 
 	fn get_mut_segment(&mut self, key: &K) -> &mut Segment<K, V> {
-		let hash = hash(&key);
+		let hash = hash(key);
 		let segment_index = get_index(hash, self.segments.len());
-		return &mut self.segments[segment_index];
+		&mut self.segments[segment_index]
 	}
 }
 
@@ -123,7 +123,7 @@ mod tests {
 			segment_size: 2,
 			stash_size: 1,
 			bucket_size: 3,
-			eviction_policy: EvictionPolicy::LRU,
+			eviction_policy: EvictionPolicy::Lru,
 			debug_mode: 0,
 		});
 

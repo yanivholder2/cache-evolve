@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
 pub enum EvictionPolicy {
-	LRU,
-	LIFO,
-	LFU,
-	FIFO,
+	Lru,
+	Lifo,
+	Lfu,
+	Fifo,
 }
 
 #[derive(Debug, Clone)]
@@ -21,7 +21,7 @@ pub const DEFAULT_SETTINGS: DashSettings = DashSettings {
 	segment_size: 28,
 	stash_size: 4,
 	bucket_size: 16,
-	eviction_policy: EvictionPolicy::LRU,
+	eviction_policy: EvictionPolicy::Lru,
 	debug_mode: 0,
 };
 
@@ -30,6 +30,6 @@ pub const DRAGON_SETTINGS: DashSettings = DashSettings {
 	segment_size: 56,
 	stash_size: 4,
 	bucket_size: 14,
-	eviction_policy: EvictionPolicy::LRU,
+	eviction_policy: EvictionPolicy::Lru,
 	debug_mode: 0,
 };

@@ -26,15 +26,12 @@ where
 		let mut buckets: Vec<Bucket<K, V>> = Vec::new();
 		for _ in 0..settings.segment_size {
 			// TODO: pass the settings as a reference
-			buckets.push(Bucket::new(
-				settings.bucket_size.clone(),
-				settings.eviction_policy.clone(),
-			));
+			buckets.push(Bucket::new(settings.bucket_size, settings.eviction_policy.clone()));
 		}
 
 		let mut stash_buckets: Vec<Bucket<K, V>> = Vec::new();
 		for _ in 0..settings.stash_size {
-			stash_buckets.push(Bucket::new(settings.bucket_size.clone(), EvictionPolicy::FIFO));
+			stash_buckets.push(Bucket::new(settings.bucket_size, EvictionPolicy::Fifo));
 		}
 		Segment {
 			buckets,
@@ -139,7 +136,7 @@ mod tests {
 	#[test]
 	fn lfu_counter_increase() {
 		let mut settings = DEFAULT_SETTINGS;
-		settings.eviction_policy = EvictionPolicy::LFU;
+		settings.eviction_policy = EvictionPolicy::Lfu;
 
 		let mut segment: Segment<i32, i32> = Segment::new(settings);
 		let key = 1;

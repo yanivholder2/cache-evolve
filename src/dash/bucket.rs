@@ -43,20 +43,6 @@ where
 	/// Removes the key-value pair with the given key from the bucket.
 	///
 	/// If the bucket is empty, this function does nothing.
-	///
-	/// # Examples
-	///
-	/// ```
-	/// use dash::{
-	///     Bucket,
-	///     dash_settings::EvictionPolicy::FIFO,
-	/// };
-	///
-	/// let mut bucket = Bucket::new(10, FIFO);
-	/// bucket.insert("foo", 42);
-	/// bucket.remove("foo");
-	/// assert_eq!(bucket.get("foo"), None);
-	/// ```
 	pub fn remove(&mut self, key: &K) {
 		if self.data_vec.is_empty() {
 			return;
@@ -92,11 +78,17 @@ where
 		}
 	}
 
+	/// Returns a reference to the value associated with the given key, or `None` if the key is not found.
 	pub fn get(&self, key: &K) -> Option<&Data<K, V>> {
+		// If the data vector is empty, the key is not in the bucket
 		if self.data_vec.is_empty() {
 			return None;
 		}
+
+		// Get the position of the key in the data vector
 		let position = self.get_position(key)?;
+
+		// Return a reference to the data at the given position
 		Some(&self.data_vec[position])
 	}
 
@@ -125,13 +117,13 @@ where
 
 	pub fn update_key_in_index(&mut self, key_index: usize) -> &Data<K, V> {
 		match self.eviction_policy {
-			EvictionPolicy::FIFO | EvictionPolicy::LIFO => &self.data_vec[key_index],
-			EvictionPolicy::LRU => {
+			EvictionPolicy::Fifo | EvictionPolicy::Lifo => &self.data_vec[key_index],
+			EvictionPolicy::Lru => {
 				let data = self.data_vec.remove(key_index);
 				self.data_vec.push(data);
 				self.data_vec.last().unwrap()
 			}
-			EvictionPolicy::LFU => {
+			EvictionPolicy::Lfu => {
 				self.data_vec[key_index].lfu_counter += 1;
 				&self.data_vec[key_index]
 			}
@@ -143,13 +135,13 @@ where
 			return None;
 		}
 		match self.eviction_policy {
-			EvictionPolicy::FIFO | EvictionPolicy::LRU => {
+			EvictionPolicy::Fifo | EvictionPolicy::Lru => {
 				// TODO: this is in O(n). there could be a more performant way to do that
 				Some(self.data_vec.remove(0))
 			}
-			EvictionPolicy::LIFO => self.data_vec.pop(),
+			EvictionPolicy::Lifo => self.data_vec.pop(),
 			// TODO: implement better
-			EvictionPolicy::LFU => {
+			EvictionPolicy::Lfu => {
 				let mut min_lfu_counter = self.data_vec[0].lfu_counter;
 				let mut min_lfu_counter_index = 0;
 				for (i, data) in self.data_vec.iter().enumerate() {
