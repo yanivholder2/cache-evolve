@@ -1,0 +1,12 @@
+# Maximum line length
+max_width = 120
+# Use hard tabs instead of spaces for indentation.
+hard_tabs = true
+# Set the number of spaces per tab.
+tab_spaces = 2
+# Normalize the spacing of comments.
+normalize_comments = true
+# Merge multiple imports into a single line.
+merge_imports = true
+# Reorder imports alphabetically.
+reorder_imports = true
