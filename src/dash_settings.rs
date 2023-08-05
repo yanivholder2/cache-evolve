@@ -25,6 +25,7 @@ pub const DEFAULT_SETTINGS: DashSettings = DashSettings {
 	debug_mode: 0,
 };
 
+#[allow(dead_code)] // Remove this after stabilizing hit ratio
 pub const DRAGON_SETTINGS: DashSettings = DashSettings {
 	dash_size: 1,
 	segment_size: 56,

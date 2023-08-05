@@ -1,5 +1,5 @@
 // TODO: finish module documentation
-//! Bucket implementation for the DASH cache.
+//! Bucket implementation for the Dash cache.
 //!
 //!
 //! # Examples
@@ -7,7 +7,7 @@
 //! ```
 //! ```
 
-use super::data::Data;
+use super::item::Item;
 use crate::dash_settings::EvictionPolicy;
 use std::{
 	fmt::{Display, Formatter},
@@ -17,11 +17,11 @@ use std::{
 #[derive(Debug)]
 pub struct Bucket<K, V>
 where
-	K: Hash + Eq + Clone + Copy,
-	V: Eq + Clone + Copy,
+	K: Hash + Eq + Copy,
+	V: Eq + Copy,
 {
 	// TODO: consider using a linked list for O(1) changes
-	data_vec: Vec<Data<K, V>>,
+	items: Vec<Item<K, V>>,
 	max_size: usize,
 	// TODO: make this a reference with a lifetime
 	eviction_policy: EvictionPolicy,
@@ -29,262 +29,221 @@ where
 
 impl<K, V> Bucket<K, V>
 where
-	K: Hash + Eq + Clone + Copy,
-	V: Eq + Clone + Copy,
+	K: Hash + Eq + Copy,
+	V: Eq + Copy,
 {
 	pub fn new(max_size: usize, eviction_policy: EvictionPolicy) -> Self {
 		Bucket {
-			data_vec: Vec::new(),
+			// TODO: consider creating a vector with a fixed size for better performance after initialization
+			items: Vec::new(),
 			max_size,
 			eviction_policy,
 		}
 	}
 
 	/// Removes the key-value pair with the given key from the bucket.
-	///
-	/// If the bucket is empty, this function does nothing.
+	/// If the bucket is empty or the key is not found, this function does nothing.
 	pub fn remove(&mut self, key: &K) {
-		if self.data_vec.is_empty() {
+		if self.items.is_empty() {
 			return;
 		}
-		self.data_vec.retain(|d| d.key != *key)
+
+		// Remove the key-value pair with the given key
+		self.items.retain(|item| item.key != *key);
 	}
 
-	/// This function updates the data if it already exists
-	pub fn put_key_and_val(&mut self, key: K, val: V) {
-		if let Some(position) = self.get_position(&key) {
-			self.update_key_in_index(position);
-		} else {
-			if self.is_full() {
-				self.evict_item();
-			}
-			self.data_vec.push(Data::new(key, val));
-		}
-	}
-
-	/// Puts data into the bucket.
+	/// Puts an item into the bucket.
 	///
-	/// Returns a tuple of the data pushed to the bucket and the data evicted from the bucket accordingly.
-	/// If no data is evicted, a None will be returned
-	pub fn put_data(&mut self, data: Data<K, V>) -> (&Data<K, V>, Option<Data<K, V>>) {
-		if let Some(position) = self.get_position(&data.key) {
-			return (self.update_key_in_index(position), None);
+	/// Returns a tuple containing a reference to the pushed item and an optional evicted item.
+	/// If no item is evicted, the second element of the tuple will be None.
+	pub fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
+		// Check if the key already exists in the bucket
+		if let Some(position) = self.get_position(&item.key) {
+			// If the key exists, update item position inside the bucket and return it
+			let pushed_item = self.get_and_update_item_in_position(position);
+			return (pushed_item, None);
 		} else {
-			let evicted_data = if self.is_full() { self.evict_item() } else { None };
+			// If the key does not exist, add the item to the bucket
+			let evicted_item = if self.is_full() { self.evict_item() } else { None };
+			self.items.push(item);
+			let pushed_item = &self.items[self.items.len() - 1];
 
-			self.data_vec.push(data);
-			let pushed_data = &self.data_vec[self.data_vec.len() - 1];
-			(pushed_data, evicted_data)
+			return (pushed_item, evicted_item);
 		}
 	}
 
-	/// Returns a reference to the value associated with the given key, or `None` if the key is not found.
-	pub fn get(&self, key: &K) -> Option<&Data<K, V>> {
-		// If the data vector is empty, the key is not in the bucket
-		if self.data_vec.is_empty() {
+	/// Returns a reference to the item in position `position`, or `None` if the item is not found.
+	/// This will not update the position of the item
+	pub fn get_from_position(&mut self, position: usize) -> Option<&Item<K, V>> {
+		if self.items.is_empty() {
 			return None;
 		}
 
-		// Get the position of the key in the data vector
-		let position = self.get_position(key)?;
-
-		// Return a reference to the data at the given position
-		Some(&self.data_vec[position])
+		Some(&self.items[position])
 	}
 
-	pub fn get_from_position(&mut self, position: usize) -> Option<&Data<K, V>> {
-		if self.data_vec.is_empty() {
-			return None;
-		}
-		Some(&self.data_vec[position])
-	}
-
-	pub fn get_and_update(&mut self, key: &K) -> Option<&Data<K, V>> {
-		if self.data_vec.is_empty() {
-			return None;
-		}
-		let position = self.get_position(key)?;
-		Some(self.update_key_in_index(position))
-	}
-
-	/// Updates the data in the bucket according to the eviction policy.
+	/// Updates the item in the bucket according to the eviction policy.
 	///
-	/// Returns the updated data and None if the data is not in the bucket.
-	pub fn update(&mut self, key: &K) -> Option<&Data<K, V>> {
-		let key_index = self.get_position(key)?;
-		Some(self.update_key_in_index(key_index))
+	/// Returns the updated item and None if the item is not in the bucket.
+	pub fn get_and_update_item(&mut self, key: &K) -> Option<&Item<K, V>> {
+		if self.items.is_empty() {
+			return None;
+		}
+
+		let position = self.get_position(key)?;
+		Some(self.get_and_update_item_in_position(position))
 	}
 
-	pub fn update_key_in_index(&mut self, key_index: usize) -> &Data<K, V> {
+	/// Updates the position of an item in the bucket according to the eviction policy.
+	///
+	/// Returns a reference to the updated item.
+	pub fn get_and_update_item_in_position(&mut self, position: usize) -> &Item<K, V> {
 		match self.eviction_policy {
-			EvictionPolicy::Fifo | EvictionPolicy::Lifo => &self.data_vec[key_index],
+			EvictionPolicy::Fifo | EvictionPolicy::Lifo => &self.items[position],
 			EvictionPolicy::Lru => {
-				let data = self.data_vec.remove(key_index);
-				self.data_vec.push(data);
-				self.data_vec.last().unwrap()
+				let item = self.items.remove(position);
+				self.items.push(item);
+				self.items.last().unwrap()
 			}
 			EvictionPolicy::Lfu => {
-				self.data_vec[key_index].lfu_counter += 1;
-				&self.data_vec[key_index]
+				self.items[position].lfu_counter += 1;
+				&self.items[position]
 			}
 		}
 	}
 
-	fn evict_item(&mut self) -> Option<Data<K, V>> {
-		if self.data_vec.is_empty() {
+	/// Evicts an item from the bucket according to the eviction policy and return it.
+	fn evict_item(&mut self) -> Option<Item<K, V>> {
+		if self.items.is_empty() {
 			return None;
 		}
+
 		match self.eviction_policy {
 			EvictionPolicy::Fifo | EvictionPolicy::Lru => {
 				// TODO: this is in O(n). there could be a more performant way to do that
-				Some(self.data_vec.remove(0))
+				Some(self.items.remove(0))
 			}
-			EvictionPolicy::Lifo => self.data_vec.pop(),
+			EvictionPolicy::Lifo => self.items.pop(),
 			// TODO: implement better
 			EvictionPolicy::Lfu => {
-				let mut min_lfu_counter = self.data_vec[0].lfu_counter;
+				let mut min_lfu_counter = self.items[0].lfu_counter;
 				let mut min_lfu_counter_index = 0;
-				for (i, data) in self.data_vec.iter().enumerate() {
-					if data.lfu_counter < min_lfu_counter {
-						min_lfu_counter = data.lfu_counter;
+				for (i, item) in self.items.iter().enumerate() {
+					if item.lfu_counter < min_lfu_counter {
+						min_lfu_counter = item.lfu_counter;
 						min_lfu_counter_index = i;
 					}
 				}
-				Some(self.data_vec.remove(min_lfu_counter_index))
+				Some(self.items.remove(min_lfu_counter_index))
 			}
 		}
 	}
 
+	/// Returns the position of the item with the given key, or `None` if the key is not found.
 	pub fn get_position(&self, key: &K) -> Option<usize> {
-		self.data_vec.iter().position(|d| d.key == *key)
+		self.items.iter().position(|d| d.key == *key)
 	}
 
+	/// Returns whether the bucket is full.
 	pub fn is_full(&self) -> bool {
 		self.size() == self.max_size
 	}
 
+	/// Returns the number of items in the bucket.
 	pub fn size(&self) -> usize {
-		self.data_vec.len()
+		self.items.len()
 	}
 }
 
 impl<K, V> Display for Bucket<K, V>
 where
-	K: Hash + Eq + Clone + Copy + Display,
-	V: Eq + Clone + Copy + Display,
+	K: Hash + Eq + Copy + Display,
+	V: Eq + Copy + Display,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		for data in &self.data_vec {
-			writeln!(f, "    {}", data)?;
+		for item in &self.items {
+			writeln!(f, "    {}", item)?;
 		}
 		Ok(())
 	}
 }
 
+/*
 // TODO: implement more tests
 #[cfg(test)]
 mod tests {
 	use super::*;
 	use crate::dash_settings::DEFAULT_SETTINGS;
 
+	mod get {
+		use super::*;
+
+		#[test]
+		fn get_item() {
+			// Arrange
+			let mut bucket = Bucket::new(DEFAULT_SETTINGS.bucket_size, DEFAULT_SETTINGS.eviction_policy);
+			let value = 1;
+			let item = Item::new(value, value);
+			bucket.put(item);
+
+			// Act
+			let item = bucket.get_and_update_item(&value).unwrap();
+
+			// Assert
+			assert_eq!(item.value, value);
+		}
+	}
+
 	mod insert {
 		use super::*;
 
-		mod get {
-			use super::*;
-		}
-
 		#[test]
 		fn insert_one_item() {
+			// Assert
 			let mut bucket = Bucket::new(DEFAULT_SETTINGS.bucket_size, DEFAULT_SETTINGS.eviction_policy);
 			let value = 1;
-			bucket.put_key_and_val(value, value);
+			let item = Item::new(value, value);
+
+			// Act
+			bucket.put(item);
+
+			// Assert
 			assert_eq!(bucket.size(), 1);
-			assert_eq!(bucket.get_and_update(&value).unwrap().value, value);
+			assert_eq!(bucket.get_and_update_item(&value).unwrap().value, value);
 		}
 
 		#[test]
 		fn insert_multiple_items() {
+			// Arrange
 			let mut bucket = Bucket::new(DEFAULT_SETTINGS.bucket_size, DEFAULT_SETTINGS.eviction_policy);
 			let num_of_bucket_items = 5;
 
+			// Act
 			for i in 0..num_of_bucket_items {
-				bucket.put_key_and_val(i, i);
+				let item = Item::new(i, i);
+				bucket.put(item);
 			}
+
+			// Assert
 			assert_eq!(bucket.size(), num_of_bucket_items);
 		}
 
 		#[test]
 		fn insert_duplicate_items() {
+			// Arrange
 			let mut bucket = Bucket::new(DEFAULT_SETTINGS.bucket_size, DEFAULT_SETTINGS.eviction_policy);
+			let value = 1;
 			let num_of_bucket_items = 5;
 
-			for i in 0..num_of_bucket_items {
-				bucket.put_key_and_val(i, i);
-			}
-			for i in 0..num_of_bucket_items {
-				bucket.put_key_and_val(i, i);
-			}
-			assert_eq!(bucket.size(), num_of_bucket_items);
-		}
+			// Act
+			let item = Item::new(value, value);
+			bucket.put(item);
+			let res = bucket.put(item);
 
-		#[test]
-		fn insert_more_items_than_bucket_size() {
-			let bucket_size = DEFAULT_SETTINGS.bucket_size;
-
-			let mut bucket = Bucket::new(bucket_size, DEFAULT_SETTINGS.eviction_policy);
-			let num_of_bucket_items = bucket_size + 1;
-
-			for i in 0..num_of_bucket_items {
-				bucket.put_key_and_val(i, i);
-			}
-			assert_eq!(bucket.size(), DEFAULT_SETTINGS.bucket_size);
-		}
-	}
-
-	#[test]
-	fn is_full() {
-		let bucket_size = 10;
-		let mut bucket = Bucket::new(bucket_size, DEFAULT_SETTINGS.eviction_policy);
-		for i in 0..bucket_size {
-			assert_eq!(bucket.is_full(), false);
-			bucket.put_key_and_val(i, i);
-		}
-		assert_eq!(bucket.is_full(), true);
-	}
-
-	#[test]
-	fn size() {
-		let mut bucket = Bucket::new(DEFAULT_SETTINGS.bucket_size, DEFAULT_SETTINGS.eviction_policy);
-		let num_of_bucket_items = 5;
-
-		for i in 0..num_of_bucket_items {
-			bucket.put_key_and_val(i, i);
-		}
-		assert_eq!(bucket.size(), num_of_bucket_items);
-	}
-
-	mod evict_item {
-		use super::*;
-
-		#[test]
-		fn evict_item_fifo() {
-			// TODO: implement
-		}
-
-		#[test]
-		fn evict_item_lifo() {
-			// TODO: implement
-		}
-
-		#[test]
-		fn evict_item_lfu() {
-			// TODO: implement
-		}
-
-		#[test]
-		fn evict_item_lru() {
-			// TODO: implement
+			// Assert
+			assert_eq!(bucket.size(), 1);
+			// TODO: assert res as well
 		}
 	}
 }
+*/

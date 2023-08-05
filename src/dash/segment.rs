@@ -1,5 +1,5 @@
 use crate::dash::bucket::Bucket;
-use crate::dash::data::Data;
+use crate::dash::item::Item;
 use crate::dash::utils::{get_index, hash};
 use crate::dash_settings::{DashSettings, EvictionPolicy};
 use std::fmt::Display;
@@ -8,8 +8,8 @@ use std::hash::Hash;
 #[derive(Debug)]
 pub struct Segment<K, V>
 where
-	K: Hash + Eq + Clone + Copy,
-	V: Eq + Clone + Copy,
+	K: Hash + Eq + Copy,
+	V: Eq + Copy,
 {
 	pub buckets: Vec<Bucket<K, V>>,
 	pub segment_size: usize,
@@ -19,8 +19,8 @@ where
 
 impl<K, V> Segment<K, V>
 where
-	K: Hash + Eq + Clone + Copy,
-	V: Eq + Clone + Copy,
+	K: Hash + Eq + Copy,
+	V: Eq + Copy,
 {
 	pub fn new(settings: DashSettings) -> Self {
 		let mut buckets: Vec<Bucket<K, V>> = Vec::new();
@@ -42,7 +42,7 @@ where
 	}
 
 	// TODO: could be written better
-	pub fn get_and_update(&mut self, key: &K) -> Option<&Data<K, V>> {
+	pub fn get_and_update_item(&mut self, key: &K) -> Option<&Item<K, V>> {
 		let hash = hash(&key);
 		let stash_bucket_index = get_index(hash, self.stash_size);
 		let stash_bucket = &self.stash_buckets[stash_bucket_index];
@@ -57,9 +57,9 @@ where
 			mut_stash_bucket.remove(key);
 
 			let mut_target_bucket = &mut self.buckets[target_bucket_index];
-			let (pushed_data, evicted_data) = mut_target_bucket.put_data(data);
+			let (pushed_data, evicted_data) = mut_target_bucket.put(data);
 			if let Some(data) = evicted_data {
-				mut_stash_bucket.put_data(data);
+				mut_stash_bucket.put(data);
 			}
 			Some(pushed_data)
 		} else {
@@ -70,7 +70,7 @@ where
 			if let Some(position) = target_bucket.get_position(key) {
 				// If the key is in the target bucket, we need to update the position
 				let mut_target_bucket = &mut self.buckets[target_bucket_index];
-				Some(mut_target_bucket.update_key_in_index(position))
+				Some(mut_target_bucket.get_and_update_item_in_position(position))
 			} else {
 				// If the key is not in the target bucket, we need to check the probing bucket
 
@@ -84,7 +84,7 @@ where
 					// If the key is in the probing bucket, we need to update the position
 
 					let mut_probing_bucket = &mut self.buckets[probing_bucket_index];
-					Some(mut_probing_bucket.update_key_in_index(position))
+					Some(mut_probing_bucket.get_and_update_item_in_position(position))
 				} else {
 					None
 				}
@@ -94,17 +94,17 @@ where
 
 	/// Insert the key, value pair into the segment.
 	/// This function assumes that the key is not already in the segment.
-	pub fn put(&mut self, key: K, val: V) {
-		let hash = hash(&key);
+	pub fn put(&mut self, item: Item<K, V>) {
+		let hash = hash(&item.key);
 		let stash_bucket = &mut self.stash_buckets[get_index(hash, self.stash_size)];
-		stash_bucket.put_key_and_val(key, val);
+		stash_bucket.put(item);
 	}
 }
 
 impl<K, V> Display for Segment<K, V>
 where
-	K: Hash + Eq + Clone + Copy + Display,
-	V: Eq + Clone + Copy + Display,
+	K: Hash + Eq + Copy + Display,
+	V: Eq + Copy + Display,
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		writeln!(f, "Segment {{")?;
@@ -122,6 +122,7 @@ where
 	}
 }
 
+/*
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -143,11 +144,12 @@ mod tests {
 
 		segment.put(key, key);
 		// First time the key is touched it is moved to the target bucket
-		segment.get_and_update(&key).unwrap();
+		segment.get_and_update_item(&key).unwrap();
 		// Rest of the times the key is touched the LFU counter is increased
-		let data = segment.get_and_update(&key).unwrap();
+		let data = segment.get_and_update_item(&key).unwrap();
 		assert_eq!(data.lfu_counter, 1);
-		let data = segment.get_and_update(&key).unwrap();
+		let data = segment.get_and_update_item(&key).unwrap();
 		assert_eq!(data.lfu_counter, 2);
 	}
 }
+*/

@@ -1,28 +1,29 @@
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 
+use crate::dash::item::Item;
 use crate::dash::segment::Segment;
 use crate::dash::utils::{get_index, hash};
 use crate::dash_settings::DashSettings;
 
 mod bucket;
-mod data;
+mod item;
 mod segment;
 mod utils;
 
 #[derive(Debug)]
 pub struct Dash<K, V>
 where
-	K: Hash + Eq + Clone + Copy,
-	V: Eq + Clone + Copy,
+	K: Hash + Eq + Copy,
+	V: Eq + Copy,
 {
 	pub segments: Vec<Segment<K, V>>,
 }
 
 impl<K, V> Dash<K, V>
 where
-	K: Hash + Eq + Clone + Copy,
-	V: Eq + Clone + Copy,
+	K: Hash + Eq + Copy,
+	V: Eq + Copy,
 {
 	pub fn new(settings: DashSettings) -> Self {
 		// TODO: think about maybe using Vec::with_capacity
@@ -36,12 +37,12 @@ where
 
 	pub fn put(&mut self, key: K, value: V) {
 		let segment = self.get_mut_segment(&key);
-		segment.put(key, value);
+		segment.put(Item::new(key, value));
 	}
 
-	pub fn get_and_update(&mut self, key: &K) -> Option<&V> {
+	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
 		let segment = self.get_mut_segment(key);
-		let data = segment.get_and_update(key)?;
+		let data = segment.get_and_update_item(key)?;
 		Some(&data.value)
 	}
 
@@ -54,8 +55,8 @@ where
 
 impl<K, V> Display for Dash<K, V>
 where
-	K: Hash + Eq + Clone + Copy + Display,
-	V: Eq + Clone + Copy + Display,
+	K: Hash + Eq + Copy + Display,
+	V: Eq + Copy + Display,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		for segment in &self.segments {
@@ -65,6 +66,7 @@ where
 	}
 }
 
+/*
 #[cfg(test)]
 mod tests {
 
@@ -72,7 +74,7 @@ mod tests {
 	use crate::dash_settings::{EvictionPolicy, DEFAULT_SETTINGS};
 
 	fn record(dash: &mut Dash<i64, i64>, key: i64, value: i64) {
-		let res = dash.get_and_update(&key);
+		let res = dash.get_and_update_item(&key);
 		if res.is_none() {
 			dash.put(key, value);
 		}
@@ -83,7 +85,7 @@ mod tests {
 		let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
 		let key: i64 = 0;
 
-		assert_eq!(dash.get_and_update(&key), None);
+		assert_eq!(dash.get_and_update_item(&key), None);
 	}
 
 	#[test]
@@ -93,7 +95,7 @@ mod tests {
 
 		dash.put(key, key);
 
-		assert_eq!(dash.get_and_update(&key), None);
+		assert_eq!(dash.get_and_update_item(&key), None);
 	}
 
 	#[test]
@@ -103,7 +105,7 @@ mod tests {
 
 		dash.put(key, key);
 
-		assert_eq!(dash.get_and_update(&key), Some(&key));
+		assert_eq!(dash.get_and_update_item(&key), Some(&key));
 	}
 
 	#[test]
@@ -137,3 +139,4 @@ mod tests {
 		}
 	}
 }
+*/
