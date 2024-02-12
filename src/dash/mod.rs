@@ -1,14 +1,14 @@
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 
-use crate::dash::item::Item;
+use crate::dash::dash_settings::DashSettings;
 use crate::dash::segment::Segment;
 use crate::dash::utils::{get_index, hash};
-use crate::dash_settings::DashSettings;
+use crate::shared::item::Item;
 
-mod bucket;
-mod item;
-mod segment;
+mod dash_bucket;
+mod dash_settings;
+pub(crate) mod segment;
 mod utils;
 
 #[derive(Debug)]
@@ -25,6 +25,30 @@ where
 	K: Hash + Eq + Copy,
 	V: Eq + Copy,
 {
+	/// Creates a new Dash instance with the given settings.
+	///
+	/// ### Arguments
+	/// * `settings` - The settings for the Dash instance.
+	///
+	/// ### Example
+	/// ```rust
+	/// use dash::Dash;
+	///
+	/// let settings = DashSettings {
+	///  dash_size: 1,
+	///  segment_size: 2,
+	///  stash_size: 1,
+	///  bucket_size: 3,
+	///  eviction_policy: EvictionPolicy::Lru,
+	///  debug_mode: 0,
+	/// };
+	///
+	/// let dash = Dash::new(settings);
+	/// ```
+	///
+	/// ### Returns
+	/// Returns a new Dash instance.
+	///
 	pub fn new(settings: DashSettings) -> Self {
 		// TODO: think about maybe using Vec::with_capacity
 		let mut segments = Vec::new();
@@ -35,11 +59,14 @@ where
 		Self { segments }
 	}
 
+	/// Insert a key-value pair into Dash
 	pub fn put(&mut self, key: K, value: V) {
 		let segment = self.get_mut_segment(&key);
 		segment.put(Item::new(key, value));
 	}
 
+	/// Returns the value of key if exists wrapper in Some ans None otherwise
+	/// As a side effect if this key is already exists with a
 	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
 		let segment = self.get_mut_segment(key);
 		let data = segment.get_and_update_item(key)?;

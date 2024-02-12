@@ -1,10 +1,4 @@
-#[derive(Debug, Clone)]
-pub enum EvictionPolicy {
-	Lru,
-	Lifo,
-	Lfu,
-	Fifo,
-}
+use crate::shared::settings::EvictionPolicy;
 
 #[derive(Debug, Clone)]
 pub struct DashSettings {

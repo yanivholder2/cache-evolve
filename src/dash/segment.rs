@@ -1,7 +1,9 @@
-use crate::dash::bucket::Bucket;
-use crate::dash::item::Item;
+use super::dash_settings::DashSettings;
+use crate::dash::dash_bucket::DashBucket;
 use crate::dash::utils::{get_index, hash};
-use crate::dash_settings::{DashSettings, EvictionPolicy};
+use crate::shared::item::Item;
+use crate::shared::settings::EvictionPolicy;
+use crate::shared::traits::bucket::Bucket;
 use std::fmt::Display;
 use std::hash::Hash;
 
@@ -11,9 +13,9 @@ where
 	K: Hash + Eq + Copy,
 	V: Eq + Copy,
 {
-	pub buckets: Vec<Bucket<K, V>>,
+	pub buckets: Vec<DashBucket<K, V>>,
 	pub segment_size: usize,
-	pub stash_buckets: Vec<Bucket<K, V>>,
+	pub stash_buckets: Vec<DashBucket<K, V>>,
 	pub stash_size: usize,
 }
 
@@ -23,15 +25,15 @@ where
 	V: Eq + Copy,
 {
 	pub fn new(settings: DashSettings) -> Self {
-		let mut buckets: Vec<Bucket<K, V>> = Vec::new();
+		let mut buckets: Vec<DashBucket<K, V>> = Vec::new();
 		for _ in 0..settings.segment_size {
 			// TODO: pass the settings as a reference
-			buckets.push(Bucket::new(settings.bucket_size, settings.eviction_policy.clone()));
+			buckets.push(DashBucket::new(settings.bucket_size, settings.eviction_policy.clone()));
 		}
 
-		let mut stash_buckets: Vec<Bucket<K, V>> = Vec::new();
+		let mut stash_buckets: Vec<DashBucket<K, V>> = Vec::new();
 		for _ in 0..settings.stash_size {
-			stash_buckets.push(Bucket::new(settings.bucket_size, EvictionPolicy::Fifo));
+			stash_buckets.push(DashBucket::new(settings.bucket_size, EvictionPolicy::Fifo));
 		}
 		Segment {
 			buckets,
@@ -70,7 +72,7 @@ where
 			if let Some(position) = target_bucket.get_position(key) {
 				// If the key is in the target bucket, we need to update the position
 				let mut_target_bucket = &mut self.buckets[target_bucket_index];
-				Some(mut_target_bucket.get_and_update_item_in_position(position))
+				Some(mut_target_bucket.get(position))
 			} else {
 				// If the key is not in the target bucket, we need to check the probing bucket
 
@@ -84,7 +86,7 @@ where
 					// If the key is in the probing bucket, we need to update the position
 
 					let mut_probing_bucket = &mut self.buckets[probing_bucket_index];
-					Some(mut_probing_bucket.get_and_update_item_in_position(position))
+					Some(mut_probing_bucket.get(position))
 				} else {
 					None
 				}
@@ -122,34 +124,9 @@ where
 	}
 }
 
+// TODO: implement
 /*
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::dash_settings::DEFAULT_SETTINGS;
-
-	#[test]
-	fn test_segment_length() {
-		let segment: Segment<i32, i32> = Segment::new(DEFAULT_SETTINGS);
-		assert_eq!(segment.buckets.len(), DEFAULT_SETTINGS.segment_size);
-	}
-
-	#[test]
-	fn lfu_counter_increase() {
-		let mut settings = DEFAULT_SETTINGS;
-		settings.eviction_policy = EvictionPolicy::Lfu;
-
-		let mut segment: Segment<i32, i32> = Segment::new(settings);
-		let key = 1;
-
-		segment.put(key, key);
-		// First time the key is touched it is moved to the target bucket
-		segment.get_and_update_item(&key).unwrap();
-		// Rest of the times the key is touched the LFU counter is increased
-		let data = segment.get_and_update_item(&key).unwrap();
-		assert_eq!(data.lfu_counter, 1);
-		let data = segment.get_and_update_item(&key).unwrap();
-		assert_eq!(data.lfu_counter, 2);
-	}
 }
 */
