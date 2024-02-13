@@ -1,15 +1,15 @@
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 
+use crate::dash::dash_segment::DashSegment;
 use crate::dash::dash_settings::DashSettings;
-use crate::dash::segment::Segment;
-use crate::dash::utils::{get_index, hash};
 use crate::shared::item::Item;
+use crate::shared::utils::{get_index, hash};
 
 mod dash_bucket;
+pub mod dash_jni;
+pub(crate) mod dash_segment;
 mod dash_settings;
-pub(crate) mod segment;
-mod utils;
 
 #[derive(Debug)]
 pub struct Dash<K, V>
@@ -17,7 +17,7 @@ where
 	K: Hash + Eq + Copy,
 	V: Eq + Copy,
 {
-	pub segments: Vec<Segment<K, V>>,
+	pub segments: Vec<DashSegment<K, V>>,
 }
 
 impl<K, V> Dash<K, V>
@@ -54,7 +54,7 @@ where
 		let mut segments = Vec::new();
 		for _ in 0..settings.dash_size {
 			// TODO: pass the settings as a reference
-			segments.push(Segment::new(settings.clone()));
+			segments.push(DashSegment::new(settings.clone()));
 		}
 		Self { segments }
 	}
@@ -69,12 +69,13 @@ where
 	/// As a side effect if this key is already exists with a
 	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
 		let segment = self.get_mut_segment(key);
-		let data = segment.get_and_update_item(key)?;
+		let data = segment.get(key)?;
 		Some(&data.value)
 	}
 
-	fn get_mut_segment(&mut self, key: &K) -> &mut Segment<K, V> {
+	fn get_mut_segment(&mut self, key: &K) -> &mut DashSegment<K, V> {
 		let hash = hash(key);
+		// TODO: change .len to .size
 		let segment_index = get_index(hash, self.segments.len());
 		&mut self.segments[segment_index]
 	}

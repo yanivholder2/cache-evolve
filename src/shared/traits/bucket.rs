@@ -29,11 +29,12 @@ where
 	///
 	/// Returns a tuple containing a reference to the pushed item and an optional evicted item.
 	/// If no item is evicted, the second element of the tuple will be None.
+	/// As a side effect, if the item already exists makes updates according to the eviction policy.
 	fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
 		// Check if the key already exists in the bucket
 		if let Some(position) = self.get_position(&item.key) {
 			// If the key exists, update item position inside the bucket and return it
-			let pushed_item = self.get(position);
+			let pushed_item = self.get_from_position(position);
 
 			(pushed_item, None)
 		} else {
@@ -52,6 +53,11 @@ where
 		self.get_items_mut().retain(|item| item.key != *key);
 	}
 
+	fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
+		let position = self.get_position(key)?;
+		Some(self.get_from_position(position))
+	}
+
 	/// Returns the position of the item with the given key, or `None` if the key is not found.
 	fn get_position(&self, key: &K) -> Option<usize> {
 		self.get_items().iter().position(|d| d.key == *key)
@@ -60,7 +66,7 @@ where
 	/// Returns a reference to the item located in `position`.
 	///
 	/// As a side effect makes updates according to the eviction policy.
-	fn get(&mut self, position: usize) -> &Item<K, V> {
+	fn get_from_position(&mut self, position: usize) -> &Item<K, V> {
 		match self.get_eviction_policy() {
 			EvictionPolicy::Fifo | EvictionPolicy::Lifo => &self.get_items()[position],
 			EvictionPolicy::Lru => self.get_and_update_lru_item(position),

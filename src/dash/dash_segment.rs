@@ -1,14 +1,14 @@
 use super::dash_settings::DashSettings;
 use crate::dash::dash_bucket::DashBucket;
-use crate::dash::utils::{get_index, hash};
 use crate::shared::item::Item;
 use crate::shared::settings::EvictionPolicy;
 use crate::shared::traits::bucket::Bucket;
+use crate::shared::utils::{get_index, hash};
 use std::fmt::Display;
 use std::hash::Hash;
 
 #[derive(Debug)]
-pub struct Segment<K, V>
+pub struct DashSegment<K, V>
 where
 	K: Hash + Eq + Copy,
 	V: Eq + Copy,
@@ -19,7 +19,8 @@ where
 	pub stash_size: usize,
 }
 
-impl<K, V> Segment<K, V>
+// TODO: use the Segment trait
+impl<K, V> DashSegment<K, V>
 where
 	K: Hash + Eq + Copy,
 	V: Eq + Copy,
@@ -35,7 +36,7 @@ where
 		for _ in 0..settings.stash_size {
 			stash_buckets.push(DashBucket::new(settings.bucket_size, EvictionPolicy::Fifo));
 		}
-		Segment {
+		DashSegment {
 			buckets,
 			stash_buckets,
 			segment_size: settings.segment_size,
@@ -44,7 +45,10 @@ where
 	}
 
 	// TODO: could be written better
-	pub fn get_and_update_item(&mut self, key: &K) -> Option<&Item<K, V>> {
+	/// Returns a reference to the item with `key`.
+	///
+	/// As a side effect makes updates according to the eviction policy.
+	pub fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
 		let hash = hash(&key);
 		let stash_bucket_index = get_index(hash, self.stash_size);
 		let stash_bucket = &self.stash_buckets[stash_bucket_index];
@@ -72,7 +76,7 @@ where
 			if let Some(position) = target_bucket.get_position(key) {
 				// If the key is in the target bucket, we need to update the position
 				let mut_target_bucket = &mut self.buckets[target_bucket_index];
-				Some(mut_target_bucket.get(position))
+				Some(mut_target_bucket.get_from_position(position)?)
 			} else {
 				// If the key is not in the target bucket, we need to check the probing bucket
 
@@ -86,7 +90,7 @@ where
 					// If the key is in the probing bucket, we need to update the position
 
 					let mut_probing_bucket = &mut self.buckets[probing_bucket_index];
-					Some(mut_probing_bucket.get(position))
+					Some(mut_probing_bucket.get_from_position(position)?)
 				} else {
 					None
 				}
@@ -103,7 +107,7 @@ where
 	}
 }
 
-impl<K, V> Display for Segment<K, V>
+impl<K, V> Display for DashSegment<K, V>
 where
 	K: Hash + Eq + Copy + Display,
 	V: Eq + Copy + Display,

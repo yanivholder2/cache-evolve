@@ -1,5 +1,5 @@
+use super::dash_settings::DEFAULT_SETTINGS;
 use crate::dash::Dash;
-use crate::dash_settings::DEFAULT_SETTINGS;
 use jni::{objects::JClass, sys::jlong, JNIEnv};
 use once_cell::sync::OnceCell;
 
