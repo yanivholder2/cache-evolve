@@ -2,7 +2,7 @@ use crate::shared::settings::EvictionPolicy;
 
 #[derive(Debug, Clone)]
 pub struct DashSettings {
-	pub dash_size: usize,
+	pub size: usize,
 	pub segment_size: usize,
 	pub stash_size: usize,
 	pub bucket_size: usize,
@@ -11,7 +11,7 @@ pub struct DashSettings {
 }
 
 pub const DEFAULT_SETTINGS: DashSettings = DashSettings {
-	dash_size: 1,
+	size: 1,
 	segment_size: 28,
 	stash_size: 4,
 	bucket_size: 16,
@@ -21,7 +21,7 @@ pub const DEFAULT_SETTINGS: DashSettings = DashSettings {
 
 #[allow(dead_code)] // Remove this after stabilizing hit ratio
 pub const DRAGON_SETTINGS: DashSettings = DashSettings {
-	dash_size: 1,
+	size: 1,
 	segment_size: 56,
 	stash_size: 4,
 	bucket_size: 14,

@@ -1,14 +1,14 @@
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 
-use crate::dash::dash_segment::DashSegment;
-use crate::dash::dash_settings::DashSettings;
 use crate::shared::item::Item;
 use crate::shared::utils::{get_index, hash};
+use dash_segment::DashSegment;
+use dash_settings::DashSettings;
 
 mod dash_bucket;
 pub mod dash_jni;
-pub(crate) mod dash_segment;
+mod dash_segment;
 mod dash_settings;
 
 #[derive(Debug)]
@@ -35,7 +35,7 @@ where
 	/// use dash::Dash;
 	///
 	/// let settings = DashSettings {
-	///  dash_size: 1,
+	///  size: 1,
 	///  segment_size: 2,
 	///  stash_size: 1,
 	///  bucket_size: 3,
@@ -52,7 +52,7 @@ where
 	pub fn new(settings: DashSettings) -> Self {
 		// TODO: think about maybe using Vec::with_capacity
 		let mut segments = Vec::new();
-		for _ in 0..settings.dash_size {
+		for _ in 0..settings.size {
 			// TODO: pass the settings as a reference
 			segments.push(DashSegment::new(settings.clone()));
 		}
@@ -66,7 +66,8 @@ where
 	}
 
 	/// Returns the value of key if exists wrapper in Some ans None otherwise
-	/// As a side effect if this key is already exists with a
+	///
+	/// As a side effect makes updates according to the eviction policy.
 	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
 		let segment = self.get_mut_segment(key);
 		let data = segment.get(key)?;
@@ -75,7 +76,6 @@ where
 
 	fn get_mut_segment(&mut self, key: &K) -> &mut DashSegment<K, V> {
 		let hash = hash(key);
-		// TODO: change .len to .size
 		let segment_index = get_index(hash, self.segments.len());
 		&mut self.segments[segment_index]
 	}
@@ -149,7 +149,7 @@ mod tests {
 	#[test]
 	fn big_test() {
 		let mut dash: Dash<i64, i64> = Dash::new(DashSettings {
-			dash_size: 1,
+			size: 1,
 			segment_size: 2,
 			stash_size: 1,
 			bucket_size: 3,

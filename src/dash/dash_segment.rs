@@ -1,5 +1,5 @@
+use super::dash_bucket::DashBucket;
 use super::dash_settings::DashSettings;
-use crate::dash::dash_bucket::DashBucket;
 use crate::shared::item::Item;
 use crate::shared::settings::EvictionPolicy;
 use crate::shared::traits::bucket::Bucket;

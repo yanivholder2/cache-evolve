@@ -1,6 +1,6 @@
 use crate::shared::item::Item;
 use crate::shared::utils::{get_index, hash};
-use std::hash::{self, Hash};
+use std::hash::Hash;
 
 use super::bucket::Bucket;
 
@@ -9,15 +9,14 @@ where
 	K: Hash + Eq + Copy,
 	V: Eq + Copy,
 {
+	type B: Bucket<K, V>;
 	// ------------ struct expected fields ----------------------------------------------
 
-	// TODO: Check if using Box and dyn is the best approach
-
 	/// Returns the buckets vector.
-	fn get_buckets(&self) -> &Vec<Box<dyn Bucket<K, V>>>;
+	fn get_buckets(&self) -> &Vec<Self::B>;
 
 	/// Returns the buckets vector as mutable.
-	fn get_buckets_mut(&mut self) -> &mut Vec<Box<dyn Bucket<K, V>>>;
+	fn get_buckets_mut(&mut self) -> &mut Vec<Self::B>;
 
 	/// Returns each segment size.
 	fn get_segment_size(&self) -> usize;
@@ -40,15 +39,10 @@ where
 	}
 
 	/// Returns a mutable reference to the bucket with the given key.
-	fn get_mut_bucket(&mut self, key: &K) -> &mut Box<dyn Bucket<K, V>> {
+	fn get_mut_bucket(&mut self, key: &K) -> &mut Self::B {
 		let hash = hash(key);
 		let index = get_index(hash, self.get_segment_size());
 		&mut self.get_buckets_mut()[index]
-	}
-
-	/// Returns the number of buckets in the segment.
-	fn size(&self) -> usize {
-		self.get_buckets().len()
 	}
 }
 
