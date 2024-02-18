@@ -1,9 +1,14 @@
-/*
+use super::associative_cache_settings::DEFAULT_SETTINGS;
+use super::AssociativeCache;
+use crate::shared::traits::cache::Cache;
 use jni::{objects::JClass, sys::jlong, JNIEnv};
 use once_cell::sync::OnceCell;
-static mut CACHE: OnceCell<MyAssociativeCache> = OnceCell::new();
 
-fn shared_cache() -> &'static mut MyAssociativeCache {
+type DefaultAssociativeCache = AssociativeCache<i64, i64>;
+
+static mut CACHE: OnceCell<DefaultAssociativeCache> = OnceCell::new();
+
+fn shared_cache() -> &'static mut DefaultAssociativeCache {
 	unsafe { CACHE.get_mut().expect("The cache is not initialized") }
 }
 
@@ -13,7 +18,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	_class: JClass,
 ) {
 	unsafe {
-		CACHE.set(MyAssociativeCache::default()).expect("");
+		CACHE.set(AssociativeCache::new(DEFAULT_SETTINGS)).expect("");
 	}
 }
 
@@ -26,7 +31,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	let res = shared_cache().get(&key);
 	match res {
 		None => -1,
-		Some(value) => *value,
+		Some(value) => value,
 	}
 }
 
@@ -37,6 +42,5 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	key: jlong,
 	value: jlong,
 ) {
-	shared_cache().insert(key, value);
+	shared_cache().put(key, value);
 }
- */
