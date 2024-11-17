@@ -93,7 +93,6 @@ dependencies = [
  "chrono",
  "jni",
  "log",
- "once_cell",
  "rand",
  "simplelog",
 ]

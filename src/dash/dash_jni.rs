@@ -7,15 +7,10 @@ use super::Dash;
 use chrono::Local;
 use jni::{objects::JClass, sys::jlong, JNIEnv};
 use log::info;
-use once_cell::sync::OnceCell;
 use simplelog::*;
 use std::fs::{create_dir_all, File};
 
-static mut CACHE: OnceCell<Dash<i64, i64>> = OnceCell::new();
-
-fn shared_cache() -> &'static mut Dash<i64, i64> {
-	unsafe { CACHE.get_mut().expect("The cache is not initialized") }
-}
+type DashTy = Dash<i64, i64>;
 
 fn init_logger() {
 	// Get the current time and format it
@@ -36,30 +31,33 @@ fn init_logger() {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initDefaultCache(
-	_env: JNIEnv,
-	_class: JClass,
-) {
-	init_logger();
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initDefaultCache<
+	'local,
+>(
+	_env: JNIEnv<'local>,
+	_class: JClass<'local>,
+) -> jlong {
+	// init_logger();
 
 	info!("Initializing default cache. Settings: {:?}", DEFAULT_SETTINGS);
 
-	unsafe {
-		CACHE.set(Dash::new(DEFAULT_SETTINGS)).expect("");
-	}
+	let cache: DashTy = Dash::new(DEFAULT_SETTINGS);
+	Box::into_raw(Box::new(cache)) as jlong
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initCache(
-	_env: JNIEnv,
-	_class: JClass,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initCache<
+	'local,
+>(
+	_env: JNIEnv<'local>,
+	_class: JClass<'local>,
 	num_of_segments: jlong,
 	num_of_normal_buckets: jlong,
 	num_of_stash_buckets: jlong,
 	bucket_size: jlong,
 	eviction_policy: jlong,
-) {
-	init_logger();
+) -> jlong {
+	// init_logger();
 	let settings = DashSettings {
 		num_of_segments: num_of_segments as usize,
 		num_of_normal_buckets: num_of_normal_buckets as usize,
@@ -68,20 +66,23 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		eviction_policy: EvictionPolicy::from_usize(eviction_policy as usize).unwrap(),
 	};
 
-	info!("Initializing cache. Settings: {:?}", settings);
+	// info!("Initializing cache. Settings: {:?}", settings);
 
-	unsafe {
-		CACHE.set(Dash::new(settings)).expect("");
-	}
+	let cache: DashTy = Dash::new(settings);
+	Box::into_raw(Box::new(cache)) as jlong
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_getFromCacheIfPresent(
-	_env: JNIEnv,
-	_class: JClass,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_getFromCacheIfPresent<
+	'local,
+>(
+	_env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	cache_ptr: jlong,
 	key: jlong,
 ) -> jlong {
-	let res = shared_cache().get_and_update_item(&key);
+	let cache = unsafe { &mut *(cache_ptr as *mut DashTy) };
+	let res = cache.get_and_update_item(&key);
 	match res {
 		None => -1,
 		Some(value) => *value,
@@ -89,11 +90,26 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_putToCache(
-	_env: JNIEnv,
-	_class: JClass,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_putToCache<
+	'local,
+>(
+	_env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	cache_ptr: jlong,
 	key: jlong,
 	value: jlong,
 ) {
-	shared_cache().put(key as i64, value as i64);
+	let cache = unsafe { &mut *(cache_ptr as *mut DashTy) };
+	cache.put(key as i64, value as i64);
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_dropCache<
+	'local,
+>(
+	_env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	cache_ptr: jlong,
+) {
+	let _boxed_cache = unsafe { Box::from_raw(cache_ptr as *mut DashTy) };
 }
