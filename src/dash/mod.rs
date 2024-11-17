@@ -40,7 +40,6 @@ where
 	///  stash_size: 1,
 	///  bucket_size: 3,
 	///  eviction_policy: EvictionPolicy::Lru,
-	///  debug_mode: 0,
 	/// };
 	///
 	/// let dash = Dash::new(settings);
@@ -52,7 +51,7 @@ where
 	pub fn new(settings: DashSettings) -> Self {
 		// TODO: think about maybe using Vec::with_capacity
 		let mut segments = Vec::new();
-		for _ in 0..settings.size {
+		for _ in 0..settings.num_of_segments {
 			// TODO: pass the settings as a reference
 			segments.push(DashSegment::new(settings.clone()));
 		}
@@ -154,7 +153,6 @@ mod tests {
 			stash_size: 1,
 			bucket_size: 3,
 			eviction_policy: EvictionPolicy::Lru,
-			debug_mode: 0,
 		});
 
 		// put in dash random values

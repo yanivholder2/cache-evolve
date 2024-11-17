@@ -6,7 +6,6 @@ pub struct AssociativeCacheSettings {
 	pub segment_size: usize,
 	pub bucket_size: usize,
 	pub eviction_policy: EvictionPolicy,
-	pub debug_mode: u8,
 }
 
 pub const DEFAULT_SETTINGS: AssociativeCacheSettings = AssociativeCacheSettings {
@@ -14,5 +13,4 @@ pub const DEFAULT_SETTINGS: AssociativeCacheSettings = AssociativeCacheSettings 
 	segment_size: 1,
 	bucket_size: 512,
 	eviction_policy: EvictionPolicy::Lru,
-	debug_mode: 0,
 };

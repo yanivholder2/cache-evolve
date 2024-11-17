@@ -27,20 +27,20 @@ where
 {
 	pub fn new(settings: DashSettings) -> Self {
 		let mut buckets: Vec<DashBucket<K, V>> = Vec::new();
-		for _ in 0..settings.segment_size {
+		for _ in 0..settings.num_of_normal_buckets {
 			// TODO: pass the settings as a reference
 			buckets.push(DashBucket::new(settings.bucket_size, settings.eviction_policy.clone()));
 		}
 
 		let mut stash_buckets: Vec<DashBucket<K, V>> = Vec::new();
-		for _ in 0..settings.stash_size {
+		for _ in 0..settings.num_of_stash_buckets {
 			stash_buckets.push(DashBucket::new(settings.bucket_size, EvictionPolicy::Fifo));
 		}
 		DashSegment {
 			buckets,
 			stash_buckets,
-			segment_size: settings.segment_size,
-			stash_size: settings.stash_size,
+			segment_size: settings.num_of_normal_buckets,
+			stash_size: settings.num_of_stash_buckets,
 		}
 	}
 
