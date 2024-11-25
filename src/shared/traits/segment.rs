@@ -1,13 +1,14 @@
 use crate::shared::item::Item;
 use crate::shared::utils::{get_index, hash};
+use std::fmt::Debug;
 use std::hash::Hash;
 
 use super::bucket::Bucket;
 
 pub trait Segment<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	type B: Bucket<K, V>;
 	// ------------ struct expected fields ----------------------------------------------

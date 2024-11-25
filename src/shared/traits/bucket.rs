@@ -1,10 +1,11 @@
-use crate::shared::{item::Item, settings::EvictionPolicy};
-use std::hash::Hash;
+use crate::settings::EvictionPolicy;
+use crate::shared::item::Item;
+use std::{fmt::Debug, hash::Hash};
 
 pub trait Bucket<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	// ------------ struct expected fields ----------------------------------------------
 
@@ -128,7 +129,7 @@ impl<T, K, V> Display for T
 where
 	T: Bucket<K, V>,
 	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	V: Eq + Copy + Debug,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		for item in self.get_items() {

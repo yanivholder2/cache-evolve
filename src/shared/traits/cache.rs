@@ -3,12 +3,12 @@ use crate::shared::{
 	item::Item,
 	utils::{get_index, hash},
 };
-use std::hash::Hash;
+use std::{fmt::Debug, hash::Hash};
 
 pub trait Cache<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	type S: Segment<K, V>;
 	// ------------ struct expected fields ----------------------------------------------

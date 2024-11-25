@@ -1,5 +1,8 @@
 use std::collections::hash_map::DefaultHasher;
-use std::hash::Hasher;
+use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
+
+use log::debug;
 
 pub fn get_index(hash: usize, size: usize) -> usize {
 	hash % size
@@ -7,11 +10,13 @@ pub fn get_index(hash: usize, size: usize) -> usize {
 
 pub fn hash<K>(key: &K) -> usize
 where
-	K: std::hash::Hash,
+	K: Hash + Debug,
 {
 	let mut hasher = DefaultHasher::new();
 	key.hash(&mut hasher);
-	hasher.finish() as usize
+	let hash = hasher.finish() as usize;
+	debug!("Hashed key {:?} to {}", key, hash);
+	hash
 }
 
 #[cfg(test)]

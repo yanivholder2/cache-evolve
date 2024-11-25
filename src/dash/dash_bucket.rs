@@ -7,19 +7,19 @@
 //! ```
 //! ```
 
+use crate::settings::EvictionPolicy;
 use crate::shared::item::Item;
-use crate::shared::settings::EvictionPolicy;
 use crate::shared::traits::bucket::Bucket;
 use std::{
-	fmt::{Display, Formatter},
+	fmt::{Debug, Display, Formatter},
 	hash::Hash,
 };
 
 #[derive(Debug)]
 pub struct DashBucket<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	// TODO: consider using a linked list for O(1) changes
 	items: Vec<Item<K, V>>,
@@ -30,8 +30,8 @@ where
 
 impl<K, V> DashBucket<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	pub fn new(max_size: usize, eviction_policy: EvictionPolicy) -> Self {
 		DashBucket {
@@ -55,8 +55,8 @@ where
 
 impl<K, V> Bucket<K, V> for DashBucket<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	fn get_items(&self) -> &Vec<Item<K, V>> {
 		&self.items
@@ -88,8 +88,8 @@ where
 
 impl<K, V> Display for DashBucket<K, V>
 where
-	K: Hash + Eq + Copy + Display,
-	V: Eq + Copy + Display,
+	K: Hash + Eq + Copy + Debug + Display,
+	V: Eq + Copy + Debug + Display,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		for item in &self.items {

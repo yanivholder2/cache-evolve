@@ -1,17 +1,17 @@
 use super::dash_bucket::DashBucket;
 use super::dash_settings::DashSettings;
+use crate::settings::EvictionPolicy;
 use crate::shared::item::Item;
-use crate::shared::settings::EvictionPolicy;
 use crate::shared::traits::bucket::Bucket;
 use crate::shared::utils::{get_index, hash};
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 #[derive(Debug)]
 pub struct DashSegment<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	pub buckets: Vec<DashBucket<K, V>>,
 	pub segment_size: usize,
@@ -22,8 +22,8 @@ where
 // TODO: use the Segment trait
 impl<K, V> DashSegment<K, V>
 where
-	K: Hash + Eq + Copy,
-	V: Eq + Copy,
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
 {
 	pub fn new(settings: DashSettings) -> Self {
 		let mut buckets: Vec<DashBucket<K, V>> = Vec::new();
@@ -109,8 +109,8 @@ where
 
 impl<K, V> Display for DashSegment<K, V>
 where
-	K: Hash + Eq + Copy + Display,
-	V: Eq + Copy + Display,
+	K: Hash + Eq + Copy + Debug + Display,
+	V: Eq + Copy + Debug + Display,
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		writeln!(f, "Segment {{")?;

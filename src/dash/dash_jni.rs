@@ -1,7 +1,6 @@
-use crate::shared::settings::EvictionPolicy;
+use crate::settings::EvictionPolicy;
 
 use super::dash_settings::DashSettings;
-use super::dash_settings::DEFAULT_SETTINGS;
 use super::Dash;
 
 use chrono::Local;
@@ -15,7 +14,7 @@ type DashTy = Dash<i64, i64>;
 
 static INIT: Once = Once::new();
 
-fn init_logger() {
+fn init_logger(debug_mode: usize) {
 	INIT.call_once(|| {
 		// Get the current time and format it
 		let current_time = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
@@ -25,9 +24,17 @@ fn init_logger() {
 		// Create the logs directory if it doesn't exist
 		create_dir_all(log_folder_name).unwrap();
 
+		// Determine the log level based on debug_mode
+		let log_level = match debug_mode {
+			2 | 3 => LevelFilter::Debug,
+			1 => LevelFilter::Info,
+			0 => LevelFilter::Warn,
+			_ => LevelFilter::Info,
+		};
+
 		// Initialize the logger
 		CombinedLogger::init(vec![WriteLogger::new(
-			LevelFilter::Info,
+			log_level,
 			Config::default(),
 			File::create(log_file_path).unwrap(),
 		)])
@@ -42,7 +49,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	_env: JNIEnv<'local>,
 	_class: JClass<'local>,
 ) -> jlong {
-	create_cache(DEFAULT_SETTINGS)
+	create_cache(DashSettings::default())
 }
 
 #[no_mangle]
@@ -56,6 +63,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	num_of_stash_buckets: jlong,
 	bucket_size: jlong,
 	eviction_policy: jlong,
+	debug_mode: jlong,
 ) -> jlong {
 	let settings = DashSettings {
 		num_of_segments: num_of_segments as usize,
@@ -63,13 +71,14 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		num_of_stash_buckets: num_of_stash_buckets as usize,
 		bucket_size: bucket_size as usize,
 		eviction_policy: EvictionPolicy::from_usize(eviction_policy as usize).unwrap(),
+		debug_mode: debug_mode as usize,
 	};
 
 	create_cache(settings)
 }
 
 fn create_cache(settings: DashSettings) -> jlong {
-	init_logger();
+	init_logger(settings.debug_mode);
 
 	let cache: DashTy = Dash::new(settings.clone());
 	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;

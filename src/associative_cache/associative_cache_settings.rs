@@ -1,4 +1,4 @@
-// use crate::shared::settings::EvictionPolicy;
+// use crate::settings::EvictionPolicy;
 
 // #[derive(Debug, Clone)]
 // pub struct AssociativeCacheSettings {

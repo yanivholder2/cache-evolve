@@ -5,6 +5,7 @@ edition = "2021"
 
 [lib]
 name = "dash"
+# Comment next line in order to run binary crate (main.rs)
 crate_type = ["cdylib"]
 
 [dependencies]
@@ -12,6 +13,7 @@ jni = "0.20.0"
 log = "0.4"
 simplelog = "0.11"
 chrono = "0.4"
+rand = "0.8.5"
 
 [dev-dependencies]
 rand = "0.8.5"
