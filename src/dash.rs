@@ -5,7 +5,7 @@ use crate::shared::item::Item;
 use crate::shared::utils::{get_index, hash};
 use dash_segment::DashSegment;
 use dash_settings::DashSettings;
-use log::debug;
+use log::{debug, info};
 
 mod dash_bucket;
 pub mod dash_jni;
@@ -50,6 +50,7 @@ where
 	/// Returns a new Dash instance.
 	///
 	pub fn new(settings: DashSettings) -> Self {
+		info!("Creating a new Dash instance with settings: {:?}", settings);
 		// TODO: think about maybe using Vec::with_capacity
 		let mut segments = Vec::new();
 		for _ in 0..settings.num_of_segments {

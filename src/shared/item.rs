@@ -14,6 +14,7 @@
 use std::{
 	fmt::{Display, Formatter},
 	hash::Hash,
+	time::Instant,
 };
 
 #[derive(Debug, Clone)]
@@ -25,6 +26,7 @@ where
 	pub key: K,
 	pub value: V,
 	pub lfu_counter: usize,
+	pub timestamp: Instant,
 }
 
 impl<K, V> Item<K, V>
@@ -33,10 +35,12 @@ where
 	V: Eq + Clone,
 {
 	pub fn new(key: K, value: V) -> Self {
+		// TODO: initialize lfu_counter and timestamp only when needed by eviction policies
 		Self {
 			key,
 			value,
 			lfu_counter: 0,
+			timestamp: Instant::now(),
 		}
 	}
 }
@@ -66,8 +70,8 @@ where
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(
 			f,
-			"Bucket Item {{ key: {}, value: {}, lfu_counter: {} }}",
-			self.key, self.value, self.lfu_counter
+			"Bucket Item {{ key: {}, value: {}, lfu_counter: {}, timestamp: {:?} }}",
+			self.key, self.value, self.lfu_counter, self.timestamp
 		)
 	}
 }

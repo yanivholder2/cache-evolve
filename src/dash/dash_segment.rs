@@ -1,6 +1,5 @@
 use super::dash_bucket::DashBucket;
 use super::dash_settings::DashSettings;
-use crate::settings::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::Bucket;
 use crate::shared::utils::{get_index, hash};
@@ -34,7 +33,7 @@ where
 
 		let mut stash_buckets: Vec<DashBucket<K, V>> = Vec::new();
 		for _ in 0..settings.num_of_stash_buckets {
-			stash_buckets.push(DashBucket::new(settings.bucket_size, EvictionPolicy::Fifo));
+			stash_buckets.push(DashBucket::new(settings.bucket_size, settings.eviction_policy.clone()));
 		}
 		DashSegment {
 			buckets,
@@ -59,7 +58,7 @@ where
 		if let Some(position) = stash_bucket.get_position(key) {
 			// If the key is in the stash bucket, we need to move it to the target bucket
 			let mut_stash_bucket = &mut self.stash_buckets[stash_bucket_index];
-			let data = mut_stash_bucket.get_from_position(position)?.clone();
+			let data = mut_stash_bucket.get_from_position(position).clone();
 			mut_stash_bucket.remove(key);
 
 			let mut_target_bucket = &mut self.buckets[target_bucket_index];
@@ -76,7 +75,7 @@ where
 			if let Some(position) = target_bucket.get_position(key) {
 				// If the key is in the target bucket, we need to update the position
 				let mut_target_bucket = &mut self.buckets[target_bucket_index];
-				Some(mut_target_bucket.get_from_position(position)?)
+				Some(mut_target_bucket.get_from_position(position))
 			} else {
 				// If the key is not in the target bucket, we need to check the probing bucket
 
@@ -90,7 +89,7 @@ where
 					// If the key is in the probing bucket, we need to update the position
 
 					let mut_probing_bucket = &mut self.buckets[probing_bucket_index];
-					Some(mut_probing_bucket.get_from_position(position)?)
+					Some(mut_probing_bucket.get_from_position(position))
 				} else {
 					None
 				}

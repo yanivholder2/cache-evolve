@@ -10,7 +10,8 @@
 
 // pub const DEFAULT_SETTINGS: AssociativeCacheSettings = AssociativeCacheSettings {
 // 	size: 1,
-// 	segment_size: 1,
-// 	bucket_size: 512,
-// 	eviction_policy: EvictionPolicy::Lru,
+// 	segment_size: 64,
+// 	bucket_size: 8,
+// 	eviction_policy: EvictionPolicy::ClassicLRU,
+// 	debug_mode: 1,
 // };

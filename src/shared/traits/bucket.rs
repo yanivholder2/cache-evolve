@@ -1,6 +1,6 @@
 use crate::settings::EvictionPolicy;
 use crate::shared::item::Item;
-use std::{fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash, time::Instant};
 
 pub trait Bucket<K, V>
 where
@@ -33,6 +33,7 @@ where
 	/// As a side effect, if the item already exists makes updates according to the eviction policy.
 	fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
 		// Check if the key already exists in the bucket
+		// TODO: the key should not exist in the bucket. Consider returning an error
 		if let Some(position) = self.get_position(&item.key) {
 			// If the key exists, update item position inside the bucket and return it
 			let pushed_item = self.get_from_position(position);
@@ -41,10 +42,22 @@ where
 		} else {
 			// If the key does not exist, add the item to the bucket
 			let evicted_item = if self.is_full() { self.evict_item() } else { None };
-			self.get_items_mut().push(item);
-			let pushed_item = &self.get_items().last().unwrap();
+			let pushed_item = self.put_according_to_policy(item);
 
 			(pushed_item, evicted_item)
+		}
+	}
+
+	fn put_according_to_policy(&mut self, item: Item<K, V>) -> &Item<K, V> {
+		match self.get_eviction_policy() {
+			EvictionPolicy::Fifo
+			| EvictionPolicy::Lifo
+			| EvictionPolicy::ClassicLRU
+			| EvictionPolicy::TimestampLRU
+			| EvictionPolicy::Lfu => {
+				self.get_items_mut().push(item);
+				&self.get_items().last().unwrap()
+			}
 		}
 	}
 
@@ -70,7 +83,7 @@ where
 	fn get_from_position(&mut self, position: usize) -> &Item<K, V> {
 		match self.get_eviction_policy() {
 			EvictionPolicy::Fifo | EvictionPolicy::Lifo => &self.get_items()[position],
-			EvictionPolicy::Lru => self.get_and_update_lru_item(position),
+			EvictionPolicy::ClassicLRU | EvictionPolicy::TimestampLRU => self.get_and_update_lru_item(position),
 			EvictionPolicy::Lfu => {
 				self.get_items_mut()[position].lfu_counter += 1;
 				&self.get_items()[position]
@@ -80,7 +93,20 @@ where
 
 	/// Returns a reference to the item in position `position`, or `None` if the item is not found.
 	/// As a side effect makes updates to support the LRU eviction policy.
-	fn get_and_update_lru_item(&mut self, position: usize) -> &Item<K, V>;
+	fn get_and_update_lru_item(&mut self, position: usize) -> &Item<K, V> {
+		match self.get_eviction_policy() {
+			EvictionPolicy::ClassicLRU => {
+				let item = self.get_items_mut().remove(position);
+				self.get_items_mut().push(item);
+				&self.get_items().last().unwrap()
+			}
+			EvictionPolicy::TimestampLRU => {
+				self.get_items_mut()[position].timestamp = Instant::now();
+				&self.get_items()[position]
+			}
+			_ => panic!("This function should only be called with LRU eviction policies"),
+		}
+	}
 
 	/// Evicts an item from the bucket according to the eviction policy and return it.
 	fn evict_item(&mut self) -> Option<Item<K, V>> {
@@ -89,7 +115,19 @@ where
 		}
 
 		match self.get_eviction_policy() {
-			EvictionPolicy::Lru => self.evict_lru_item(),
+			EvictionPolicy::ClassicLRU => {
+				// TODO: this is in O(n). there could be a more performant way to do that
+				Some(self.get_items_mut().remove(0))
+			}
+			EvictionPolicy::TimestampLRU => {
+				let (min_timestamp_index, _) = self
+					.get_items()
+					.iter()
+					.enumerate()
+					.min_by_key(|(_, item)| item.timestamp.elapsed())
+					.unwrap();
+				Some(self.get_items_mut().remove(min_timestamp_index))
+			}
 			EvictionPolicy::Fifo => {
 				// TODO: this is in O(n). there could be a more performant way to do that
 				Some(self.get_items_mut().remove(0))
@@ -106,9 +144,6 @@ where
 			}
 		}
 	}
-
-	/// Evicts an item from the bucket according to the LRU eviction policy and return it.
-	fn evict_lru_item(&mut self) -> Option<Item<K, V>>;
 
 	/// Returns whether the bucket is full.
 	fn is_full(&self) -> bool {

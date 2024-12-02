@@ -17,7 +17,7 @@ impl Default for DashSettings {
 			num_of_normal_buckets: 28,
 			num_of_stash_buckets: 4,
 			bucket_size: 16,
-			eviction_policy: EvictionPolicy::Lru,
+			eviction_policy: EvictionPolicy::ClassicLRU,
 			debug_mode: 1,
 		}
 	}
@@ -29,6 +29,6 @@ pub const DRAGON_SETTINGS: DashSettings = DashSettings {
 	num_of_normal_buckets: 56,
 	num_of_stash_buckets: 4,
 	bucket_size: 14,
-	eviction_policy: EvictionPolicy::Lru,
+	eviction_policy: EvictionPolicy::ClassicLRU,
 	debug_mode: 1,
 };

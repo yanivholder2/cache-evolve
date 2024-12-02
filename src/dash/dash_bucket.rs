@@ -41,16 +41,6 @@ where
 			eviction_policy,
 		}
 	}
-
-	/// Returns a reference to the item in position `position`, or `None` if the item is not found.
-	/// This will not update the position of the item
-	pub fn get_from_position(&mut self, position: usize) -> Option<&Item<K, V>> {
-		if self.items.is_empty() {
-			return None;
-		}
-
-		Some(&self.items[position])
-	}
 }
 
 impl<K, V> Bucket<K, V> for DashBucket<K, V>
@@ -72,17 +62,6 @@ where
 
 	fn get_eviction_policy(&self) -> &EvictionPolicy {
 		&self.eviction_policy
-	}
-
-	fn get_and_update_lru_item(&mut self, position: usize) -> &Item<K, V> {
-		let item = self.items.remove(position);
-		self.items.push(item);
-		self.items.last().unwrap()
-	}
-
-	fn evict_lru_item(&mut self) -> Option<Item<K, V>> {
-		// TODO: this is in O(n). there could be a more performant way to do that
-		Some(self.items.remove(0))
 	}
 }
 

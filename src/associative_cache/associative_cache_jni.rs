@@ -13,7 +13,7 @@
 // }
 
 // #[no_mangle]
-// pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associativeCacheRust_AssociativeCacheRust_initCache(
+// pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_initCache(
 // 	_env: JNIEnv,
 // 	_class: JClass,
 // ) {
@@ -23,7 +23,7 @@
 // }
 
 // #[no_mangle]
-// pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associativeCacheRust_AssociativeCacheRust_getFromCacheIfPresent(
+// pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_getFromCacheIfPresent(
 // 	_env: JNIEnv,
 // 	_class: JClass,
 // 	key: jlong,
@@ -36,7 +36,7 @@
 // }
 
 // #[no_mangle]
-// pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associativeCacheRust_AssociativeCacheRust_putToCache(
+// pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_putToCache(
 // 	_env: JNIEnv,
 // 	_class: JClass,
 // 	key: jlong,

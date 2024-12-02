@@ -1,5 +1,5 @@
 // use crate::shared::item::Item;
-// use crate::settings::EvictionPolicy;
+// use crate::shared::settings::EvictionPolicy;
 // use crate::shared::traits::bucket::Bucket;
 // use crate::shared::traits::cache::Cache;
 // use crate::shared::traits::segment::Segment;
@@ -13,7 +13,7 @@
 // pub struct AssociativeCache<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	pub segments: Vec<AssociativeCacheSegment<K, V>>,
 // }
@@ -21,7 +21,7 @@
 // impl<K, V> AssociativeCache<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	pub fn new(settings: AssociativeCacheSettings) -> Self {
 // 		let mut segments = Vec::new();
@@ -35,7 +35,7 @@
 // impl<K, V> Cache<K, V> for AssociativeCache<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	type S = AssociativeCacheSegment<K, V>;
 
@@ -48,7 +48,7 @@
 // pub struct AssociativeCacheSegment<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	pub buckets: Vec<AssociativeCacheBucket<K, V>>,
 // 	pub segment_size: usize,
@@ -57,7 +57,7 @@
 // impl<K, V> AssociativeCacheSegment<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	pub fn new(settings: AssociativeCacheSettings) -> Self {
 // 		let mut buckets = Vec::new();
@@ -74,7 +74,7 @@
 // impl<K, V> Segment<K, V> for AssociativeCacheSegment<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	type B = AssociativeCacheBucket<K, V>;
 
@@ -95,7 +95,7 @@
 // pub struct AssociativeCacheBucket<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	items: Vec<Item<K, V>>,
 // 	max_size: usize,
@@ -105,7 +105,7 @@
 // impl<K, V> AssociativeCacheBucket<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	pub fn new(settings: AssociativeCacheSettings) -> Self {
 // 		Self {
@@ -119,7 +119,7 @@
 // impl<K, V> Bucket<K, V> for AssociativeCacheBucket<K, V>
 // where
 // 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy + Debug,
+// 	V: Eq + Copy,
 // {
 // 	fn get_items(&self) -> &Vec<Item<K, V>> {
 // 		&self.items
@@ -141,10 +141,5 @@
 // 		let item = self.items.remove(position);
 // 		self.items.push(item);
 // 		self.items.last().unwrap()
-// 	}
-
-// 	fn evict_lru_item(&mut self) -> Option<Item<K, V>> {
-// 		// TODO: this is in O(n). there could be a more performant way to do that
-// 		Some(self.items.remove(0))
 // 	}
 // }
