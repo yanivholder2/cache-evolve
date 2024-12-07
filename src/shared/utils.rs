@@ -4,7 +4,11 @@ use std::hash::{Hash, Hasher};
 
 use log::debug;
 
-pub fn get_index(hash: usize, size: usize) -> usize {
+pub fn get_index<K>(key: &K, size: usize) -> usize
+where
+	K: Hash + Debug,
+{
+	let hash = hash(key);
 	hash % size
 }
 

@@ -1,7 +1,6 @@
-use crate::settings::EvictionPolicy;
-
 use super::dash_settings::DashSettings;
 use super::Dash;
+use crate::eviction_policy::EvictionPolicy;
 
 use chrono::Local;
 use jni::{objects::JClass, sys::jlong, JNIEnv};

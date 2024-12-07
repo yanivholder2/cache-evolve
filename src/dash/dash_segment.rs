@@ -2,7 +2,7 @@ use super::dash_bucket::DashBucket;
 use super::dash_settings::DashSettings;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::Bucket;
-use crate::shared::utils::{get_index, hash};
+use crate::shared::utils::get_index;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
@@ -48,10 +48,9 @@ where
 	///
 	/// As a side effect makes updates according to the eviction policy.
 	pub fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
-		let hash = hash(&key);
-		let stash_bucket_index = get_index(hash, self.stash_size);
+		let stash_bucket_index = get_index(key, self.stash_size);
 		let stash_bucket = &self.stash_buckets[stash_bucket_index];
-		let target_bucket_index = get_index(hash, self.segment_size);
+		let target_bucket_index = get_index(key, self.segment_size);
 
 		// The order assumes that the data is more likely to be in the stash bucket,
 		// this assumption should be tested
@@ -69,7 +68,7 @@ where
 			Some(pushed_data)
 		} else {
 			// If the key is not in the stash bucket, we need to check the target bucket
-			let target_bucket_index = get_index(hash, self.segment_size);
+			let target_bucket_index = get_index(key, self.segment_size);
 			let target_bucket = &self.buckets[target_bucket_index];
 
 			if let Some(position) = target_bucket.get_position(key) {
@@ -100,8 +99,7 @@ where
 	/// Insert the key, value pair into the segment.
 	/// This function assumes that the key is not already in the segment.
 	pub fn put(&mut self, item: Item<K, V>) {
-		let hash = hash(&item.key);
-		let stash_bucket = &mut self.stash_buckets[get_index(hash, self.stash_size)];
+		let stash_bucket = &mut self.stash_buckets[get_index(&item.key, self.stash_size)];
 		stash_bucket.put(item);
 	}
 }

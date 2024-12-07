@@ -1,145 +1,66 @@
-// use crate::shared::item::Item;
-// use crate::shared::settings::EvictionPolicy;
-// use crate::shared::traits::bucket::Bucket;
-// use crate::shared::traits::cache::Cache;
-// use crate::shared::traits::segment::Segment;
-// use associative_cache_settings::AssociativeCacheSettings;
-// use std::hash::Hash;
+use crate::shared::item::Item;
+use crate::shared::traits::bucket::Bucket;
+use crate::shared::utils::get_index;
+use associative_cache_bucket::AssociativeCacheBucket;
+use associative_cache_settings::AssociativeCacheSettings;
 
-// pub mod associative_cache_jni;
-// mod associative_cache_settings;
+use std::fmt::{Debug, Display, Formatter};
+use std::hash::Hash;
 
-// #[derive(Debug)]
-// pub struct AssociativeCache<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	pub segments: Vec<AssociativeCacheSegment<K, V>>,
-// }
+mod associative_cache_bucket;
+pub mod associative_cache_jni;
+pub mod associative_cache_settings;
 
-// impl<K, V> AssociativeCache<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	pub fn new(settings: AssociativeCacheSettings) -> Self {
-// 		let mut segments = Vec::new();
-// 		for _ in 0..settings.size {
-// 			segments.push(AssociativeCacheSegment::new(settings.clone()));
-// 		}
-// 		Self { segments }
-// 	}
-// }
+#[derive(Debug)]
+pub struct AssociativeCache<K, V>
+where
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
+{
+	pub buckets: Vec<AssociativeCacheBucket<K, V>>,
+}
 
-// impl<K, V> Cache<K, V> for AssociativeCache<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	type S = AssociativeCacheSegment<K, V>;
+impl<K, V> AssociativeCache<K, V>
+where
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
+{
+	pub fn new(settings: AssociativeCacheSettings) -> Self {
+		let mut buckets = Vec::new();
+		buckets.push(AssociativeCacheBucket::new(settings.clone()));
+		Self { buckets }
+	}
 
-// 	fn get_segments_mut(&mut self) -> &mut Vec<Self::S> {
-// 		&mut self.segments
-// 	}
-// }
+	/// Insert a key-value pair into the cache
+	pub fn put(&mut self, key: K, value: V) {
+		let bucket = self.get_mut_bucket(&key);
+		bucket.put(Item::new(key, value));
+	}
 
-// #[derive(Debug)]
-// pub struct AssociativeCacheSegment<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	pub buckets: Vec<AssociativeCacheBucket<K, V>>,
-// 	pub segment_size: usize,
-// }
+	/// Returns the value of key if exists wrapper in Some ans None otherwise
+	///
+	/// As a side effect makes updates according to the eviction policy.
+	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
+		let bucket = self.get_mut_bucket(key);
+		let data = bucket.get(key)?;
+		Some(&data.value)
+	}
 
-// impl<K, V> AssociativeCacheSegment<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	pub fn new(settings: AssociativeCacheSettings) -> Self {
-// 		let mut buckets = Vec::new();
-// 		for _ in 0..settings.segment_size {
-// 			buckets.push(AssociativeCacheBucket::new(settings.clone()));
-// 		}
-// 		Self {
-// 			buckets,
-// 			segment_size: settings.segment_size,
-// 		}
-// 	}
-// }
+	fn get_mut_bucket(&mut self, key: &K) -> &mut AssociativeCacheBucket<K, V> {
+		let bucket_index = get_index(key, self.buckets.len());
+		&mut self.buckets[bucket_index]
+	}
+}
 
-// impl<K, V> Segment<K, V> for AssociativeCacheSegment<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	type B = AssociativeCacheBucket<K, V>;
-
-// 	fn get_buckets(&self) -> &Vec<Self::B> {
-// 		&self.buckets
-// 	}
-
-// 	fn get_buckets_mut(&mut self) -> &mut Vec<Self::B> {
-// 		&mut self.buckets
-// 	}
-
-// 	fn get_segment_size(&self) -> usize {
-// 		self.segment_size
-// 	}
-// }
-
-// #[derive(Debug)]
-// pub struct AssociativeCacheBucket<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	items: Vec<Item<K, V>>,
-// 	max_size: usize,
-// 	eviction_policy: EvictionPolicy,
-// }
-
-// impl<K, V> AssociativeCacheBucket<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	pub fn new(settings: AssociativeCacheSettings) -> Self {
-// 		Self {
-// 			items: Vec::new(),
-// 			max_size: settings.bucket_size,
-// 			eviction_policy: settings.eviction_policy,
-// 		}
-// 	}
-// }
-
-// impl<K, V> Bucket<K, V> for AssociativeCacheBucket<K, V>
-// where
-// 	K: Hash + Eq + Copy,
-// 	V: Eq + Copy,
-// {
-// 	fn get_items(&self) -> &Vec<Item<K, V>> {
-// 		&self.items
-// 	}
-
-// 	fn get_items_mut(&mut self) -> &mut Vec<Item<K, V>> {
-// 		&mut self.items
-// 	}
-
-// 	fn get_max_size(&self) -> usize {
-// 		self.max_size
-// 	}
-
-// 	fn get_eviction_policy(&self) -> &EvictionPolicy {
-// 		&self.eviction_policy
-// 	}
-
-// 	fn get_and_update_lru_item(&mut self, position: usize) -> &Item<K, V> {
-// 		let item = self.items.remove(position);
-// 		self.items.push(item);
-// 		self.items.last().unwrap()
-// 	}
-// }
+impl<K, V> Display for AssociativeCache<K, V>
+where
+	K: Hash + Eq + Copy + Debug + Display,
+	V: Eq + Copy + Debug + Display,
+{
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		for bucket in &self.buckets {
+			writeln!(f, "{}", bucket)?;
+		}
+		Ok(())
+	}
+}

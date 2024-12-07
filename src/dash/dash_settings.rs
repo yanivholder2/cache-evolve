@@ -1,4 +1,4 @@
-use crate::settings::EvictionPolicy;
+use crate::eviction_policy::EvictionPolicy;
 
 #[derive(Debug, Clone)]
 pub struct DashSettings {

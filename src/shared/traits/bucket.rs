@@ -1,4 +1,4 @@
-use crate::settings::EvictionPolicy;
+use crate::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use std::{fmt::Debug, hash::Hash, time::Instant};
 

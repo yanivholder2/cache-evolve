@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 
 use crate::shared::item::Item;
-use crate::shared::utils::{get_index, hash};
+use crate::shared::utils::get_index;
 use dash_segment::DashSegment;
 use dash_settings::DashSettings;
 use log::{debug, info};
@@ -27,28 +27,6 @@ where
 	V: Eq + Copy + Debug,
 {
 	/// Creates a new Dash instance with the given settings.
-	///
-	/// ### Arguments
-	/// * `settings` - The settings for the Dash instance.
-	///
-	/// ### Example
-	/// ```rust
-	/// use dash::Dash;
-	///
-	/// let settings = DashSettings {
-	///  size: 1,
-	///  segment_size: 2,
-	///  stash_size: 1,
-	///  bucket_size: 3,
-	///  eviction_policy: EvictionPolicy::Lru,
-	/// };
-	///
-	/// let dash = Dash::new(settings);
-	/// ```
-	///
-	/// ### Returns
-	/// Returns a new Dash instance.
-	///
 	pub fn new(settings: DashSettings) -> Self {
 		info!("Creating a new Dash instance with settings: {:?}", settings);
 		// TODO: think about maybe using Vec::with_capacity
@@ -78,8 +56,7 @@ where
 	}
 
 	fn get_mut_segment(&mut self, key: &K) -> &mut DashSegment<K, V> {
-		let hash = hash(key);
-		let segment_index = get_index(hash, self.segments.len());
+		let segment_index = get_index(key, self.segments.len());
 		&mut self.segments[segment_index]
 	}
 }
@@ -96,77 +73,3 @@ where
 		Ok(())
 	}
 }
-
-/*
-#[cfg(test)]
-mod tests {
-
-	use super::*;
-	use crate::dash_settings::{EvictionPolicy, DEFAULT_SETTINGS};
-
-	fn record(dash: &mut Dash<i64, i64>, key: i64, value: i64) {
-		let res = dash.get_and_update_item(&key);
-		if res.is_none() {
-			dash.put(key, value);
-		}
-	}
-
-	#[test]
-	fn get_without_put() {
-		let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
-		let key: i64 = 0;
-
-		assert_eq!(dash.get_and_update_item(&key), None);
-	}
-
-	#[test]
-	fn get_after_different_value_put() {
-		let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
-		let key: i64 = 0;
-
-		dash.put(key, key);
-
-		assert_eq!(dash.get_and_update_item(&key), None);
-	}
-
-	#[test]
-	fn get_after_same_value_put() {
-		let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
-		let key: i64 = 0;
-
-		dash.put(key, key);
-
-		assert_eq!(dash.get_and_update_item(&key), Some(&key));
-	}
-
-	#[test]
-	fn print_dash() {
-		let mut dash: Dash<i64, i64> = Dash::new(DEFAULT_SETTINGS);
-		let key: i64 = 0;
-
-		dash.put(key, key);
-
-		println!("{dash}");
-	}
-
-	#[test]
-	fn big_test() {
-		let mut dash: Dash<i64, i64> = Dash::new(DashSettings {
-			size: 1,
-			segment_size: 2,
-			stash_size: 1,
-			bucket_size: 3,
-			eviction_policy: EvictionPolicy::Lru,
-		});
-
-		// put in dash random values
-		for _ in 0..40 {
-			// make a random number from 1 to 10
-			let random_number = rand::random::<i64>().abs() % 10 + 1;
-			println!("############# {random_number} #############");
-			record(&mut dash, random_number, random_number);
-			println!("{dash}");
-		}
-	}
-}
-*/

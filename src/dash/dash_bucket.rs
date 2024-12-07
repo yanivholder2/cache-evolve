@@ -1,13 +1,4 @@
-// TODO: finish module documentation
-//! Bucket implementation for the Dash cache.
-//!
-//!
-//! # Examples
-//!
-//! ```
-//! ```
-
-use crate::settings::EvictionPolicy;
+use crate::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::Bucket;
 use std::{
