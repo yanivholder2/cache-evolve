@@ -54,6 +54,7 @@ where
 			| EvictionPolicy::Lifo
 			| EvictionPolicy::ClassicLRU
 			| EvictionPolicy::TimestampLRU
+			| EvictionPolicy::Swap
 			| EvictionPolicy::Lfu => {
 				self.get_items_mut().push(item);
 				&self.get_items().last().unwrap()
@@ -83,18 +84,6 @@ where
 	fn get_from_position(&mut self, position: usize) -> &Item<K, V> {
 		match self.get_eviction_policy() {
 			EvictionPolicy::Fifo | EvictionPolicy::Lifo => &self.get_items()[position],
-			EvictionPolicy::ClassicLRU | EvictionPolicy::TimestampLRU => self.get_and_update_lru_item(position),
-			EvictionPolicy::Lfu => {
-				self.get_items_mut()[position].lfu_counter += 1;
-				&self.get_items()[position]
-			}
-		}
-	}
-
-	/// Returns a reference to the item in position `position`, or `None` if the item is not found.
-	/// As a side effect makes updates to support the LRU eviction policy.
-	fn get_and_update_lru_item(&mut self, position: usize) -> &Item<K, V> {
-		match self.get_eviction_policy() {
 			EvictionPolicy::ClassicLRU => {
 				let item = self.get_items_mut().remove(position);
 				self.get_items_mut().push(item);
@@ -104,7 +93,16 @@ where
 				self.get_items_mut()[position].timestamp = Instant::now();
 				&self.get_items()[position]
 			}
-			_ => panic!("This function should only be called with LRU eviction policies"),
+			EvictionPolicy::Swap => {
+				if position > 0 {
+					self.get_items_mut().swap(position, position - 1);
+				}
+				&self.get_items()[position]
+			}
+			EvictionPolicy::Lfu => {
+				self.get_items_mut()[position].lfu_counter += 1;
+				&self.get_items()[position]
+			}
 		}
 	}
 
@@ -115,7 +113,7 @@ where
 		}
 
 		match self.get_eviction_policy() {
-			EvictionPolicy::ClassicLRU => {
+			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => {
 				// TODO: this is in O(n). there could be a more performant way to do that
 				Some(self.get_items_mut().remove(0))
 			}
@@ -127,10 +125,6 @@ where
 					.min_by_key(|(_, item)| item.timestamp.elapsed())
 					.unwrap();
 				Some(self.get_items_mut().remove(min_timestamp_index))
-			}
-			EvictionPolicy::Fifo => {
-				// TODO: this is in O(n). there could be a more performant way to do that
-				Some(self.get_items_mut().remove(0))
 			}
 			EvictionPolicy::Lifo => self.get_items_mut().pop(),
 			EvictionPolicy::Lfu => {

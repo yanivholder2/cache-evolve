@@ -7,7 +7,7 @@ use jni::{objects::JClass, sys::jlong, JNIEnv};
 type AssociativeCacheTy = AssociativeCache<i64, i64>;
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_initCache<
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_associativeInitCache<
 	'local,
 >(
 	_env: JNIEnv,
@@ -15,6 +15,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	num_of_buckets: jlong,
 	bucket_size: jlong,
 	eviction_policy: jlong,
+	debug_mode: jlong,
 ) -> jlong {
 	let settings = AssociativeCacheSettings {
 		num_of_buckets: num_of_buckets as usize,
@@ -29,7 +30,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_getFromCacheIfPresent<
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_associativeGetFromCacheIfPresent<
 	'local,
 >(
 	_env: JNIEnv,
@@ -46,7 +47,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_putToCache<
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_associativePutToCache<
 	'local,
 >(
 	_env: JNIEnv,
@@ -60,7 +61,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_dropCache<
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_associativeDropCache<
 	'local,
 >(
 	_env: JNIEnv<'local>,

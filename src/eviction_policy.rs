@@ -7,6 +7,7 @@ pub enum EvictionPolicy {
 	Lifo,
 	Lfu,
 	Fifo,
+	Swap,
 }
 
 impl EvictionPolicy {
@@ -17,6 +18,7 @@ impl EvictionPolicy {
 			2 => Some(EvictionPolicy::Lfu),
 			3 => Some(EvictionPolicy::Fifo),
 			4 => Some(EvictionPolicy::TimestampLRU),
+			5 => Some(EvictionPolicy::Swap),
 			_ => None,
 		}
 	}

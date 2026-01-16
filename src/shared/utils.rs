@@ -31,7 +31,7 @@ mod tests {
 	fn test_get_index() {
 		let hash = 123;
 		let size = 10;
-		let index = get_index(hash, size);
+		let index = get_index(&hash, size);
 		// 123 % 10 = 3
 		assert_eq!(index, 3);
 	}
