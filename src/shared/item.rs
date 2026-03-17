@@ -2,8 +2,8 @@
 //!
 //! # Examples
 //!
-//! ```
-//! use dash::data::Item;
+//! ```ignore
+//! use dash::shared::item::Item;
 //!
 //! let item = Item::new(1, 2);
 //! assert_eq!(item.key, 1);

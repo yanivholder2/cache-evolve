@@ -1,7 +1,5 @@
-CLAUDE.md
-.claude/
-
 output.log
+rust-logs/
 
 ################## Automated ###################
 

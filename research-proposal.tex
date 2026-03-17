@@ -1,0 +1,174 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[margin=1.0in]{geometry}
+\usepackage{listings}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage[super]{nth}
+\usepackage{pdfpages}
+\usepackage{cite}
+\usepackage{float}
+%\usepackage{comment}
+% Version 0.1
+
+\newcommand{\comment}[1]{}
+
+
+
+\begin{document}
+
+\title
+{
+  Generalized Associative Cache  \\
+    {\large M.Sc. Research Proposal}
+}
+
+\author
+{
+    Yaniv Holder \\
+    Advisor: Prof. Roy Friedman \\ \\
+    Technion  \\
+    Israel Institute of Technology
+}
+
+\maketitle
+\pagestyle{plain}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Section 1 : Introduction %%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+\subsection{Caching Basics}
+
+\textit{Caching} is a technique used to store data in a temporary storage area, known as a \textit{cache}, to improve the speed of data retrieval. This technique is widely used in computing, from hardware to software and distributed systems. The fundamental idea is to store a subset of data in a cache, which is a location that is faster to access than the original data source.
+
+The cache size is usually limited due to resource constraints. Therefore, when the cache is full and a new item needs to be inserted, a decision must be made about which item to remove from the cache. This decision is made by a \textit{replacement algorithm} or \textit{replacement policy}, which is a crucial component of any caching system.
+
+The primary metric for evaluating a replacement policy is the \textit{hit rate}. A \textit{cache hit} occurs when the requested data is found in the cache, while a \textit{cache miss} occurs when it is not. The hit rate is defined as the ratio of the number of cache hits to the total number of requests. A higher hit rate indicates a more effective caching system.
+
+However, the efficiency of the replacement policy in terms of time and space is also important. The purpose of using a cache is to reduce computation time and space, so inefficient policies are not acceptable.
+
+
+\subsection{Associative cache}
+
+An \textit{associative cache} is a type of cache structure that allows data to be stored and retrieved based on its content rather than its specific location. In other words, it enables data to be accessed using a key-value pair approach, similar to a dictionary or a hash table.
+
+In a traditional cache, data is stored in fixed locations called \textit{cache blocks}. When a request is made to retrieve data, the cache checks if the requested data is present in any of the cache blocks. This process is known as a \textit{cache lookup}.
+
+In an associative cache, the cache lookup is based on the content of the data. Each cache block is associated with a \textit{tag}, which is a unique identifier, usually a hash, that represents the content of the data stored in the block. When a request is made to retrieve data, the cache compares the requested content with the tags of all the cache blocks to determine if the data is present.
+
+The advantage of an associative cache is that it allows for efficient data retrieval without the need to know the specific location of the data. This flexibility comes at the cost of increased complexity and potentially slower lookup times compared to a direct-mapped cache, where data is stored in fixed locations based on its memory address.
+
+\subsection{N-way associative cache}
+
+An N-way associative cache is a type of associative cache structure. However, it introduces a level of organization by dividing the cache into multiple sets, each containing N cache blocks.
+
+Let's break down the structure of an N-way associative cache:
+
+\textit{Cache Sets}: The cache is divided into a fixed number of sets. The number of sets is determined by the cache design and can vary depending on the specific implementation.
+
+\textit{Cache Blocks}: Each cache set consists of N cache blocks. A cache block is a fixed-size storage unit that can hold a subset of the data from the main memory or disk. It typically includes both the data itself and additional metadata, such as a tag or index, to identify the stored data.
+
+\textit{Indexing}: To determine which set a particular data item should be stored in, an indexing mechanism is used. This mechanism typically involves hashing or performing a mathematical operation on the memory address of the data item. The result of this operation is used to determine the set in which the data item should be placed.
+
+\textit{Tagging}: Each cache block in an N-way associative cache is associated with a tag. The tag is a unique identifier that represents the memory address or content of the data stored in the cache block. When a request is made to retrieve data, the cache compares the requested memory address or content with the tags of the cache blocks in the corresponding set to determine if the data is present.
+
+The difference between indexing and tagging is that indexing is used to determine the set in which the data should be stored, while tagging is used to identify the specific cache block within the set that contains the data.
+
+\textit{Replacement Policy}: Like any cache structure, an N-way associative cache requires a replacement policy to determine which cache block to evict when the cache is full and a new data item needs to be inserted.
+
+The N-way associative cache structure strikes a balance between the flexibility of an associative cache and the organization of a direct-mapped cache. It allows for efficient data retrieval by narrowing down the search to a specific set, reducing the number of cache blocks that need to be checked. However, it also introduces the challenge of managing the replacement of cache blocks within each set.
+
+By dividing the cache into sets and associating each cache block with a tag, an N-way associative cache provides a compromise between the speed of data retrieval and the efficiency of cache utilization.
+
+\subsection{N-way associative cache disadvantages}
+
+The N-way associative cache structure has several disadvantages that can impact its hit rate.
+
+One of the possible problems is \textit{contention} in one or more sets of the cache. Contention occurs when multiple data items map to the same set, leading to competition for the limited number of cache blocks within the set.
+
+This can result in a situation where a small number of sets are heavily used, while other sets are underutilized. This is known as the \textit{hot set problem}, and it can significantly impact the overall performance of the cache.
+
+In this proposal we will address this issue.
+
+\subsection{Dash}
+
+\textit{Dash} \cite{dash} is a state of the art data structure that was introduced in 2020. It is a data structure that is designed to be used as a dynamic and scalable \textit{hash table} on \textit{persistent memory}.
+
+The Dash data structure is based on the idea of using a \textit{bucket-based} structure to store the data. The data is divided into \textit{segments}, and each bucket contains a fixed number of elements. The buckets are organized in segments which consists of a fixed number of buckets. This structure allows for efficient access to the data, as well as efficient updates and deletions.
+
+The Dash data structure uses a novel algorithm to manage the buckets, which is designed to minimize the hot set problem which can occur in hash tables and could cause them to grow fast. In this algorithm, the data items can move between adjacent buckets known as the \textit{target bucket} and \textit{probing bucket}, to reduce the hot set problem.
+
+The Dash-EH insert algorithm used to balance loads among buckets and limit PM reads. The algorithm uses three techniques: \textit{Balanced Insert}, \textit{Displacement}, and \textit{Stashing}.
+
+Balanced Insert places a new record in the less full of two probed buckets. Displacement moves an existing record from a full bucket to make room for a new one. Stashing is the last resort when a record cannot be inserted into either of the probed buckets, where the record is placed into a stash bucket. The algorithm also uses a membership bitmap and overflow fingerprints to optimize the process and improve the load factor.
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Section 2 : Research Plan %%%%%%%%%%%%%%%%%%%%%%%
+\section{Research Plan}
+
+In this research we will try to create a generalized N-way associative cache structure that will reduce the hot set problem. It should perform well on known workloads, while keeping the overhead metadata space small.
+
+For this, we will use the ideas from the Dash data structure, and implement a cache structure that will be able to use the bucket-based structure to store the data.
+
+We will use a novel replacement algorithm, which is designed to minimize the number of cache misses. The replacement algorithm is based on the idea of using a combination of LRU and LFU replacement policies, which allows for efficient eviction of data items from the cache. In this algorithm, the data items can move between different buckets, to avoid the hot set problem.
+
+This approach will increase the hit rate of the cache, and will reduce the number of cache misses. However, the lookup time will be increased, as the data items can be stored in different buckets. This is a trade-off that is made to improve the overall performance of the cache.
+
+We will evaluate the performance of the proposed cache structure using a set of known workloads, and compare it to other cache structures. We will measure the hit rate, the number of cache misses, and the lookup time, to determine the effectiveness of the proposed cache structure.
+
+We will also evaluate the overhead metadata space of the proposed cache structure, and compare it to other cache structures. We will measure the amount of memory used to store the metadata, and determine the efficiency of the proposed cache structure.
+
+\subsection{Implementation details}
+
+The proposed cache structure will be implemented in Rust \cite{rust}, a systems programming language that is designed for performance and safety. Rust provides low-level control over memory management and performance, making it well-suited for implementing cache structures.
+
+The cache will be implemented with a set of segments containing buckets just like dash and the buckets will contain the data items. The location of the data items will be determined by the hash of the data item.
+
+The replacement algorithm will be implemented using a combination of LRU and LFU replacement policies. The algorithm will use a novel approach to manage the data items in the cache, and will be designed to minimize the hot set problem.
+
+Inside every bucket, the data items will be stored in a LRU list which will be updated every time a data item is accessed. Once a data item is accessed while it is first in the list, it will be moved to the next bucket in the segment.
+
+This means that if the hash of an item points to bucket $b$ then the item could be stored either on bucket $b$ or bucket $b$ + 1.
+
+When a new item is inserted to a bucket, the item that is last in the LRU list will be evicted from the bucket. If this is the $b$ + 1 location for this item then it will be moved to bucket $b$, otherwise it will be removed from the cache.
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Section 3 : Initial results %%%%%%%%%%%%%%%%%%%%%%%
+\section{Initial results}
+
+We have implemented a prototype of the proposed cache structure, and have evaluated its performance using a set of known workloads.
+
+To run the cache with different workloads, we used Caffeine \cite{caffeine}, an open-source Java caching library which provides a simulator.
+
+These charts shows the hit rate of the proposed cache structure compared to other cache structures on the various traces: \textit{Corda trace}, \textit{Address gzip trace} and \textit{Address gcc trace}.
+
+The proposed cache structure is named dash.DashRust in the different charts. We tested with \cite{CordaTrace} and \cite{AddressTrace} traces.
+
+As can be seen in figures \ref{fig:CordaValutservice}, \ref{fig:AddressGcc} and \ref{fig:AddressGzip}, the proposed cache structure has high hit rate compared to other cache structures on common workloads. This is while the cache is balanced between LRU and LFU, the hot set problem is reduced, and the overhead metadata space is small.
+
+In those simulation 74 different cache structures were tested, and the proposed cache structure was less then 1\% from the best hit rate.
+
+In this research we will create a more detailed evaluation of the proposed cache structure, and compare it to other cache structures on a wider range of workloads including workloads where the hot set problem is more significant.
+
+\begin{figure}[H]
+	\centering \includegraphics[width=0.66\textwidth]{CordaValutservice}
+	\caption{Corda Vault Service Trace}
+	\label{fig:CordaValutservice}
+\end{figure}
+
+\begin{figure}[H]
+	\centering \includegraphics[width=0.66\textwidth]{AddressGcc}
+	\caption{Address gcc Trace}
+	\label{fig:AddressGcc}
+\end{figure}
+
+\begin{figure}[H]
+	\centering \includegraphics[width=0.66\textwidth]{AddressGzip}
+	\caption{Address gzip Trace}
+	\label{fig:AddressGzip}
+\end{figure}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

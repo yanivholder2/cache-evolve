@@ -15,7 +15,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	num_of_buckets: jlong,
 	bucket_size: jlong,
 	eviction_policy: jlong,
-	debug_mode: jlong,
+	_debug_mode: jlong,
 ) -> jlong {
 	let settings = AssociativeCacheSettings {
 		num_of_buckets: num_of_buckets as usize,
@@ -68,5 +68,5 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	_class: JClass<'local>,
 	cache_ptr: jlong,
 ) {
-	unsafe { Box::from_raw(cache_ptr as *mut AssociativeCacheTy) };
+	unsafe { drop(Box::from_raw(cache_ptr as *mut AssociativeCacheTy)) };
 }

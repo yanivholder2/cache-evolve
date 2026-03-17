@@ -1,0 +1,17 @@
+{
+  "effortLevel": "high",
+  "permissions": {
+    "allow": [
+      "Bash(cargo build*)",
+      "Bash(cargo test*)",
+      "Bash(cargo run*)",
+      "Bash(cargo fmt*)",
+      "Bash(cargo clippy*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git switch*)",
+      "Bash(git branch*)"
+    ]
+  }
+}
