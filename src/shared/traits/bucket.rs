@@ -35,7 +35,8 @@ where
 		// Check if the key already exists in the bucket
 		// TODO: the key should not exist in the bucket. Consider returning an error
 		if let Some(position) = self.get_position(&item.key) {
-			// If the key exists, update item position inside the bucket and return it
+			// If the key exists, update the value and item position inside the bucket and return it
+			self.get_items_mut()[position].value = item.value;
 			let pushed_item = self.get_from_position(position);
 
 			(pushed_item, None)
@@ -96,8 +97,10 @@ where
 			EvictionPolicy::Swap => {
 				if position > 0 {
 					self.get_items_mut().swap(position, position - 1);
+					&self.get_items()[position - 1]
+				} else {
+					&self.get_items()[position]
 				}
-				&self.get_items()[position]
 			}
 			EvictionPolicy::Lfu => {
 				self.get_items_mut()[position].lfu_counter += 1;
@@ -122,7 +125,7 @@ where
 					.get_items()
 					.iter()
 					.enumerate()
-					.min_by_key(|(_, item)| item.timestamp.elapsed())
+					.min_by_key(|(_, item)| item.timestamp)
 					.unwrap();
 				Some(self.get_items_mut().remove(min_timestamp_index))
 			}

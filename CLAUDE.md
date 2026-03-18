@@ -13,7 +13,7 @@ Remote repo: `yanivholder2/dash-cache-rs` (private, GitHub). Push every new comm
 ```bash
 cargo build                    # build library
 cargo build --release          # release build
-cargo run                      # simulator (crate_type must be commented out)
+cargo run                      # simulator
 cargo test                     # run tests
 cargo test <name>              # single test
 cargo fmt                      # format
@@ -51,7 +51,7 @@ Key methods: `put`, `get`, `get_from_position` (policy-specific access), `evict_
 | Policy | Index | Access behavior | Eviction target |
 |--------|-------|-----------------|-----------------|
 | ClassicLRU | 0 | Move to end | Remove front (index 0) |
-| TimestampLRU | 1 | Update timestamp | Min elapsed (BUGGED - see backlog.md) |
+| TimestampLRU | 1 | Update timestamp | Oldest timestamp (min Instant) |
 | Lifo | 2 | No-op | Pop last |
 | Lfu | 3 | Increment counter | Min counter |
 | Fifo | 4 | No-op | Remove front (index 0) |
@@ -109,6 +109,25 @@ Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s c
 2. From caffeine dir: `./gradlew simulator:run -PjvmArgs="-XX:+UseParallelGC,-Xmx8g,-Djava.library.path=<path-to-dash-cache-rs>/target/release" -q`
 
 **AssociativeCache**: Java side (`AssociativeCacheRustPolicy.java`) exists in caffeine-old but not yet in caffeine. See backlog.
+
+## Backlog (`backlog.md`)
+
+Track bugs, tasks, and small TODOs in `backlog.md`. When discovering issues, missing features, or improvement opportunities during work, add them to the appropriate section.
+
+**Sections**: Bugs, Tasks, Small TODOs. Each item gets its own `###` heading under the section.
+
+**Format per item**:
+```markdown
+### Item title
+- **Created**: YYYY-MM-DD | **Priority**: (0-5, 0 = most important, leave empty if unknown)
+- Description with file references (`file.rs:line`)
+```
+
+**TOC**: Every item must be linked in the TOC at the top, grouped under its section.
+
+**When to add**: bugs found but not fixed now, refactoring opportunities, missing tests, performance improvements, API issues.
+
+**When to remove**: after an item is fully resolved, remove it and its TOC entry.
 
 ## Testing
 

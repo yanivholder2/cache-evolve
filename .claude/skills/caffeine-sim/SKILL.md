@@ -13,4 +13,4 @@ Build the Rust JNI library and run the Caffeine cache simulator.
    "C:/Users/yanivholder/Downloads/ThesisNew/caffeine/gradlew" -p "C:/Users/yanivholder/Downloads/ThesisNew/caffeine" simulator:run -PjvmArgs="-XX:+UseParallelGC,-Xmx8g,-Djava.library.path=C:/Users/yanivholder/Downloads/ThesisNew/dash-cache-rs/target/release" -q
    ```
 
-Show the simulator output. If output is large, summarize hit/miss statistics per policy.
+IMPORTANT: Your response MUST always include the full simulator results table exactly as printed in the output. Never omit or summarize it — the user needs to see the raw table every time.

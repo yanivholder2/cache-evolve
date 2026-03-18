@@ -27,7 +27,9 @@ where
 {
 	pub fn new(settings: AssociativeCacheSettings) -> Self {
 		let mut buckets = Vec::new();
-		buckets.push(AssociativeCacheBucket::new(settings.clone()));
+		for _ in 0..settings.num_of_buckets {
+			buckets.push(AssociativeCacheBucket::new(settings.clone()));
+		}
 		Self { buckets }
 	}
 
