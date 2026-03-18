@@ -13,7 +13,12 @@
       "Bash(git switch*)",
       "Bash(git branch*)",
       "Bash(gradlew*)",
-      "Bash(./gradlew*)"
-    ]
+      "Bash(./gradlew*)",
+      "Skill(caffeine-sweep)"
+    ],
+    "additionalDirectories": ["../caffeine"]
+  },
+  "env": {
+    "CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD": "1"
   }
 }

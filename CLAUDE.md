@@ -65,7 +65,7 @@ Segments -> Buckets (normal + stash) -> Items.
 - **put**: always inserts into stash bucket (by key hash)
 - **get**: checks stash first, promotes to normal bucket on hit, evicted normal items go to stash
 - **Probing**: target bucket + next bucket only, no wrap-around (last bucket has no neighbor)
-- No duplicate key check in `DashSegment::put`
+- No duplicate key check in `DashSegment::put` — Java caller (`DashRustPolicy.record()`) enforces get-then-put, so `put` is only called on misses
 - Config: `DashSettings` (segments, normal_buckets, stash_buckets, bucket_size, eviction_policy, debug_mode)
 
 ### Associative Cache (`src/associative_cache/`)
@@ -88,9 +88,7 @@ Bridges to Java Caffeine simulator. Types fixed to `i64`. Miss sentinel: `-1`.
 
 Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI.
 
-**Repos**:
-- Caffeine (active): `C:\Users\yanivholder\OneDrive - Microsoft\Desktop\Personal\Thesis\caffeine`
-- Caffeine (reference, known-working): `C:\Users\yanivholder\OneDrive - Microsoft\Desktop\Personal\Thesis\caffeine-old`
+**Repo**: `C:\Users\yanivholder\Downloads\ThesisNew\caffeine` (the only caffeine repo to use)
 
 **Java policy class**: `simulator/src/main/java/.../policy/dash/DashRustPolicy.java`
 - Uses `policies(Config)` factory method (registered via `registerMany` in `Registry.java`)

@@ -97,7 +97,8 @@ where
 	}
 
 	/// Insert the key, value pair into the segment.
-	/// This function assumes that the key is not already in the segment.
+	/// Assumes the key is not already in the segment — enforced by the Java caller
+	/// (`DashRustPolicy.record()`) which does get-then-put: only calls `putToCache` on a miss.
 	pub fn put(&mut self, item: Item<K, V>) {
 		let stash_bucket = &mut self.stash_buckets[get_index(&item.key, self.stash_size)];
 		stash_bucket.put(item);
