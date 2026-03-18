@@ -4,6 +4,10 @@
 
 M.Sc. thesis (Yaniv Holder, advised by Prof. Roy Friedman, Technion) on mitigating the **hot set problem** in N-way associative caches using Dash-inspired bucket movement. Items can migrate between adjacent buckets to reduce contention in overloaded sets. See `research-proposal.tex` for full proposal, motivation, and initial results.
 
+## Git
+
+Remote repo: `yanivholder2/dash-cache-rs` (private, GitHub). Push every new commit.
+
 ## Build
 
 ```bash
@@ -17,9 +21,7 @@ cargo fmt --check              # check format
 cargo clippy                   # lint
 ```
 
-Binary vs library mode: toggle `crate_type = ["cdylib"]` line in Cargo.toml.
-- **Commented out** (default): binary mode, `cargo run` works
-- **Uncommented**: cdylib mode for JNI, `cargo build --release` produces .dll
+Both `cdylib` (for JNI .dll) and `lib` (for binary/tests) are always built — no toggling needed.
 
 Library crate name is `dash` (imports: `use dash::dash::Dash`).
 
@@ -49,13 +51,13 @@ Key methods: `put`, `get`, `get_from_position` (policy-specific access), `evict_
 | Policy | Index | Access behavior | Eviction target |
 |--------|-------|-----------------|-----------------|
 | ClassicLRU | 0 | Move to end | Remove front (index 0) |
-| Lifo | 1 | No-op | Pop last |
-| Lfu | 2 | Increment counter | Min counter |
-| Fifo | 3 | No-op | Remove front (index 0) |
-| TimestampLRU | 4 | Update timestamp | Min elapsed (BUGGED - see backlog.md) |
+| TimestampLRU | 1 | Update timestamp | Min elapsed (BUGGED - see backlog.md) |
+| Lifo | 2 | No-op | Pop last |
+| Lfu | 3 | Increment counter | Min counter |
+| Fifo | 4 | No-op | Remove front (index 0) |
 | Swap | 5 | Swap with prev position | Remove front (index 0) |
 
-Index = `from_usize` mapping used by JNI.
+Index = `from_usize` mapping used by JNI. Matches enum declaration order and Java `DashRustEvictionPolicy` ordinals.
 
 ### Dash Cache (`src/dash/`)
 
@@ -82,23 +84,31 @@ Bridges to Java Caffeine simulator. Types fixed to `i64`. Miss sentinel: `-1`.
 - Dash JNI logs to `rust-logs/`; Associative JNI has no logging
 - Java classes: `com.github.benmanes.caffeine.cache.simulator.policy.{dash.DashRustPolicy, associative.AssociativeCacheRustPolicy}`
 
-## Known Bugs
+## Caffeine Simulator Integration
 
-See **`backlog.md`** for detailed descriptions, root causes, and fix hints.
+Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI.
 
-1. TimestampLRU evicts MRU instead of LRU (`bucket.rs:121-127`)
-2. AssociativeCache ignores num_of_buckets (`associative_cache.rs:28-31`)
-3. Swap get_from_position returns wrong item (`bucket.rs:96-100`)
-4. put on existing key doesn't update value (`bucket.rs:37-41`)
-5. Stale doc example in Item (`item.rs:6`)
+**Repos**:
+- Caffeine (active): `C:\Users\yanivholder\OneDrive - Microsoft\Desktop\Personal\Thesis\caffeine`
+- Caffeine (reference, known-working): `C:\Users\yanivholder\OneDrive - Microsoft\Desktop\Personal\Thesis\caffeine-old`
 
-## TODOs in Code
+**Java policy class**: `simulator/src/main/java/.../policy/dash/DashRustPolicy.java`
+- Uses `policies(Config)` factory method (registered via `registerMany` in `Registry.java`)
+- Pointer-based JNI: stores `cachePointer` from `initDefaultCache()` / `initCache(...)`, passes to all calls
+- `DashRustEvictionPolicy` enum ordinals must match Rust `from_usize` indices
+- `DashSettings` inner class reads `dash.*` config from `application.conf`
 
-13 TODOs across the codebase. Key themes:
-- **Performance**: Vec->LinkedList/VecDeque for O(1) eviction, `Vec::with_capacity`, fixed-size arrays
-- **Ownership**: pass settings by reference, make eviction_policy a reference with lifetime
-- **Architecture**: create Segment trait, blanket Display impl
-- **Testing**: empty test modules in `dash_segment.rs` and `tests/integration_test.rs`
+**Config**: `simulator/src/main/resources/application.conf`
+- `dash.numOfNormalBuckets`, `dash.numOfStashBuckets`, `dash.bucketSize`, `dash.debugMode`
+- `dash.policy` -- list of eviction policy names (e.g., `[classiclru, lfu]`)
+- `maximum-size` -- total cache capacity (segments computed from this)
+- `policies` list must include `dash.DashRust`
+
+**Build + Run workflow**:
+1. `cargo build --release` (produces `target/release/dash.dll`)
+2. From caffeine dir: `./gradlew simulator:run -PjvmArgs="-XX:+UseParallelGC,-Xmx8g,-Djava.library.path=<path-to-dash-cache-rs>/target/release" -q`
+
+**AssociativeCache**: Java side (`AssociativeCacheRustPolicy.java`) exists in caffeine-old but not yet in caffeine. See backlog.
 
 ## Testing
 

@@ -1,6 +1,4 @@
 use dash::associative_cache::{associative_cache_settings::AssociativeCacheSettings, AssociativeCache};
-use dash::dash::dash_settings::DashSettings;
-use dash::dash::Dash;
 use dash::eviction_policy::EvictionPolicy;
 
 use rand::Rng;

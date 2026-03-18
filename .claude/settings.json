@@ -11,7 +11,9 @@
       "Bash(git diff*)",
       "Bash(git log*)",
       "Bash(git switch*)",
-      "Bash(git branch*)"
+      "Bash(git branch*)",
+      "Bash(gradlew*)",
+      "Bash(./gradlew*)"
     ]
   }
 }

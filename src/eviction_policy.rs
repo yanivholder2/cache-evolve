@@ -14,10 +14,10 @@ impl EvictionPolicy {
 	pub fn from_usize(index: usize) -> Option<Self> {
 		match index {
 			0 => Some(EvictionPolicy::ClassicLRU),
-			1 => Some(EvictionPolicy::Lifo),
-			2 => Some(EvictionPolicy::Lfu),
-			3 => Some(EvictionPolicy::Fifo),
-			4 => Some(EvictionPolicy::TimestampLRU),
+			1 => Some(EvictionPolicy::TimestampLRU),
+			2 => Some(EvictionPolicy::Lifo),
+			3 => Some(EvictionPolicy::Lfu),
+			4 => Some(EvictionPolicy::Fifo),
 			5 => Some(EvictionPolicy::Swap),
 			_ => None,
 		}
