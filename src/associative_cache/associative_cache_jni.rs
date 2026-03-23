@@ -17,16 +17,18 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	eviction_policy: jlong,
 	_debug_mode: jlong,
 ) -> jlong {
+	let Some(policy) = EvictionPolicy::from_usize(eviction_policy as usize) else {
+		return 0;
+	};
+
 	let settings = AssociativeCacheSettings {
 		num_of_buckets: num_of_buckets as usize,
 		bucket_size: bucket_size as usize,
-		eviction_policy: EvictionPolicy::from_usize(eviction_policy as usize).unwrap(),
+		eviction_policy: policy,
 	};
 
 	let cache: AssociativeCacheTy = AssociativeCache::new(settings);
-	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
-
-	cache_ptr
+	Box::into_raw(Box::new(cache)) as jlong
 }
 
 #[no_mangle]

@@ -15,15 +15,14 @@ static INIT: Once = Once::new();
 
 fn init_logger(debug_mode: usize) {
 	INIT.call_once(|| {
-		// Get the current time and format it
 		let current_time = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
 		let log_folder_name = "rust-logs";
 		let log_file_path = format!("{}\\dash_rust_{}.log", log_folder_name, current_time);
 
-		// Create the logs directory if it doesn't exist
-		create_dir_all(log_folder_name).unwrap();
+		if create_dir_all(log_folder_name).is_err() {
+			return;
+		}
 
-		// Determine the log level based on debug_mode
 		let log_level = match debug_mode {
 			2 | 3 => LevelFilter::Debug,
 			1 => LevelFilter::Info,
@@ -31,13 +30,11 @@ fn init_logger(debug_mode: usize) {
 			_ => LevelFilter::Info,
 		};
 
-		// Initialize the logger
-		CombinedLogger::init(vec![WriteLogger::new(
-			log_level,
-			Config::default(),
-			File::create(log_file_path).unwrap(),
-		)])
-		.unwrap();
+		let Ok(log_file) = File::create(log_file_path) else {
+			return;
+		};
+		// `let _ =` suppresses unused Result warning — logger failure is non-fatal
+		let _ = CombinedLogger::init(vec![WriteLogger::new(log_level, Config::default(), log_file)]);
 	});
 }
 
@@ -64,12 +61,16 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	eviction_policy: jlong,
 	debug_mode: jlong,
 ) -> jlong {
+	let Some(policy) = EvictionPolicy::from_usize(eviction_policy as usize) else {
+		return 0;
+	};
+
 	let settings = DashSettings {
 		num_of_segments: num_of_segments as usize,
 		num_of_normal_buckets: num_of_normal_buckets as usize,
 		num_of_stash_buckets: num_of_stash_buckets as usize,
 		bucket_size: bucket_size as usize,
-		eviction_policy: EvictionPolicy::from_usize(eviction_policy as usize).unwrap(),
+		eviction_policy: policy,
 		debug_mode: debug_mode as usize,
 	};
 
