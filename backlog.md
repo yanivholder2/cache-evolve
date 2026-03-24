@@ -8,6 +8,7 @@ _(none)_
 
 ### Tasks
 
+- [CI: GitHub Actions for build + test on PRs](#ci-github-actions-for-build--test-on-prs)
 - [Add logging for full cache flow](#add-logging-for-full-cache-flow)
 - [Segment trait abstraction](#segment-trait-abstraction)
 - [Blanket Display impl for Bucket](#blanket-display-impl-for-bucket)
@@ -40,6 +41,10 @@ _(none)_
 _(none)_
 
 ## Tasks
+
+### CI: GitHub Actions for build + test on PRs
+- **Created**: 2026-03-24 | **Priority**: 1
+- Add `.github/workflows/ci.yml` that runs `cargo build` and `cargo test` on every PR. Repo is private — free tier gives 2,000 min/month.
 
 ### Add logging for full cache flow
 - **Created**: 2026-03-23 | **Priority**: 1
