@@ -73,3 +73,46 @@ where
 		Ok(())
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::eviction_policy::EvictionPolicy;
+	use crate::test_utils::small_dash_settings;
+
+	fn small_dash(policy: EvictionPolicy) -> Dash<i64, i64> {
+		Dash::new(small_dash_settings(policy))
+	}
+
+	#[test]
+	fn get_miss_returns_none() {
+		let mut dash = small_dash(EvictionPolicy::Fifo);
+		assert!(dash.get_and_update_item(&42).is_none());
+	}
+
+	#[test]
+	fn put_then_get() {
+		let mut dash = small_dash(EvictionPolicy::Fifo);
+		dash.put(1, 10);
+		assert_eq!(*dash.get_and_update_item(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn multiple_keys() {
+		let mut dash = small_dash(EvictionPolicy::Fifo);
+		for i in 0..4 {
+			dash.put(i, i * 10);
+		}
+		for i in 0..4 {
+			assert_eq!(*dash.get_and_update_item(&i).unwrap(), i * 10);
+		}
+	}
+
+	#[test]
+	fn put_overwrite() {
+		let mut dash = small_dash(EvictionPolicy::ClassicLRU);
+		dash.put(1, 10);
+		dash.put(1, 20);
+		assert_eq!(*dash.get_and_update_item(&1).unwrap(), 20);
+	}
+}

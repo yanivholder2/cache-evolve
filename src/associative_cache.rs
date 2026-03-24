@@ -66,3 +66,67 @@ where
 		Ok(())
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::test_utils::find_keys_for_bucket;
+
+	fn small_cache(policy: crate::eviction_policy::EvictionPolicy) -> AssociativeCache<i64, i64> {
+		AssociativeCache::new(AssociativeCacheSettings {
+			num_of_buckets: 4,
+			bucket_size: 2,
+			eviction_policy: policy,
+		})
+	}
+
+	#[test]
+	fn get_miss_returns_none() {
+		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		assert!(cache.get_and_update_item(&42).is_none());
+	}
+
+	#[test]
+	fn put_then_get() {
+		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		cache.put(1, 10);
+		assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn put_overwrites_existing_key() {
+		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		cache.put(1, 10);
+		cache.put(1, 20);
+		assert_eq!(*cache.get_and_update_item(&1).unwrap(), 20);
+	}
+
+	#[test]
+	fn multiple_keys_across_buckets() {
+		// 4 buckets * bucket_size 2 = capacity 8, but hash collisions may cause eviction.
+		// Use fewer keys to stay safe.
+		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		for i in 0..4 {
+			cache.put(i, i * 10);
+		}
+		for i in 0..4 {
+			assert_eq!(*cache.get_and_update_item(&i).unwrap(), i * 10);
+		}
+	}
+
+	#[test]
+	fn eviction_when_bucket_full() {
+		// bucket_size=2, find 3 keys that hash to same bucket → first should be evicted
+		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		let target_bucket_idx = 0;
+		let same_bucket_keys = find_keys_for_bucket(target_bucket_idx, cache.buckets.len(), 3);
+
+		cache.put(same_bucket_keys[0], 10);
+		cache.put(same_bucket_keys[1], 20);
+		cache.put(same_bucket_keys[2], 30); // evicts first (FIFO)
+
+		assert!(cache.get_and_update_item(&same_bucket_keys[0]).is_none());
+		assert_eq!(*cache.get_and_update_item(&same_bucket_keys[1]).unwrap(), 20);
+		assert_eq!(*cache.get_and_update_item(&same_bucket_keys[2]).unwrap(), 30);
+	}
+}

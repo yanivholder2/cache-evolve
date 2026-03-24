@@ -75,3 +75,45 @@ where
 		)
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn new_initializes_fields() {
+		let item = Item::new(42, "hello");
+		assert_eq!(item.key, 42);
+		assert_eq!(item.value, "hello");
+		assert_eq!(item.lfu_counter, 0);
+	}
+
+	#[test]
+	fn equality_compares_key_and_value() {
+		let a = Item::new(1, 10);
+		let b = Item::new(1, 10);
+		let c = Item::new(1, 20);
+		let d = Item::new(2, 10);
+
+		assert_eq!(a, b);
+		assert_ne!(a, c); // different value
+		assert_ne!(a, d); // different key
+	}
+
+	#[test]
+	fn equality_ignores_lfu_counter() {
+		let mut a = Item::new(1, 10);
+		let b = Item::new(1, 10);
+		a.lfu_counter = 99;
+		assert_eq!(a, b);
+	}
+
+	#[test]
+	fn clone_produces_independent_copy() {
+		let mut a = Item::new(1, 10);
+		let b = a.clone();
+		a.value = 20;
+		assert_eq!(a.value, 20);
+		assert_eq!(b.value, 10);
+	}
+}

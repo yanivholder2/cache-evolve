@@ -1,6 +1,9 @@
 output.log
 rust-logs/
 
+### Claude Code ###
+.claude/worktrees/
+
 ################## Automated ###################
 
 ### Personal files ###
