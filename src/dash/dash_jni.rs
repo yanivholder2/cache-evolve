@@ -80,7 +80,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 fn create_cache(settings: DashSettings) -> jlong {
 	init_logger(settings.debug_mode);
 
-	let cache: DashTy = Dash::new(settings.clone());
+	let cache: DashTy = Dash::new(&settings);
 	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
 
 	info!(

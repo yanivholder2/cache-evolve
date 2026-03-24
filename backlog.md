@@ -23,6 +23,10 @@ _(none)_
 - [Edge case tests](#edge-case-tests)
 - [Integration tests](#integration-tests)
 
+### Performance
+
+- [O(1) bucket eviction via VecDeque](#o1-bucket-eviction-via-vecdeque)
+
 ### Small TODOs
 
 - [Pre-allocate bucket storage](#pre-allocate-bucket-storage)
@@ -98,6 +102,12 @@ _(none)_
 ### Integration tests
 - **Created**: 2026-03-18 | **Priority**:
 - `tests/integration_test.rs` is empty
+
+## Performance
+
+### O(1) bucket eviction via VecDeque
+- **Created**: 2026-03-24 | **Priority**: 3
+- `Vec::remove(0)` in `evict_item()` is O(n) — shifts all elements. With large buckets this becomes significant. Replace `Vec<Item>` with `VecDeque<Item>` for O(1) `pop_front()`. Requires changing the `Bucket` trait's `get_items`/`get_items_mut` return types from `&Vec` to `&VecDeque`, which ripples to both `DashBucket` and `AssociativeCacheBucket` impls.
 
 ## Small TODOs
 

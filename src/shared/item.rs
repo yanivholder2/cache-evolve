@@ -35,7 +35,6 @@ where
 	V: Eq + Clone,
 {
 	pub fn new(key: K, value: V) -> Self {
-		// TODO: initialize lfu_counter and timestamp only when needed by eviction policies
 		Self {
 			key,
 			value,
