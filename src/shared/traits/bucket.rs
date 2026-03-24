@@ -32,8 +32,6 @@ where
 	/// If no item is evicted, the second element of the tuple will be None.
 	/// As a side effect, if the item already exists makes updates according to the eviction policy.
 	fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
-		// Check if the key already exists in the bucket
-		// TODO: the key should not exist in the bucket. Consider returning an error
 		if let Some(position) = self.get_position(&item.key) {
 			// If the key exists, update the value and item position inside the bucket and return it
 			self.get_items_mut()[position].value = item.value;
@@ -117,7 +115,7 @@ where
 
 		match self.get_eviction_policy() {
 			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => {
-				// TODO: this is in O(n). there could be a more performant way to do that
+				// O(n) due to Vec shift — acceptable for simulator; VecDeque would complicate the trait
 				Some(self.get_items_mut().remove(0))
 			}
 			EvictionPolicy::TimestampLRU => {
@@ -153,24 +151,6 @@ where
 	}
 }
 
-// TODO: fix this to use blanket implementation
-/*
-// This is a simple implementation of the Display trait for the Bucket trait.
-// This means that all types that implement the Bucket trait will also implement the Display trait.
-impl<T, K, V> Display for T
-where
-	T: Bucket<K, V>,
-	K: Hash + Eq + Copy,
-	V: Eq + Copy + Debug,
-{
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		for item in self.get_items() {
-			writeln!(f, "    {}", item)?;
-		}
-		Ok(())
-	}
-}
-*/
 
 #[cfg(test)]
 mod tests {

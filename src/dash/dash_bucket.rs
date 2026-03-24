@@ -12,10 +12,8 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	// TODO: consider using a linked list for O(1) changes
 	items: Vec<Item<K, V>>,
 	max_size: usize,
-	// TODO: make this a reference with a lifetime
 	eviction_policy: EvictionPolicy,
 }
 
@@ -26,8 +24,7 @@ where
 {
 	pub fn new(max_size: usize, eviction_policy: EvictionPolicy) -> Self {
 		DashBucket {
-			// TODO: consider creating a vector with a fixed size for better performance after initialization
-			items: Vec::new(),
+			items: Vec::with_capacity(max_size),
 			max_size,
 			eviction_policy,
 		}

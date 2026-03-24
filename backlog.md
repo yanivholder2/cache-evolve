@@ -8,6 +8,7 @@ _(none)_
 
 ### Tasks
 
+- [CI: GitHub Actions for build + test on PRs](#ci-github-actions-for-build--test-on-prs)
 - [Add logging for full cache flow](#add-logging-for-full-cache-flow)
 - [Segment trait abstraction](#segment-trait-abstraction)
 - [Blanket Display impl for Bucket](#blanket-display-impl-for-bucket)
@@ -23,6 +24,10 @@ _(none)_
 - [Edge case tests](#edge-case-tests)
 - [Integration tests](#integration-tests)
 
+### Performance
+
+- [O(1) bucket eviction via VecDeque](#o1-bucket-eviction-via-vecdeque)
+
 ### Small TODOs
 
 - [Pre-allocate bucket storage](#pre-allocate-bucket-storage)
@@ -36,6 +41,10 @@ _(none)_
 _(none)_
 
 ## Tasks
+
+### CI: GitHub Actions for build + test on PRs
+- **Created**: 2026-03-24 | **Priority**: 1
+- Add `.github/workflows/ci.yml` that runs `cargo build` and `cargo test` on every PR. Repo is private — free tier gives 2,000 min/month.
 
 ### Add logging for full cache flow
 - **Created**: 2026-03-23 | **Priority**: 1
@@ -98,6 +107,12 @@ _(none)_
 ### Integration tests
 - **Created**: 2026-03-18 | **Priority**:
 - `tests/integration_test.rs` is empty
+
+## Performance
+
+### O(1) bucket eviction via VecDeque
+- **Created**: 2026-03-24 | **Priority**: 3
+- `Vec::remove(0)` in `evict_item()` is O(n) — shifts all elements. With large buckets this becomes significant. Replace `Vec<Item>` with `VecDeque<Item>` for O(1) `pop_front()`. Requires changing the `Bucket` trait's `get_items`/`get_items_mut` return types from `&Vec` to `&VecDeque`, which ripples to both `DashBucket` and `AssociativeCacheBucket` impls.
 
 ## Small TODOs
 
