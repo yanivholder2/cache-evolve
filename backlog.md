@@ -8,6 +8,7 @@ _(none)_
 
 ### Tasks
 
+- [Review public APIs of each component](#review-public-apis-of-each-component)
 - [Add logging for full cache flow](#add-logging-for-full-cache-flow)
 - [Segment trait abstraction](#segment-trait-abstraction)
 - [Blanket Display impl for Bucket](#blanket-display-impl-for-bucket)
@@ -36,6 +37,14 @@ _(none)_
 _(none)_
 
 ## Tasks
+
+### Review public APIs of each component
+- **Created**: 2026-03-25 | **Priority**: 1
+- Audit the public API surface of each component (public functions, methods, trait impls). Goals:
+	- Ensure consistent naming, parameter ordering, return types
+	- Verify pub visibility is intentional (not over-exposed internals)
+	- Check that each public fn has clear semantics and appropriate error handling
+- Components to review: `Dash`, `DashSegment`, `DashBucket`, `AssociativeCache`, `Bucket` trait, `EvictionPolicy`, JNI layers, shared types
 
 ### Add logging for full cache flow
 - **Created**: 2026-03-23 | **Priority**: 1
