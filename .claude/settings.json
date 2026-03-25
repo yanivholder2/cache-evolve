@@ -15,9 +15,13 @@
       "Bash(gradlew*)",
       "Bash(./gradlew*)",
       "Skill(caffeine-sweep)",
+      "Skill(caffeine-sim)",
       "Edit(../caffeine/**)"
     ],
-    "additionalDirectories": ["../caffeine", "C:/Users/yanivholder/Downloads/ThesisNew/caffeine"]
+    "additionalDirectories": [
+      "../caffeine",
+      "C:/Users/yanivholder/Downloads/ThesisNew/caffeine"
+    ]
   },
   "env": {
     "CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD": "1"
