@@ -27,13 +27,11 @@ where
 	V: Eq + Copy + Debug,
 {
 	/// Creates a new Dash instance with the given settings.
-	pub fn new(settings: DashSettings) -> Self {
+	pub fn new(settings: &DashSettings) -> Self {
 		info!("Creating a new Dash instance with settings: {:?}", settings);
-		// TODO: think about maybe using Vec::with_capacity
-		let mut segments = Vec::new();
+		let mut segments = Vec::with_capacity(settings.num_of_segments);
 		for _ in 0..settings.num_of_segments {
-			// TODO: pass the settings as a reference
-			segments.push(DashSegment::new(settings.clone()));
+			segments.push(DashSegment::new(&settings));
 		}
 		Self { segments }
 	}
@@ -81,7 +79,7 @@ mod tests {
 	use crate::test_utils::small_dash_settings;
 
 	fn small_dash(policy: EvictionPolicy) -> Dash<i64, i64> {
-		Dash::new(small_dash_settings(policy))
+		Dash::new(&small_dash_settings(policy))
 	}
 
 	#[test]

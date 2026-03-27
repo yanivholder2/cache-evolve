@@ -9,6 +9,7 @@ _(none)_
 ### Tasks
 
 - [Review public APIs of each component](#review-public-apis-of-each-component)
+- [CI: GitHub Actions for build + test on PRs](#ci-github-actions-for-build--test-on-prs)
 - [Add logging for full cache flow](#add-logging-for-full-cache-flow)
 - [Segment trait abstraction](#segment-trait-abstraction)
 - [Blanket Display impl for Bucket](#blanket-display-impl-for-bucket)
@@ -18,17 +19,16 @@ _(none)_
 - [Pass settings by reference](#pass-settings-by-reference)
 - [Eviction policy reference with lifetime](#eviction-policy-reference-with-lifetime)
 - [put error on existing key](#put-error-on-existing-key)
-- [Bucket trait tests](#bucket-trait-tests)
-- [AssociativeCache tests](#associativecache-tests)
-- [DashSegment tests](#dashsegment-tests)
-- [Edge case tests](#edge-case-tests)
-- [Integration tests](#integration-tests)
+- [Review Dash integration tests](#review-dash-integration-tests)
+
+### Performance
+
+- [O(1) bucket eviction via VecDeque](#o1-bucket-eviction-via-vecdeque)
 
 ### Small TODOs
 
-- [Pre-allocate bucket storage](#pre-allocate-bucket-storage)
-- [Derive Copy on EvictionPolicy](#derive-copy-on-evictionpolicy)
 - [Share skills between agents](#share-skills-between-agents)
+- [Pre-allocate bucket storage](#pre-allocate-bucket-storage)
 
 ---
 
@@ -45,6 +45,10 @@ _(none)_
 	- Verify pub visibility is intentional (not over-exposed internals)
 	- Check that each public fn has clear semantics and appropriate error handling
 - Components to review: `Dash`, `DashSegment`, `DashBucket`, `AssociativeCache`, `Bucket` trait, `EvictionPolicy`, JNI layers, shared types
+
+### CI: GitHub Actions for build + test on PRs
+- **Created**: 2026-03-24 | **Priority**: 1
+- Add `.github/workflows/ci.yml` that runs `cargo build` and `cargo test` on every PR. Repo is private — free tier gives 2,000 min/month.
 
 ### Add logging for full cache flow
 - **Created**: 2026-03-23 | **Priority**: 1
@@ -88,36 +92,25 @@ _(none)_
 - **Created**: 2026-03-18 | **Priority**:
 - `put` should return error/signal when key already exists (`bucket.rs:36`)
 
-### Bucket trait tests
-- **Created**: 2026-03-18 | **Priority**:
-- evict_item, get_from_position per policy
+### Review Dash integration tests
+- **Created**: 2026-03-27 | **Priority**: 5
+- Review `tests/dash_integration.rs` manually for correctness and completeness. Key areas:
+	- Probing bucket tests (`probing_bucket_lookup`, `last_bucket_has_no_probing_neighbor`) — verify they actually exercise the probing path, not just normal lookup
+	- `put_after_migration_returns_fresh_value` — confirm stash-first lookup order is the intended design, not a latent bug from duplicate keys
+	- Assertion thresholds in stress tests — verify `min_expected` bounds are calibrated correctly for the cache geometry
 
-### AssociativeCache tests
-- **Created**: 2026-03-18 | **Priority**:
-- Multi-bucket behavior, put/get flows
+## Performance
 
-### DashSegment tests
-- **Created**: 2026-03-18 | **Priority**:
-- Stash promotion, probing, eviction cascading
-
-### Edge case tests
-- **Created**: 2026-03-18 | **Priority**:
-- Empty/full cache, duplicate keys, eviction order
-
-### Integration tests
-- **Created**: 2026-03-18 | **Priority**:
-- `tests/integration_test.rs` is empty
+### O(1) bucket eviction via VecDeque
+- **Created**: 2026-03-24 | **Priority**: 3
+- `Vec::remove(0)` in `evict_item()` is O(n) — shifts all elements. With large buckets this becomes significant. Replace `Vec<Item>` with `VecDeque<Item>` for O(1) `pop_front()`. Requires changing the `Bucket` trait's `get_items`/`get_items_mut` return types from `&Vec` to `&VecDeque`, which ripples to both `DashBucket` and `AssociativeCacheBucket` impls.
 
 ## Small TODOs
-
-### Pre-allocate bucket storage
-- **Created**: 2026-03-18 | **Priority**:
-- `Vec::with_capacity` for pre-allocated bucket storage (`dash.rs:32`)
-
-### Derive Copy on EvictionPolicy
-- **Created**: 2026-03-18 | **Priority**:
-- Derive `Copy` on `EvictionPolicy` to eliminate `.clone()` calls
 
 ### Share skills between agents
 - **Created**: 2026-03-23 | **Priority**: 4
 - Migrate skills from `.claude/skills/` to a shared `.agents/skills/` directory. Update `SKILL.md` files to use relative project paths (e.g., `./caffeine` instead of absolute Windows paths) and ensure compatibility across agents. Create a symlink for Claude's expected location.
+
+### Pre-allocate bucket storage
+- **Created**: 2026-03-18 | **Priority**:
+- `Vec::with_capacity` for pre-allocated bucket storage (`dash.rs:32`)

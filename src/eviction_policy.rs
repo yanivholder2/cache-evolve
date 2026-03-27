@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum EvictionPolicy {
 	/** Every cache hit the item will move to the beginning of the data structure */
 	ClassicLRU,
@@ -11,6 +11,15 @@ pub enum EvictionPolicy {
 }
 
 impl EvictionPolicy {
+	/// Returns all variants. The exhaustive match ensures a compile error if a variant is added.
+	pub fn all() -> [Self; 6] {
+		use EvictionPolicy::*;
+		let _exhaustive = |p: EvictionPolicy| match p {
+			ClassicLRU | TimestampLRU | Lifo | Lfu | Fifo | Swap => {}
+		};
+		[ClassicLRU, TimestampLRU, Lifo, Lfu, Fifo, Swap]
+	}
+
 	pub fn from_usize(index: usize) -> Option<Self> {
 		match index {
 			0 => Some(EvictionPolicy::ClassicLRU),

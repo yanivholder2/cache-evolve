@@ -7,6 +7,8 @@
       "Bash(cargo run*)",
       "Bash(cargo fmt*)",
       "Bash(cargo clippy*)",
+      "Bash(cargo doc*)",
+      "Bash(cargo check*)",
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",

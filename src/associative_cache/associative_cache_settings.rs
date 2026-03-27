@@ -1,6 +1,6 @@
 use crate::eviction_policy::EvictionPolicy;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct AssociativeCacheSettings {
 	pub num_of_buckets: usize,
 	pub bucket_size: usize,

@@ -22,11 +22,11 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	pub fn new(settings: AssociativeCacheSettings) -> Self {
+	pub fn new(settings: &AssociativeCacheSettings) -> Self {
 		Self {
-			items: Vec::new(),
+			items: Vec::with_capacity(settings.bucket_size),
 			max_size: settings.bucket_size,
-			eviction_policy: settings.eviction_policy,
+			eviction_policy: settings.eviction_policy.clone(),
 		}
 	}
 }
