@@ -1,6 +1,6 @@
 use crate::eviction_policy::EvictionPolicy;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DashSettings {
 	pub num_of_segments: usize,
 	pub num_of_normal_buckets: usize,
