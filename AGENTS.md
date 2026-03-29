@@ -12,8 +12,12 @@ Cache simulator for thesis research. Integrates with Java's Caffeine cache simul
 ### JNI (`src/dash/dash_jni.rs`, `src/associative_cache/associative_cache_jni.rs`)
 Bridges to Java Caffeine simulator. Types fixed to `i64`. Miss sentinel: `-1`.
 - Raw pointer management via `Box::into_raw` / `Box::from_raw`
-- Dash JNI logs to `rust-logs/`; Associative JNI has no logging
+- Both JNI modules log to `rust-logs/` via shared logger (`src/shared/logging.rs`)
 - Java classes: `com.github.benmanes.caffeine.cache.simulator.policy.{dash.DashRustPolicy, associative.AssociativeCacheRustPolicy}`
+
+### Logging Convention
+- Format: `StructName.function_name: ...` for struct methods, `function_name: ...` for free functions. JNI exports use the Java method name (e.g. `getFromCacheIfPresent:`, `associativeInitCache:`).
+- Prefer inline format variables `{var}` over positional `{}, var` in format strings whenever the argument is a simple variable name. Use positional for expressions/field accesses.
 
 ## Caffeine Simulator Integration
 Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI.

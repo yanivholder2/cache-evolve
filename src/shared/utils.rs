@@ -2,7 +2,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use log::debug;
+use log::trace;
 
 pub fn get_index<K>(key: &K, size: usize) -> usize
 where
@@ -19,7 +19,7 @@ where
 	let mut hasher = DefaultHasher::new();
 	key.hash(&mut hasher);
 	let hash = hasher.finish() as usize;
-	debug!("Hashed key {:?} to {}", key, hash);
+	trace!("hash: key={key:?} result={hash}");
 	hash
 }
 

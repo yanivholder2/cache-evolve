@@ -28,7 +28,7 @@ where
 {
 	/// Creates a new Dash instance with the given settings.
 	pub fn new(settings: &DashSettings) -> Self {
-		info!("Creating a new Dash instance with settings: {:?}", settings);
+		info!("Dash.new: segments={} normal_buckets={} stash_buckets={} bucket_size={} policy={:?}", settings.num_of_segments, settings.num_of_normal_buckets, settings.num_of_stash_buckets, settings.bucket_size, settings.eviction_policy);
 		let mut segments = Vec::with_capacity(settings.num_of_segments);
 		for _ in 0..settings.num_of_segments {
 			segments.push(DashSegment::new(&settings));
@@ -38,7 +38,7 @@ where
 
 	/// Insert a key-value pair into Dash
 	pub fn put(&mut self, key: K, value: V) {
-		debug!("Dash: {:?}", self);
+		debug!("Dash.put: key={key:?} segment={}", get_index(&key, self.segments.len()));
 		let segment = self.get_mut_segment(&key);
 		segment.put(Item::new(key, value));
 	}
@@ -47,7 +47,7 @@ where
 	///
 	/// As a side effect makes updates according to the eviction policy.
 	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
-		debug!("Dash: {:?}", self);
+		debug!("Dash.get_and_update_item: key={key:?} segment={}", get_index(key, self.segments.len()));
 		let segment = self.get_mut_segment(key);
 		let data = segment.get(key)?;
 		Some(&data.value)

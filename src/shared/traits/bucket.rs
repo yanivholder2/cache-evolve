@@ -1,5 +1,6 @@
 use crate::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
+use log::{debug, trace};
 use std::{fmt::Debug, hash::Hash, time::Instant};
 
 pub trait Bucket<K, V>
@@ -33,7 +34,7 @@ where
 	/// As a side effect, if the item already exists makes updates according to the eviction policy.
 	fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
 		if let Some(position) = self.get_position(&item.key) {
-			// If the key exists, update the value and item position inside the bucket and return it
+			trace!("Bucket.put: key={:?} update_existing", item.key);
 			self.get_items_mut()[position].value = item.value;
 			let pushed_item = self.get_from_position(position);
 
@@ -56,7 +57,7 @@ where
 			| EvictionPolicy::Swap
 			| EvictionPolicy::Lfu => {
 				self.get_items_mut().push(item);
-				&self.get_items().last().unwrap()
+				self.get_items().last().expect("bucket invariant: just pushed")
 			}
 		}
 	}
@@ -86,7 +87,7 @@ where
 			EvictionPolicy::ClassicLRU => {
 				let item = self.get_items_mut().remove(position);
 				self.get_items_mut().push(item);
-				&self.get_items().last().unwrap()
+				self.get_items().last().expect("bucket invariant: just pushed")
 			}
 			EvictionPolicy::TimestampLRU => {
 				self.get_items_mut()[position].timestamp = Instant::now();
@@ -113,7 +114,7 @@ where
 			return None;
 		}
 
-		match self.get_eviction_policy() {
+		let evicted = match self.get_eviction_policy() {
 			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => {
 				// O(n) due to Vec shift — acceptable for simulator; VecDeque would complicate the trait
 				Some(self.get_items_mut().remove(0))
@@ -124,7 +125,7 @@ where
 					.iter()
 					.enumerate()
 					.min_by_key(|(_, item)| item.timestamp)
-					.unwrap();
+					.expect("bucket invariant: non-empty after is_empty check");
 				Some(self.get_items_mut().remove(min_timestamp_index))
 			}
 			EvictionPolicy::Lifo => self.get_items_mut().pop(),
@@ -134,10 +135,14 @@ where
 					.iter()
 					.enumerate()
 					.min_by_key(|(_, item)| item.lfu_counter)
-					.unwrap();
+					.expect("bucket invariant: non-empty after is_empty check");
 				Some(self.get_items_mut().remove(min_lfu_counter_index))
 			}
+		};
+		if let Some(ref item) = evicted {
+			debug!("Bucket.evict_item: policy={:?} evicted_key={:?}", self.get_eviction_policy(), item.key);
 		}
+		evicted
 	}
 
 	/// Returns whether the bucket is full.

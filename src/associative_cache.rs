@@ -3,6 +3,7 @@ use crate::shared::traits::bucket::Bucket;
 use crate::shared::utils::get_index;
 use associative_cache_bucket::AssociativeCacheBucket;
 use associative_cache_settings::AssociativeCacheSettings;
+use log::{debug, info};
 
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
@@ -26,6 +27,7 @@ where
 	V: Eq + Copy + Debug,
 {
 	pub fn new(settings: AssociativeCacheSettings) -> Self {
+		info!("AssociativeCache.new: buckets={} bucket_size={} policy={:?}", settings.num_of_buckets, settings.bucket_size, settings.eviction_policy);
 		let mut buckets = Vec::with_capacity(settings.num_of_buckets);
 		for _ in 0..settings.num_of_buckets {
 			buckets.push(AssociativeCacheBucket::new(&settings));
@@ -35,6 +37,7 @@ where
 
 	/// Insert a key-value pair into the cache
 	pub fn put(&mut self, key: K, value: V) {
+		debug!("AssociativeCache.put: key={:?} bucket={}", key, get_index(&key, self.buckets.len()));
 		let bucket = self.get_mut_bucket(&key);
 		bucket.put(Item::new(key, value));
 	}
@@ -43,9 +46,11 @@ where
 	///
 	/// As a side effect makes updates according to the eviction policy.
 	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
-		let bucket = self.get_mut_bucket(key);
-		let data = bucket.get(key)?;
-		Some(&data.value)
+		let bucket_index = get_index(key, self.buckets.len());
+		let bucket = &mut self.buckets[bucket_index];
+		let data = bucket.get(key);
+		debug!("AssociativeCache.get_and_update_item: key={key:?} bucket={bucket_index} hit={}", data.is_some());
+		Some(&data?.value)
 	}
 
 	fn get_mut_bucket(&mut self, key: &K) -> &mut AssociativeCacheBucket<K, V> {

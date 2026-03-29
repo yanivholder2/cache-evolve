@@ -10,13 +10,11 @@ _(none)_
 
 - [Review public APIs of each component](#review-public-apis-of-each-component)
 - [CI: GitHub Actions for build + test on PRs](#ci-github-actions-for-build--test-on-prs)
-- [Add logging for full cache flow](#add-logging-for-full-cache-flow)
 - [Segment trait abstraction](#segment-trait-abstraction)
 - [Blanket Display impl for Bucket](#blanket-display-impl-for-bucket)
 - [Re-export Item publicly](#re-export-item-publicly)
 - [O(1) eviction data structures](#o1-eviction-data-structures)
 - [Fixed-size arrays for buckets](#fixed-size-arrays-for-buckets)
-- [Pass settings by reference](#pass-settings-by-reference)
 - [Eviction policy reference with lifetime](#eviction-policy-reference-with-lifetime)
 - [put error on existing key](#put-error-on-existing-key)
 - [Review Dash integration tests](#review-dash-integration-tests)
@@ -27,8 +25,7 @@ _(none)_
 
 ### Small TODOs
 
-- [Share skills between agents](#share-skills-between-agents)
-- [Pre-allocate bucket storage](#pre-allocate-bucket-storage)
+_(none)_
 
 ---
 
@@ -50,16 +47,6 @@ _(none)_
 - **Created**: 2026-03-24 | **Priority**: 1
 - Add `.github/workflows/ci.yml` that runs `cargo build` and `cargo test` on every PR. Repo is private — free tier gives 2,000 min/month.
 
-### Add logging for full cache flow
-- **Created**: 2026-03-23 | **Priority**: 1
-- Add `log` statements across the entire Dash and AssociativeCache flow for research observability. Key areas:
-	- **Evictions**: stash eviction on insert (`dash_segment.rs:104`), stash eviction during promotion cascade (`dash_segment.rs:66`), normal bucket eviction (`bucket.rs:evict_item`)
-	- **Promotions**: stash→normal promotion (`dash_segment.rs:57-68`)
-	- **Put/Get routing**: segment selection, bucket selection, probing hits/misses
-	- **AssociativeCache JNI**: add `simplelog` init (currently missing — parity with Dash JNI `dash_jni.rs:14-42`)
-- Extract shared logger init from `dash_jni.rs` into a common module so both JNI bridges reuse it
-- Use `trace!` for per-operation logs (high volume), `debug!` for evictions/promotions, `info!` for cache init/config
-
 ### Segment trait abstraction
 - **Created**: 2026-03-18 | **Priority**:
 - Create `Segment` trait for segment abstraction (`dash_segment.rs:21`)
@@ -79,10 +66,6 @@ _(none)_
 ### Fixed-size arrays for buckets
 - **Created**: 2026-03-18 | **Priority**:
 - Fixed-size arrays instead of Vec for buckets (`dash_bucket.rs:29`)
-
-### Pass settings by reference
-- **Created**: 2026-03-18 | **Priority**:
-- Pass settings by reference instead of cloning (`dash.rs:35`, `dash_segment.rs:30`)
 
 ### Eviction policy reference with lifetime
 - **Created**: 2026-03-18 | **Priority**:
@@ -107,10 +90,4 @@ _(none)_
 
 ## Small TODOs
 
-### Share skills between agents
-- **Created**: 2026-03-23 | **Priority**: 4
-- Migrate skills from `.claude/skills/` to a shared `.agents/skills/` directory. Update `SKILL.md` files to use relative project paths (e.g., `./caffeine` instead of absolute Windows paths) and ensure compatibility across agents. Create a symlink for Claude's expected location.
-
-### Pre-allocate bucket storage
-- **Created**: 2026-03-18 | **Priority**:
-- `Vec::with_capacity` for pre-allocated bucket storage (`dash.rs:32`)
+_(none)_

@@ -1,42 +1,12 @@
 use super::dash_settings::DashSettings;
 use super::Dash;
 use crate::eviction_policy::EvictionPolicy;
+use crate::shared::logging;
 
-use chrono::Local;
 use jni::{objects::JClass, sys::jlong, JNIEnv};
-use log::info;
-use simplelog::*;
-use std::fs::{create_dir_all, File};
-use std::sync::Once;
+use log::{info, trace};
 
 type DashTy = Dash<i64, i64>;
-
-static INIT: Once = Once::new();
-
-fn init_logger(debug_mode: usize) {
-	INIT.call_once(|| {
-		let current_time = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-		let log_folder_name = "rust-logs";
-		let log_file_path = format!("{}\\dash_rust_{}.log", log_folder_name, current_time);
-
-		if create_dir_all(log_folder_name).is_err() {
-			return;
-		}
-
-		let log_level = match debug_mode {
-			2 | 3 => LevelFilter::Debug,
-			1 => LevelFilter::Info,
-			0 => LevelFilter::Warn,
-			_ => LevelFilter::Info,
-		};
-
-		let Ok(log_file) = File::create(log_file_path) else {
-			return;
-		};
-		// `let _ =` suppresses unused Result warning — logger failure is non-fatal
-		let _ = CombinedLogger::init(vec![WriteLogger::new(log_level, Config::default(), log_file)]);
-	});
-}
 
 #[no_mangle]
 pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initDefaultCache<
@@ -62,6 +32,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	debug_mode: jlong,
 ) -> jlong {
 	let Some(policy) = EvictionPolicy::from_usize(eviction_policy as usize) else {
+		eprintln!("ERROR: dash_jni.init invalid eviction_policy={eviction_policy}");
 		return 0;
 	};
 
@@ -78,15 +49,12 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 fn create_cache(settings: DashSettings) -> jlong {
-	init_logger(settings.debug_mode);
+	logging::init_file_logger("dash", settings.debug_mode);
 
 	let cache: DashTy = Dash::new(&settings);
 	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
 
-	info!(
-		"new - Cache Ptr: {}, initializing cache. Settings: {:?}",
-		cache_ptr, settings
-	);
+	info!("create_cache: ptr={cache_ptr} settings={settings:?}");
 	cache_ptr
 }
 
@@ -103,11 +71,11 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	let res = cache.get_and_update_item(&key);
 	match res {
 		None => {
-			info!("get_and_update_item - Cache Ptr: {}, Key: {}, miss", cache_ptr, key);
+			trace!("getFromCacheIfPresent: ptr={cache_ptr} key={key} miss");
 			-1
 		}
 		Some(value) => {
-			info!("get_and_update_item - Cache Ptr: {}, Key: {}, hit", cache_ptr, key);
+			trace!("getFromCacheIfPresent: ptr={cache_ptr} key={key} hit");
 			*value
 		}
 	}
@@ -125,7 +93,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 ) {
 	let cache = unsafe { &mut *(cache_ptr as *mut DashTy) };
 	cache.put(key as i64, value as i64);
-	info!("put - Cache Ptr: {}, Key: {}, Value: {}", cache_ptr, key, value);
+	trace!("putToCache: ptr={cache_ptr} key={key} value={value}");
 }
 
 #[no_mangle]
@@ -136,6 +104,6 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	_class: JClass<'local>,
 	cache_ptr: jlong,
 ) {
-	let _boxed_cache = unsafe { Box::from_raw(cache_ptr as *mut DashTy) };
-	info!("drop_cache - Cache Ptr: {}", cache_ptr);
+	info!("dropCache: ptr={cache_ptr}");
+	unsafe { drop(Box::from_raw(cache_ptr as *mut DashTy)) };
 }
