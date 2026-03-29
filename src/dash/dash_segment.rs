@@ -3,6 +3,7 @@ use super::dash_settings::DashSettings;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::Bucket;
 use crate::shared::utils::get_index;
+use log::debug;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
@@ -51,11 +52,13 @@ where
 
 		// 1. Check stash bucket — on hit, move item to target bucket
 		if let Some(position) = self.stash_buckets[stash_bucket_index].get_position(key) {
+			debug!("DashSegment.get: key={key:?} found_in=stash stash_bucket={stash_bucket_index} -> target_bucket={target_bucket_index}");
 			let data = self.stash_buckets[stash_bucket_index].get_from_position(position).clone();
 			self.stash_buckets[stash_bucket_index].remove(key);
 
 			let (pushed_data, evicted_data) = self.buckets[target_bucket_index].put(data);
 			if let Some(evicted) = evicted_data {
+				debug!("DashSegment.get: key={key:?} migration_evicted={:?} target_bucket={target_bucket_index} -> stash_bucket={stash_bucket_index}", evicted.key);
 				self.stash_buckets[stash_bucket_index].put(evicted);
 			}
 			return Some(pushed_data);
@@ -63,18 +66,22 @@ where
 
 		// 2. Check target bucket
 		if let Some(position) = self.buckets[target_bucket_index].get_position(key) {
+			debug!("DashSegment.get: key={key:?} found_in=target bucket={target_bucket_index}");
 			return Some(self.buckets[target_bucket_index].get_from_position(position));
 		}
 
 		// 3. Check probing bucket (adjacent)
 		let probing_bucket_index = target_bucket_index + 1;
 		if probing_bucket_index >= self.buckets.len() {
+			debug!("DashSegment.get: key={key:?} miss bucket={target_bucket_index} (last, no probing)");
 			return None;
 		}
 		if let Some(position) = self.buckets[probing_bucket_index].get_position(key) {
+			debug!("DashSegment.get: key={key:?} found_in=probing bucket={probing_bucket_index}");
 			return Some(self.buckets[probing_bucket_index].get_from_position(position));
 		}
 
+		debug!("DashSegment.get: key={key:?} miss (stash={stash_bucket_index} target={target_bucket_index} probing={probing_bucket_index})");
 		None
 	}
 
@@ -82,7 +89,9 @@ where
 	/// Assumes the key is not already in the segment — enforced by the Java caller
 	/// (`DashRustPolicy.record()`) which does get-then-put: only calls `putToCache` on a miss.
 	pub fn put(&mut self, item: Item<K, V>) {
-		let stash_bucket = &mut self.stash_buckets[get_index(&item.key, self.stash_size)];
+		let idx = get_index(&item.key, self.stash_size);
+		debug!("DashSegment.put: key={:?} stash_bucket={idx}", item.key);
+		let stash_bucket = &mut self.stash_buckets[idx];
 		stash_bucket.put(item);
 	}
 }

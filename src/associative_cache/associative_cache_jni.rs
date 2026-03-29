@@ -1,8 +1,10 @@
 use super::associative_cache_settings::AssociativeCacheSettings;
 use super::AssociativeCache;
 use crate::eviction_policy::EvictionPolicy;
+use crate::shared::logging;
 
 use jni::{objects::JClass, sys::jlong, JNIEnv};
+use log::{info, trace};
 
 type AssociativeCacheTy = AssociativeCache<i64, i64>;
 
@@ -15,9 +17,10 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	num_of_buckets: jlong,
 	bucket_size: jlong,
 	eviction_policy: jlong,
-	_debug_mode: jlong,
+	debug_mode: jlong,
 ) -> jlong {
 	let Some(policy) = EvictionPolicy::from_usize(eviction_policy as usize) else {
+		eprintln!("ERROR: assoc_jni.init invalid eviction_policy={eviction_policy}");
 		return 0;
 	};
 
@@ -27,8 +30,11 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		eviction_policy: policy,
 	};
 
-	let cache: AssociativeCacheTy = AssociativeCache::new(settings);
-	Box::into_raw(Box::new(cache)) as jlong
+	logging::init_file_logger("associative", debug_mode as usize);
+	let cache: AssociativeCacheTy = AssociativeCache::new(settings.clone());
+	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
+	info!("associativeInitCache: ptr={cache_ptr} settings={settings:?}");
+	cache_ptr
 }
 
 #[no_mangle]
@@ -43,8 +49,14 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	let cache = unsafe { &mut *(cache_ptr as *mut AssociativeCacheTy) };
 	let res = cache.get_and_update_item(&key);
 	match res {
-		None => -1,
-		Some(value) => *value,
+		None => {
+			trace!("associativeGetFromCacheIfPresent: ptr={cache_ptr} key={key} miss");
+			-1
+		}
+		Some(value) => {
+			trace!("associativeGetFromCacheIfPresent: ptr={cache_ptr} key={key} hit");
+			*value
+		}
 	}
 }
 
@@ -60,6 +72,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 ) {
 	let cache = unsafe { &mut *(cache_ptr as *mut AssociativeCacheTy) };
 	cache.put(key as i64, value as i64);
+	trace!("associativePutToCache: ptr={cache_ptr} key={key} value={value}");
 }
 
 #[no_mangle]
@@ -70,5 +83,6 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	_class: JClass<'local>,
 	cache_ptr: jlong,
 ) {
+	info!("associativeDropCache: ptr={cache_ptr}");
 	unsafe { drop(Box::from_raw(cache_ptr as *mut AssociativeCacheTy)) };
 }

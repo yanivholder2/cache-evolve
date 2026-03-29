@@ -14,7 +14,7 @@ use std::time::Duration;
 /// 1 segment, 1 normal bucket (size 2), 1 stash bucket (size 2).
 /// Total capacity 4. All keys route to the same buckets — no hash routing.
 fn tiny_dash(policy: EvictionPolicy) -> Dash<i64, i64> {
-	Dash::new(DashSettings {
+	Dash::new(&DashSettings {
 		num_of_segments: 1,
 		num_of_normal_buckets: 1,
 		num_of_stash_buckets: 1,
@@ -97,7 +97,7 @@ fn many_puts_then_gets() {
 	let settings = small_dash_settings(EvictionPolicy::Fifo);
 	let stash_capacity = settings.num_of_segments * settings.num_of_stash_buckets * settings.bucket_size;
 	let num_items: i64 = 50;
-	let mut dash: Dash<i64, i64> = Dash::new(settings);
+	let mut dash: Dash<i64, i64> = Dash::new(&settings);
 	for i in 0..num_items {
 		dash.put(i, i * 10);
 	}
@@ -144,7 +144,7 @@ fn probing_bucket_lookup() {
 		debug_mode: 0,
 	};
 	let num_normal = settings.num_of_normal_buckets;
-	let mut dash: Dash<i64, i64> = Dash::new(settings);
+	let mut dash: Dash<i64, i64> = Dash::new(&settings);
 
 	// Find keys that hash to normal bucket 0
 	let bucket0_keys = find_keys_for_index(0, num_normal, 4);
@@ -193,7 +193,7 @@ fn last_bucket_has_no_probing_neighbor() {
 	};
 	let num_normal = settings.num_of_normal_buckets;
 	let last_bucket_idx = num_normal - 1;
-	let mut dash: Dash<i64, i64> = Dash::new(settings);
+	let mut dash: Dash<i64, i64> = Dash::new(&settings);
 
 	// Find a key that hashes to the last normal bucket
 	let keys = find_keys_for_index(last_bucket_idx, num_normal, 1);
@@ -369,14 +369,14 @@ fn eviction_swap() {
 
 #[test]
 fn default_settings_works() {
-	let mut dash: Dash<i64, i64> = Dash::new(DashSettings::default());
+	let mut dash: Dash<i64, i64> = Dash::new(&DashSettings::default());
 	dash.put(1, 10);
 	assert_eq!(*dash.get_and_update_item(&1).unwrap(), 10);
 }
 
 #[test]
 fn dragon_settings_works() {
-	let mut dash: Dash<i64, i64> = Dash::new(DRAGON_SETTINGS);
+	let mut dash: Dash<i64, i64> = Dash::new(&DRAGON_SETTINGS);
 	dash.put(1, 10);
 	assert_eq!(*dash.get_and_update_item(&1).unwrap(), 10);
 }
@@ -395,7 +395,7 @@ fn custom_settings_large() {
 	// Puts only go to stash. Hash correlation (segment and stash bucket both use hash % N)
 	// means fewer stash buckets are effectively used.
 	let effective_stash = settings.num_of_segments * settings.bucket_size; // ~128
-	let mut dash: Dash<i64, i64> = Dash::new(settings);
+	let mut dash: Dash<i64, i64> = Dash::new(&settings);
 	for i in 0..num_items {
 		dash.put(i, i * 10);
 	}
@@ -410,7 +410,7 @@ fn custom_settings_large() {
 fn keys_route_to_different_segments() {
 	let settings = small_dash_settings(EvictionPolicy::Fifo);
 	let num_segments = settings.num_of_segments;
-	let mut dash: Dash<i64, i64> = Dash::new(settings);
+	let mut dash: Dash<i64, i64> = Dash::new(&settings);
 
 	let segment_keys: Vec<Vec<i64>> = (0..num_segments)
 		.map(|seg| find_keys_for_index(seg, num_segments, 1))
@@ -443,7 +443,7 @@ fn all_segments_functional() {
 		debug_mode: 0,
 	};
 	let num_segments = settings.num_of_segments;
-	let mut dash: Dash<i64, i64> = Dash::new(settings);
+	let mut dash: Dash<i64, i64> = Dash::new(&settings);
 
 	// Find 2 keys per segment
 	let segment_keys: Vec<Vec<i64>> = (0..num_segments)
@@ -480,7 +480,7 @@ fn random_workload_no_panic() {
 	let key_range = 100;
 	let mut rng = rand::thread_rng();
 	for policy in EvictionPolicy::all() {
-		let mut dash: Dash<i64, i64> = Dash::new(small_dash_settings(policy));
+		let mut dash: Dash<i64, i64> = Dash::new(&small_dash_settings(policy));
 		for _ in 0..num_ops {
 			let key: i64 = rng.gen_range(0..key_range);
 			if rng.gen_bool(0.5 /* probability */) {
@@ -507,7 +507,7 @@ fn fill_beyond_capacity_then_query() {
 	let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
 	let stash_capacity = settings.num_of_segments * settings.num_of_stash_buckets * settings.bucket_size;
 	let num_items: i64 = 1000;
-	let mut dash: Dash<i64, i64> = Dash::new(settings);
+	let mut dash: Dash<i64, i64> = Dash::new(&settings);
 	for i in 0..num_items {
 		dash.put(i, i * 10);
 	}
