@@ -7,7 +7,6 @@ import shutil
 
 # Paths
 THESIS_DIR = r"C:\Users\yanivholder\Downloads\ThesisNew"
-RUST_PATH = os.path.join(THESIS_DIR, "dash-cache-rs", "target", "release")
 CAFFEINE_PATH = os.path.join(THESIS_DIR, "caffeine")
 GRADLEW = os.path.join(CAFFEINE_PATH, "gradlew.bat" if os.name == "nt" else "gradlew")
 REPORTS_PATH = os.path.join(CAFFEINE_PATH, "simulator", "build", "reports", "simulate")
@@ -36,13 +35,27 @@ def parse_args():
 	p.add_argument("--output-dir", type=str, default=None)
 	p.add_argument("--skip-build", action="store_true")
 	p.add_argument("--dry-run", action="store_true", help="Print commands without executing")
+	p.add_argument("--rust-path", type=str, default=None,
+		help="Path to target/release dir (auto-detected from git rev-parse if omitted)")
 	return p.parse_args()
+
+
+def resolve_rust_path(args_rust_path):
+	"""Resolve the target/release path, handling worktrees."""
+	if args_rust_path:
+		return args_rust_path
+	try:
+		repo_root = subprocess.check_output(
+			["git", "rev-parse", "--show-toplevel"], text=True
+		).strip()
+		return os.path.join(repo_root, "target", "release")
+	except subprocess.CalledProcessError:
+		return os.path.join(THESIS_DIR, "dash-cache-rs", "target", "release")
 
 
 def build_dll():
 	print("Building dash.dll...")
-	subprocess.run(["cargo", "build", "--release"], check=True,
-		cwd=os.path.join(THESIS_DIR, "dash-cache-rs"))
+	subprocess.run(["cargo", "build", "--release"], check=True)
 	print("Build complete.")
 
 
@@ -59,11 +72,11 @@ def trace_display_name(trace):
 	return f"{name}_{fmt}"
 
 
-def run_simulation(trace, sizes_str, policies, args):
+def run_simulation(trace, sizes_str, policies, args, rust_path):
 	"""Run simulator:simulate for a single trace with all sizes."""
 	trace_name = trace_display_name(trace)
 	debug_mode = 2 if args.debug else 0
-	jvm_args = f"-XX:+UseParallelGC,-Xmx8g,-Djava.library.path={RUST_PATH}"
+	jvm_args = f"-XX:+UseParallelGC,-Xmx8g,-Djava.library.path={rust_path}"
 
 	cmd = [
 		GRADLEW, "-p", CAFFEINE_PATH,
@@ -138,6 +151,7 @@ def create_summary_csv(output_dir, trace_results):
 
 def main():
 	args = parse_args()
+	rust_path = resolve_rust_path(args.rust_path)
 
 	traces = args.traces.split(",") if args.traces else DEFAULT_TRACES
 	sizes = [int(s) for s in args.sizes.split(",")] if args.sizes else DEFAULT_SIZES
@@ -155,11 +169,12 @@ def main():
 
 	print(f"\nSweep: {len(traces)} traces x {len(sizes)} sizes")
 	print(f"Policies: {policies}")
+	print(f"Library: {rust_path}")
 	print(f"Output: {output_dir}\n")
 
 	trace_results = {}
 	for trace in traces:
-		trace_name = run_simulation(trace, sizes_str, policies, args)
+		trace_name = run_simulation(trace, sizes_str, policies, args, rust_path)
 		if not args.dry_run:
 			trace_results[trace_name] = collect_results(trace_name, output_dir)
 

@@ -9,20 +9,19 @@
       "Bash(cargo clippy*)",
       "Bash(cargo doc*)",
       "Bash(cargo check*)",
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git switch*)",
-      "Bash(git branch*)",
+
       "Bash(gradlew*)",
       "Bash(./gradlew*)",
+
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",
+
       "Edit(../caffeine/**)"
     ],
     "additionalDirectories": [
       "../caffeine",
-      "C:/Users/yanivholder/Downloads/ThesisNew/caffeine"
+      "C:/Users/yanivholder/Downloads/ThesisNew/caffeine",
+      "C:/Users/yanivholder/.agents"
     ]
   },
   "env": {

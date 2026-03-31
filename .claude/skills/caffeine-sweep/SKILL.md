@@ -1,5 +1,6 @@
 ---
-description: Run batch Caffeine simulations across multiple traces and cache sizes
+name: caffeine-sweep
+description: Run batch Caffeine simulations across multiple traces and cache sizes. Use when the user wants to sweep, run multiple traces, compare policies, benchmark, or generate hit-rate reports. Triggers on "sweep", "batch run", "run all traces", "compare policies", "hit rate comparison", "benchmark".
 model: opus
 context: fork
 allowed-tools: Bash(cargo build*), Bash(python *sweep.py*), Bash(ls *), Read
