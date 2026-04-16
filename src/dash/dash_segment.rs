@@ -45,7 +45,7 @@ where
 	/// Returns a reference to the item with `key`.
 	///
 	/// As a side effect makes updates according to the eviction policy.
-	/// Lookup order: stash bucket → target bucket → probing bucket (target + 1).
+	/// Lookup order: stash bucket → target bucket → probing bucket ((target + 1) % segment_size).
 	pub fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
 		let target_bucket_index = get_index(key, self.segment_size);
 		let stash_bucket_index = get_index(key, self.stash_size);
@@ -53,7 +53,9 @@ where
 		// 1. Check stash bucket — on hit, move item to target bucket
 		if let Some(position) = self.stash_buckets[stash_bucket_index].get_position(key) {
 			debug!("DashSegment.get: key={key:?} found_in=stash stash_bucket={stash_bucket_index} -> target_bucket={target_bucket_index}");
-			let data = self.stash_buckets[stash_bucket_index].get_from_position(position).clone();
+			let data = self.stash_buckets[stash_bucket_index]
+				.get_from_position(position)
+				.clone();
 			self.stash_buckets[stash_bucket_index].remove(key);
 
 			let (pushed_data, evicted_data) = self.buckets[target_bucket_index].put(data);
@@ -70,12 +72,9 @@ where
 			return Some(self.buckets[target_bucket_index].get_from_position(position));
 		}
 
-		// 3. Check probing bucket (adjacent)
-		let probing_bucket_index = target_bucket_index + 1;
-		if probing_bucket_index >= self.buckets.len() {
-			debug!("DashSegment.get: key={key:?} miss bucket={target_bucket_index} (last, no probing)");
-			return None;
-		}
+		// 3. Check probing bucket (adjacent, wraps around)
+		// Note: if segment_size == 1, probing rechecks the target bucket — harmless no-op.
+		let probing_bucket_index = (target_bucket_index + 1) % self.segment_size;
 		if let Some(position) = self.buckets[probing_bucket_index].get_position(key) {
 			debug!("DashSegment.get: key={key:?} found_in=probing bucket={probing_bucket_index}");
 			return Some(self.buckets[probing_bucket_index].get_from_position(position));
@@ -234,8 +233,7 @@ mod tests {
 	fn get_finds_item_in_probing_bucket() {
 		let mut segment = small_segment(EvictionPolicy::Fifo);
 
-		// Find a key whose target is NOT the last bucket (so it has a probing neighbor)
-		// Any bucket except the last one works — use bucket 0
+		// Use bucket 0 as a simple non-wrapping case
 		let key = find_keys_for_bucket(0, segment.segment_size, 1)[0];
 		let target_idx = 0;
 
@@ -248,14 +246,17 @@ mod tests {
 	}
 
 	#[test]
-	fn get_returns_none_when_target_is_last_bucket_and_not_found() {
+	fn get_finds_item_in_probing_bucket_when_target_is_last() {
 		let mut segment = small_segment(EvictionPolicy::Fifo);
 
 		// Find a key whose target is the last bucket
 		let last_bucket_idx = segment.segment_size - 1;
 		let key = find_keys_for_bucket(last_bucket_idx, segment.segment_size, 1)[0];
 
-		// Item not in stash, not in target (last bucket), no probing available
-		assert!(segment.get(&key).is_none());
+		// Place item in bucket 0 (the wrap-around probing neighbor)
+		segment.buckets[0].put(Item::new(key, 42));
+
+		// get should find it via wrap-around probing
+		assert_eq!(segment.get(&key).unwrap().value, 42);
 	}
 }
