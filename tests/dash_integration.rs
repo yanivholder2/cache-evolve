@@ -129,7 +129,7 @@ fn interleaved_put_get() {
 
 // ==================== Probing bucket ====================
 // Dash probing: when an item isn't in its target normal bucket, DashSegment::get
-// checks bucket[target+1] (except for the last bucket). This tests the path through
+// checks bucket[(target+1) % n] (wraps around). This tests the path through
 // the public Dash API.
 
 #[test]
@@ -181,8 +181,8 @@ fn probing_bucket_lookup() {
 }
 
 #[test]
-fn last_bucket_has_no_probing_neighbor() {
-	// Keys targeting the last bucket have no probing neighbor.
+fn last_bucket_probes_into_first_bucket() {
+	// Last bucket's probing neighbor wraps around to bucket 0.
 	let settings = DashSettings {
 		num_of_segments: 1,
 		num_of_normal_buckets: 2,
@@ -203,18 +203,15 @@ fn last_bucket_has_no_probing_neighbor() {
 	dash.put(last_bucket_key, 42);
 	// Migrates from stash to last normal bucket
 	assert_eq!(*dash.get_and_update_item(&last_bucket_key).unwrap(), 42);
-	// Second get: found in last normal bucket (no probing, since it's the last)
+	// Second get: found in last normal bucket
 	assert_eq!(*dash.get_and_update_item(&last_bucket_key).unwrap(), 42);
 
-	// A key not in cache and targeting the last bucket should return None
-	// (no probing neighbor to check)
+	// A miss key targeting the last bucket should miss across stash, target,
+	// AND the wrap-around probing bucket (bucket 0).
 	let miss_key = (1000..2000i64)
 		.find(|k| get_index(k, num_normal) == last_bucket_idx)
 		.expect("no miss key found for last bucket");
-	assert!(
-		dash.get_and_update_item(&miss_key).is_none(),
-		"miss on last bucket should return None without probing"
-	);
+	assert!(dash.get_and_update_item(&miss_key).is_none());
 }
 
 // ==================== Duplicate key in stash + normal ====================
