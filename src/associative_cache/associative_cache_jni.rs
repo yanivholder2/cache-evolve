@@ -1,6 +1,6 @@
 use super::associative_cache_settings::AssociativeCacheSettings;
 use super::AssociativeCache;
-use crate::eviction_policy::EvictionPolicy;
+use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::logging;
 
 use jni::{objects::JClass, sys::jlong, JNIEnv};
@@ -46,6 +46,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	cache_ptr: jlong,
 	key: jlong,
 ) -> jlong {
+	if cache_ptr == 0 { return -1; }
 	let cache = unsafe { &mut *(cache_ptr as *mut AssociativeCacheTy) };
 	let res = cache.get_and_update_item(&key);
 	match res {
@@ -70,6 +71,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	key: jlong,
 	value: jlong,
 ) {
+	if cache_ptr == 0 { return; }
 	let cache = unsafe { &mut *(cache_ptr as *mut AssociativeCacheTy) };
 	cache.put(key as i64, value as i64);
 	trace!("associativePutToCache: ptr={cache_ptr} key={key} value={value}");
@@ -83,6 +85,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	_class: JClass<'local>,
 	cache_ptr: jlong,
 ) {
+	if cache_ptr == 0 { return; }
 	info!("associativeDropCache: ptr={cache_ptr}");
 	unsafe { drop(Box::from_raw(cache_ptr as *mut AssociativeCacheTy)) };
 }
