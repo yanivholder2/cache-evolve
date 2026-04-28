@@ -1,4 +1,4 @@
-use crate::eviction_policy::EvictionPolicy;
+use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::Bucket;
 use std::{

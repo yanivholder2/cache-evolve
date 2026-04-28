@@ -27,7 +27,7 @@ where
 	V: Eq + Copy + Debug,
 {
 	pub fn new(settings: AssociativeCacheSettings) -> Self {
-		info!("AssociativeCache.new: buckets={} bucket_size={} policy={:?}", settings.num_of_buckets, settings.bucket_size, settings.eviction_policy);
+		info!("AssociativeCache.new: settings={settings:?}");
 		let mut buckets = Vec::with_capacity(settings.num_of_buckets);
 		for _ in 0..settings.num_of_buckets {
 			buckets.push(AssociativeCacheBucket::new(&settings));
@@ -37,7 +37,7 @@ where
 
 	/// Insert a key-value pair into the cache
 	pub fn put(&mut self, key: K, value: V) {
-		debug!("AssociativeCache.put: key={:?} bucket={}", key, get_index(&key, self.buckets.len()));
+		debug!("AssociativeCache.put: key={key:?} bucket={}", get_index(&key, self.buckets.len()));
 		let bucket = self.get_mut_bucket(&key);
 		bucket.put(Item::new(key, value));
 	}
@@ -77,7 +77,7 @@ mod tests {
 	use super::*;
 	use crate::test_utils::find_keys_for_bucket;
 
-	fn small_cache(policy: crate::eviction_policy::EvictionPolicy) -> AssociativeCache<i64, i64> {
+	fn small_cache(policy: crate::shared::eviction_policy::EvictionPolicy) -> AssociativeCache<i64, i64> {
 		AssociativeCache::new(AssociativeCacheSettings {
 			num_of_buckets: 4,
 			bucket_size: 2,
@@ -87,20 +87,20 @@ mod tests {
 
 	#[test]
 	fn get_miss_returns_none() {
-		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		let mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicy::Fifo);
 		assert!(cache.get_and_update_item(&42).is_none());
 	}
 
 	#[test]
 	fn put_then_get() {
-		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		let mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicy::Fifo);
 		cache.put(1, 10);
 		assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
 	}
 
 	#[test]
 	fn put_overwrites_existing_key() {
-		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		let mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicy::Fifo);
 		cache.put(1, 10);
 		cache.put(1, 20);
 		assert_eq!(*cache.get_and_update_item(&1).unwrap(), 20);
@@ -110,7 +110,7 @@ mod tests {
 	fn multiple_keys_across_buckets() {
 		// 4 buckets * bucket_size 2 = capacity 8, but hash collisions may cause eviction.
 		// Use fewer keys to stay safe.
-		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		let mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicy::Fifo);
 		for i in 0..4 {
 			cache.put(i, i * 10);
 		}
@@ -122,7 +122,7 @@ mod tests {
 	#[test]
 	fn eviction_when_bucket_full() {
 		// bucket_size=2, find 3 keys that hash to same bucket → first should be evicted
-		let mut cache = small_cache(crate::eviction_policy::EvictionPolicy::Fifo);
+		let mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicy::Fifo);
 		let target_bucket_idx = 0;
 		let same_bucket_keys = find_keys_for_bucket(target_bucket_idx, cache.buckets.len(), 3);
 

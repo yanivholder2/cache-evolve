@@ -3,12 +3,10 @@ mod common;
 use common::find_keys_for_index;
 use dash::associative_cache::associative_cache_settings::AssociativeCacheSettings;
 use dash::associative_cache::AssociativeCache;
-use dash::eviction_policy::EvictionPolicy;
+use dash::shared::eviction_policy::EvictionPolicy;
 use rand::Rng;
 use std::thread;
 use std::time::Duration;
-
-// ==================== Helpers ====================
 
 /// Single bucket, size 2. All keys map to the same bucket — no hash routing.
 fn tiny_cache(policy: EvictionPolicy) -> AssociativeCache<i64, i64> {
@@ -26,8 +24,6 @@ fn small_cache_settings(policy: EvictionPolicy) -> AssociativeCacheSettings {
 		eviction_policy: policy,
 	}
 }
-
-// ==================== Basic CRUD x all policies ====================
 
 #[test]
 fn get_miss_returns_none_all_policies() {
@@ -70,17 +66,16 @@ fn put_overwrite_all_policies() {
 	}
 }
 
-// ==================== Eviction per policy ====================
-// tiny_cache: 1 bucket, size 2. Overflow on 3rd insert.
-// No stash/migration — eviction is immediate and observable.
+// `tiny_cache` is single-bucket, size 2 — eviction is immediate and observable on the
+// 3rd insert without any stash/migration noise.
 
 #[test]
 fn eviction_fifo() {
-	// FIFO: evicts front (oldest). Insert order: 1,2,3 → evicts 1.
+	// FIFO evicts the front (oldest insert).
 	let mut cache = tiny_cache(EvictionPolicy::Fifo);
 	cache.put(1, 10);
 	cache.put(2, 20);
-	cache.put(3, 30); // evicts 1
+	cache.put(3, 30);
 	assert!(cache.get_and_update_item(&1).is_none());
 	assert_eq!(*cache.get_and_update_item(&2).unwrap(), 20);
 	assert_eq!(*cache.get_and_update_item(&3).unwrap(), 30);
@@ -88,11 +83,11 @@ fn eviction_fifo() {
 
 #[test]
 fn eviction_lifo() {
-	// LIFO: evicts back (newest). Insert 1,2,3 → evicts 2.
+	// LIFO evicts the back (most recent insert).
 	let mut cache = tiny_cache(EvictionPolicy::Lifo);
 	cache.put(1, 10);
 	cache.put(2, 20);
-	cache.put(3, 30); // pops back=2
+	cache.put(3, 30);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
 	assert!(cache.get_and_update_item(&2).is_none());
 	assert_eq!(*cache.get_and_update_item(&3).unwrap(), 30);
@@ -100,12 +95,12 @@ fn eviction_lifo() {
 
 #[test]
 fn eviction_classic_lru() {
-	// Insert 1,2. Touch 1 (moves to back = MRU). Insert 3 → evicts front=2 (LRU).
+	// ClassicLRU bumps a hit item to the back; the untouched key becomes the LRU victim.
 	let mut cache = tiny_cache(EvictionPolicy::ClassicLRU);
 	cache.put(1, 10);
-	cache.put(2, 20); // bucket=[1,2]
-	cache.get_and_update_item(&1); // ClassicLRU: 1 moves to back → [2,1]
-	cache.put(3, 30); // evicts front=2
+	cache.put(2, 20);
+	cache.get_and_update_item(&1);
+	cache.put(3, 30);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
 	assert!(cache.get_and_update_item(&2).is_none());
 	assert_eq!(*cache.get_and_update_item(&3).unwrap(), 30);
@@ -113,14 +108,15 @@ fn eviction_classic_lru() {
 
 #[test]
 fn eviction_timestamp_lru() {
-	// Insert 1,2. Touch 1 (refreshes timestamp). Insert 3 → evicts oldest timestamp = 2.
+	// TimestampLRU evicts the oldest wall-clock timestamp; sleeps spread inserts apart
+	// enough that ordering is unambiguous.
 	let mut cache = tiny_cache(EvictionPolicy::TimestampLRU);
 	cache.put(1, 10);
 	thread::sleep(Duration::from_millis(20));
 	cache.put(2, 20);
 	thread::sleep(Duration::from_millis(20));
-	cache.get_and_update_item(&1); // refresh 1's timestamp
-	cache.put(3, 30); // evicts 2 (oldest timestamp)
+	cache.get_and_update_item(&1);
+	cache.put(3, 30);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
 	assert!(cache.get_and_update_item(&2).is_none());
 	assert_eq!(*cache.get_and_update_item(&3).unwrap(), 30);
@@ -128,13 +124,13 @@ fn eviction_timestamp_lru() {
 
 #[test]
 fn eviction_lfu() {
-	// Insert 1,2. Access 1 twice (counter=2). Insert 3 → evicts 2 (counter=0, lowest).
+	// LFU evicts the lowest counter; an unhit key sits at counter 0.
 	let mut cache = tiny_cache(EvictionPolicy::Lfu);
 	cache.put(1, 10);
 	cache.put(2, 20);
-	cache.get_and_update_item(&1); // counter: 1
-	cache.get_and_update_item(&1); // counter: 2
-	cache.put(3, 30); // evicts min counter = 2 (counter=0)
+	cache.get_and_update_item(&1);
+	cache.get_and_update_item(&1);
+	cache.put(3, 30);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
 	assert!(cache.get_and_update_item(&2).is_none());
 	assert_eq!(*cache.get_and_update_item(&3).unwrap(), 30);
@@ -142,18 +138,16 @@ fn eviction_lfu() {
 
 #[test]
 fn eviction_swap() {
-	// Insert 1,2. get(2) swaps to front → [2,1]. Insert 3 → evicts front=2.
+	// Swap moves a hit item one slot toward the back; the now-front key is evicted next.
 	let mut cache = tiny_cache(EvictionPolicy::Swap);
 	cache.put(1, 10);
-	cache.put(2, 20); // bucket=[1,2]
-	cache.get_and_update_item(&2); // Swap: 2 swaps with 1 → [2,1]
-	cache.put(3, 30); // evicts front=2
+	cache.put(2, 20);
+	cache.get_and_update_item(&2);
+	cache.put(3, 30);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
 	assert!(cache.get_and_update_item(&2).is_none());
 	assert_eq!(*cache.get_and_update_item(&3).unwrap(), 30);
 }
-
-// ==================== Settings ====================
 
 #[test]
 fn default_settings_works() {
@@ -178,7 +172,8 @@ fn custom_settings_large_buckets() {
 	let found: usize = (0..num_items)
 		.filter(|i| cache.get_and_update_item(i).is_some())
 		.count();
-	// Hash distribution may cause a few evictions in overloaded buckets
+	// Capacity is exact, but hash distribution can overload some buckets and evict;
+	// 75% retention is a safe floor across reasonable distributions.
 	let min_expected = capacity * 3 / 4;
 	assert!(
 		found >= min_expected,
@@ -187,8 +182,6 @@ fn custom_settings_large_buckets() {
 		found
 	);
 }
-
-// ==================== Multi-bucket routing ====================
 
 #[test]
 fn keys_route_to_different_buckets() {
@@ -216,8 +209,6 @@ fn keys_route_to_different_buckets() {
 	}
 }
 
-// ==================== Stress ====================
-
 #[test]
 fn random_workload_no_panic() {
 	let num_ops = 10_000;
@@ -233,7 +224,6 @@ fn random_workload_no_panic() {
 				cache.get_and_update_item(&key);
 			}
 		}
-		// Verify cache is still functional after random workload
 		let sentinel_key = key_range + 1;
 		let sentinel_val = sentinel_key * 10;
 		cache.put(sentinel_key, sentinel_val);
@@ -262,7 +252,8 @@ fn fill_beyond_capacity_then_query() {
 			found += 1;
 		}
 	}
-	// Recent items should survive under LRU
+	// 1000 inserts vs 16 slots: only the recent residents survive, but at least half
+	// the capacity should be retrievable under LRU.
 	let min_expected = capacity / 2;
 	assert!(
 		found >= min_expected,
