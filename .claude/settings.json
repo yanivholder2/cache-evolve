@@ -15,6 +15,7 @@
 
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",
+      "Skill(sim)",
 
       "Edit(../caffeine/**)"
     ],
