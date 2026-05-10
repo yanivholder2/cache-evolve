@@ -85,6 +85,50 @@ def update_gemini(root: Path, claude_entry: str) -> tuple[Path | None, bool, str
     return path, added, gemini_entry
 
 
+NOTES_BEGIN = "<!-- allow-tool:claude-only-begin -->"
+NOTES_END = "<!-- allow-tool:claude-only-end -->"
+NOTES_SECTION_HEADING = "## Claude-only allow entries (auto-tracked)"
+NOTES_SECTION_PREAMBLE = (
+    "Concrete `permissions.allow` entries from `.claude/settings.json` that have\n"
+    "no Gemini equivalent. Maintained by `.agents/skills/allow-tool` — do not edit\n"
+    "between the markers by hand."
+)
+
+
+def update_gemini_notes(root: Path, claude_entry: str) -> tuple[Path, bool]:
+    """Append a Claude-only entry to .gemini/SETTINGS_NOTES.md inside the
+    auto-tracked section. Creates the section if it doesn't exist. No-op if
+    the entry is already listed.
+    """
+    path = root / ".gemini" / "SETTINGS_NOTES.md"
+    bullet = f"- `{claude_entry}`"
+
+    if not path.exists():
+        return path, False
+
+    content = path.read_text(encoding="utf-8")
+
+    if NOTES_BEGIN in content and NOTES_END in content:
+        before, _, rest = content.partition(NOTES_BEGIN)
+        block, _, after = rest.partition(NOTES_END)
+        if bullet in block:
+            return path, False
+        block_lines = [line for line in block.strip("\n").splitlines() if line.strip()]
+        block_lines.append(bullet)
+        new_block = "\n" + "\n".join(block_lines) + "\n"
+        new_content = before + NOTES_BEGIN + new_block + NOTES_END + after
+    else:
+        section = (
+            f"\n{NOTES_SECTION_HEADING}\n\n"
+            f"{NOTES_SECTION_PREAMBLE}\n\n"
+            f"{NOTES_BEGIN}\n{bullet}\n{NOTES_END}\n"
+        )
+        new_content = content.rstrip("\n") + "\n" + section
+
+    path.write_text(new_content, encoding="utf-8")
+    return path, True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("entry", help='Claude-style allow entry, e.g. "Bash(cargo bench*)" or "Skill(my-skill)"')
@@ -99,6 +143,13 @@ def main() -> int:
     gpath, gadded, info = update_gemini(root, args.entry)
     if gpath is None:
         print(f"allow_tool: .gemini/settings.json: skipped ({info}; Gemini has no equivalent for this entry shape)")
+        npath, nadded = update_gemini_notes(root, args.entry)
+        if not npath.exists():
+            print(f"allow_tool: .gemini/SETTINGS_NOTES.md: not found; skipped tracking note")
+        elif nadded:
+            print(f"allow_tool: .gemini/SETTINGS_NOTES.md: tracked Claude-only entry: {args.entry}")
+        else:
+            print(f"allow_tool: .gemini/SETTINGS_NOTES.md: already tracked: {args.entry}")
     else:
         print(f"allow_tool: .gemini/settings.json: {'added' if gadded else 'already present'}: {info}")
 

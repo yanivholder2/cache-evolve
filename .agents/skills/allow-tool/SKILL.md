@@ -40,3 +40,10 @@ the necessary translation between formats.
 The script is idempotent: re-running with an entry that's already present is a
 no-op. It writes settings back with standard JSON formatting (so any
 hand-grouped blank lines inside arrays will be lost).
+
+When an entry is skipped on the Gemini side (no equivalent), the script also
+appends it to a tracked list in `.gemini/SETTINGS_NOTES.md` between
+`<!-- allow-tool:claude-only-begin -->` / `<!-- allow-tool:claude-only-end -->`
+markers, so the notes file stays in sync with which Claude entries have no
+Gemini counterpart. The section is created on first need; do not edit the
+content between the markers by hand.

@@ -29,6 +29,20 @@ same way `Bash(<prefix>*)` does on the Claude side.
   var that opts the included directories into CLAUDE.md discovery. Gemini
   reads `GEMINI.md` / `AGENTS.md` from `includeDirectories` automatically.
 
+## Claude-only allow entries (auto-tracked)
+
+Concrete `permissions.allow` entries from `.claude/settings.json` that have
+no Gemini equivalent. Maintained by `.agents/skills/allow-tool` — do not edit
+between the markers by hand.
+
+<!-- allow-tool:claude-only-begin -->
+- `Edit(../caffeine/**)`
+- `Skill(caffeine-sweep)`
+- `Skill(caffeine-sim)`
+- `Skill(sim)`
+- `Skill(allow-tool)`
+<!-- allow-tool:claude-only-end -->
+
 ## Skills location
 
 Skills live canonically under `.agents/skills/`, which Gemini CLI discovers
