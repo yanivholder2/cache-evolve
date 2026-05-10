@@ -19,9 +19,7 @@
       "Edit(../caffeine/**)"
     ],
     "additionalDirectories": [
-      "../caffeine",
-      "C:/Users/yanivholder/Downloads/ThesisNew/caffeine",
-      "C:/Users/yanivholder/.agents"
+      "../caffeine"
     ]
   },
   "env": {

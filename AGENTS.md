@@ -21,7 +21,7 @@ Bridges to Java Caffeine simulator. Types fixed to `i64`. Miss sentinel: `-1`.
 # Caffeine Simulator Integration
 Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI.
 
-**Repo**: `C:\Users\yanivholder\Downloads\ThesisNew\caffeine` (the only caffeine repo to use)
+**Repo**: `../caffeine` (sibling of this repo; the only caffeine repo to use)
 
 **Invariants**:
 - Pointer-based JNI: Java side stores the pointer returned from cache init and passes it back on every call.
