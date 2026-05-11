@@ -46,12 +46,16 @@ impl DashSettings {
 			return None;
 		}
 
+		let Some(policy) = EvictionPolicy::from_usize(eviction_policy as usize) else {
+			error!("DashSettings.from_jni_args: invalid args: eviction_policy={eviction_policy} (no such ordinal)");
+			return None;
+		};
 		Some(DashSettings {
 			num_of_segments: num_of_segments as usize,
 			num_of_normal_buckets: num_of_normal_buckets as usize,
 			num_of_stash_buckets: num_of_stash_buckets as usize,
 			bucket_size: bucket_size as usize,
-			eviction_policy: EvictionPolicy::from_usize(eviction_policy as usize)?,
+			eviction_policy: policy,
 			debug_mode: debug_mode as usize,
 		})
 	}

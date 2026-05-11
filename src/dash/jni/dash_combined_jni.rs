@@ -5,7 +5,7 @@ use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::logging;
 
 use jni::{objects::JClass, sys::jlong, JNIEnv};
-use log::{info, trace};
+use log::{error, info, trace};
 
 type CacheTy = Dash<i64, i64, CombinedSegment<i64, i64>>;
 
@@ -35,20 +35,18 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	debug_mode: jlong,
 	tie_breaker: jlong,
 ) -> jlong {
-	let Some(settings) = DashSettings::from_jni_args(
+	let Some(settings) = super::from_jni_args_or_log(
+		"dash_combined",
 		num_of_segments, num_of_normal_buckets, num_of_stash_buckets,
 		bucket_size, eviction_policy, debug_mode,
-	) else {
-		eprintln!("ERROR: dash_combined_jni.init invalid args: segments={num_of_segments} buckets={num_of_normal_buckets} stash={num_of_stash_buckets} bucket_size={bucket_size} policy={eviction_policy} debug={debug_mode}");
-		return 0;
-	};
+	) else { return 0; };
 
 	// Wire format: ordinal of EvictionTieBreaker (0 = EvictTarget, 1 = EvictProbing).
 	let tie_breaker = match tie_breaker {
 		0 => EvictionTieBreaker::EvictTarget,
 		1 => EvictionTieBreaker::EvictProbing,
 		other => {
-			eprintln!("ERROR: dash_combined_jni.init invalid tie_breaker ordinal: {other}");
+			error!("dash_combined.init: invalid tie_breaker ordinal: {other}");
 			return 0;
 		}
 	};
@@ -56,9 +54,8 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 fn create_cache(settings: DashSettings, tie_breaker: EvictionTieBreaker) -> jlong {
-	use crate::shared::eviction_policy::EvictionPolicy;
 	if !matches!(settings.eviction_policy, EvictionPolicy::TimestampLRU | EvictionPolicy::Lfu) {
-		eprintln!("ERROR: dash_combined requires TimestampLRU or Lfu, got {:?}", settings.eviction_policy);
+		error!("dash_combined.create_cache: requires TimestampLRU or Lfu, got {:?}", settings.eviction_policy);
 		return 0;
 	}
 	logging::init_file_logger("dash_combined", settings.debug_mode);

@@ -4,7 +4,7 @@ use crate::dash::Dash;
 use crate::shared::logging;
 
 use jni::{objects::JClass, sys::jlong, JNIEnv};
-use log::{info, trace};
+use log::{error, info, trace};
 
 type CacheTy = Dash<i64, i64, PromotionHotSegment<i64, i64>>;
 
@@ -31,20 +31,18 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	eviction_policy: jlong,
 	debug_mode: jlong,
 ) -> jlong {
-	let Some(settings) = DashSettings::from_jni_args(
+	let Some(settings) = super::from_jni_args_or_log(
+		"dash_promotion_hot",
 		num_of_segments, num_of_normal_buckets, num_of_stash_buckets,
 		bucket_size, eviction_policy, debug_mode,
-	) else {
-		eprintln!("ERROR: dash_promotion_hot_jni.init invalid args: segments={num_of_segments} buckets={num_of_normal_buckets} stash={num_of_stash_buckets} bucket_size={bucket_size} policy={eviction_policy} debug={debug_mode}");
-		return 0;
-	};
+	) else { return 0; };
 
 	create_cache(settings)
 }
 
 fn create_cache(settings: DashSettings) -> jlong {
 	if !matches!(settings.eviction_policy, crate::shared::eviction_policy::EvictionPolicy::ClassicLRU) {
-		eprintln!("ERROR: dash_promotion_hot requires ClassicLRU, got {:?}", settings.eviction_policy);
+		error!("dash_promotion_hot.create_cache: requires ClassicLRU, got {:?}", settings.eviction_policy);
 		return 0;
 	}
 	logging::init_file_logger("dash_promotion_hot", settings.debug_mode);
