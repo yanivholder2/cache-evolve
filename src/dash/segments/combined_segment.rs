@@ -299,6 +299,15 @@ mod tests {
 	}
 
 	#[test]
+	#[should_panic(expected = "CombinedSegment requires TimestampLRU or Lfu")]
+	fn new_rejects_classic_lru_policy() {
+		let _: CombinedSegment<i64, i64> = CombinedSegment::new(
+			&small_dash_settings(EvictionPolicy::ClassicLRU),
+			EvictionTieBreaker::EvictProbing,
+		);
+	}
+
+	#[test]
 	fn tie_breaker_evict_probing_evicts_from_probing() {
 		let settings = small_dash_settings(EvictionPolicy::Lfu);
 		let mut seg = CombinedSegment::new(&settings, EvictionTieBreaker::EvictProbing);

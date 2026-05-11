@@ -1,5 +1,6 @@
 use super::{promotion_get, Segment, SegmentCore};
 use crate::dash::dash_settings::DashSettings;
+use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::InsertPosition;
 use std::fmt::Debug;
@@ -20,6 +21,10 @@ where
 	V: Eq + Copy + Debug,
 {
 	pub fn new(settings: &DashSettings) -> Self {
+		assert!(
+			matches!(settings.eviction_policy, EvictionPolicy::ClassicLRU),
+			"PromotionHotSegment requires ClassicLRU, got {:?}", settings.eviction_policy
+		);
 		Self { core: SegmentCore::new(settings) }
 	}
 }
@@ -121,6 +126,12 @@ mod tests {
 	fn miss_returns_none() {
 		let mut seg = hot_segment(EvictionPolicy::ClassicLRU);
 		assert!(seg.get(&999).is_none());
+	}
+
+	#[test]
+	#[should_panic(expected = "PromotionHotSegment requires ClassicLRU")]
+	fn new_rejects_non_classic_lru_policy() {
+		let _: PromotionHotSegment<i64, i64> = PromotionHotSegment::new(&small_dash_settings(EvictionPolicy::Lfu));
 	}
 
 	/// Regression for the last-bucket probing wraparound (commit 4b0b763): keys whose target
