@@ -163,6 +163,29 @@ fn reput_between_gets_updates_value() {
 	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 20);
 }
 
+/// Existing put/get tests use key `1`, which hashes to segment 0 under
+/// `num_of_segments=2`. This case explicitly drives a key into a non-zero
+/// segment for every cache variant, so segment indexing past 0 is exercised.
+#[test]
+fn put_then_get_in_non_zero_segment() {
+	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
+	let s_ts = probing_settings(EvictionPolicy::TimestampLRU);
+	let key = (0..1000_i64)
+		.find(|k| dash::get_index(k, s_lru.num_of_segments) == 1)
+		.expect("expected a key hashing to segment 1 within 0..1000");
+
+	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
+	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
+	let mut combined: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing));
+
+	cold.put(key, 10);
+	assert_eq!(*cold.get_and_update_item(&key).unwrap(), 10);
+	hot.put(key, 20);
+	assert_eq!(*hot.get_and_update_item(&key).unwrap(), 20);
+	combined.put(key, 30);
+	assert_eq!(*combined.get_and_update_item(&key).unwrap(), 30);
+}
+
 #[test]
 fn random_workload_no_panic() {
 	use rand::Rng;

@@ -238,6 +238,17 @@ mod tests {
 			seg.core.buckets[target_idx].get_position(&target_keys[2]).is_some()
 				|| seg.core.buckets[probing_idx].get_position(&target_keys[2]).is_some()
 		);
+		// Identity check: the weaker (target) candidate must be the one evicted, not a
+		// stronger probing item. Probing items must remain resident.
+		let target_originals_in_target: usize = [target_keys[0], target_keys[1]].iter()
+			.filter(|k| seg.core.buckets[target_idx].get_position(k).is_some())
+			.count();
+		assert_eq!(target_originals_in_target, 1,
+			"the weaker target candidate must be evicted (only one original should remain in target)");
+		for &k in &probing_keys {
+			assert!(seg.core.buckets[probing_idx].get_position(&k).is_some(),
+				"stronger probing items must not be evicted while a weaker target item is present");
+		}
 	}
 
 	#[test]
@@ -298,12 +309,10 @@ mod tests {
 		assert!(seg.get(&999).is_none());
 	}
 
-	#[test]
-	fn tie_breaker_evict_probing_evicts_from_probing() {
+	fn tie_breaker_evict_probing_at(target_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicy::Lfu);
 		let mut seg = CombinedSegment::new(&settings, EvictionTieBreaker::EvictProbing);
 		let seg_size = settings.num_of_normal_buckets;
-		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg_size;
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 3);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg_size, 2);
@@ -327,11 +336,20 @@ mod tests {
 	}
 
 	#[test]
-	fn tie_breaker_evict_target_evicts_from_target() {
+	fn tie_breaker_evict_probing_evicts_from_probing() {
+		tie_breaker_evict_probing_at(0);
+	}
+
+	#[test]
+	fn tie_breaker_evict_probing_evicts_from_probing_wraparound() {
+		let seg_size = small_dash_settings(EvictionPolicy::Lfu).num_of_normal_buckets;
+		tie_breaker_evict_probing_at(seg_size - 1);
+	}
+
+	fn tie_breaker_evict_target_at(target_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicy::Lfu);
 		let mut seg = CombinedSegment::new(&settings, EvictionTieBreaker::EvictTarget);
 		let seg_size = settings.num_of_normal_buckets;
-		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg_size;
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 3);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg_size, 2);
@@ -350,7 +368,18 @@ mod tests {
 		let target_originals: usize = [target_keys[0], target_keys[1]].iter()
 			.filter(|k| seg.core().buckets[target_idx].get_position(k).is_some())
 			.count();
-		assert!(target_originals < 2, "EvictTarget should evict from target");
+		assert_eq!(target_originals, 1, "EvictTarget should evict exactly one original from target");
+	}
+
+	#[test]
+	fn tie_breaker_evict_target_evicts_from_target() {
+		tie_breaker_evict_target_at(0);
+	}
+
+	#[test]
+	fn tie_breaker_evict_target_evicts_from_target_wraparound() {
+		let seg_size = small_dash_settings(EvictionPolicy::Lfu).num_of_normal_buckets;
+		tie_breaker_evict_target_at(seg_size - 1);
 	}
 
 	/// Eviction only happens when target+probing is jointly full — never when there's

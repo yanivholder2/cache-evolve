@@ -236,12 +236,11 @@ mod tests {
 
 	/// Probing eviction → foreign-resident retry into full target → second eviction
 	/// cascades into stash. Verifies the cascade stash insert honors `insert_pos`.
-	fn cascade_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
+	fn cascade_to_stash_position_at(insert_pos: InsertPosition, expected_idx: usize, target_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
 		let mut seg = PromotionColdSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;
-		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg_size;
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 4);
 		let target_filler_a = target_keys[0];
@@ -272,6 +271,10 @@ mod tests {
 		assert_eq!(pos, expected_idx);
 	}
 
+	fn cascade_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
+		cascade_to_stash_position_at(insert_pos, expected_idx, 0);
+	}
+
 	#[test]
 	fn cascade_to_stash_at_front_when_cold() {
 		cascade_to_stash_position(InsertPosition::Front, 0);
@@ -280,5 +283,17 @@ mod tests {
 	#[test]
 	fn cascade_to_stash_at_back_when_hot() {
 		cascade_to_stash_position(InsertPosition::Back, 1);
+	}
+
+	#[test]
+	fn cascade_to_stash_at_front_when_cold_wraparound() {
+		let seg_size = small_dash_settings(EvictionPolicy::ClassicLRU).num_of_normal_buckets;
+		cascade_to_stash_position_at(InsertPosition::Front, 0, seg_size - 1);
+	}
+
+	#[test]
+	fn cascade_to_stash_at_back_when_hot_wraparound() {
+		let seg_size = small_dash_settings(EvictionPolicy::ClassicLRU).num_of_normal_buckets;
+		cascade_to_stash_position_at(InsertPosition::Back, 1, seg_size - 1);
 	}
 }
