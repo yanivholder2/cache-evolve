@@ -52,7 +52,7 @@ where
 	fn place_in_normal_bucket(&mut self, slot: Slot, item: Item<K, V>) {
 		debug_assert!(!matches!(slot, Slot::Stash), "place_in_normal_bucket: Slot::Stash is invalid");
 		if let Some(evicted) = self.core.put_at(slot, InsertPosition::Back, item) {
-			debug!("place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash", evicted.key);
+			debug!("CombinedSegment.place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash", evicted.key);
 			self.core.put_at(Slot::Stash, InsertPosition::Back, evicted);
 		}
 	}

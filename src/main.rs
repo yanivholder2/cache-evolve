@@ -92,7 +92,7 @@ fn combined_settings() -> DashSettings {
 fn main() {
 	match CACHE_KIND {
 		CacheKind::Associative => {
-			dash::init_file_and_stdout_logger("associative", 2);
+			dash::init_file_and_stdout_logger("associative", 2 /* debug_mode */);
 			run_simulator(AssociativeCache::new(AssociativeCacheSettings {
 				num_of_buckets: 1,
 				bucket_size: 8,
@@ -100,17 +100,17 @@ fn main() {
 			}));
 		}
 		CacheKind::DashPromotionCold => {
-			dash::init_file_and_stdout_logger("dash_promotion_cold", 2);
+			dash::init_file_and_stdout_logger("dash_promotion_cold", 2 /* debug_mode */);
 			let s = promotion_settings();
 			run_simulator(Dash::new(s.num_of_segments, || PromotionColdSegment::new(&s)));
 		}
 		CacheKind::DashPromotionHot => {
-			dash::init_file_and_stdout_logger("dash_promotion_hot", 2);
+			dash::init_file_and_stdout_logger("dash_promotion_hot", 2 /* debug_mode */);
 			let s = promotion_settings();
 			run_simulator(Dash::new(s.num_of_segments, || PromotionHotSegment::new(&s)));
 		}
 		CacheKind::DashCombined => {
-			dash::init_file_and_stdout_logger("dash_combined", 2);
+			dash::init_file_and_stdout_logger("dash_combined", 2 /* debug_mode */);
 			let s = combined_settings();
 			run_simulator(Dash::new(s.num_of_segments, || CombinedSegment::new(&s, EvictionTieBreaker::EvictProbing)));
 		}

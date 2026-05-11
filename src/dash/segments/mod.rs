@@ -84,8 +84,8 @@ where
 			}
 		};
 		let (_, evicted) = bucket.put_at(item, pos);
-		if let Some(ref e) = evicted {
-			debug!("SegmentCore.put_at: slot={slot:?} pos={pos:?} evicted_key={:?}", e.key);
+		if let Some(evicted) = &evicted {
+			debug!("SegmentCore.put_at: slot={slot:?} pos={pos:?} evicted_key={:?}", evicted.key);
 		}
 		evicted
 	}
