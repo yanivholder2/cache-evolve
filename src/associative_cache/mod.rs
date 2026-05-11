@@ -35,16 +35,13 @@ where
 		Self { buckets }
 	}
 
-	/// Insert a key-value pair into the cache
 	pub fn put(&mut self, key: K, value: V) {
 		debug!("AssociativeCache.put: key={key:?} bucket={}", get_index(&key, self.buckets.len()));
 		let bucket = self.get_mut_bucket(&key);
 		bucket.put(Item::new(key, value));
 	}
 
-	/// Returns the value of key if exists wrapper in Some ans None otherwise
-	///
-	/// As a side effect makes updates according to the eviction policy.
+	/// As a side effect, updates the bucket according to its eviction policy.
 	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
 		let bucket_index = get_index(key, self.buckets.len());
 		let bucket = &mut self.buckets[bucket_index];

@@ -14,11 +14,6 @@ pub mod jni;
 /// Multi-segment associative cache. Each segment owns its own normal buckets and stash
 /// and implements a probing strategy via `Segment`. `Dash` shards keys across segments
 /// by hash.
-///
-/// # Invariant
-/// Each key resides in at most one location across the cache (one of: stash,
-/// target, probing). Callers must not `put` a key that is already present —
-/// `get` relies on this to skip cross-bucket duplicate checks on a stash hit.
 #[derive(Debug)]
 pub struct Dash<K, V, S>
 where

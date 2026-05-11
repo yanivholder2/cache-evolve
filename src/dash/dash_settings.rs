@@ -25,7 +25,6 @@ impl Default for DashSettings {
 }
 
 impl DashSettings {
-	/// Construct from i64 parameters. Returns None on invalid values.
 	pub fn from_jni_args(
 		num_of_segments: i64,
 		num_of_normal_buckets: i64,

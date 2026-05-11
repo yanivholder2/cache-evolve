@@ -65,8 +65,7 @@ where
 		}
 	}
 
-	/// Inserts `item` at `pos` in the bucket identified by `slot` (derived from `item.key`).
-	/// Returns the evicted item, if any.
+	/// The bucket within `slot` is derived from `item.key` via the segment's hashing rules.
 	pub fn put_at(&mut self, slot: Slot, pos: InsertPosition, item: Item<K, V>) -> Option<Item<K, V>> {
 		let bucket = match slot {
 			Slot::Stash => {

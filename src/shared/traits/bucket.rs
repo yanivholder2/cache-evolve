@@ -18,34 +18,23 @@ where
 {
 	// ------------ struct expected fields ----------------------------------------------
 
-	/// Returns the items vector which contains the items in the bucket.
 	fn get_items(&self) -> &Vec<Item<K, V>>;
 
-	/// Returns the items vector which contains the items in the bucket.
 	fn get_items_mut(&mut self) -> &mut Vec<Item<K, V>>;
 
-	/// Returns the maximum size of the bucket.
-	/// The maximum size should be lower than or equal to usize::MAX.
 	fn get_max_size(&self) -> usize {
 		usize::MAX
 	}
 
-	/// Returns the eviction policy of the bucket.
 	fn get_eviction_policy(&self) -> &EvictionPolicy;
 
 	// ----------------------------------------------------------------------------------
 
-	/// Puts an item at the back of the bucket (sugar for `put_at(item, InsertPosition::Back)`).
-	/// 
-	/// Returns `(&inserted, Option<evicted>)`. Evicts per policy if full.
 	fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
 		self.put_at(item, InsertPosition::Back)
 	}
 
-	/// Puts an item into the bucket at the given position.
-	///
-	/// Returns `(&inserted, Option<evicted>)`. Evicts per policy if full.
-	/// If the key already exists, updates in place per policy (ignores `pos`).
+	/// If the key already exists, updates in place per policy and ignores `pos`.
 	fn put_at(
 		&mut self,
 		item: Item<K, V>,
@@ -71,8 +60,6 @@ where
 		(pushed_item, evicted_item)
 	}
 
-	/// Removes the key-value pair with the given key from the bucket.
-	/// If the bucket is empty or the key is not found, this function does nothing.
 	fn remove(&mut self, key: &K) {
 		self.get_items_mut().retain(|item| item.key != *key);
 	}
@@ -82,7 +69,6 @@ where
 		Some(self.get_from_position(position))
 	}
 
-	/// Returns the position of the item with the given key, or `None` if the key is not found.
 	fn get_position(&self, key: &K) -> Option<usize> {
 		self.get_items().iter().position(|d| d.key == *key)
 	}
