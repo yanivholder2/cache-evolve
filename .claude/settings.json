@@ -26,5 +26,21 @@
   },
   "env": {
     "CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD": "1"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/web-only.sh $CLAUDE_PROJECT_DIR/.claude/hooks/caffeine-warmup.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/web-only.sh $CLAUDE_PROJECT_DIR/.claude/hooks/agents-setup.sh"
+          }
+        ]
+      }
+    ]
   }
 }
