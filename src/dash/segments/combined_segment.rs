@@ -350,7 +350,7 @@ mod tests {
 		let target_originals: usize = [target_keys[0], target_keys[1]].iter()
 			.filter(|k| seg.core().buckets[target_idx].get_position(k).is_some())
 			.count();
-		assert!(target_originals < 2, "EvictTarget should evict from target");
+		assert_eq!(target_originals, 1, "EvictTarget should evict exactly one of the two originals from target");
 	}
 
 	/// Eviction only happens when target+probing is jointly full — never when there's

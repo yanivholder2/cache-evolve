@@ -121,7 +121,7 @@ fn all_variants_put_overwrite() {
 
 	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
 	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
-	let mut lazy: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing));
+	let mut combined: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing));
 
 	cold.put(1, 10);
 	cold.put(1, 20);
@@ -131,9 +131,9 @@ fn all_variants_put_overwrite() {
 	hot.put(1, 20);
 	assert_eq!(*hot.get_and_update_item(&1).unwrap(), 20);
 
-	lazy.put(1, 10);
-	lazy.put(1, 20);
-	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 20);
+	combined.put(1, 10);
+	combined.put(1, 20);
+	assert_eq!(*combined.get_and_update_item(&1).unwrap(), 20);
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn reput_between_gets_updates_value() {
 
 	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
 	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
-	let mut lazy: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing));
+	let mut combined: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing));
 
 	// A re-put between two gets must surface the new value via stash dedup, even though
 	// the first get already moved the item out of stash.
@@ -157,10 +157,10 @@ fn reput_between_gets_updates_value() {
 	hot.put(1, 20);
 	assert_eq!(*hot.get_and_update_item(&1).unwrap(), 20);
 
-	lazy.put(1, 10);
-	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 10);
-	lazy.put(1, 20);
-	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 20);
+	combined.put(1, 10);
+	assert_eq!(*combined.get_and_update_item(&1).unwrap(), 10);
+	combined.put(1, 20);
+	assert_eq!(*combined.get_and_update_item(&1).unwrap(), 20);
 }
 
 #[test]
@@ -171,6 +171,7 @@ fn random_workload_no_panic() {
 	let s_lfu = probing_settings(EvictionPolicy::Lfu);
 
 	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
+	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
 	let mut combined: Dash<i64, i64, _> = Dash::new(s_lfu.num_of_segments, || CombinedSegment::new(&s_lfu, EvictionTieBreaker::EvictProbing));
 
 	const NUM_OPS: usize = 1000;
@@ -180,9 +181,11 @@ fn random_workload_no_panic() {
 		let key: i64 = rng.gen_range(0..KEY_SPACE);
 		if rng.gen_bool(PUT_PROBABILITY) {
 			cold.put(key, key);
+			hot.put(key, key);
 			combined.put(key, key);
 		} else {
 			cold.get_and_update_item(&key);
+			hot.get_and_update_item(&key);
 			combined.get_and_update_item(&key);
 		}
 	}

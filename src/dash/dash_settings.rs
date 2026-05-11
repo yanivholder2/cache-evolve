@@ -66,3 +66,83 @@ pub const DRAGON_SETTINGS: DashSettings = DashSettings {
 	eviction_policy: EvictionPolicy::ClassicLRU,
 	debug_mode: 1,
 };
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn valid_args() -> [i64; 6] {
+		// (segments, normal_buckets, stash_buckets, bucket_size, policy, debug_mode)
+		[1, 4, 2, 2, 0, 0]
+	}
+
+	fn call(args: [i64; 6]) -> Option<DashSettings> {
+		DashSettings::from_jni_args(args[0], args[1], args[2], args[3], args[4], args[5])
+	}
+
+	#[test]
+	fn from_jni_args_accepts_valid() {
+		let s = call(valid_args()).expect("valid args must parse");
+		assert_eq!(s.num_of_segments, 1);
+		assert_eq!(s.num_of_normal_buckets, 4);
+		assert_eq!(s.num_of_stash_buckets, 2);
+		assert_eq!(s.bucket_size, 2);
+		assert!(matches!(s.eviction_policy, EvictionPolicy::ClassicLRU));
+		assert_eq!(s.debug_mode, 0);
+	}
+
+	#[test]
+	fn from_jni_args_rejects_invalid_policy_ordinal() {
+		let mut args = valid_args();
+		args[4] = 99; // out-of-range policy ordinal
+		assert!(call(args).is_none(), "invalid policy ordinal must return None");
+	}
+
+	#[test]
+	fn from_jni_args_rejects_non_positive_segments() {
+		let mut args = valid_args();
+		args[0] = 0;
+		assert!(call(args).is_none(), "num_of_segments must be > 0");
+		args[0] = -1;
+		assert!(call(args).is_none(), "num_of_segments must be > 0");
+	}
+
+	#[test]
+	fn from_jni_args_rejects_non_positive_normal_buckets() {
+		let mut args = valid_args();
+		args[1] = 0;
+		assert!(call(args).is_none(), "num_of_normal_buckets must be > 0");
+		args[1] = -3;
+		assert!(call(args).is_none(), "num_of_normal_buckets must be > 0");
+	}
+
+	#[test]
+	fn from_jni_args_rejects_negative_stash_buckets() {
+		let mut args = valid_args();
+		args[2] = -1;
+		assert!(call(args).is_none(), "num_of_stash_buckets must be >= 0");
+	}
+
+	#[test]
+	fn from_jni_args_rejects_non_positive_bucket_size() {
+		let mut args = valid_args();
+		args[3] = 0;
+		assert!(call(args).is_none(), "bucket_size must be > 0");
+		args[3] = -5;
+		assert!(call(args).is_none(), "bucket_size must be > 0");
+	}
+
+	#[test]
+	fn from_jni_args_rejects_negative_policy() {
+		let mut args = valid_args();
+		args[4] = -1;
+		assert!(call(args).is_none(), "eviction_policy must be >= 0");
+	}
+
+	#[test]
+	fn from_jni_args_rejects_negative_debug_mode() {
+		let mut args = valid_args();
+		args[5] = -1;
+		assert!(call(args).is_none(), "debug_mode must be >= 0");
+	}
+}
