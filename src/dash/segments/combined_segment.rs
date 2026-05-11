@@ -1,7 +1,7 @@
 //! Combined strategy: target and probing buckets are peer storage (no tier). On insertion, when a
 //! normal bucket must evict, the evicted item drops straight to stash.
 
-use super::{Segment, SegmentCore, Slot};
+use super::{probing_index, Segment, SegmentCore, Slot};
 use crate::dash::dash_settings::DashSettings;
 use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
@@ -109,7 +109,7 @@ where
 	fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
 		let stash_idx = get_index(key, self.core.stash_size);
 		let target_idx = get_index(key, self.core.segment_size);
-		let probing_idx = (target_idx + 1) % self.core.segment_size;
+		let probing_idx = probing_index(target_idx, self.core.segment_size);
 
 		if let Some(pos) = self.core.stash_buckets[stash_idx].get_position(key) {
 			debug!("CombinedSegment.get: key={key:?} found in stash");
@@ -187,7 +187,7 @@ mod tests {
 	fn target_full_probing_has_space_inserts_into_probing() {
 		let mut seg = combined_segment(EvictionPolicy::TimestampLRU);
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let probing_idx = probing_index(target_idx, seg.core.segment_size);
 		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
 
 		seg.put(Item::new(keys[0], 10));
@@ -208,7 +208,7 @@ mod tests {
 	fn both_full_evicts_weaker_candidate() {
 		let mut seg = combined_segment(EvictionPolicy::Lfu);
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let probing_idx = probing_index(target_idx, seg.core.segment_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg.core.segment_size, 2);
 
@@ -258,7 +258,7 @@ mod tests {
 	fn both_full_timestamp_lru_evicts_older() {
 		let mut seg = combined_segment(EvictionPolicy::TimestampLRU);
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let probing_idx = probing_index(target_idx, seg.core.segment_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg.core.segment_size, 2);
 
@@ -304,7 +304,7 @@ mod tests {
 		let mut seg = CombinedSegment::new(&settings, EvictionTieBreaker::EvictProbing);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 3);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg_size, 2);
 
@@ -332,7 +332,7 @@ mod tests {
 		let mut seg = CombinedSegment::new(&settings, EvictionTieBreaker::EvictTarget);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 3);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg_size, 2);
 
@@ -361,7 +361,7 @@ mod tests {
 		let mut seg = CombinedSegment::new(&settings, EvictionTieBreaker::EvictProbing);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 1);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg_size, 2);
 
@@ -388,7 +388,7 @@ mod tests {
 		let mut seg = combined_segment(EvictionPolicy::TimestampLRU);
 		let seg_size = seg.core.segment_size;
 		let target_idx = seg_size - 1;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		assert_eq!(probing_idx, 0, "sanity: wraparound math holds");
 		let keys = find_keys_for_bucket(target_idx, seg_size, 3);
 
@@ -413,7 +413,7 @@ mod tests {
 		let mut seg = CombinedSegment::new(&settings, EvictionTieBreaker::EvictProbing);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 
 		let keys_for_0 = find_keys_for_bucket(target_idx, seg_size, 4);
 		let keys_for_1 = find_keys_for_bucket(probing_idx, seg_size, 1);

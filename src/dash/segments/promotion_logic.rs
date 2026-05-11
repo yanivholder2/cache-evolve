@@ -5,7 +5,7 @@
 //! chain `probing -> target -> stash -> out`, with a one-more-chance step between adjacent
 //! tiers.
 
-use super::{SegmentCore, Slot};
+use super::{probing_index, SegmentCore, Slot};
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
 use crate::shared::utils::get_index;
@@ -37,7 +37,7 @@ pub(crate) fn promote_to_probing<K, V>(
 	V: Eq + Copy + Debug,
 {
 	let target_idx = get_index(&item.key, core.segment_size);
-	let probing_idx = (target_idx + 1) % core.segment_size;
+	let probing_idx = probing_index(target_idx, core.segment_size);
 	let Some(evicted) = core.put_at(Slot::Probing, insert_pos, item) else { return; };
 	demote_from_normal_bucket(core, evicted, probing_idx, insert_pos);
 }
@@ -80,7 +80,7 @@ where
 {
 	let stash_idx = get_index(key, core.stash_size);
 	let target_idx = get_index(key, core.segment_size);
-	let probing_idx = (target_idx + 1) % core.segment_size;
+	let probing_idx = probing_index(target_idx, core.segment_size);
 
 	if let Some(item_idx) = core.stash_buckets[stash_idx].get_position(key) {
 		debug!("promotion_get: key={key:?} found in stash -> target={target_idx} insert_pos={insert_pos:?}");
@@ -135,7 +135,7 @@ mod tests {
 		let mut seg = PromotionColdSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 2);
 		let k = target_keys[0];
 		let trigger = target_keys[1];
@@ -167,7 +167,7 @@ mod tests {
 		let mut seg = PromotionColdSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 3);
 		let pre = target_keys[0];
 		let foreign = target_keys[1];
@@ -242,7 +242,7 @@ mod tests {
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg_size, 4);
 		let target_filler_a = target_keys[0];
 		let target_filler_b = target_keys[1];

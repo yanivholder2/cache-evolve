@@ -40,6 +40,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::dash::segments::probing_index;
 	use crate::shared::eviction_policy::EvictionPolicy;
 	use crate::shared::traits::bucket::Bucket;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
@@ -69,7 +70,7 @@ mod tests {
 	fn stash_hit_at_mru_means_one_access_promotes_to_probing() {
 		let mut seg = hot_segment(EvictionPolicy::ClassicLRU);
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let probing_idx = probing_index(target_idx, seg.core.segment_size);
 		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
 
 		seg.put(Item::new(keys[0], 10));
@@ -88,7 +89,7 @@ mod tests {
 	fn probing_hit_touches_in_place() {
 		let mut seg = hot_segment(EvictionPolicy::ClassicLRU);
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let probing_idx = probing_index(target_idx, seg.core.segment_size);
 		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
 
 		seg.core.buckets[probing_idx].put(Item::new(keys[0], 10));
@@ -101,7 +102,7 @@ mod tests {
 	fn probing_eviction_demotes_to_target() {
 		let mut seg = hot_segment(EvictionPolicy::ClassicLRU);
 		let target_idx = 0;
-		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let probing_idx = probing_index(target_idx, seg.core.segment_size);
 		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
 		let probing_keys = find_keys_for_bucket(probing_idx, seg.core.segment_size, 2);
 
@@ -130,7 +131,7 @@ mod tests {
 		let mut seg = hot_segment(EvictionPolicy::ClassicLRU);
 		let seg_size = seg.core.segment_size;
 		let target_idx = seg_size - 1;
-		let probing_idx = (target_idx + 1) % seg_size;
+		let probing_idx = probing_index(target_idx, seg_size);
 		assert_eq!(probing_idx, 0, "sanity: wraparound math holds");
 		let keys = find_keys_for_bucket(target_idx, seg_size, 2);
 

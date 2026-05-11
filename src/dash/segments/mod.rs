@@ -27,6 +27,13 @@ pub enum Slot {
 	Probing,
 }
 
+/// Returns the probing bucket index for a given target — the next bucket, wrapping at
+/// `segment_size`. Centralizes the `(target + 1) % segment_size` formula so callers do
+/// not re-derive (and risk re-introducing the wraparound bug fixed in 4b0b763).
+pub(crate) fn probing_index(target_idx: usize, segment_size: usize) -> usize {
+	(target_idx + 1) % segment_size
+}
+
 #[derive(Debug)]
 pub struct SegmentCore<K, V>
 where
@@ -79,7 +86,7 @@ where
 			}
 			Slot::Probing => {
 				let target_idx = get_index(&item.key, self.segment_size);
-				let probing_idx = (target_idx + 1) % self.segment_size;
+				let probing_idx = probing_index(target_idx, self.segment_size);
 				&mut self.buckets[probing_idx]
 			}
 		};
