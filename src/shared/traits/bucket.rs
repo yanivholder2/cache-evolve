@@ -24,11 +24,10 @@ where
 	/// Returns the items vector which contains the items in the bucket.
 	fn get_items_mut(&mut self) -> &mut Vec<Item<K, V>>;
 
-	/// Returns the maximum size of the bucket.
-	/// The maximum size should be lower than or equal to usize::MAX.
-	fn get_max_size(&self) -> usize {
-		usize::MAX
-	}
+	/// Required: implementors must supply an explicit bound. No default exists, so a
+	/// bucket that forgets to implement `get_max_size` fails to compile rather than
+	/// silently becoming unbounded.
+	fn get_max_size(&self) -> usize;
 
 	/// Returns the eviction policy of the bucket.
 	fn get_eviction_policy(&self) -> &EvictionPolicy;
