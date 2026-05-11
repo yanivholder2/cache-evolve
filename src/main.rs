@@ -1,10 +1,11 @@
 use dash::associative_cache::{associative_cache_settings::AssociativeCacheSettings, AssociativeCache};
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{
-	CombinedSegment, EvictionTieBreaker, PromotionColdSegment, PromotionHotSegment, Segment,
+	CombinedSegment, EvictionTieBreaker, PromotionSegment, Segment,
 };
 use dash::dash::Dash;
 use dash::shared::eviction_policy::EvictionPolicy;
+use dash::shared::traits::bucket::InsertPosition;
 use log::info;
 use rand::Rng;
 
@@ -102,12 +103,12 @@ fn main() {
 		CacheKind::DashPromotionCold => {
 			dash::init_file_and_stdout_logger("dash_promotion_cold", 2);
 			let s = promotion_settings();
-			run_simulator(Dash::new(s.num_of_segments, || PromotionColdSegment::new(&s)));
+			run_simulator(Dash::new(s.num_of_segments, || PromotionSegment::new(&s, InsertPosition::Front)));
 		}
 		CacheKind::DashPromotionHot => {
 			dash::init_file_and_stdout_logger("dash_promotion_hot", 2);
 			let s = promotion_settings();
-			run_simulator(Dash::new(s.num_of_segments, || PromotionHotSegment::new(&s)));
+			run_simulator(Dash::new(s.num_of_segments, || PromotionSegment::new(&s, InsertPosition::Back)));
 		}
 		CacheKind::DashCombined => {
 			dash::init_file_and_stdout_logger("dash_combined", 2);

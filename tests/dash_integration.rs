@@ -2,6 +2,7 @@ use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::*;
 use dash::dash::Dash;
 use dash::shared::eviction_policy::EvictionPolicy;
+use dash::shared::traits::bucket::InsertPosition;
 
 fn probing_settings(policy: EvictionPolicy) -> DashSettings {
 	DashSettings {
@@ -18,7 +19,7 @@ fn probing_settings(policy: EvictionPolicy) -> DashSettings {
 fn promotion_cold_put_then_get() {
 	let settings = probing_settings(EvictionPolicy::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-		PromotionColdSegment::new(&settings)
+		PromotionSegment::new(&settings, InsertPosition::Front)
 	});
 	cache.put(1, 10);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
@@ -28,7 +29,7 @@ fn promotion_cold_put_then_get() {
 fn promotion_cold_many_keys() {
 	let settings = probing_settings(EvictionPolicy::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-		PromotionColdSegment::new(&settings)
+		PromotionSegment::new(&settings, InsertPosition::Front)
 	});
 	for i in 0..20 {
 		cache.put(i, i * 10);
@@ -41,7 +42,7 @@ fn promotion_cold_many_keys() {
 fn promotion_cold_repeated_access_promotes() {
 	let settings = probing_settings(EvictionPolicy::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-		PromotionColdSegment::new(&settings)
+		PromotionSegment::new(&settings, InsertPosition::Front)
 	});
 	cache.put(1, 10);
 	for _ in 0..10 {
@@ -53,7 +54,7 @@ fn promotion_cold_repeated_access_promotes() {
 fn promotion_cold_miss() {
 	let settings = probing_settings(EvictionPolicy::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-		PromotionColdSegment::new(&settings)
+		PromotionSegment::new(&settings, InsertPosition::Front)
 	});
 	assert!(cache.get_and_update_item(&999).is_none());
 }
@@ -62,7 +63,7 @@ fn promotion_cold_miss() {
 fn promotion_hot_put_then_get() {
 	let settings = probing_settings(EvictionPolicy::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-		PromotionHotSegment::new(&settings)
+		PromotionSegment::new(&settings, InsertPosition::Back)
 	});
 	cache.put(1, 10);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
@@ -72,7 +73,7 @@ fn promotion_hot_put_then_get() {
 fn promotion_hot_many_keys() {
 	let settings = probing_settings(EvictionPolicy::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-		PromotionHotSegment::new(&settings)
+		PromotionSegment::new(&settings, InsertPosition::Back)
 	});
 	for i in 0..20 {
 		cache.put(i, i * 10);
@@ -119,8 +120,8 @@ fn all_variants_put_overwrite() {
 	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
 	let s_ts = probing_settings(EvictionPolicy::TimestampLRU);
 
-	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
-	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
+	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionSegment::new(&s_lru, InsertPosition::Front));
+	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionSegment::new(&s_lru, InsertPosition::Back));
 	let mut lazy: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing));
 
 	cold.put(1, 10);
@@ -141,8 +142,8 @@ fn reput_between_gets_updates_value() {
 	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
 	let s_ts = probing_settings(EvictionPolicy::TimestampLRU);
 
-	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
-	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
+	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionSegment::new(&s_lru, InsertPosition::Front));
+	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionSegment::new(&s_lru, InsertPosition::Back));
 	let mut lazy: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing));
 
 	// A re-put between two gets must surface the new value via stash dedup, even though
@@ -170,7 +171,7 @@ fn random_workload_no_panic() {
 	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
 	let s_lfu = probing_settings(EvictionPolicy::Lfu);
 
-	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
+	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionSegment::new(&s_lru, InsertPosition::Front));
 	let mut combined: Dash<i64, i64, _> = Dash::new(s_lfu.num_of_segments, || CombinedSegment::new(&s_lfu, EvictionTieBreaker::EvictProbing));
 
 	const NUM_OPS: usize = 1000;

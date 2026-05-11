@@ -1,11 +1,9 @@
 mod combined_segment;
-mod promotion_cold_segment;
-mod promotion_hot_segment;
 mod promotion_logic;
+mod promotion_segment;
 
 pub use combined_segment::{CombinedSegment, EvictionTieBreaker};
-pub use promotion_cold_segment::PromotionColdSegment;
-pub use promotion_hot_segment::PromotionHotSegment;
+pub use promotion_segment::PromotionSegment;
 
 pub(crate) use promotion_logic::promotion_get;
 
@@ -124,8 +122,8 @@ mod tests {
 	fn all_segments_put_goes_to_stash() {
 		let lru = small_dash_settings(EvictionPolicy::ClassicLRU);
 		let ts = small_dash_settings(EvictionPolicy::TimestampLRU);
-		assert_put_goes_to_stash(PromotionColdSegment::new(&lru));
-		assert_put_goes_to_stash(PromotionHotSegment::new(&lru));
+		assert_put_goes_to_stash(PromotionSegment::new(&lru, InsertPosition::Front));
+		assert_put_goes_to_stash(PromotionSegment::new(&lru, InsertPosition::Back));
 		assert_put_goes_to_stash(CombinedSegment::new(&ts, EvictionTieBreaker::EvictProbing));
 	}
 }

@@ -1,12 +1,14 @@
 use crate::dash::dash_settings::DashSettings;
-use crate::dash::segments::PromotionColdSegment;
+use crate::dash::segments::PromotionSegment;
 use crate::dash::Dash;
 use crate::shared::logging;
+use crate::shared::traits::bucket::InsertPosition;
 
 use jni::{objects::JClass, sys::jlong, JNIEnv};
 use log::{info, trace};
 
-type CacheTy = Dash<i64, i64, PromotionColdSegment<i64, i64>>;
+type CacheTy = Dash<i64, i64, PromotionSegment<i64, i64>>;
+const INSERT_POS: InsertPosition = InsertPosition::Front;
 
 #[no_mangle]
 pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashPromotionColdRustPolicy_initDefaultCache<
@@ -50,7 +52,7 @@ fn create_cache(settings: DashSettings) -> jlong {
 	logging::init_file_logger("dash_promotion_cold", settings.debug_mode);
 
 	let cache: CacheTy = Dash::new(settings.num_of_segments, || {
-		PromotionColdSegment::new(&settings)
+		PromotionSegment::new(&settings, INSERT_POS)
 	});
 	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
 

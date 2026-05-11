@@ -122,7 +122,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::dash::segments::{PromotionColdSegment, Segment};
+	use crate::dash::segments::{PromotionSegment, Segment};
 	use crate::shared::eviction_policy::EvictionPolicy;
 	use crate::shared::traits::bucket::Bucket;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
@@ -132,7 +132,7 @@ mod tests {
 	#[test]
 	fn evicted_from_probing_cascades_to_target() {
 		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = PromotionSegment::new(&settings, InsertPosition::Front);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg_size;
@@ -164,7 +164,7 @@ mod tests {
 	/// `insert_pos`: Front for cold, Back for hot.
 	fn target_retry_position(insert_pos: InsertPosition, expected_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = PromotionSegment::new(&settings, InsertPosition::Front);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg_size;
@@ -201,7 +201,7 @@ mod tests {
 	/// AND that the stash insert honors `insert_pos`.
 	fn direct_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = PromotionSegment::new(&settings, InsertPosition::Front);
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;
 		let target_idx = 0;
@@ -238,7 +238,7 @@ mod tests {
 	/// cascades into stash. Verifies the cascade stash insert honors `insert_pos`.
 	fn cascade_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = PromotionSegment::new(&settings, InsertPosition::Front);
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;
 		let target_idx = 0;
