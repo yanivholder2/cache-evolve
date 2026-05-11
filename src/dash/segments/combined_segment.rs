@@ -8,7 +8,6 @@ use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
 use crate::shared::utils::get_index;
 use log::debug;
-use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -64,35 +63,26 @@ where
 	/// are jointly full, so each bucket has at least one item and `eviction_candidate_index`
 	/// must return `Some`. Any `None` here violates that contract.
 	fn should_evict_from_target(&self, target_idx: usize, probing_idx: usize) -> bool {
-		let target_candidate = self.core.buckets[target_idx].eviction_candidate_index();
-		let probing_candidate = self.core.buckets[probing_idx].eviction_candidate_index();
-
-		let (Some(target_pos), Some(probing_pos)) = (target_candidate, probing_candidate) else {
+		let target_bucket = &self.core.buckets[target_idx];
+		let probing_bucket = &self.core.buckets[probing_idx];
+		let (Some(target_pos), Some(probing_pos)) =
+			(target_bucket.eviction_candidate_index(), probing_bucket.eviction_candidate_index())
+		else {
 			unreachable!(
 				"should_evict_from_target: called with empty bucket (target={target_idx}, probing={probing_idx}) -- both buckets must be full"
 			)
 		};
+		let target_item = &target_bucket.get_items()[target_pos];
+		let probing_item = &probing_bucket.get_items()[probing_pos];
 
 		let ordering = match self.core.eviction_policy {
-			EvictionPolicy::TimestampLRU => {
-				let target_timestamp = self.core.buckets[target_idx].get_items()[target_pos].timestamp;
-				let probing_timestamp = self.core.buckets[probing_idx].get_items()[probing_pos].timestamp;
-				target_timestamp.cmp(&probing_timestamp)
-			}
-			EvictionPolicy::Lfu => {
-				let target_counter = self.core.buckets[target_idx].get_items()[target_pos].lfu_counter;
-				let probing_counter = self.core.buckets[probing_idx].get_items()[probing_pos].lfu_counter;
-				target_counter.cmp(&probing_counter)
-			}
+			EvictionPolicy::TimestampLRU => target_item.timestamp.cmp(&probing_item.timestamp),
+			EvictionPolicy::Lfu => target_item.lfu_counter.cmp(&probing_item.lfu_counter),
 			other => unreachable!(
 				"should_evict_from_target: unsupported policy {other:?} -- combined segments require TimestampLRU or Lfu"
 			)
 		};
-		match ordering {
-			Ordering::Less => true,
-			Ordering::Greater => false,
-			Ordering::Equal => self.tie_breaker == EvictionTieBreaker::EvictTarget,
-		}
+		ordering.is_lt() || (ordering.is_eq() && self.tie_breaker == EvictionTieBreaker::EvictTarget)
 	}
 }
 

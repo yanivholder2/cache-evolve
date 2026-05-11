@@ -56,7 +56,6 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 fn create_cache(settings: DashSettings, tie_breaker: EvictionTieBreaker) -> jlong {
-	use crate::shared::eviction_policy::EvictionPolicy;
 	if !matches!(settings.eviction_policy, EvictionPolicy::TimestampLRU | EvictionPolicy::Lfu) {
 		eprintln!("ERROR: dash_combined requires TimestampLRU or Lfu, got {:?}", settings.eviction_policy);
 		return 0;
