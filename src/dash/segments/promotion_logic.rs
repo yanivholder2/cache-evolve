@@ -9,7 +9,7 @@ use super::{SegmentCore, Slot};
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
 use crate::shared::utils::get_index;
-use log::debug;
+use log::{debug, warn};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -57,12 +57,16 @@ fn demote_from_normal_bucket<K, V>(
 	let true_target = get_index(&item.key, core.segment_size);
 	if true_target == source_idx {
 		debug!("demote_from_normal_bucket: key={:?} target={source_idx} -> stash", item.key);
-		core.put_at(Slot::Stash, insert_pos, item);
+		if let Some(dropped) = core.put_at(Slot::Stash, insert_pos, item) {
+			warn!("demote_from_normal_bucket: stash overflow, dropping key={:?}", dropped.key);
+		}
 	} else {
 		debug!("demote_from_normal_bucket: key={:?} probing={source_idx} -> target={true_target}", item.key);
 		if let Some(cascade) = core.put_at(Slot::Target, insert_pos, item) {
 			debug!("demote_from_normal_bucket: cascade key={:?} target={true_target} -> stash", cascade.key);
-			core.put_at(Slot::Stash, insert_pos, cascade);
+			if let Some(dropped) = core.put_at(Slot::Stash, insert_pos, cascade) {
+				warn!("demote_from_normal_bucket: stash overflow on cascade, dropping key={:?}", dropped.key);
+			}
 		}
 	}
 }

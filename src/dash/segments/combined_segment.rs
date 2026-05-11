@@ -7,7 +7,7 @@ use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
 use crate::shared::utils::get_index;
-use log::debug;
+use log::{debug, warn};
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -52,8 +52,10 @@ where
 	fn place_in_normal_bucket(&mut self, slot: Slot, item: Item<K, V>) {
 		debug_assert!(!matches!(slot, Slot::Stash), "place_in_normal_bucket: Slot::Stash is invalid");
 		if let Some(evicted) = self.core.put_at(slot, InsertPosition::Back, item) {
-			debug!("place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash", evicted.key);
-			self.core.put_at(Slot::Stash, InsertPosition::Back, evicted);
+			debug!("CombinedSegment.place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash", evicted.key);
+			if let Some(dropped) = self.core.put_at(Slot::Stash, InsertPosition::Back, evicted) {
+				warn!("CombinedSegment.place_in_normal_bucket: stash overflow, dropping key={:?}", dropped.key);
+			}
 		}
 	}
 
