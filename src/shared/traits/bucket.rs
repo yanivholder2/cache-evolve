@@ -36,39 +36,31 @@ where
 	// ----------------------------------------------------------------------------------
 
 	/// Puts an item at the back of the bucket (sugar for `put_at(item, InsertPosition::Back)`).
-	/// 
-	/// Returns `(&inserted, Option<evicted>)`. Evicts per policy if full.
-	fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
+	fn put(&mut self, item: Item<K, V>) -> (InsertPosition, Option<Item<K, V>>) {
 		self.put_at(item, InsertPosition::Back)
 	}
 
-	/// Puts an item into the bucket at the given position.
-	///
-	/// Returns `(&inserted, Option<evicted>)`. Evicts per policy if full.
-	/// If the key already exists, updates in place per policy (ignores `pos`).
+	/// Returns `(landed_at, Option<evicted>)`. `landed_at` is the `InsertPosition` end of
+	/// the bucket the item lives at after the call — `Front` means index 0, `Back` means
+	/// `get_items().len() - 1`. Update-in-place echoes the input `pos` and produces no
+	/// eviction. Evicts per policy when full.
 	fn put_at(
 		&mut self,
 		item: Item<K, V>,
 		pos: InsertPosition,
-	) -> (&Item<K, V>, Option<Item<K, V>>) {
+	) -> (InsertPosition, Option<Item<K, V>>) {
 		if let Some(position) = self.get_position(&item.key) {
 			trace!("Bucket.put_at: key={:?} update_existing", item.key);
 			self.get_items_mut()[position].value = item.value;
-			let pushed_item = self.get_from_position(position);
-			return (pushed_item, None);
+			self.get_from_position(position);
+			return (pos, None);
 		}
 		let evicted_item = if self.is_full() { self.evict_item() } else { None };
-		let pushed_item = match pos {
-			InsertPosition::Back => {
-				self.get_items_mut().push(item);
-				self.get_items().last().expect("bucket invariant: just pushed")
-			}
-			InsertPosition::Front => {
-				self.get_items_mut().insert(0, item);
-				self.get_items().first().expect("bucket invariant: just inserted")
-			}
+		match pos {
+			InsertPosition::Back => self.get_items_mut().push(item),
+			InsertPosition::Front => self.get_items_mut().insert(0, item),
 		};
-		(pushed_item, evicted_item)
+		(pos, evicted_item)
 	}
 
 	/// Removes the key-value pair with the given key from the bucket.
@@ -473,21 +465,29 @@ mod tests {
 	// ==================== put returns correct references ====================
 
 	#[test]
-	fn put_returns_ref_to_inserted_item() {
+	fn put_returns_back_position_and_no_eviction_when_not_full() {
 		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
-		let (inserted, evicted) = bucket.put(Item::new(5, 50));
-		assert_eq!(inserted.key, 5);
-		assert_eq!(inserted.value, 50);
+		let (landed_at, evicted) = bucket.put(Item::new(5, 50));
+		assert_eq!(landed_at, InsertPosition::Back);
 		assert!(evicted.is_none());
+		assert_eq!(bucket.get(&5).unwrap().value, 50);
 	}
 
 	#[test]
-	fn put_returns_ref_and_evicted_when_full() {
+	fn put_returns_back_position_and_evicted_when_full() {
 		let mut bucket = TestBucket::new(1, EvictionPolicy::Fifo);
 		bucket.put(Item::new(1, 10));
-		let (inserted, evicted) = bucket.put(Item::new(2, 20));
-		assert_eq!(inserted.key, 2);
+		let (landed_at, evicted) = bucket.put(Item::new(2, 20));
+		assert_eq!(landed_at, InsertPosition::Back);
 		assert_eq!(evicted.unwrap().key, 1);
+		assert_eq!(bucket.get(&2).unwrap().value, 20);
+	}
+
+	#[test]
+	fn put_at_front_returns_front_position() {
+		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let (landed_at, _) = bucket.put_at(Item::new(5, 50), InsertPosition::Front);
+		assert_eq!(landed_at, InsertPosition::Front);
 	}
 
 	// ==================== put_at ====================

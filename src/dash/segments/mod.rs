@@ -65,9 +65,10 @@ where
 		}
 	}
 
-	/// Inserts `item` at `pos` in the bucket identified by `slot` (derived from `item.key`).
-	/// Returns the evicted item, if any.
-	pub fn put_at(&mut self, slot: Slot, pos: InsertPosition, item: Item<K, V>) -> Option<Item<K, V>> {
+	/// Returns `(landed_at, Option<evicted>)`. `landed_at` is the `InsertPosition` end of
+	/// the resolved bucket where the new item now lives, so callers can address it as
+	/// index `0` (Front) or `bucket.size() - 1` (Back) without a `get_position` rescan.
+	pub fn put_at(&mut self, slot: Slot, pos: InsertPosition, item: Item<K, V>) -> (InsertPosition, Option<Item<K, V>>) {
 		let bucket = match slot {
 			Slot::Stash => {
 				let idx = get_index(&item.key, self.stash_size);
@@ -83,11 +84,11 @@ where
 				&mut self.buckets[probing_idx]
 			}
 		};
-		let (_, evicted) = bucket.put_at(item, pos);
-		if let Some(ref e) = evicted {
-			debug!("SegmentCore.put_at: slot={slot:?} pos={pos:?} evicted_key={:?}", e.key);
+		let (landed_at, evicted) = bucket.put_at(item, pos);
+		if let Some(evicted) = &evicted {
+			debug!("SegmentCore.put_at: slot={slot:?} pos={pos:?} evicted_key={:?}", evicted.key);
 		}
-		evicted
+		(landed_at, evicted)
 	}
 }
 

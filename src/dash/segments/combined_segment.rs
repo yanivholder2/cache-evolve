@@ -49,12 +49,16 @@ where
 	/// Places `item` into a normal bucket (Target or Probing) — peer-placement verb. Any
 	/// evicted item drops straight to stash; no tier cascade, since the combined eviction
 	/// already compared candidates across both buckets.
-	fn place_in_normal_bucket(&mut self, slot: Slot, item: Item<K, V>) {
+	/// Places `item` at `Back` of the chosen normal bucket and returns that `InsertPosition`
+	/// so the caller can address the just-placed item by index without a `get_position` rescan.
+	fn place_in_normal_bucket(&mut self, slot: Slot, item: Item<K, V>) -> InsertPosition {
 		debug_assert!(!matches!(slot, Slot::Stash), "place_in_normal_bucket: Slot::Stash is invalid");
-		if let Some(evicted) = self.core.put_at(slot, InsertPosition::Back, item) {
-			debug!("place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash", evicted.key);
+		let (landed_at, evicted) = self.core.put_at(slot, InsertPosition::Back, item);
+		if let Some(evicted) = evicted {
+			debug!("CombinedSegment.place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash", evicted.key);
 			self.core.put_at(Slot::Stash, InsertPosition::Back, evicted);
 		}
+		landed_at
 	}
 
 	/// True iff target's eviction candidate is weaker than probing's. On a tie, the
@@ -132,17 +136,19 @@ where
 				debug!("CombinedSegment.get: key={key:?} evict and insert in probing={probing_idx}");
 				Slot::Probing
 			};
-			self.place_in_normal_bucket(slot, data);
+			let landed_at = self.place_in_normal_bucket(slot, data);
 
 			let bucket_idx = match slot {
 				Slot::Target => target_idx,
 				Slot::Probing => probing_idx,
 				Slot::Stash => unreachable!("place_in_normal_bucket rejects Slot::Stash"),
 			};
-			let Some(pos) = self.core.buckets[bucket_idx].get_position(key) else {
-				unreachable!("CombinedSegment.get: key={key:?} not found after insert into {slot:?}={bucket_idx} -- place_in_normal_bucket must leave the key resident in the chosen bucket")
+			let bucket = &self.core.buckets[bucket_idx];
+			let pos = match landed_at {
+				InsertPosition::Front => 0,
+				InsertPosition::Back => bucket.size() - 1,
 			};
-			return Some(&self.core.buckets[bucket_idx].get_items()[pos]);
+			return Some(&bucket.get_items()[pos]);
 		}
 
 		if let Some(pos) = self.core.buckets[target_idx].get_position(key) {

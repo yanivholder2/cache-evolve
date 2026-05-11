@@ -13,33 +13,56 @@ use log::debug;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-/// Moves `item` into its target bucket. Any evicted item flows through the tier cascade.
+/// Maps the `landed_at` value returned by `Bucket::put_at` to the actual `Vec` index.
+pub(super) fn index_for<K, V, B>(landed_at: InsertPosition, bucket: &B) -> usize
+where
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
+	B: Bucket<K, V>,
+{
+	match landed_at {
+		InsertPosition::Front => 0,
+		InsertPosition::Back => bucket.size() - 1,
+	}
+}
+
+/// Moves `item` into its target bucket. Returns where in target it landed (Front or Back).
+/// Any evicted item flows through the tier cascade, which never touches the just-placed item.
 pub(crate) fn promote_to_target<K, V>(
 	core: &mut SegmentCore<K, V>,
 	item: Item<K, V>,
 	insert_pos: InsertPosition,
-) where
+) -> InsertPosition
+where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
 	let target_idx = get_index(&item.key, core.segment_size);
-	let Some(evicted) = core.put_at(Slot::Target, insert_pos, item) else { return; };
-	demote_from_normal_bucket(core, evicted, target_idx, insert_pos);
+	let (landed_at, evicted) = core.put_at(Slot::Target, insert_pos, item);
+	if let Some(evicted) = evicted {
+		demote_from_normal_bucket(core, evicted, target_idx, insert_pos);
+	}
+	landed_at
 }
 
-/// Moves `item` into its probing bucket. Any evicted item flows through the tier cascade.
+/// Moves `item` into its probing bucket. Returns where in probing it landed.
+/// Any evicted item flows through the tier cascade, which never touches the just-placed item.
 pub(crate) fn promote_to_probing<K, V>(
 	core: &mut SegmentCore<K, V>,
 	item: Item<K, V>,
 	insert_pos: InsertPosition,
-) where
+) -> InsertPosition
+where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
 	let target_idx = get_index(&item.key, core.segment_size);
 	let probing_idx = (target_idx + 1) % core.segment_size;
-	let Some(evicted) = core.put_at(Slot::Probing, insert_pos, item) else { return; };
-	demote_from_normal_bucket(core, evicted, probing_idx, insert_pos);
+	let (landed_at, evicted) = core.put_at(Slot::Probing, insert_pos, item);
+	if let Some(evicted) = evicted {
+		demote_from_normal_bucket(core, evicted, probing_idx, insert_pos);
+	}
+	landed_at
 }
 
 /// One-more-chance demotion. If the item was a foreign resident at `source_idx` (placed
@@ -60,7 +83,8 @@ fn demote_from_normal_bucket<K, V>(
 		core.put_at(Slot::Stash, insert_pos, item);
 	} else {
 		debug!("demote_from_normal_bucket: key={:?} probing={source_idx} -> target={true_target}", item.key);
-		if let Some(cascade) = core.put_at(Slot::Target, insert_pos, item) {
+		let (_, cascade) = core.put_at(Slot::Target, insert_pos, item);
+		if let Some(cascade) = cascade {
 			debug!("demote_from_normal_bucket: cascade key={:?} target={true_target} -> stash", cascade.key);
 			core.put_at(Slot::Stash, insert_pos, cascade);
 		}
@@ -85,12 +109,9 @@ where
 	if let Some(item_idx) = core.stash_buckets[stash_idx].get_position(key) {
 		debug!("promotion_get: key={key:?} found in stash -> target={target_idx} insert_pos={insert_pos:?}");
 		let data = core.stash_buckets[stash_idx].remove_at(item_idx);
-		promote_to_target(core, data, insert_pos);
-
-		let Some(item_new_idx) = core.buckets[target_idx].get_position(key) else {
-			unreachable!("promotion_get: key={key:?} not found after insert into target={target_idx} -- promote_to_target must leave the key resident in target or cascade it elsewhere via demote_from_normal_bucket")
-		};
-		return Some(&core.buckets[target_idx].get_items()[item_new_idx]);
+		let landed_at = promote_to_target(core, data, insert_pos);
+		let new_idx = index_for(landed_at, &core.buckets[target_idx]);
+		return Some(&core.buckets[target_idx].get_items()[new_idx]);
 	}
 
 	if let Some(item_idx) = core.buckets[target_idx].get_position(key) {
@@ -98,12 +119,9 @@ where
 		if is_hottest {
 			debug!("promotion_get: key={key:?} found in target as hottest -> probing={probing_idx}");
 			let data = core.buckets[target_idx].remove_at(item_idx);
-			promote_to_probing(core, data, insert_pos);
-
-			let Some(item_new_idx) = core.buckets[probing_idx].get_position(key) else {
-				unreachable!("promotion_get: key={key:?} not found after insert into probing={probing_idx} -- promote_to_probing must leave the key resident in probing")
-			};
-			return Some(&core.buckets[probing_idx].get_items()[item_new_idx]);
+			let landed_at = promote_to_probing(core, data, insert_pos);
+			let new_idx = index_for(landed_at, &core.buckets[probing_idx]);
+			return Some(&core.buckets[probing_idx].get_items()[new_idx]);
 		} else {
 			debug!("promotion_get: key={key:?} found in target item_idx={item_idx} (intra-promote)");
 			return Some(core.buckets[target_idx].get_from_position(item_idx));
