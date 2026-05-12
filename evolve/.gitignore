@@ -9,7 +9,16 @@ __pycache__/
 dist/
 build/
 
-# Runtime artifacts (re-generated each run)
-cycles/*/
-ledger/cycles.jsonl
-ledger/*.lock
+# Evolution Run Artifacts (Transient)
+# These are generated during a run and should not be pushed to git.
+cycles/
+ledger/
+synthesis/
+leaderboard.md
+rejection-log.md
+
+# Source Assets (Persistent)
+# Traces, subject context, and benchmarks are required to start from scratch.
+
+# Ensure all .gitkeep files are tracked to preserve the walking skeleton
+!**/.gitkeep

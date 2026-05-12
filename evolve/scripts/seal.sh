@@ -5,6 +5,7 @@
 # Usage: seal.sh <cycle-dir>
 set -euo pipefail
 
+# Ensure exactly one argument (the cycle directory) is provided.
 if [ $# -ne 1 ]; then
     echo "usage: seal.sh <cycle-dir>" >&2
     exit 1

@@ -18,6 +18,7 @@ from pathlib import Path
 
 
 def _validate(row: dict) -> None:
+    """Validate row for v2-ready invariants (worker_id and repo-relative paths)."""
     if "worker_id" not in row:
         raise ValueError("row missing required field: worker_id")
     for key, value in row.items():
@@ -26,6 +27,7 @@ def _validate(row: dict) -> None:
 
 
 def _atomic_append(ledger: Path, line: str) -> None:
+    """Atomic append of a line to the ledger using flock + atomic rename."""
     ledger.parent.mkdir(parents=True, exist_ok=True)
     lock = ledger.with_suffix(".lock")
 
@@ -42,6 +44,7 @@ def _atomic_append(ledger: Path, line: str) -> None:
 
 
 def main() -> None:
+    """Entry point: read JSON from stdin, validate, and append to ledger."""
     if len(sys.argv) != 2:
         print(f"usage: {sys.argv[0]} <ledger-path>", file=sys.stderr)
         sys.exit(1)
