@@ -77,6 +77,18 @@ where
 		Self::try_new(settings).expect("SegmentCore::new: invalid settings")
 	}
 
+	/// Returns `true` if `key` is present in any slot (stash, target, or probing).
+	///
+	/// Used by `Segment::put`'s debug assertion to catch invariant violations before insertion.
+	pub fn contains_key(&self, key: &K) -> bool {
+		let stash_idx = get_index(key, self.stash_size);
+		let target_idx = get_index(key, self.segment_size);
+		let probing_idx = (target_idx + 1) % self.segment_size;
+		self.stash_buckets[stash_idx].get_position(key).is_some()
+			|| self.buckets[target_idx].get_position(key).is_some()
+			|| self.buckets[probing_idx].get_position(key).is_some()
+	}
+
 	/// Inserts `item` at `pos` in the bucket identified by `slot` (derived from `item.key`).
 	/// Returns the evicted item, if any.
 	pub fn put_at(&mut self, slot: Slot, pos: InsertPosition, item: Item<K, V>) -> Option<Item<K, V>> {
@@ -115,6 +127,11 @@ where
 
 	/// Default routes new items to stash.
 	fn put(&mut self, item: Item<K, V>) {
+		debug_assert!(
+			!self.core().contains_key(&item.key),
+			"put: key={:?} already present — caller must not re-insert a resident key",
+			item.key,
+		);
 		debug!("Segment.put: key={:?}", item.key);
 		self.core_mut().put_at(Slot::Stash, InsertPosition::Back, item);
 	}

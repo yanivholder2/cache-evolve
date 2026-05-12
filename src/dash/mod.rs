@@ -16,10 +16,22 @@ use crate::shared::utils::get_index;
 /// and implements a probing strategy via `Segment`. `Dash` shards keys across segments
 /// by hash.
 ///
-/// # Invariant
-/// Each key resides in at most one location across the cache (one of: stash,
-/// target, probing). Callers must not `put` a key that is already present —
-/// `get` relies on this to skip cross-bucket duplicate checks on a stash hit.
+/// # Uniqueness invariant
+/// Each key resides in at most one slot (stash, target, or probing) across the
+/// entire cache at any given moment.
+///
+/// **Why it holds under the JNI call contract:** the Caffeine caller only calls
+/// `put` after a `get` miss (return value `== -1`). `get` returns on the first
+/// matching slot it finds, so any resident key is always returned — never
+/// re-inserted. Cross-slot duplicates are therefore structurally impossible
+/// during normal operation.
+///
+/// **What breaks if violated:** `get` stops searching after the first match.
+/// A second copy of the same key in target or probing becomes permanently
+/// invisible — a phantom item that occupies a slot but can never be retrieved
+/// or evicted through the normal path.
+///
+/// In debug builds `Segment::put` asserts this invariant before every insertion.
 #[derive(Debug)]
 pub struct Dash<K, V, S>
 where
