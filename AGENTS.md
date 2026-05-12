@@ -38,3 +38,7 @@ Default label vocabulary is in `docs/agents/triage-labels.md`.
 ## Domain docs
 
 Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## PR workflow
+
+Review comments, blocking PRs, and branch protection conventions. See `docs/agents/pr-workflow.md`.

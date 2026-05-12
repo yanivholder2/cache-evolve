@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Evolution Run Artifacts (Transient)
+# These are generated during a run and should not be pushed to git.
+cycles/
+ledger/
+synthesis/
+leaderboard.md
+rejection-log.md
+
+# Source Assets (Persistent)
+# Traces, subject context, and benchmarks are required to start from scratch.
+
+# Ensure all .gitkeep files are tracked to preserve the walking skeleton
+!**/.gitkeep
