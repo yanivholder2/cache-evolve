@@ -1,10 +1,6 @@
 ---
 name: caffeine-sweep
 description: Run batch Caffeine simulations across multiple traces and cache sizes. Use when the user wants to sweep, run multiple traces, compare policies, benchmark, or generate hit-rate reports. Triggers on "sweep", "batch run", "run all traces", "compare policies", "hit rate comparison", "benchmark".
-model: opus
-context: fork
-allowed-tools: Bash(cargo build*), Bash(python *sweep.py*), Bash(ls *), Read
-argument-hint: "[describe which traces] [--sizes s1,s2] [--policies p1,p2] [--skip-build] [--dry-run]"
 ---
 
 Run batch Caffeine cache simulations sweeping across traces and cache sizes.
@@ -41,7 +37,7 @@ All output goes to `<output-dir>/<timestamp>/` (default: `caffeine/simulator/bui
 1. **Resolve traces**: Interpret $ARGUMENTS to select traces from the bundled list below. The user may specify traces by name, format, or description (e.g., "all lirs", "multi1 and sprite", "address traces"). If no traces mentioned, use defaults.
 2. Build the `--traces` flag using resolved traces in `format:name.trace.gz` syntax (comma-separated).
 3. Run `cargo build --release` (unless `--skip-build` in $ARGUMENTS).
-4. Run: `python ${CLAUDE_SKILL_DIR}/scripts/sweep.py --traces <resolved_traces> <other_flags>`
+4. Run `python scripts/sweep.py --traces <resolved_traces> <other_flags>`
    Pass through any other flags from $ARGUMENTS (--sizes, --policies, --normal-buckets, --stash-buckets, --bucket-size, --debug, --skip-build, --dry-run, --output-dir).
 5. Read and display the summary CSV.
 

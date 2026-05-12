@@ -5,9 +5,15 @@ import datetime
 import argparse
 import shutil
 
-# Paths
-THESIS_DIR = r"C:\Users\yanivholder\Downloads\ThesisNew"
-CAFFEINE_PATH = os.path.join(THESIS_DIR, "caffeine")
+
+def _repo_root():
+    return subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"], text=True
+    ).strip()
+
+
+REPO_ROOT = _repo_root()
+CAFFEINE_PATH = os.path.normpath(os.path.join(REPO_ROOT, "..", "caffeine"))
 GRADLEW = os.path.join(CAFFEINE_PATH, "gradlew.bat" if os.name == "nt" else "gradlew")
 REPORTS_PATH = os.path.join(CAFFEINE_PATH, "simulator", "build", "reports", "simulate")
 
@@ -44,13 +50,7 @@ def resolve_rust_path(args_rust_path):
 	"""Resolve the target/release path, handling worktrees."""
 	if args_rust_path:
 		return args_rust_path
-	try:
-		repo_root = subprocess.check_output(
-			["git", "rev-parse", "--show-toplevel"], text=True
-		).strip()
-		return os.path.join(repo_root, "target", "release")
-	except subprocess.CalledProcessError:
-		return os.path.join(THESIS_DIR, "dash-cache-rs", "target", "release")
+	return os.path.join(REPO_ROOT, "target", "release")
 
 
 def build_dll():
