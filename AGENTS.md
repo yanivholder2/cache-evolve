@@ -4,6 +4,7 @@ M.Sc. thesis (Yaniv Holder, advised by Prof. Roy Friedman, Technion) on mitigati
 
 # Source Control & Workflow
 After completing a logical unit of work (feature, fix, refactor, etc.), propose a commit. Avoid staging/committing changes unless explicitly requested.
+All new worktrees must be created inside the `.worktrees/` directory in the repository root.
 
 # Architecture
 Cache simulator for thesis research. Integrates with Java's Caffeine cache simulator via JNI.
