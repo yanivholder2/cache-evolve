@@ -171,6 +171,177 @@ _Avoid_: Bottom, front
 >
 > **Domain expert:** "*Target* or *Probing* — never *Stash*. Combined never places new items into the stash directly; that's only for **Put** of brand-new items via `Segment::put`."
 
+## Framework vocabulary (evolve)
+
+Vocabulary for the **evolve** framework — the agentic research loop that studies
+Subject caches. Distinct from the Dash domain above. Framework is not yet
+implemented; this section exists ahead of code so the upcoming work speaks a
+consistent language. When `evolve/` is scaffolded, this section should migrate
+to `evolve/CONTEXT.md` and the root will become `CONTEXT-MAP.md`.
+
+### Roles and subjects
+
+**Subject cache**:
+The cache under study by the framework. v1: the Dash crate.
+_Avoid_: Target cache, test cache, system under study.
+
+**Framework / Evolve**:
+The agentic research loop that proposes, validates, evaluates, and synthesizes
+Variants of a Subject cache. Codename `evolve`.
+_Avoid_: Tool, agent, pipeline.
+
+### Cycle and cohort
+
+**Cycle**:
+One full iteration: read ledger digest, propose Cohort, implement Variants,
+gate, evaluate, synthesize, append. Numbered, immutable after sealing.
+_Avoid_: Iteration, generation, round.
+
+**Cohort**:
+The set of Hypotheses proposed in one Cycle. v1 default size: 6.
+_Avoid_: Batch, group.
+
+**Hypothesis**:
+A claim about how the Subject cache might behave better, proposed by the
+orchestrator and tested by one or more Variants.
+_Avoid_: Idea, conjecture.
+
+**Variant**:
+A proposed alternative implementation of the Subject cache, embodying one
+Hypothesis. Variants are the unit of evaluation; the leaderboard is defined
+over Variants, not Hypotheses.
+_Avoid_: Mutation, fork, candidate.
+
+**Variant attempt**:
+One numbered iteration within a Variant's self-repair sub-loop (G5). Up to 3
+attempts per Variant; only the final attempt's state enters the leaderboard.
+_Avoid_: Revision, retry.
+
+**Seal**:
+Finalize a Cycle directory; immutable after sealing.
+_Avoid_: Lock, close.
+
+### Action space and extension points
+
+**Action space**:
+The set of changes a Variant is allowed to make. Configurable: Level 3
+(bounded code mutation through stable Extension points) or Level 4 (open-ended
+code rewriting). Levels 1–2 (hyperparameter sweep) are explicitly out of scope.
+_Avoid_: Search space, mutation space.
+
+**Extension point**:
+A stable interface in the Subject cache where Variants plug in. Initial set
+for Dash: EvictionPolicy trait, Segment trait, probing function,
+cascade/demotion-chain order.
+_Avoid_: Hook, plugin slot.
+
+### Correctness gates
+
+**Gate**:
+A check a Variant must pass (G1 build, G2 trait contract, G3 invariant suite)
+or pass-with-judgment (G5 smoke-log review) before its fitness is admitted to
+the leaderboard. Hard gates are deterministic; soft gates are AI-judged.
+_Avoid_: Check, validator.
+
+**Invariant suite**:
+The codified correctness contract for the Subject cache (G3). Encodes
+properties such as no-phantom-items, capacity bound, Slot legality,
+single-eviction-per-insert modulo cascade, and stash-terminal.
+_Avoid_: Property tests, test suite.
+
+**Smoke trace**:
+A small, canonical, framework-owned trace used by G5 to produce a manageable
+log for AI behavioral review. Distinct from dev/held-out evaluation traces.
+_Avoid_: Test trace, mini trace.
+
+**Variant verdict**:
+Qualitative AI judgment from G5 smoke-log review. Non-blocking — a "looks
+buggy" verdict triggers the self-repair sub-loop but does not suppress fitness
+numbers.
+_Avoid_: Review, opinion.
+
+**Self-repair sub-loop**:
+Bounded retry loop inside G5; the AI re-implements a Variant up to 3 times
+when the smoke-log review flags a likely bug. Same Variant ID across attempts.
+_Avoid_: Fix loop, retry chain.
+
+**Rejection log**:
+Durable record of Variants that failed a hard gate (G1, G2, G3). Failed
+Variants are evidence the AI can learn from, not silent drops.
+_Avoid_: Failures, error log.
+
+### Insights and ledger
+
+**Variant insight**:
+Per-Variant AI-written explanation of why a Variant behaved as it did. Tags
+which Fitness dimensions the Variant helped or hurt.
+
+**Cycle insight**:
+Per-Cycle AI-written synthesis across the Cohort's Variant insights. The
+canonical record of what the framework learned in one Cycle.
+
+**Insight ledger**:
+Append-only JSONL of Cycle insights. Single cross-cycle source of truth.
+Atomic-append enforced; never rewritten.
+_Avoid_: Log, history, archive.
+
+**Synthesis**:
+Recomputable cross-cycle narrative; rewritten freely by the cross-cycle
+synthesizer subagent. Derived from the Insight ledger; never the source of
+truth.
+_Avoid_: Summary, distillation.
+
+### Evaluation
+
+**Trace profile**:
+Per-trace human-and-AI-authored Markdown description of workload
+characteristics (skew, working-set size, scan/hot-set behavior). Created once
+per Trace, signed off by the maintainer, then immutable for the run.
+_Avoid_: Trace doc, workload description.
+
+**Development suite**:
+Traces visible to the AI during evaluation. v1: ~4–6 traces, 3 cache sizes
+each.
+_Avoid_: Training set, dev set.
+
+**Held-out suite**:
+Additional traces hidden from the AI. Run only on Pareto-front Variants.
+Catches AI overfitting to the development suite.
+_Avoid_: Test set, validation set.
+
+**Fitness vector**:
+Multi-dimensional measurement of a Variant's quality. v1: hit rate (per
+trace × size), per-op time (p50/p99 from microbench), metadata size (static
+via `mem::size_of`).
+_Avoid_: Score, fitness value (singular implies scalar).
+
+**Pareto front**:
+The set of non-dominated Variants in a Cycle's Fitness vectors. The Cycle's
+winners — typically several, not one.
+_Avoid_: Leaderboard, top-K.
+
+**Fingerprint**:
+Stable hash of a Variant's `impl/` directory. Used for cross-cycle dedup
+(catches the AI re-proposing the same Variant) and for v2 multi-machine
+worker assignment.
+_Avoid_: Hash, signature.
+
+### Architectural principles
+
+**Token-frugal principle**:
+Anything that doesn't require LLM judgment is a script. The LLM is for
+hypothesizing, code-writing, smoke-log judgment, and insight synthesis;
+everything else (ledger reads, leaderboard computation, log filtering, context
+bundling) is mechanical and lives in `evolve/scripts/`.
+_Avoid_: Token budget (means a numeric cap; the principle is architectural).
+
+**v2-ready invariants**:
+Five v1 architectural commitments that make v2 multi-machine execution a
+storage-layer swap rather than a refactor: repo-relative paths only, atomic
+ledger append, stable Variant fingerprint, `worker_id` on every artifact,
+ledger as the only synchronization point.
+_Avoid_: Distributed prerequisites, cluster invariants.
+
 ## Flagged ambiguities
 
 - **"Target"** — in code, this is both a noun for "the home bucket of a key" (use **Target bucket** or `Slot::Target`) and an adjective in policy discussion. Prefer **Target bucket** / `Slot::Target` when the domain meaning is intended; avoid bare "target."
@@ -179,3 +350,5 @@ _Avoid_: Bottom, front
 - **"Insert"** vs **"Put"** — now unified: the primitive is **Put** (`SegmentCore::put(slot, item)`). Avoid **Insert** as a verb except when referring to `InsertPosition` (the enum used by `Bucket::put_at`).
 - **"Demote"** — strictly means the promotion tier cascade; combined never demotes, it **places** items and drops evicted ones to stash.
 - **"Promotion"** — overloaded: strategy name (**Promotion strategy**) and the act of moving an item up a tier. Prefer **Promotion strategy** when the strategy is meant and the bare verb **Promote** when the action is meant.
+- **"Variant"** — overloaded across contexts. In the **Dash** domain, used only as a compound noun for promotion sub-variants (**Hot variant**, **Cold variant**). In the **Evolve framework** domain, **Variant** alone is a proposed alternative implementation of a Subject cache. Bare "variant" is ambiguous when both contexts are in scope; qualify with the domain.
+- **"Insight"** — bare "insight" is ambiguous within the framework. Always qualify: **Variant insight** (per-variant) or **Cycle insight** (per-cycle synthesis). The **Insight ledger** is the durable record; **Synthesis** is the recomputable narrative.
