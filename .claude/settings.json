@@ -9,21 +9,14 @@
       "Bash(cargo clippy*)",
       "Bash(cargo doc*)",
       "Bash(cargo check*)",
-
       "Bash(gradlew*)",
       "Bash(./gradlew*)",
-
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",
-      "Skill(sim)",
-
-      "Edit(../caffeine/**)"
+      "Skill(sim)"
     ],
     "additionalDirectories": [
       "../caffeine"
     ]
-  },
-  "env": {
-    "CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD": "1"
   }
 }
