@@ -1,7 +1,7 @@
 """End-to-end test for the cycle-start skill stub.
 
 Runs scripts/cycle-start.sh against a temp repo root and asserts
-the acceptance criteria from issue #55:
+these acceptance criteria:
 - cycles/0001/ exists with required files
 - ledger gains exactly one row
 - row has worker_id and no absolute paths

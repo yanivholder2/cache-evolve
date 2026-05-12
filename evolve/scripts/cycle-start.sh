@@ -2,17 +2,25 @@
 # Stub orchestrator — walking-skeleton implementation of one hardcoded cycle.
 # Every subagent slot is a stub: fixed variant, all gates pass, fixed fitness numbers.
 #
-# Usage: EVOLVE_ROOT=<path-to-evolve/> cycle-start.sh
+# Usage: [HYPOTHESIS="..."] [EVOLVE_ROOT=<path-to-evolve/>] cycle-start.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVOLVE_ROOT="${EVOLVE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 REPO_ROOT="$(cd "$EVOLVE_ROOT/.." && pwd)"
 
-CYCLE_NUM="0001"
-CYCLE_DIR="$EVOLVE_ROOT/cycles/$CYCLE_NUM"
+# --- Determine next cycle number ---
+CYCLES_DIR="$EVOLVE_ROOT/cycles"
+mkdir -p "$CYCLES_DIR"
+LAST_CYCLE=$(ls "$CYCLES_DIR" 2>/dev/null | grep -E '^[0-9]{4}$' | sort -n | tail -1 || echo "0000")
+CYCLE_NUM=$(printf "%04d" $((10#$LAST_CYCLE + 1)))
+
+CYCLE_DIR="$CYCLES_DIR/$CYCLE_NUM"
 LEDGER="$EVOLVE_ROOT/ledger/cycles.jsonl"
-WORKER_ID="local"
+WORKER_ID="${WORKER_ID:-local}"
+
+# Hypothesis can be passed as env var or first arg
+HYPOTHESIS="${1:-${HYPOTHESIS:-"Swap the eviction policy to FIFO as a baseline sanity check."}}"
 
 if [ -d "$CYCLE_DIR" ]; then
     echo "error: cycle $CYCLE_NUM already exists at $CYCLE_DIR" >&2
@@ -22,14 +30,14 @@ fi
 # --- scaffold cycle directory ---
 mkdir -p "$CYCLE_DIR/variants/v001/impl" "$CYCLE_DIR/variants/v001/eval"
 
-cat > "$CYCLE_DIR/cohort.md" <<'EOF'
-# Cycle 0001 Cohort
+cat > "$CYCLE_DIR/cohort.md" <<EOF
+# Cycle $CYCLE_NUM Cohort
 
 **Stub run — walking skeleton.**
 
 ## Hypothesis H001
 
-Swap the eviction policy to FIFO as a baseline sanity check.
+$HYPOTHESIS
 EOF
 
 # stub impl placeholder
@@ -55,8 +63,8 @@ Fitness: hit_rate=0.42, per_op_ns=120, metadata_bytes=4096.
 All gates passed (stub). No real evaluation performed.
 EOF
 
-cat > "$CYCLE_DIR/cycle-insight.md" <<'EOF'
-# Cycle 0001 Insight
+cat > "$CYCLE_DIR/cycle-insight.md" <<EOF
+# Cycle $CYCLE_NUM Insight
 
 **Stub — walking skeleton.**
 

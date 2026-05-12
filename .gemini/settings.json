@@ -17,7 +17,8 @@
       "ShellTool(cargo doc)",
       "ShellTool(cargo check)",
       "ShellTool(gradlew)",
-      "ShellTool(./gradlew)"
+      "ShellTool(pytest)",
+      "ShellTool(evolve/scripts/cycle-start.sh)"
     ]
   }
 }

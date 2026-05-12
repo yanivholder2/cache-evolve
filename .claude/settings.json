@@ -10,7 +10,8 @@
       "Bash(cargo doc*)",
       "Bash(cargo check*)",
       "Bash(gradlew*)",
-      "Bash(./gradlew*)",
+      "Bash(pytest*)",
+      "Bash(evolve/scripts/cycle-start.sh*)",
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",
       "Skill(sim)"
