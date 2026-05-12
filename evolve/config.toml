@@ -1,0 +1,24 @@
+# evolve framework configuration — v1 knobs
+# All values here are defaults; loaders need not consume every field yet.
+
+[framework]
+# Level 3 = bounded mutation via stable extension points.
+# Level 4 = open-ended code rewriting (stricter gates required).
+action_space = "L3"
+
+# "local" = laptop/workstation single-machine run.
+# "scale" = future multi-machine; deferred to v2.
+profile = "local"
+
+# Variants proposed and evaluated per cycle.
+cohort_size = 6
+
+# Max implementation attempts per variant before the variant is rejected.
+retry_budget = 3
+
+[ledger]
+path = "evolve/ledger/cycles.jsonl"
+
+[cycles]
+# 4-digit zero-padded cycle numbering: 0001, 0002, …
+number_format = "%04d"

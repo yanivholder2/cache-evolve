@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Runtime artifacts (re-generated each run)
+cycles/*/
+ledger/cycles.jsonl
+ledger/*.lock
