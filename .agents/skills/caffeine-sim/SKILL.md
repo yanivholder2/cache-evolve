@@ -1,8 +1,6 @@
 ---
 name: caffeine-sim
 description: Build dash.dll and run the Caffeine cache simulator. Use when the user wants to run caffeine, test with caffeine, build and run the simulator, test logs, verify JNI integration, or do a single simulation run. Triggers on "run caffeine", "test with caffeine", "caffeine run", "test the logs", "build and run", "run the simulator", "simulate".
-model: opus
-allowed-tools: Bash(*gradlew*), Agent
 ---
 
 Build the Rust JNI library and run the Caffeine cache simulator.
@@ -15,7 +13,7 @@ Build the Rust JNI library and run the Caffeine cache simulator.
    ```
    Use `$REPO_ROOT/target/release` as the `java.library.path`.
 
-2. **Build** in a background subagent: launch an Agent with `run_in_background: true` to run `cargo build --release`.
+2. **Build**: Run `cargo build --release`. Run this as a background subagent.
 
 3. Wait for the build to complete. If it fails, report the error and stop.
 

@@ -2,9 +2,6 @@
 # Make repo skills under .agents/skills/ visible to Claude Code by linking
 # .claude/skills -> ../.agents/skills.
 #
-# Gemini CLI already discovers .agents/skills/ natively (it is a built-in
-# alias for .gemini/skills/), so no Gemini-side link is needed.
-#
 # Cross-platform: works on Linux/macOS bash and on Git Bash / MSYS2 / Cygwin
 # on Windows. On Windows, if `ln -s` fails to produce a real symlink (no
 # Developer Mode), the script falls back to a directory junction created via
@@ -12,6 +9,7 @@
 #
 # Idempotent: safe to re-run.
 
+# Exit on error, undefined variables, and pipeline failures.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

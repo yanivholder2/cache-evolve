@@ -1,9 +1,6 @@
 ---
 name: sim
 description: Configure and run the standalone Rust cache simulator (cargo run, not Caffeine JNI). Use when the user wants to run the Rust binary directly, test cache behavior locally, or change simulator settings in main.rs. Triggers on "cargo run", "run standalone", "run main".
-argument-hint: "[cache-type] [eviction-policy]"
-model: opus
-allowed-tools: Bash(cargo run*), Bash(cargo fmt*), Read, Edit
 ---
 
 Configure and run the cache simulator.
