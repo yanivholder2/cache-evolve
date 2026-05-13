@@ -2,19 +2,14 @@
   "effortLevel": "high",
   "permissions": {
     "allow": [
-      "Bash(cargo build*)",
-      "Bash(cargo test*)",
-      "Bash(cargo run*)",
-      "Bash(cargo fmt*)",
-      "Bash(cargo clippy*)",
-      "Bash(cargo doc*)",
-      "Bash(cargo check*)",
+      "Bash(cargo *)",
       "Bash(gradlew*)",
       "Bash(pytest*)",
       "Bash(evolve/scripts/cycle-start.sh*)",
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",
-      "Skill(sim)"
+      "Skill(sim)",
+      "Skill(cycle-start)"
     ],
     "additionalDirectories": [
       "~/projects/caffeine"

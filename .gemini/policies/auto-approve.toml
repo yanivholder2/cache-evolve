@@ -1,0 +1,26 @@
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = [
+    "cargo",
+    "gradlew",
+    "pytest",
+    "evolve/scripts/cycle-start.sh",
+]
+decision = "allow"
+priority = 100
+modes = ["default", "plan", "autoEdit"]
+allowRedirection = true
+
+[[rule]]
+toolName = "activate_skill"
+# Using line continuation (\) to keep the list of skills readable.
+argsPattern = """
+.*"name":\\s*"(\
+caffeine-sweep|\
+caffeine-sim|\
+sim|\,
+cycle-start\
+)".*"""
+decision = "allow"
+priority = 100
+modes = ["default", "plan", "autoEdit"]
