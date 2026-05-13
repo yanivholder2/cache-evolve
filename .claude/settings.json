@@ -17,7 +17,7 @@
       "Skill(sim)"
     ],
     "additionalDirectories": [
-      "../caffeine"
+      "~/projects/caffeine"
     ]
   }
 }
