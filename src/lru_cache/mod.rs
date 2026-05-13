@@ -30,15 +30,23 @@ where
 	K: Hash + Eq + Clone + Debug,
 	V: Debug,
 {
-	pub fn new(capacity: usize) -> Self {
-		assert!(capacity > 0, "LruCache capacity must be > 0");
-		Self {
+	pub fn try_new(capacity: usize) -> Option<Self> {
+		if capacity == 0 {
+			log::error!("LruCache.try_new: capacity must be > 0");
+			return None;
+		}
+		log::info!("LruCache.try_new: capacity={capacity}");
+		Some(Self {
 			map: HashMap::with_capacity(capacity),
 			nodes: Vec::with_capacity(capacity),
 			head: None,
 			tail: None,
 			capacity,
-		}
+		})
+	}
+
+	pub fn new(capacity: usize) -> Self {
+		Self::try_new(capacity).expect("LruCache::new: initialization failed")
 	}
 
 	/// Returns the value for `key` if present, promoting it to most-recently-used.
@@ -299,7 +307,7 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic(expected = "capacity must be > 0")]
+	#[should_panic(expected = "initialization failed")]
 	fn capacity_zero_panics() {
 		LruCache::<i64, i64>::new(0);
 	}
