@@ -1,15 +1,16 @@
-use crate::shared::item::Item;
-use crate::shared::utils::get_index;
+mod dash_bucket;
+pub mod dash_settings;
+pub mod jni;
+pub mod segments;
+
 use log::{debug, info};
-use segments::Segment;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-mod dash_bucket;
-pub mod dash_settings;
-pub mod segments;
-pub mod jni;
+use crate::dash::segments::Segment;
+use crate::shared::item::Item;
+use crate::shared::utils::get_index;
 
 /// Multi-segment associative cache. Each segment owns its own normal buckets and stash
 /// and implements a probing strategy via `Segment`. `Dash` shards keys across segments
@@ -26,7 +27,7 @@ where
 	V: Eq + Copy + Debug,
 	S: Segment<K, V>,
 {
-	segments: Vec<S>,
+	pub segments: Vec<S>,
 	_phantom: PhantomData<(K, V)>,
 }
 
@@ -36,11 +37,34 @@ where
 	V: Eq + Copy + Debug,
 	S: Segment<K, V>,
 {
-	pub fn new(num_segments: usize, segment_factory: impl Fn() -> S) -> Self {
-		assert!(num_segments > 0, "num_segments must be > 0");
-		info!("Dash.new: segments={num_segments}");
-		let segments: Vec<_> = (0..num_segments).map(|_| segment_factory()).collect();
-		Self { segments, _phantom: PhantomData }
+	/// Creates a new Dash cache with fallible segment initialization.
+	/// Returns `None` if `num_segments == 0` or if `segment_factory` returns `None` for any segment.
+	pub fn try_new(num_segments: usize, mut segment_factory: impl FnMut() -> Option<S>) -> Option<Self> {
+		if num_segments == 0 {
+			log::error!("Dash.try_new: num_segments must be > 0");
+			return None;
+		}
+		let segments = (0..num_segments)
+			.map(|_| segment_factory())
+			.collect::<Option<Vec<_>>>();
+
+		if segments.is_none() {
+			log::error!("Dash.try_new: segment initialization failed");
+			return None;
+		}
+
+		info!("Dash.try_new: segments={num_segments}");
+		Some(Self {
+			segments: segments.unwrap(),
+			_phantom: PhantomData,
+		})
+	}
+
+	/// Creates a new Dash cache.
+	/// # Panics
+	/// Panics if `num_segments == 0` or if initialization fails.
+	pub fn new(num_segments: usize, mut segment_factory: impl FnMut() -> S) -> Self {
+		Self::try_new(num_segments, || Some(segment_factory())).expect("Dash::new: initialization failed")
 	}
 
 	pub fn put(&mut self, key: K, value: V) {
@@ -60,6 +84,8 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::dash::dash_settings::DRAGON_SETTINGS;
+	use crate::dash::segments::{CombinedSegment, EvictionTieBreaker};
 	use crate::shared::eviction_policy::EvictionPolicy;
 	use crate::test_utils::small_dash_settings;
 	use segments::PromotionColdSegment;
@@ -81,5 +107,13 @@ mod tests {
 			PromotionColdSegment::new(&settings)
 		});
 		assert!(cache.get_and_update_item(&42_i64).is_none());
+	}
+
+	#[test]
+	fn try_new_rejects_zero_segments() {
+		let res = Dash::<i64, i64, CombinedSegment<i64, i64>>::try_new(0, || {
+			CombinedSegment::try_new(&DRAGON_SETTINGS, EvictionTieBreaker::EvictProbing)
+		});
+		assert!(res.is_none());
 	}
 }

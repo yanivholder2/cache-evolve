@@ -7,7 +7,7 @@ use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
 use crate::shared::utils::get_index;
-use log::debug;
+use log::{debug, info};
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -35,24 +35,47 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	pub fn new(settings: &DashSettings, tie_breaker: EvictionTieBreaker) -> Self {
-		assert!(
-			matches!(settings.eviction_policy, EvictionPolicy::TimestampLRU | EvictionPolicy::Lfu),
-			"CombinedSegment requires TimestampLRU or Lfu, got {:?}", settings.eviction_policy
-		);
-		Self {
-			core: SegmentCore::new(settings),
-			tie_breaker,
+	/// Creates a new CombinedSegment with fallible initialization.
+	/// Returns `None` if the eviction policy is not `TimestampLRU` or `Lfu`, or if `SegmentCore::try_new` fails.
+	pub fn try_new(settings: &DashSettings, tie_breaker: EvictionTieBreaker) -> Option<Self> {
+		if !matches!(
+			settings.eviction_policy,
+			EvictionPolicy::TimestampLRU | EvictionPolicy::Lfu
+		) {
+			log::error!("CombinedSegment.try_new: incompatible eviction policy {:?}", settings.eviction_policy);
+			return None;
 		}
+		let core = SegmentCore::try_new(settings);
+		if core.is_none() {
+			return None;
+		}
+		info!("CombinedSegment.try_new: tie_breaker={tie_breaker:?}");
+		Some(Self {
+			core: core.unwrap(),
+			tie_breaker,
+		})
+	}
+
+	/// Creates a new CombinedSegment.
+	/// # Panics
+	/// Panics if initialization fails.
+	pub fn new(settings: &DashSettings, tie_breaker: EvictionTieBreaker) -> Self {
+		Self::try_new(settings, tie_breaker).expect("CombinedSegment::new: invalid settings")
 	}
 
 	/// Places `item` into a normal bucket (Target or Probing) — peer-placement verb. Any
 	/// evicted item drops straight to stash; no tier cascade, since the combined eviction
 	/// already compared candidates across both buckets.
 	fn place_in_normal_bucket(&mut self, slot: Slot, item: Item<K, V>) {
-		debug_assert!(!matches!(slot, Slot::Stash), "place_in_normal_bucket: Slot::Stash is invalid");
+		debug_assert!(
+			!matches!(slot, Slot::Stash),
+			"place_in_normal_bucket: Slot::Stash is invalid"
+		);
 		if let Some(evicted) = self.core.put_at(slot, InsertPosition::Back, item) {
-			debug!("place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash", evicted.key);
+			debug!(
+				"place_in_normal_bucket: slot={slot:?} evicted_key={:?} -> stash",
+				evicted.key
+			);
 			self.core.put_at(Slot::Stash, InsertPosition::Back, evicted);
 		}
 	}
@@ -86,7 +109,7 @@ where
 			}
 			other => unreachable!(
 				"should_evict_from_target: unsupported policy {other:?} -- combined segments require TimestampLRU or Lfu"
-			)
+			),
 		};
 		match ordering {
 			Ordering::Less => true,
@@ -101,8 +124,12 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	fn core(&self) -> &SegmentCore<K, V> { &self.core }
-	fn core_mut(&mut self) -> &mut SegmentCore<K, V> { &mut self.core }
+	fn core(&self) -> &SegmentCore<K, V> {
+		&self.core
+	}
+	fn core_mut(&mut self) -> &mut SegmentCore<K, V> {
+		&mut self.core
+	}
 
 	/// On a stash hit, peer-places the item into target+probing. Existing target/probing hits touch in
 	/// place.
@@ -172,6 +199,12 @@ mod tests {
 	}
 
 	#[test]
+	fn try_new_rejects_incompatible_policy() {
+		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		assert!(CombinedSegment::<i64, i64>::try_new(&settings, EvictionTieBreaker::EvictProbing).is_none());
+	}
+
+	#[test]
 	fn target_not_full_inserts_into_target() {
 		let mut seg = combined_segment(EvictionPolicy::TimestampLRU);
 		let target_idx = 0;
@@ -200,8 +233,10 @@ mod tests {
 		seg.put(Item::new(keys[2], 30));
 		seg.get(&keys[2]);
 
-		assert!(seg.core.buckets[probing_idx].get_position(&keys[2]).is_some(),
-			"item should be in probing bucket when target is full and probing has space");
+		assert!(
+			seg.core.buckets[probing_idx].get_position(&keys[2]).is_some(),
+			"item should be in probing bucket when target is full and probing has space"
+		);
 	}
 
 	#[test]
@@ -287,8 +322,10 @@ mod tests {
 				|| seg.core.buckets[probing_idx].get_position(&target_keys[2]).is_some()
 		);
 		for &k in &probing_keys {
-			assert!(seg.core.buckets[probing_idx].get_position(&k).is_some(),
-				"probing items with newer timestamps should not be evicted");
+			assert!(
+				seg.core.buckets[probing_idx].get_position(&k).is_some(),
+				"probing items with newer timestamps should not be evicted"
+			);
 		}
 	}
 
@@ -320,10 +357,14 @@ mod tests {
 		seg.put(Item::new(target_keys[2], 30));
 		seg.get(&target_keys[2]);
 
-		let probing_count: usize = probing_keys.iter()
+		let probing_count: usize = probing_keys
+			.iter()
 			.filter(|k| seg.core().buckets[probing_idx].get_position(k).is_some())
 			.count();
-		assert!(probing_count < probing_keys.len(), "EvictProbing should evict from probing");
+		assert!(
+			probing_count < probing_keys.len(),
+			"EvictProbing should evict from probing"
+		);
 	}
 
 	#[test]
@@ -347,7 +388,8 @@ mod tests {
 		seg.put(Item::new(target_keys[2], 30));
 		seg.get(&target_keys[2]);
 
-		let target_originals: usize = [target_keys[0], target_keys[1]].iter()
+		let target_originals: usize = [target_keys[0], target_keys[1]]
+			.iter()
 			.filter(|k| seg.core().buckets[target_idx].get_position(k).is_some())
 			.count();
 		assert!(target_originals < 2, "EvictTarget should evict from target");
@@ -373,11 +415,15 @@ mod tests {
 		seg.put(Item::new(target_keys[0], 10));
 		seg.get(&target_keys[0]);
 
-		assert!(seg.core().buckets[target_idx].get_position(&target_keys[0]).is_some(),
-			"new item should land in target when it has space");
+		assert!(
+			seg.core().buckets[target_idx].get_position(&target_keys[0]).is_some(),
+			"new item should land in target when it has space"
+		);
 		for &k in &probing_keys {
-			assert!(seg.core().buckets[probing_idx].get_position(&k).is_some(),
-				"probing items must not be evicted while target has free space");
+			assert!(
+				seg.core().buckets[probing_idx].get_position(&k).is_some(),
+				"probing items must not be evicted while target has free space"
+			);
 		}
 	}
 
@@ -435,14 +481,19 @@ mod tests {
 		seg.put(Item::new(trigger, 100));
 		seg.get(&trigger);
 
-		let in_stash = seg.core().stash_buckets.iter()
+		let in_stash = seg
+			.core()
+			.stash_buckets
+			.iter()
 			.any(|b| b.get_position(&misplaced).is_some());
 		let in_target = seg.core().buckets[target_idx].get_position(&misplaced).is_some();
 		let in_probing = seg.core().buckets[probing_idx].get_position(&misplaced).is_some();
 
 		assert!(!in_probing, "sanity: misplaced was evicted from bucket 1");
-		assert!(!in_target,
-			"combined eviction must NOT cascade the evicted item into its target bucket");
+		assert!(
+			!in_target,
+			"combined eviction must NOT cascade the evicted item into its target bucket"
+		);
 		assert!(in_stash, "combined eviction must route the evicted item to stash");
 	}
 }
