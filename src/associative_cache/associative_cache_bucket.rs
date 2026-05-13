@@ -26,7 +26,7 @@ where
 		Self {
 			items: Vec::with_capacity(settings.bucket_size),
 			max_size: settings.bucket_size,
-			eviction_policy: settings.eviction_policy.clone(),
+			eviction_policy: settings.eviction_policy,
 		}
 	}
 }

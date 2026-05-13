@@ -74,7 +74,12 @@ where
 		} else {
 			// Arena has room: allocate a new slot
 			let idx = self.nodes.len();
-			self.nodes.push(Node { key: key.clone(), value, prev: None, next: None });
+			self.nodes.push(Node {
+				key: key.clone(),
+				value,
+				prev: None,
+				next: None,
+			});
 			idx
 		};
 		// Link the new/reused slot at the tail (MRU) and register in the map
@@ -245,7 +250,7 @@ mod tests {
 		cache.put(2, 20); // middle
 		cache.put(3, 30); // MRU
 		cache.get(&2); // unlink middle, push to MRU
-		// Order: 1 (LRU), 3, 2 (MRU)
+								 // Order: 1 (LRU), 3, 2 (MRU)
 		cache.put(4, 40); // evicts 1
 		assert!(cache.get(&1).is_none());
 		assert_eq!(*cache.get(&3).unwrap(), 30);
@@ -285,7 +290,7 @@ mod tests {
 		cache.put(2, 20);
 		cache.put(3, 30); // full; 3 is MRU (tail)
 		cache.put(3, 31); // overwrite MRU
-		// Eviction should take 1 (LRU)
+										// Eviction should take 1 (LRU)
 		cache.put(4, 40); // evicts 1
 		assert!(cache.get(&1).is_none());
 		assert_eq!(*cache.get(&2).unwrap(), 20);

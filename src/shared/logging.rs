@@ -61,8 +61,7 @@ pub fn init_file_and_stdout_logger(cache_type: &str, debug_mode: usize) {
 	INIT.call_once(|| {
 		let level = debug_mode_to_level(debug_mode);
 		let config = build_config();
-		let mut loggers: Vec<Box<dyn SharedLogger>> =
-			vec![SimpleLogger::new(level, config.clone())];
+		let mut loggers: Vec<Box<dyn SharedLogger>> = vec![SimpleLogger::new(level, config.clone())];
 		if let Some(log_file) = create_log_file(cache_type) {
 			loggers.push(WriteLogger::new(level, config, log_file));
 		}
