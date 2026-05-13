@@ -20,7 +20,7 @@ Build the Rust JNI library and run the Caffeine cache simulator.
 4. **Run the simulator** (10-minute timeout):
    ```bash
    REPO_ROOT=$(git rev-parse --show-toplevel)
-   CAFFEINE_DIR="$REPO_ROOT/../caffeine"
+   CAFFEINE_DIR=~/projects/caffeine
    "$CAFFEINE_DIR/gradlew" -p "$CAFFEINE_DIR" simulator:run -PjvmArgs="-XX:+UseParallelGC,-Xmx8g,-Djava.library.path=$REPO_ROOT/target/release" -q
    ```
 

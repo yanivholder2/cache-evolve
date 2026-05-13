@@ -36,7 +36,7 @@ where
 	// ----------------------------------------------------------------------------------
 
 	/// Puts an item at the back of the bucket (sugar for `put_at(item, InsertPosition::Back)`).
-	/// 
+	///
 	/// Returns `(&inserted, Option<evicted>)`. Evicts per policy if full.
 	fn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {
 		self.put_at(item, InsertPosition::Back)
@@ -46,11 +46,7 @@ where
 	///
 	/// Returns `(&inserted, Option<evicted>)`. Evicts per policy if full.
 	/// If the key already exists, updates in place per policy (ignores `pos`).
-	fn put_at(
-		&mut self,
-		item: Item<K, V>,
-		pos: InsertPosition,
-	) -> (&Item<K, V>, Option<Item<K, V>>) {
+	fn put_at(&mut self, item: Item<K, V>, pos: InsertPosition) -> (&Item<K, V>, Option<Item<K, V>>) {
 		if let Some(position) = self.get_position(&item.key) {
 			trace!("Bucket.put_at: key={:?} update_existing", item.key);
 			self.get_items_mut()[position].value = item.value;
@@ -121,7 +117,11 @@ where
 	fn evict_item(&mut self) -> Option<Item<K, V>> {
 		let idx = self.eviction_candidate_index()?;
 		let evicted = self.remove_at(idx);
-		debug!("Bucket.evict_item: policy={:?} evicted_key={:?}", self.get_eviction_policy(), evicted.key);
+		debug!(
+			"Bucket.evict_item: policy={:?} evicted_key={:?}",
+			self.get_eviction_policy(),
+			evicted.key
+		);
 		Some(evicted)
 	}
 
@@ -143,7 +143,8 @@ where
 		Some(match self.get_eviction_policy() {
 			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => 0,
 			EvictionPolicy::TimestampLRU => {
-				self.get_items()
+				self
+					.get_items()
 					.iter()
 					.enumerate()
 					.min_by_key(|(_, item)| item.timestamp)
@@ -152,7 +153,8 @@ where
 			}
 			EvictionPolicy::Lifo => self.get_items().len() - 1,
 			EvictionPolicy::Lfu => {
-				self.get_items()
+				self
+					.get_items()
 					.iter()
 					.enumerate()
 					.min_by_key(|(_, item)| item.lfu_counter)
@@ -169,12 +171,11 @@ where
 			return None;
 		}
 		Some(match self.get_eviction_policy() {
-			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => {
-				self.get_items().len() - 1
-			}
+			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => self.get_items().len() - 1,
 			EvictionPolicy::Lifo => 0,
 			EvictionPolicy::TimestampLRU => {
-				self.get_items()
+				self
+					.get_items()
 					.iter()
 					.enumerate()
 					.max_by_key(|(_, item)| item.timestamp)
@@ -182,7 +183,8 @@ where
 					.0
 			}
 			EvictionPolicy::Lfu => {
-				self.get_items()
+				self
+					.get_items()
 					.iter()
 					.enumerate()
 					.max_by_key(|(_, item)| item.lfu_counter)
@@ -196,12 +198,12 @@ where
 	fn remove_at(&mut self, index: usize) -> Item<K, V> {
 		debug_assert!(
 			index < self.get_items().len(),
-			"remove_at: index {index} out of bounds (len={})", self.get_items().len()
+			"remove_at: index {index} out of bounds (len={})",
+			self.get_items().len()
 		);
 		self.get_items_mut().remove(index)
 	}
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -216,7 +218,11 @@ mod tests {
 
 	impl TestBucket {
 		fn new(max_size: usize, policy: EvictionPolicy) -> Self {
-			Self { items: Vec::new(), max_size, eviction_policy: policy }
+			Self {
+				items: Vec::new(),
+				max_size,
+				eviction_policy: policy,
+			}
 		}
 	}
 
@@ -455,7 +461,7 @@ mod tests {
 		bucket.get(&1); // counter: 1
 		bucket.get(&1); // counter: 2
 		bucket.get(&2); // counter: 1
-		// 2 has lower count, should be evicted
+									// 2 has lower count, should be evicted
 		let (_, evicted) = bucket.put(Item::new(3, 30));
 		assert_eq!(evicted.unwrap().key, 2);
 	}
@@ -561,7 +567,7 @@ mod tests {
 		bucket.get(&1); // counter: 1
 		bucket.get(&1); // counter: 2
 		bucket.get(&2); // counter: 1
-		// key 2 has lower counter
+									// key 2 has lower counter
 		assert_eq!(bucket.eviction_candidate_index(), Some(1));
 	}
 
@@ -571,7 +577,7 @@ mod tests {
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&2); // refresh timestamp of 2
-		// 1 has the older timestamp
+									// 1 has the older timestamp
 		let idx = bucket.eviction_candidate_index().unwrap();
 		assert_eq!(bucket.get_items()[idx].key, 1);
 	}

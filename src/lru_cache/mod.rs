@@ -30,15 +30,23 @@ where
 	K: Hash + Eq + Clone + Debug,
 	V: Debug,
 {
-	pub fn new(capacity: usize) -> Self {
-		assert!(capacity > 0, "LruCache capacity must be > 0");
-		Self {
+	pub fn try_new(capacity: usize) -> Option<Self> {
+		if capacity == 0 {
+			log::error!("LruCache.try_new: capacity must be > 0");
+			return None;
+		}
+		log::info!("LruCache.try_new: capacity={capacity}");
+		Some(Self {
 			map: HashMap::with_capacity(capacity),
 			nodes: Vec::with_capacity(capacity),
 			head: None,
 			tail: None,
 			capacity,
-		}
+		})
+	}
+
+	pub fn new(capacity: usize) -> Self {
+		Self::try_new(capacity).expect("LruCache::new: initialization failed")
 	}
 
 	/// Returns the value for `key` if present, promoting it to most-recently-used.
@@ -74,7 +82,12 @@ where
 		} else {
 			// Arena has room: allocate a new slot
 			let idx = self.nodes.len();
-			self.nodes.push(Node { key: key.clone(), value, prev: None, next: None });
+			self.nodes.push(Node {
+				key: key.clone(),
+				value,
+				prev: None,
+				next: None,
+			});
 			idx
 		};
 		// Link the new/reused slot at the tail (MRU) and register in the map
@@ -245,7 +258,7 @@ mod tests {
 		cache.put(2, 20); // middle
 		cache.put(3, 30); // MRU
 		cache.get(&2); // unlink middle, push to MRU
-		// Order: 1 (LRU), 3, 2 (MRU)
+								 // Order: 1 (LRU), 3, 2 (MRU)
 		cache.put(4, 40); // evicts 1
 		assert!(cache.get(&1).is_none());
 		assert_eq!(*cache.get(&3).unwrap(), 30);
@@ -285,7 +298,7 @@ mod tests {
 		cache.put(2, 20);
 		cache.put(3, 30); // full; 3 is MRU (tail)
 		cache.put(3, 31); // overwrite MRU
-		// Eviction should take 1 (LRU)
+										// Eviction should take 1 (LRU)
 		cache.put(4, 40); // evicts 1
 		assert!(cache.get(&1).is_none());
 		assert_eq!(*cache.get(&2).unwrap(), 20);
@@ -294,7 +307,7 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic(expected = "capacity must be > 0")]
+	#[should_panic(expected = "initialization failed")]
 	fn capacity_zero_panics() {
 		LruCache::<i64, i64>::new(0);
 	}

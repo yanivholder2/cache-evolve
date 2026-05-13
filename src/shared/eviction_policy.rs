@@ -39,8 +39,14 @@ mod tests {
 
 	#[test]
 	fn from_usize_valid_indices() {
-		assert!(matches!(EvictionPolicy::from_usize(0), Some(EvictionPolicy::ClassicLRU)));
-		assert!(matches!(EvictionPolicy::from_usize(1), Some(EvictionPolicy::TimestampLRU)));
+		assert!(matches!(
+			EvictionPolicy::from_usize(0),
+			Some(EvictionPolicy::ClassicLRU)
+		));
+		assert!(matches!(
+			EvictionPolicy::from_usize(1),
+			Some(EvictionPolicy::TimestampLRU)
+		));
 		assert!(matches!(EvictionPolicy::from_usize(2), Some(EvictionPolicy::Lifo)));
 		assert!(matches!(EvictionPolicy::from_usize(3), Some(EvictionPolicy::Lfu)));
 		assert!(matches!(EvictionPolicy::from_usize(4), Some(EvictionPolicy::Fifo)));

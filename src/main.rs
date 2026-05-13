@@ -1,8 +1,6 @@
 use dash::associative_cache::{associative_cache_settings::AssociativeCacheSettings, AssociativeCache};
 use dash::dash::dash_settings::DashSettings;
-use dash::dash::segments::{
-	CombinedSegment, EvictionTieBreaker, PromotionColdSegment, PromotionHotSegment, Segment,
-};
+use dash::dash::segments::{CombinedSegment, EvictionTieBreaker, PromotionColdSegment, PromotionHotSegment, Segment};
 use dash::dash::Dash;
 use dash::shared::eviction_policy::EvictionPolicy;
 use log::info;
@@ -112,7 +110,9 @@ fn main() {
 		CacheKind::DashCombined => {
 			dash::init_file_and_stdout_logger("dash_combined", 2);
 			let s = combined_settings();
-			run_simulator(Dash::new(s.num_of_segments, || CombinedSegment::new(&s, EvictionTieBreaker::EvictProbing)));
+			run_simulator(Dash::new(s.num_of_segments, || {
+				CombinedSegment::new(&s, EvictionTieBreaker::EvictProbing)
+			}));
 		}
 	}
 }

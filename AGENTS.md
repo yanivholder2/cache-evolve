@@ -4,7 +4,6 @@ M.Sc. thesis on mitigating the **hot set problem** in N-way associative caches u
 
 # Source Control & Workflow
 After completing a logical unit of work (feature, fix, refactor, etc.), propose a commit. Avoid staging/committing changes unless explicitly requested.
-All new worktrees must be created inside the `.worktrees/` directory in the repository root.
 
 # Conventions
 
@@ -13,7 +12,7 @@ See `../docs/CONVENTIONS.md`
 # Caffeine Simulator Integration
 Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI.
 
-**Repo**: `../caffeine` (sibling of this repo; the only caffeine repo to use)
+**Repo**: `~/projects/caffeine` (sibling of the main repo; the only caffeine repo to use)
 
 **Invariants**:
 - Pointer-based JNI: Java side stores the pointer returned from cache init and passes it back on every call.

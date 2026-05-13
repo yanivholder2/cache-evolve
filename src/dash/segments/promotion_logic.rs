@@ -14,31 +14,29 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 /// Moves `item` into its target bucket. Any evicted item flows through the tier cascade.
-pub(crate) fn promote_to_target<K, V>(
-	core: &mut SegmentCore<K, V>,
-	item: Item<K, V>,
-	insert_pos: InsertPosition,
-) where
+pub(crate) fn promote_to_target<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
+where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
 	let target_idx = get_index(&item.key, core.segment_size);
-	let Some(evicted) = core.put_at(Slot::Target, insert_pos, item) else { return; };
+	let Some(evicted) = core.put_at(Slot::Target, insert_pos, item) else {
+		return;
+	};
 	demote_from_normal_bucket(core, evicted, target_idx, insert_pos);
 }
 
 /// Moves `item` into its probing bucket. Any evicted item flows through the tier cascade.
-pub(crate) fn promote_to_probing<K, V>(
-	core: &mut SegmentCore<K, V>,
-	item: Item<K, V>,
-	insert_pos: InsertPosition,
-) where
+pub(crate) fn promote_to_probing<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
+where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
 	let target_idx = get_index(&item.key, core.segment_size);
 	let probing_idx = (target_idx + 1) % core.segment_size;
-	let Some(evicted) = core.put_at(Slot::Probing, insert_pos, item) else { return; };
+	let Some(evicted) = core.put_at(Slot::Probing, insert_pos, item) else {
+		return;
+	};
 	demote_from_normal_bucket(core, evicted, probing_idx, insert_pos);
 }
 
@@ -56,12 +54,21 @@ fn demote_from_normal_bucket<K, V>(
 {
 	let true_target = get_index(&item.key, core.segment_size);
 	if true_target == source_idx {
-		debug!("demote_from_normal_bucket: key={:?} target={source_idx} -> stash", item.key);
+		debug!(
+			"demote_from_normal_bucket: key={:?} target={source_idx} -> stash",
+			item.key
+		);
 		core.put_at(Slot::Stash, insert_pos, item);
 	} else {
-		debug!("demote_from_normal_bucket: key={:?} probing={source_idx} -> target={true_target}", item.key);
+		debug!(
+			"demote_from_normal_bucket: key={:?} probing={source_idx} -> target={true_target}",
+			item.key
+		);
 		if let Some(cascade) = core.put_at(Slot::Target, insert_pos, item) {
-			debug!("demote_from_normal_bucket: cascade key={:?} target={true_target} -> stash", cascade.key);
+			debug!(
+				"demote_from_normal_bucket: cascade key={:?} target={true_target} -> stash",
+				cascade.key
+			);
 			core.put_at(Slot::Stash, insert_pos, cascade);
 		}
 	}
@@ -150,13 +157,14 @@ mod tests {
 		promote_to_probing(seg.core_mut(), Item::new(trigger, 200), InsertPosition::Back);
 
 		let in_target = seg.core().buckets[target_idx].get_position(&k).is_some();
-		let in_stash = seg.core().stash_buckets.iter()
-			.any(|b| b.get_position(&k).is_some());
+		let in_stash = seg.core().stash_buckets.iter().any(|b| b.get_position(&k).is_some());
 		let still_in_probing = seg.core().buckets[probing_idx].get_position(&k).is_some();
 
 		assert!(!still_in_probing, "sanity: k was evicted from its probing bucket");
-		assert!(in_target,
-			"promotion demotion from probing must place item into its target bucket");
+		assert!(
+			in_target,
+			"promotion demotion from probing must place item into its target bucket"
+		);
 		assert!(!in_stash, "promotion demotion must not bypass the target tier");
 	}
 
@@ -181,7 +189,9 @@ mod tests {
 		promote_to_probing(seg.core_mut(), Item::new(trigger, 99), insert_pos);
 
 		let items = seg.core().buckets[target_idx].get_items();
-		let pos = items.iter().position(|it| it.key == foreign)
+		let pos = items
+			.iter()
+			.position(|it| it.key == foreign)
 			.expect("foreign should be in true target after retry");
 		assert_eq!(pos, expected_idx);
 	}
@@ -219,7 +229,9 @@ mod tests {
 		promote_to_target(seg.core_mut(), Item::new(trigger, 99), insert_pos);
 
 		let stash_items = seg.core().stash_buckets[stash_idx].get_items();
-		let pos = stash_items.iter().position(|it| it.key == victim)
+		let pos = stash_items
+			.iter()
+			.position(|it| it.key == victim)
 			.expect("victim should land directly in stash");
 		assert_eq!(pos, expected_idx);
 	}
@@ -267,7 +279,9 @@ mod tests {
 		promote_to_probing(seg.core_mut(), Item::new(trigger, 99), insert_pos);
 
 		let stash_items = seg.core().stash_buckets[stash_idx].get_items();
-		let pos = stash_items.iter().position(|it| it.key == cascaded)
+		let pos = stash_items
+			.iter()
+			.position(|it| it.key == cascaded)
 			.expect("cascaded target item should land in stash via target overflow");
 		assert_eq!(pos, expected_idx);
 	}

@@ -5,7 +5,6 @@
 ### Bugs
 
 - [Dash uniqueness invariant unenforced](#dash-uniqueness-invariant-unenforced)
-- [JNI init asserts panic across FFI](#jni-init-asserts-panic-across-ffi)
 
 ### Tasks
 
@@ -39,12 +38,6 @@ _(none)_
 - `Dash` doc comment (`src/dash/mod.rs:18-22`) claims "each key resides in at most one location", but `Segment::put` (default in `src/dash/segments/mod.rs:105-108`) unconditionally routes new items to stash. A re-put after a stash→target migration leaves a stash duplicate while the original sits in target; `promotion_get` returns the stash copy first and re-promotes it, leaving the old target copy stale.
 - `tests/dash_integration.rs:140` (`reput_between_gets_updates_value`) currently codifies the buggy behavior — masks rather than exposes the duplicate.
 - Options: (a) make `Segment::put` look up & overwrite/remove existing entries in target/probing first, or (b) revise the `Dash` doc + JNI layer to formally permit/handle duplicates. Either way, the doc and the code must agree.
-
-### JNI init asserts panic across FFI
-- **Created**: 2026-04-28 | **Priority**: 1
-- `SegmentCore::new` (`src/dash/segments/mod.rs:51-52`) and `Dash::new` (`src/dash/mod.rs:40`) `assert!` on bad settings. Both are reachable from the JNI init path; a panic across FFI aborts the JVM.
-- `DashSettings::from_jni_args` accepts `num_of_stash_buckets = 0` (only `< 0` is rejected) → assert fires inside the constructor.
-- Fix: tighten `from_jni_args` to reject `<= 0` for both `num_of_stash_buckets` and `num_of_segments`, and convert the constructor asserts to return `Result`/`None` so JNI init can return `0` instead of aborting the JVM.
 
 ## Tasks
 

@@ -4,21 +4,7 @@
   },
   "context": {
     "includeDirectories": [
-      "../caffeine"
-    ]
-  },
-  "tools": {
-    "coreTools": [
-      "ShellTool(cargo build)",
-      "ShellTool(cargo test)",
-      "ShellTool(cargo run)",
-      "ShellTool(cargo fmt)",
-      "ShellTool(cargo clippy)",
-      "ShellTool(cargo doc)",
-      "ShellTool(cargo check)",
-      "ShellTool(gradlew)",
-      "ShellTool(pytest)",
-      "ShellTool(evolve/scripts/cycle-start.sh)"
+      "~/projects/caffeine"
     ]
   }
 }

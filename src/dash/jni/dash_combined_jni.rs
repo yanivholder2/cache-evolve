@@ -10,23 +10,21 @@ use log::{info, trace};
 type CacheTy = Dash<i64, i64, CombinedSegment<i64, i64>>;
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_initDefaultCache<
-	'local,
->(
-	_env: JNIEnv<'local>,
-	_class: JClass<'local>,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_initDefaultCache(
+	_env: JNIEnv,
+	_class: JClass,
 ) -> jlong {
-	let mut settings = DashSettings::default();
-	settings.eviction_policy = EvictionPolicy::TimestampLRU;
+	let settings = DashSettings {
+		eviction_policy: EvictionPolicy::TimestampLRU,
+		..DashSettings::default()
+	};
 	create_cache(settings, EvictionTieBreaker::EvictProbing)
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_initCache<
-	'local,
->(
-	_env: JNIEnv<'local>,
-	_class: JClass<'local>,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_initCache(
+	_env: JNIEnv,
+	_class: JClass,
 	num_of_segments: jlong,
 	num_of_normal_buckets: jlong,
 	num_of_stash_buckets: jlong,
@@ -36,8 +34,12 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	tie_breaker: jlong,
 ) -> jlong {
 	let Some(settings) = DashSettings::from_jni_args(
-		num_of_segments, num_of_normal_buckets, num_of_stash_buckets,
-		bucket_size, eviction_policy, debug_mode,
+		num_of_segments,
+		num_of_normal_buckets,
+		num_of_stash_buckets,
+		bucket_size,
+		eviction_policy,
+		debug_mode,
 	) else {
 		eprintln!("ERROR: dash_combined_jni.init invalid args: segments={num_of_segments} buckets={num_of_normal_buckets} stash={num_of_stash_buckets} bucket_size={bucket_size} policy={eviction_policy} debug={debug_mode}");
 		return 0;
@@ -56,16 +58,26 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 fn create_cache(settings: DashSettings, tie_breaker: EvictionTieBreaker) -> jlong {
-	use crate::shared::eviction_policy::EvictionPolicy;
-	if !matches!(settings.eviction_policy, EvictionPolicy::TimestampLRU | EvictionPolicy::Lfu) {
-		eprintln!("ERROR: dash_combined requires TimestampLRU or Lfu, got {:?}", settings.eviction_policy);
+	if !matches!(
+		settings.eviction_policy,
+		EvictionPolicy::TimestampLRU | EvictionPolicy::Lfu
+	) {
+		eprintln!(
+			"ERROR: dash_combined requires TimestampLRU or Lfu, got {:?}",
+			settings.eviction_policy
+		);
 		return 0;
 	}
 	logging::init_file_logger("dash_combined", settings.debug_mode);
 
-	let cache: CacheTy = Dash::new(settings.num_of_segments, || {
-		CombinedSegment::new(&settings, tie_breaker)
-	});
+	let Some(cache) = Dash::<i64, i64, CombinedSegment<i64, i64>>::try_new(settings.num_of_segments, || {
+		CombinedSegment::try_new(&settings, tie_breaker)
+	}) else {
+		use log::error;
+		error!("dash_combined_jni.create_cache: initialization failed. segments={}, buckets={}, stash={}, policy={:?}, tie_breaker={:?}", 
+			settings.num_of_segments, settings.num_of_normal_buckets, settings.num_of_stash_buckets, settings.eviction_policy, tie_breaker);
+		return 0;
+	};
 	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
 
 	info!("create_cache: ptr={cache_ptr} settings={settings:?} tie_breaker={tie_breaker:?}");
@@ -73,15 +85,15 @@ fn create_cache(settings: DashSettings, tie_breaker: EvictionTieBreaker) -> jlon
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_getFromCacheIfPresent<
-	'local,
->(
-	_env: JNIEnv<'local>,
-	_class: JClass<'local>,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_getFromCacheIfPresent(
+	_env: JNIEnv,
+	_class: JClass,
 	cache_ptr: jlong,
 	key: jlong,
 ) -> jlong {
-	if cache_ptr == 0 { return -1; }
+	if cache_ptr == 0 {
+		return -1;
+	}
 	// SAFETY: Java caller guarantees single-threaded access per cache pointer.
 	let cache = unsafe { &mut *(cache_ptr as *mut CacheTy) };
 	match cache.get_and_update_item(&key) {
@@ -97,16 +109,16 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_putToCache<
-	'local,
->(
-	_env: JNIEnv<'local>,
-	_class: JClass<'local>,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_putToCache(
+	_env: JNIEnv,
+	_class: JClass,
 	cache_ptr: jlong,
 	key: jlong,
 	value: jlong,
 ) {
-	if cache_ptr == 0 { return; }
+	if cache_ptr == 0 {
+		return;
+	}
 	// SAFETY: Java caller guarantees single-threaded access per cache pointer.
 	let cache = unsafe { &mut *(cache_ptr as *mut CacheTy) };
 	cache.put(key, value);
@@ -114,14 +126,14 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_dropCache<
-	'local,
->(
-	_env: JNIEnv<'local>,
-	_class: JClass<'local>,
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashCombinedRustPolicy_dropCache(
+	_env: JNIEnv,
+	_class: JClass,
 	cache_ptr: jlong,
 ) {
-	if cache_ptr == 0 { return; }
+	if cache_ptr == 0 {
+		return;
+	}
 	info!("dropCache: ptr={cache_ptr}");
 	// SAFETY: Java caller guarantees single-threaded access and calls dropCache exactly once.
 	unsafe { drop(Box::from_raw(cache_ptr as *mut CacheTy)) };

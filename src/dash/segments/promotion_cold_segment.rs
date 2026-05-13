@@ -1,7 +1,8 @@
 use super::{promotion_get, Segment, SegmentCore};
-use crate::shared::traits::bucket::InsertPosition;
 use crate::dash::dash_settings::DashSettings;
 use crate::shared::item::Item;
+use crate::shared::traits::bucket::InsertPosition;
+use log::info;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -19,8 +20,24 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
+	/// Creates a new PromotionColdSegment with fallible initialization.
+	pub fn try_new(settings: &DashSettings) -> Option<Self> {
+		let core = SegmentCore::try_new(settings);
+		if core.is_none() {
+			log::error!("PromotionColdSegment.try_new: core initialization failed");
+			return None;
+		}
+		info!("PromotionColdSegment.try_new");
+		Some(Self {
+			core: core.unwrap(),
+		})
+	}
+
+	/// Creates a new PromotionColdSegment.
+	/// # Panics
+	/// Panics if initialization fails.
 	pub fn new(settings: &DashSettings) -> Self {
-		Self { core: SegmentCore::new(settings) }
+		Self::try_new(settings).expect("PromotionColdSegment::new: invalid settings")
 	}
 }
 
@@ -29,8 +46,12 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	fn core(&self) -> &SegmentCore<K, V> { &self.core }
-	fn core_mut(&mut self) -> &mut SegmentCore<K, V> { &mut self.core }
+	fn core(&self) -> &SegmentCore<K, V> {
+		&self.core
+	}
+	fn core_mut(&mut self) -> &mut SegmentCore<K, V> {
+		&mut self.core
+	}
 
 	fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
 		promotion_get(&mut self.core, key, InsertPosition::Front)
@@ -171,8 +192,8 @@ mod tests {
 		// stash overflow handling — only "vanished entirely" would be a real bug.
 		assert!(
 			seg.core.stash_buckets[stash_idx].get_position(&evicted_key).is_some()
-			|| seg.core.buckets[probing_idx].get_position(&evicted_key).is_some()
-			|| seg.core.buckets[target_idx].get_position(&evicted_key).is_some(),
+				|| seg.core.buckets[probing_idx].get_position(&evicted_key).is_some()
+				|| seg.core.buckets[target_idx].get_position(&evicted_key).is_some(),
 			"evicted probing item should be demoted to stash or still in cache"
 		);
 	}
@@ -202,7 +223,9 @@ mod tests {
 		seg.get(&keys[1]);
 		seg.get(&keys[1]);
 
-		assert!(seg.core.buckets[probing_idx].get_position(&keys[1]).is_some(),
-			"promoted item must land in wrapped probing bucket 0");
+		assert!(
+			seg.core.buckets[probing_idx].get_position(&keys[1]).is_some(),
+			"promoted item must land in wrapped probing bucket 0"
+		);
 	}
 }

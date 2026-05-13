@@ -9,13 +9,13 @@ pub use promotion_hot_segment::PromotionHotSegment;
 
 pub(crate) use promotion_logic::promotion_get;
 
+use super::dash_bucket::DashBucket;
+use super::dash_settings::DashSettings;
 use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
 use crate::shared::utils::get_index;
-use super::dash_bucket::DashBucket;
-use super::dash_settings::DashSettings;
-use log::debug;
+use log::{debug, info};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -47,22 +47,34 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	pub fn new(settings: &DashSettings) -> Self {
-		assert!(settings.num_of_normal_buckets >= 2, "probing requires num_of_normal_buckets >= 2");
-		assert!(settings.num_of_stash_buckets > 0, "num_of_stash_buckets must be > 0");
+	/// Creates a new SegmentCore with fallible bucket initialization.
+	/// Returns `None` if the settings are invalid.
+	pub fn try_new(settings: &DashSettings) -> Option<Self> {
+		if let Err(problems) = settings.validate() {
+			log::error!("SegmentCore.try_new: validation failed: {}", problems.join(", "));
+			return None;
+		}
+		info!("SegmentCore.try_new: settings={settings:?}");
 		let buckets: Vec<_> = (0..settings.num_of_normal_buckets)
 			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy))
 			.collect();
 		let stash_buckets: Vec<_> = (0..settings.num_of_stash_buckets)
 			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy))
 			.collect();
-		SegmentCore {
+		Some(SegmentCore {
 			segment_size: settings.num_of_normal_buckets,
 			stash_size: settings.num_of_stash_buckets,
 			buckets,
 			stash_buckets,
 			eviction_policy: settings.eviction_policy,
-		}
+		})
+	}
+
+	/// Creates a new SegmentCore.
+	/// # Panics
+	/// Panics if initialization fails (e.g., invalid settings).
+	pub fn new(settings: &DashSettings) -> Self {
+		Self::try_new(settings).expect("SegmentCore::new: invalid settings")
 	}
 
 	/// Inserts `item` at `pos` in the bucket identified by `slot` (derived from `item.key`).
@@ -127,5 +139,21 @@ mod tests {
 		assert_put_goes_to_stash(PromotionColdSegment::new(&lru));
 		assert_put_goes_to_stash(PromotionHotSegment::new(&lru));
 		assert_put_goes_to_stash(CombinedSegment::new(&ts, EvictionTieBreaker::EvictProbing));
+	}
+
+	#[test]
+	fn try_new_rejects_single_normal_bucket() {
+		let mut s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		s.num_of_normal_buckets = 1;
+		assert!(s.validate().is_err());
+		assert!(SegmentCore::<i64, i64>::try_new(&s).is_none());
+	}
+
+	#[test]
+	fn try_new_rejects_zero_stash_buckets() {
+		let mut s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		s.num_of_stash_buckets = 0;
+		assert!(s.validate().is_err());
+		assert!(SegmentCore::<i64, i64>::try_new(&s).is_none());
 	}
 }

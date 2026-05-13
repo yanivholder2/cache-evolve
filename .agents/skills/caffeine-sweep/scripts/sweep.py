@@ -13,7 +13,19 @@ def _repo_root():
 
 
 REPO_ROOT = _repo_root()
-CAFFEINE_PATH = os.path.normpath(os.path.join(REPO_ROOT, "..", "caffeine"))
+
+def _caffeine_path():
+    # Try sibling first (works in main repo)
+    sibling = os.path.normpath(os.path.join(REPO_ROOT, "..", "caffeine"))
+    if os.path.exists(sibling):
+        return sibling
+    # Try ~/projects/caffeine
+    home_path = os.path.expanduser("~/projects/caffeine")
+    if os.path.exists(home_path):
+        return home_path
+    return sibling
+
+CAFFEINE_PATH = _caffeine_path()
 GRADLEW = os.path.join(CAFFEINE_PATH, "gradlew.bat" if os.name == "nt" else "gradlew")
 REPORTS_PATH = os.path.join(CAFFEINE_PATH, "simulator", "build", "reports", "simulate")
 

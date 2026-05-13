@@ -25,6 +25,30 @@ impl Default for DashSettings {
 }
 
 impl DashSettings {
+	pub fn validate(&self) -> Result<(), Vec<String>> {
+		let mut problems = Vec::new();
+		if self.num_of_segments == 0 {
+			problems.push("num_of_segments must be > 0".to_string());
+		}
+		if self.num_of_normal_buckets < 2 {
+			problems.push(format!(
+				"num_of_normal_buckets={} (must be >= 2 for probing)",
+				self.num_of_normal_buckets
+			));
+		}
+		if self.num_of_stash_buckets == 0 {
+			problems.push("num_of_stash_buckets must be > 0".to_string());
+		}
+		if self.bucket_size == 0 {
+			problems.push("bucket_size must be > 0".to_string());
+		}
+		if problems.is_empty() {
+			Ok(())
+		} else {
+			Err(problems)
+		}
+	}
+
 	/// Construct from i64 parameters. Returns None on invalid values.
 	pub fn from_jni_args(
 		num_of_segments: i64,
@@ -34,26 +58,34 @@ impl DashSettings {
 		eviction_policy: i64,
 		debug_mode: i64,
 	) -> Option<Self> {
-		let mut problems: Vec<String> = Vec::new();
-		if num_of_segments <= 0 { problems.push(format!("num_of_segments={num_of_segments}")); }
-		if num_of_normal_buckets <= 0 { problems.push(format!("num_of_normal_buckets={num_of_normal_buckets}")); }
-		if num_of_stash_buckets < 0 { problems.push(format!("num_of_stash_buckets={num_of_stash_buckets}")); }
-		if bucket_size <= 0 { problems.push(format!("bucket_size={bucket_size}")); }
-		if eviction_policy < 0 { problems.push(format!("eviction_policy={eviction_policy}")); }
-		if debug_mode < 0 { problems.push(format!("debug_mode={debug_mode}")); }
-		if !problems.is_empty() {
-			error!("DashSettings.from_jni_args: invalid args: {}", problems.join(", "));
+		if eviction_policy < 0 {
+			error!("DashSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
 			return None;
 		}
-
-		Some(DashSettings {
-			num_of_segments: num_of_segments as usize,
-			num_of_normal_buckets: num_of_normal_buckets as usize,
-			num_of_stash_buckets: num_of_stash_buckets as usize,
-			bucket_size: bucket_size as usize,
-			eviction_policy: EvictionPolicy::from_usize(eviction_policy as usize)?,
+		if debug_mode < 0 {
+			error!("DashSettings.from_jni_args: invalid debug_mode={debug_mode}");
+			return None;
+		}
+		let eviction_policy_val = match EvictionPolicy::from_usize(eviction_policy as usize) {
+			Some(p) => p,
+			None => {
+				error!("DashSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
+				return None;
+			}
+		};
+		let settings = DashSettings {
+			num_of_segments: num_of_segments.max(0) as usize,
+			num_of_normal_buckets: num_of_normal_buckets.max(0) as usize,
+			num_of_stash_buckets: num_of_stash_buckets.max(0) as usize,
+			bucket_size: bucket_size.max(0) as usize,
+			eviction_policy: eviction_policy_val,
 			debug_mode: debug_mode as usize,
-		})
+		};
+		if let Err(problems) = settings.validate() {
+			error!("DashSettings.from_jni_args: invalid settings: {}", problems.join(", "));
+			return None;
+		}
+		Some(settings)
 	}
 }
 
@@ -66,3 +98,18 @@ pub const DRAGON_SETTINGS: DashSettings = DashSettings {
 	eviction_policy: EvictionPolicy::ClassicLRU,
 	debug_mode: 1,
 };
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn from_jni_args_rejects_single_normal_bucket() {
+		assert!(DashSettings::from_jni_args(1, 1, 2, 16, 0, 0).is_none());
+	}
+
+	#[test]
+	fn from_jni_args_rejects_zero_stash_buckets() {
+		assert!(DashSettings::from_jni_args(1, 4, 0, 16, 0, 0).is_none());
+	}
+}

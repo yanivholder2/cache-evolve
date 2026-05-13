@@ -146,18 +146,9 @@ fn fill_beyond_capacity_then_query() {
 	// Only the last `capacity` items should survive (strict LRU, no hash routing)
 	for i in 0..FILL_TEST_NUM_ITEMS {
 		if i >= FILL_TEST_NUM_ITEMS - SMALL_CACHE_CAPACITY as i64 {
-			assert_eq!(
-				*cache.get(&i).unwrap(),
-				i * 10,
-				"recent key {} should be present",
-				i
-			);
+			assert_eq!(*cache.get(&i).unwrap(), i * 10, "recent key {} should be present", i);
 		} else {
-			assert!(
-				cache.get(&i).is_none(),
-				"old key {} should have been evicted",
-				i
-			);
+			assert!(cache.get(&i).is_none(), "old key {} should have been evicted", i);
 		}
 	}
 }

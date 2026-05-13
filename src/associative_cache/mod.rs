@@ -26,18 +26,29 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	pub fn new(settings: AssociativeCacheSettings) -> Self {
-		info!("AssociativeCache.new: settings={settings:?}");
+	pub fn try_new(settings: AssociativeCacheSettings) -> Option<Self> {
+		if let Err(problems) = settings.validate() {
+			log::error!("AssociativeCache.try_new: validation failed: {}", problems.join(", "));
+			return None;
+		}
+		info!("AssociativeCache.try_new: settings={settings:?}");
 		let mut buckets = Vec::with_capacity(settings.num_of_buckets);
 		for _ in 0..settings.num_of_buckets {
 			buckets.push(AssociativeCacheBucket::new(&settings));
 		}
-		Self { buckets }
+		Some(Self { buckets })
+	}
+
+	pub fn new(settings: AssociativeCacheSettings) -> Self {
+		Self::try_new(settings).expect("AssociativeCache::new: initialization failed")
 	}
 
 	/// Insert a key-value pair into the cache
 	pub fn put(&mut self, key: K, value: V) {
-		debug!("AssociativeCache.put: key={key:?} bucket={}", get_index(&key, self.buckets.len()));
+		debug!(
+			"AssociativeCache.put: key={key:?} bucket={}",
+			get_index(&key, self.buckets.len())
+		);
 		let bucket = self.get_mut_bucket(&key);
 		bucket.put(Item::new(key, value));
 	}
@@ -49,7 +60,10 @@ where
 		let bucket_index = get_index(key, self.buckets.len());
 		let bucket = &mut self.buckets[bucket_index];
 		let data = bucket.get(key);
-		debug!("AssociativeCache.get_and_update_item: key={key:?} bucket={bucket_index} hit={}", data.is_some());
+		debug!(
+			"AssociativeCache.get_and_update_item: key={key:?} bucket={bucket_index} hit={}",
+			data.is_some()
+		);
 		Some(&data?.value)
 	}
 
