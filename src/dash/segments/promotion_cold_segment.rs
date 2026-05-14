@@ -22,15 +22,13 @@ where
 {
 	/// Creates a new PromotionColdSegment with fallible initialization.
 	pub fn try_new(settings: &DashSettings) -> Option<Self> {
-		let core = SegmentCore::try_new(settings);
-		if core.is_none() {
+		if let Some(core) = SegmentCore::try_new(settings) {
+			info!("PromotionColdSegment.try_new");
+			Some(Self { core })
+		} else {
 			log::error!("PromotionColdSegment.try_new: core initialization failed");
-			return None;
+			None
 		}
-		info!("PromotionColdSegment.try_new");
-		Some(Self {
-			core: core.unwrap(),
-		})
 	}
 
 	/// Creates a new PromotionColdSegment.
