@@ -1,0 +1,9 @@
+[package]
+name = "dash-bench"
+version = "0.1.0"
+edition = "2021"
+
+# std-only — no external dependencies
+[[bin]]
+name = "dash-bench"
+path = "src/main.rs"

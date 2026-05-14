@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Walking-skeleton orchestrator for one hardcoded cycle.
-# Uses a stub variant (good fixture) with real G1+G2 gates. Fitness numbers are fixed stubs.
+# Cycle orchestrator — runs G1+G2 gates and real fitness plugins, aggregates, computes Pareto front.
 #
-# Usage: [HYPOTHESIS="..."] [EVOLVE_ROOT=<path-to-evolve/>] [REPO_ROOT=<dash-crate-root>] cycle-start.sh
+# Usage: [HYPOTHESIS="..."] [EVOLVE_ROOT=<path-to-evolve/>] [REPO_ROOT=<dash-crate-root>] [WORKER_ID=<id>] cycle-start.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVOLVE_ROOT="${EVOLVE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+# Allow callers to pin REPO_ROOT (e.g. tests that copy evolve/ to a temp dir)
 REPO_ROOT="${REPO_ROOT:-$(cd "$EVOLVE_ROOT/.." && pwd)}"
 export REPO_ROOT EVOLVE_ROOT
 
@@ -19,8 +19,8 @@ CYCLE_NUM=$(printf "%04d" $((10#$LAST_CYCLE + 1)))
 CYCLE_DIR="$CYCLES_DIR/$CYCLE_NUM"
 LEDGER="$EVOLVE_ROOT/ledger/cycles.jsonl"
 WORKER_ID="${WORKER_ID:-local}"
+export WORKER_ID
 
-# Hypothesis can be passed as env var or first arg
 HYPOTHESIS="${1:-${HYPOTHESIS:-"Swap the eviction policy to FIFO as a baseline sanity check."}}"
 
 if [ -d "$CYCLE_DIR" ]; then
@@ -30,8 +30,14 @@ fi
 
 FIXTURES_DIR="$EVOLVE_ROOT/fixtures"
 
+# --- Python interpreter from venv if available ---
+PYTHON="${EVOLVE_ROOT}/.venv/bin/python3"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON="python3"
+fi
+
 # --- scaffold cycle directory ---
-mkdir -p "$CYCLE_DIR/variants/v001/impl" "$CYCLE_DIR/variants/v001/eval"
+mkdir -p "$CYCLE_DIR/variants/v001/impl" "$CYCLE_DIR/variants/v001/eval/fitness"
 
 # --- populate stub variant impl from good fixture ---
 cp "$FIXTURES_DIR/good/impl/segment.rs"   "$CYCLE_DIR/variants/v001/impl/segment.rs"
@@ -46,47 +52,58 @@ bash "$SCRIPT_DIR/gate-check.sh" "$CYCLE_DIR/variants/v001/impl" "$CYCLE_NUM" "v
 cat > "$CYCLE_DIR/cohort.md" <<EOF
 # Cycle $CYCLE_NUM Cohort
 
-**Stub run — walking skeleton.**
-
 ## Hypothesis H001
 
 $HYPOTHESIS
 EOF
 
-# stub eval output
-cat > "$CYCLE_DIR/variants/v001/eval/fitness.json" <<EOF
-{
-  "worker_id": "$WORKER_ID",
-  "variant": "v001",
-  "hit_rate": 0.42,
-  "per_op_ns": 120,
-  "metadata_bytes": 4096
-}
-EOF
+# --- run fitness plugins for v001 ---
+EVAL_DIR="$CYCLE_DIR/variants/v001/eval"
+FITNESS_DIR="$EVAL_DIR/fitness"
 
-cat > "$CYCLE_DIR/variants/v001/insight.md" <<'EOF'
+echo "running fitness plugins for v001..."
+
+for plugin in hit-rate per-op-time metadata-size; do
+    echo "  $plugin..."
+    "$PYTHON" "$SCRIPT_DIR/fitness/${plugin}.py" > "$FITNESS_DIR/${plugin}.json"
+done
+
+# --- aggregate fitness vector ---
+"$PYTHON" "$SCRIPT_DIR/fitness-aggregate.py" v001 "$FITNESS_DIR" > "$EVAL_DIR/fitness-vector.json"
+
+# --- build variant insight from fitness data ---
+FV_JSON=$(cat "$EVAL_DIR/fitness-vector.json")
+DIM_SUMMARY=$(echo "$FV_JSON" | "$PYTHON" -c "
+import json, sys
+fv = json.load(sys.stdin)
+print(', '.join(f\"{d['dim']}={d['summary']:.4g}\" for d in fv.get('dimensions', [])))
+")
+
+cat > "$CYCLE_DIR/variants/v001/insight.md" <<EOF
 # Variant v001 Insight
 
-**Stub variant — walking skeleton.**
-
-Fitness: hit_rate=0.42, per_op_ns=120, metadata_bytes=4096.
-G1 (build) and G2 (trait contract) passed. G3 stub. No real evaluation performed.
+Fitness: $DIM_SUMMARY
 EOF
 
-cat > "$CYCLE_DIR/cycle-insight.md" <<EOF
-# Cycle $CYCLE_NUM Insight
-
-**Stub — walking skeleton.**
-
-One stub variant evaluated. Framework end-to-end path verified.
-EOF
+# --- compute Pareto front (single variant -> trivially itself) ---
+FV_ARRAY="[$FV_JSON]"
+PARETO_FRONT=$(echo "$FV_ARRAY" | "$PYTHON" "$SCRIPT_DIR/pareto.py" -)
 
 cat > "$CYCLE_DIR/winners.json" <<EOF
 {
   "cycle": "$CYCLE_NUM",
   "worker_id": "$WORKER_ID",
-  "pareto_front": ["v001"]
+  "pareto_front": $PARETO_FRONT,
+  "fitness_vectors": [$FV_JSON]
 }
+EOF
+
+cat > "$CYCLE_DIR/cycle-insight.md" <<EOF
+# Cycle $CYCLE_NUM Insight
+
+Pareto front: $PARETO_FRONT
+
+Evaluated 1 variant with real fitness plugins (hit-rate, per-op-time, metadata-size).
 EOF
 
 # --- seal ---
@@ -94,8 +111,13 @@ bash "$SCRIPT_DIR/seal.sh" "$CYCLE_DIR"
 
 # --- append ledger row (repo-relative cycle_dir) ---
 CYCLE_DIR_REL="evolve/cycles/$CYCLE_NUM"
-ROW=$(printf '{"cycle":"%s","worker_id":"%s","cycle_dir":"%s","pareto_front":["v001"]}' \
-    "$CYCLE_NUM" "$WORKER_ID" "$CYCLE_DIR_REL")
-echo "$ROW" | python3 "$SCRIPT_DIR/ledger-append.py" "$LEDGER"
+ROW=$(printf '{"cycle":"%s","worker_id":"%s","cycle_dir":"%s","pareto_front":%s}' \
+    "$CYCLE_NUM" "$WORKER_ID" "$CYCLE_DIR_REL" "$PARETO_FRONT")
+echo "$ROW" | "$PYTHON" "$SCRIPT_DIR/ledger-append.py" "$LEDGER"
+
+# --- update leaderboard (after ledger so this cycle appears) ---
+"$PYTHON" "$SCRIPT_DIR/leaderboard.py" \
+    --evolve-root "$EVOLVE_ROOT" \
+    --output "$EVOLVE_ROOT/leaderboard.md"
 
 echo "cycle $CYCLE_NUM complete — sealed at $CYCLE_DIR"
