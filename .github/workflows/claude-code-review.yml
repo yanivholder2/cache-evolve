@@ -24,6 +24,7 @@ jobs:
       pull-requests: read
       issues: read
       id-token: write
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -42,3 +43,11 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
+      - name: Upload execution log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-execution-log
+          path: /home/runner/work/_temp/claude-execution-output.json
+          if-no-files-found: warn
+          retention-days: 14
