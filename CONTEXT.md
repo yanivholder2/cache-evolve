@@ -247,8 +247,8 @@ _Avoid_: Check, validator.
 
 **Invariant suite**:
 The codified correctness contract for the Subject cache (G3). Encodes
-properties such as no-phantom-items, capacity bound, Slot legality,
-single-eviction-per-insert modulo cascade, and stash-terminal.
+the set of properties a Segment implementation must satisfy to be admitted
+to the leaderboard.
 _Avoid_: Property tests, test suite.
 
 **Smoke trace**:
@@ -338,7 +338,7 @@ bundling) is mechanical and lives in `evolve/scripts/`.
 _Avoid_: Token budget (means a numeric cap; the principle is architectural).
 
 **v2-ready invariants**:
-Five v1 architectural commitments that make v2 multi-machine execution a
+Architectural commitments that make v2 multi-machine execution a
 storage-layer swap rather than a refactor: repo-relative paths only, atomic
 ledger append, stable Variant fingerprint, `worker_id` on every artifact,
 ledger as the only synchronization point.
