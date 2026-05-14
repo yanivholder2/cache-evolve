@@ -17,6 +17,12 @@ pub fn small_dash_settings(policy: EvictionPolicy) -> DashSettings {
 	}
 }
 
+#[cfg(feature = "test-utils")]
+pub use invariants::run_invariant_suite;
+
+#[cfg(feature = "test-utils")]
+mod invariants;
+
 /// Find `count` keys that hash to `bucket_idx` given `num_buckets` total buckets.
 pub fn find_keys_for_bucket(bucket_idx: usize, num_buckets: usize, count: usize) -> Vec<i64> {
 	let mut keys = vec![];
