@@ -1,6 +1,8 @@
 # Dash Cache
 
-Associative cache simulator for M.Sc. thesis research on mitigating the hot-set problem in N-way associative caches using Dash-inspired bucket movement, where items migrate between adjacent buckets to reduce contention in overloaded sets.
+> **This is a domain language file.** It records the canonical vocabulary for this codebase — preferred terms, terms to avoid, relationships, and flagged ambiguities. Before adding, renaming, or removing any term, read the format spec and editing rules at `~/.claude/skills/grill-with-docs/CONTEXT-FORMAT.md`. The `/grill-with-docs` skill is the primary tool for evolving this file.
+
+Associative cache for M.Sc. thesis research on mitigating the hot-set problem in N-way associative caches using Dash-inspired bucket movement, where items migrate between adjacent buckets to reduce contention in overloaded sets.
 
 ## Language
 

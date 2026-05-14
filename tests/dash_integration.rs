@@ -103,7 +103,7 @@ fn combined_many_keys() {
 }
 
 #[test]
-fn all_variants_put_overwrite() {
+fn all_variants_put_then_get() {
 	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
 	let s_ts = probing_settings(EvictionPolicy::TimestampLRU);
 
@@ -113,46 +113,39 @@ fn all_variants_put_overwrite() {
 		CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing)
 	});
 
-	cold.put(1, 10);
-	cold.put(1, 20);
-	assert_eq!(*cold.get_and_update_item(&1).unwrap(), 20);
-
-	hot.put(1, 10);
-	hot.put(1, 20);
-	assert_eq!(*hot.get_and_update_item(&1).unwrap(), 20);
-
-	lazy.put(1, 10);
-	lazy.put(1, 20);
-	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 20);
-}
-
-#[test]
-fn reput_between_gets_updates_value() {
-	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
-	let s_ts = probing_settings(EvictionPolicy::TimestampLRU);
-
-	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
-	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
-	let mut lazy: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || {
-		CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing)
-	});
-
-	// A re-put between two gets must surface the new value via stash dedup, even though
-	// the first get already moved the item out of stash.
 	cold.put(1, 10);
 	assert_eq!(*cold.get_and_update_item(&1).unwrap(), 10);
-	cold.put(1, 20);
-	assert_eq!(*cold.get_and_update_item(&1).unwrap(), 20);
 
 	hot.put(1, 10);
 	assert_eq!(*hot.get_and_update_item(&1).unwrap(), 10);
-	hot.put(1, 20);
-	assert_eq!(*hot.get_and_update_item(&1).unwrap(), 20);
 
 	lazy.put(1, 10);
 	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 10);
-	lazy.put(1, 20);
-	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 20);
+}
+
+#[test]
+fn all_variants_repeated_get_returns_value() {
+	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
+	let s_ts = probing_settings(EvictionPolicy::TimestampLRU);
+
+	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
+	let mut hot: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionHotSegment::new(&s_lru));
+	let mut lazy: Dash<i64, i64, _> = Dash::new(s_ts.num_of_segments, || {
+		CombinedSegment::new(&s_ts, EvictionTieBreaker::EvictProbing)
+	});
+
+	// Promotions must not corrupt the stored value.
+	cold.put(1, 10);
+	assert_eq!(*cold.get_and_update_item(&1).unwrap(), 10);
+	assert_eq!(*cold.get_and_update_item(&1).unwrap(), 10);
+
+	hot.put(1, 10);
+	assert_eq!(*hot.get_and_update_item(&1).unwrap(), 10);
+	assert_eq!(*hot.get_and_update_item(&1).unwrap(), 10);
+
+	lazy.put(1, 10);
+	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 10);
+	assert_eq!(*lazy.get_and_update_item(&1).unwrap(), 10);
 }
 
 #[test]
@@ -173,8 +166,13 @@ fn random_workload_no_panic() {
 	for _ in 0..NUM_OPS {
 		let key: i64 = rng.gen_range(0..KEY_SPACE);
 		if rng.gen_bool(PUT_PROBABILITY) {
-			cold.put(key, key);
-			combined.put(key, key);
+			// Mirror the Caffeine call contract: only put on a miss.
+			if cold.get_and_update_item(&key).is_none() {
+				cold.put(key, key);
+			}
+			if combined.get_and_update_item(&key).is_none() {
+				combined.put(key, key);
+			}
 		} else {
 			cold.get_and_update_item(&key);
 			combined.get_and_update_item(&key);
