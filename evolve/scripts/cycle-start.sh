@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Stub orchestrator — walking-skeleton implementation of one hardcoded cycle.
-# Every subagent slot is a stub: fixed variant, all gates pass, fixed fitness numbers.
+# Walking-skeleton orchestrator for one hardcoded cycle.
+# Uses a stub variant (good fixture) with real G1+G2 gates. Fitness numbers are fixed stubs.
 #
-# Usage: [HYPOTHESIS="..."] [EVOLVE_ROOT=<path-to-evolve/>] cycle-start.sh
+# Usage: [HYPOTHESIS="..."] [EVOLVE_ROOT=<path-to-evolve/>] [REPO_ROOT=<dash-crate-root>] cycle-start.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVOLVE_ROOT="${EVOLVE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
-REPO_ROOT="$(cd "$EVOLVE_ROOT/.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "$EVOLVE_ROOT/.." && pwd)}"
+export REPO_ROOT EVOLVE_ROOT
 
 # --- Determine next cycle number ---
 CYCLES_DIR="$EVOLVE_ROOT/cycles"
@@ -27,8 +28,20 @@ if [ -d "$CYCLE_DIR" ]; then
     exit 1
 fi
 
+FIXTURES_DIR="$EVOLVE_ROOT/fixtures"
+
 # --- scaffold cycle directory ---
 mkdir -p "$CYCLE_DIR/variants/v001/impl" "$CYCLE_DIR/variants/v001/eval"
+
+# --- populate stub variant impl from good fixture ---
+cp "$FIXTURES_DIR/good/impl/segment.rs"   "$CYCLE_DIR/variants/v001/impl/segment.rs"
+cp "$FIXTURES_DIR/good/impl/manifest.toml" "$CYCLE_DIR/variants/v001/impl/manifest.toml"
+
+# --- run gate-check (G1 + G2; G3 is still a stub) ---
+bash "$SCRIPT_DIR/gate-check.sh" "$CYCLE_DIR/variants/v001/impl" "$CYCLE_NUM" "v001" || {
+    echo "error: gate-check failed for v001 in cycle $CYCLE_NUM" >&2
+    exit 1
+}
 
 cat > "$CYCLE_DIR/cohort.md" <<EOF
 # Cycle $CYCLE_NUM Cohort
@@ -39,9 +52,6 @@ cat > "$CYCLE_DIR/cohort.md" <<EOF
 
 $HYPOTHESIS
 EOF
-
-# stub impl placeholder
-touch "$CYCLE_DIR/variants/v001/impl/.gitkeep"
 
 # stub eval output
 cat > "$CYCLE_DIR/variants/v001/eval/fitness.json" <<EOF
@@ -57,10 +67,10 @@ EOF
 cat > "$CYCLE_DIR/variants/v001/insight.md" <<'EOF'
 # Variant v001 Insight
 
-**Stub — walking skeleton.**
+**Stub variant — walking skeleton.**
 
 Fitness: hit_rate=0.42, per_op_ns=120, metadata_bytes=4096.
-All gates passed (stub). No real evaluation performed.
+G1 (build) and G2 (trait contract) passed. G3 stub. No real evaluation performed.
 EOF
 
 cat > "$CYCLE_DIR/cycle-insight.md" <<EOF

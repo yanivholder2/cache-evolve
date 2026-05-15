@@ -14,12 +14,18 @@ import subprocess
 import shutil
 from pathlib import Path
 
-SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
+EVOLVE_SRC = Path(__file__).parent.parent
+SCRIPTS_DIR = EVOLVE_SRC / "scripts"
 CYCLE_START = SCRIPTS_DIR / "cycle-start.sh"
+REAL_REPO_ROOT = EVOLVE_SRC.parent
 
 
 def run_cycle_start(repo_root: Path) -> subprocess.CompletedProcess:
-    env = {**os.environ, "EVOLVE_ROOT": str(repo_root / "evolve")}
+    env = {
+        **os.environ,
+        "EVOLVE_ROOT": str(repo_root / "evolve"),
+        "REPO_ROOT": str(REAL_REPO_ROOT),
+    }
     return subprocess.run(
         [str(CYCLE_START)],
         capture_output=True,
