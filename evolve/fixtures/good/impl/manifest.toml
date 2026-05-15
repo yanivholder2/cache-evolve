@@ -1,0 +1,4 @@
+[variant]
+name = "good-fixture"
+eviction_policy = "ClassicLRU"
+eviction_policy_ordinal = 0
