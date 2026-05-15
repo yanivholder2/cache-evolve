@@ -130,11 +130,6 @@ fn main() {
   "higher_is_better": false
 }}
 "#,
-        get_p50 = get_p50,
-        get_p99 = get_p99,
-        put_p50 = put_p50,
-        put_p99 = put_p99,
-        summary = summary,
     );
 
     fs::write(&output, &json).unwrap_or_else(|e| {

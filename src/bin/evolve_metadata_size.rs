@@ -17,7 +17,7 @@ fn main() {
 
     let values: Vec<String> = entries
         .iter()
-        .map(|(name, bytes)| format!(r#"{{"type":"{name}","bytes":{bytes}}}"#, name = name, bytes = bytes))
+        .map(|(name, bytes)| format!(r#"{{"type":"{name}","bytes":{bytes}}}"#))
         .collect();
 
     // summary = Item size (the per-entry overhead that scales with cache population)
@@ -26,6 +26,5 @@ fn main() {
     println!(
         r#"{{"dim":"metadata-size","values":[{values}],"summary":{summary},"higher_is_better":false}}"#,
         values = values.join(","),
-        summary = summary,
     );
 }

@@ -18,7 +18,7 @@ import tempfile
 from pathlib import Path
 
 _HERE = Path(__file__).resolve()
-_DEFAULT_EVOLVE_ROOT = _HERE.parents[1]
+_DEFAULT_EVOLVE_ROOT = _HERE.parents[2]
 
 BENCH_PROFILES = ("release", "debug")
 

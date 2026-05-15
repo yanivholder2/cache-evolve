@@ -87,9 +87,5 @@ fn main() {
     let label = format!("{}-size{}", cache_type, size);
     println!(
         r#"{{"dim":"hit-rate","values":[{{"config":"{label}","hits":{hits},"misses":{misses},"hit_rate":{hit_rate:.6}}}],"summary":{hit_rate:.6},"higher_is_better":true}}"#,
-        label = label,
-        hits = hits,
-        misses = misses,
-        hit_rate = hit_rate,
     );
 }
