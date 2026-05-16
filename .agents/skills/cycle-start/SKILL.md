@@ -5,15 +5,15 @@ description: Start a new evolve research cycle. Use when the user says "start a 
 
 # cycle-start skill
 
-Runs `evolve/scripts/cycle-start.sh` to scaffold one research cycle, copy the `good` fixture into `v001`, run G1+G2 gates, execute three real fitness plugins, aggregate a FitnessVector, compute the Pareto front, write per-variant + per-cycle insights, seal the cycle, atomically append a ledger row, and regenerate `evolve/leaderboard.md`.
+Runs `evolve/scripts/cycle-start.sh` to scaffold one research cycle: fans out a cohort of N Variants via the `variant-implementer` subagent in parallel (P1), runs G1+G2 gates per Variant, executes three real fitness plugins per Variant, aggregates FitnessVectors, computes the Pareto front over the cohort, writes per-Variant + cycle insights, seals the cycle, atomically appends a ledger row, and regenerates `evolve/leaderboard.md`.
 
-> v1 still copies a single fixture variant (`v001` from `evolve/fixtures/good/`). The Pareto front is therefore trivially `["v001"]`. Real cohort generation arrives in a later cycle; the walking-skeleton fitness stub has been removed and fitness is now wired to real plugins.
+> Default cohort size is **6** (from `config.toml`). The default `variant-implementer` is `evolve/scripts/variant-implementer.sh`, which copies the `good` fixture into every Variant — a deterministic stand-in until the real subagent at `.claude/agents/variant-implementer.md` is wired into the orchestrator.
 
 ## Prerequisites
 
 - **Rust toolchain.** First run triggers `cargo build` for `evolve-hit-rate`, `evolve-metadata-size`, and the `evolve/bench` harness. Cold builds can take several minutes.
 - **Python 3.** The script prefers `evolve/.venv/bin/python3` if present, otherwise falls back to the system `python3`.
-- **`evolve/fixtures/good/impl/`** must contain `segment.rs` and `manifest.toml` (used as the v001 source).
+- **`evolve/fixtures/good/impl/`** must contain `segment.rs` and `manifest.toml` (used as the default `variant-implementer` source).
 - No external trace files are required — the hit-rate plugin uses synthetic workloads (`EVENTS=2000`, `SEED=42`).
 
 ## Run it
@@ -27,40 +27,39 @@ bash evolve/scripts/cycle-start.sh
 With options:
 
 ```bash
-HYPOTHESIS="Test if LFU performs better than LRU for Zipfian traces." bash evolve/scripts/cycle-start.sh
+COHORT_SIZE=3 bash evolve/scripts/cycle-start.sh
+HYPOTHESES=$'h1 text\nh2 text\nh3 text' bash evolve/scripts/cycle-start.sh   # COHORT_SIZE inferred
+VARIANT_IMPLEMENTER=/path/to/my-impl.sh bash evolve/scripts/cycle-start.sh
 WORKER_ID="worker-01" bash evolve/scripts/cycle-start.sh
-HYPOTHESIS="..." WORKER_ID="worker-01" bash evolve/scripts/cycle-start.sh
 ```
 
 The script auto-detects `EVOLVE_ROOT` relative to its own location, so it works regardless of the shell's current directory.
 
 ## What it does
 
-1. Detects the next cycle ID (`0002` if `0001` exists, etc.) and creates `evolve/cycles/<NNNN>/variants/v001/{impl,eval/fitness}/`.
-2. Copies `evolve/fixtures/good/impl/{segment.rs,manifest.toml}` into `variants/v001/impl/`.
-3. Runs `gate-check.sh` (G1 build + G2 trait contract; G3 is still a stub). Failure aborts the cycle.
-4. Writes `cohort.md` with the hypothesis text.
-5. Runs each fitness plugin and writes its JSON under `variants/v001/eval/fitness/`:
-   - `hit-rate.py` → `eval/fitness/hit-rate.json` (`higher_is_better: true`)
-   - `per-op-time.py` → `eval/fitness/per-op-time.json` (`higher_is_better: false`)
-   - `metadata-size.py` → `eval/fitness/metadata-size.json` (`higher_is_better: false`)
-6. Aggregates with `fitness-aggregate.py` → `variants/v001/eval/fitness-vector.json`.
-7. Computes the Pareto front with `pareto.py` over the variant array (trivially `["v001"]` while there is only one variant).
-8. Writes `variants/v001/insight.md` with the real per-dimension summary, and `cycle-insight.md` with the Pareto front.
-9. Writes `winners.json` with `pareto_front` and the full `fitness_vectors`.
+1. Resolves cohort size: `COHORT_SIZE` env > `config.toml` `cohort_size` > builtin `6`. `HYPOTHESES` (newline-separated) overrides the count.
+2. Detects the next cycle ID (`0002` if `0001` exists, etc.) and creates `evolve/cycles/<NNNN>/`.
+3. Writes `cohort.md` and one `hypotheses/H<NN>.md` per Hypothesis.
+4. Fans out the `variant-implementer` in parallel (one invocation per Variant); each writes `variants/v<NNN>/impl/{segment.rs,manifest.toml}`.
+5. Per Variant, runs `gate-check.sh` (G1 build + G2 trait contract; G3 is still a stub). Any failure aborts the cycle.
+6. Per Variant, runs each fitness plugin → `variants/v<NNN>/eval/fitness/{hit-rate,per-op-time,metadata-size}.json`, then aggregates with `fitness-aggregate.py` → `variants/v<NNN>/eval/fitness-vector.json`.
+7. Computes the Pareto front with `pareto.py` over **all** Variant fitness vectors.
+8. Writes `variants/v<NNN>/insight.md` per Variant and `cycle-insight.md` (with cohort size and Pareto front).
+9. Writes `winners.json` with `pareto_front` and the full `fitness_vectors` array.
 10. Seals the cycle (`SEALED` marker, `chmod -R a-w`).
-11. Atomically appends one row to `evolve/ledger/cycles.jsonl`.
+11. Atomically appends one row to `evolve/ledger/cycles.jsonl` (includes `cohort_size`).
 12. Regenerates `evolve/leaderboard.md` from the ledger.
 
 ## Verify success
 
-Expected final line: `cycle <NNNN> complete — sealed at <path>`
+Expected final line: `cycle <NNNN> complete — sealed at <path> (cohort=N)`
 
 ```bash
 ls evolve/cycles/<NNNN>/                                      # SEALED marker present
-cat evolve/cycles/<NNNN>/variants/v001/eval/fitness-vector.json
+ls evolve/cycles/<NNNN>/variants/                             # v001..v<N> directories
+cat evolve/cycles/<NNNN>/cohort.md                            # links to hypotheses/H01..HNN
 cat evolve/cycles/<NNNN>/winners.json                         # pareto_front + fitness_vectors populated
-tail -1 evolve/ledger/cycles.jsonl                            # new row, matching cycle ID, computed pareto_front
+tail -1 evolve/ledger/cycles.jsonl                            # new row, includes cohort_size + pareto_front
 head -20 evolve/leaderboard.md                                # rewritten, includes this cycle
 ```
 
