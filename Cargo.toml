@@ -1,3 +1,6 @@
+[workspace]
+members = [".", "evolve/bench"]
+
 [package]
 name = "dash-cache-rs"
 version = "0.1.0"

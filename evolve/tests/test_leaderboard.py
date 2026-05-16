@@ -66,6 +66,82 @@ def test_empty_ledger_produces_valid_md(tmp_path):
     assert out.read_text()  # not empty
 
 
+def test_multi_dimension_rendering(tmp_path):
+    fv = [{
+        "variant": "v001",
+        "dimensions": [
+            {"dim": "hit-rate", "summary": 0.65, "higher_is_better": True},
+            {"dim": "per-op-time", "summary": 95.0, "higher_is_better": False},
+        ],
+    }]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv})
+    out = tmp_path / "leaderboard.md"
+    result = _run(evolve, output=out)
+    assert result.returncode == 0, result.stderr
+    content = out.read_text()
+    assert "hit-rate" in content
+    assert "per-op-time" in content
+
+
+def test_multi_variant_rendering(tmp_path):
+    fv = [
+        {"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]},
+        {"variant": "v002", "dimensions": [{"dim": "hit-rate", "summary": 0.70, "higher_is_better": True}]},
+    ]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv})
+    out = tmp_path / "leaderboard.md"
+    result = _run(evolve, output=out)
+    assert result.returncode == 0, result.stderr
+    content = out.read_text()
+    assert "v001" in content
+    assert "v002" in content
+    # Both summaries should appear comma-joined in the same row
+    assert "0.65" in content and "0.7" in content
+
+
+def test_pareto_front_fallback_renders(tmp_path):
+    """winners.json with empty fitness_vectors falls back to pareto_front for variant names."""
+    evolve = tmp_path / "evolve"
+    (evolve / "cycles" / "0001").mkdir(parents=True)
+    (evolve / "ledger").mkdir()
+    (evolve / "ledger" / "cycles.jsonl").write_text(
+        json.dumps({"cycle": "0001", "worker_id": "local", "cycle_dir": "evolve/cycles/0001"}) + "\n"
+    )
+    (evolve / "cycles" / "0001" / "winners.json").write_text(json.dumps({
+        "cycle": "0001",
+        "worker_id": "local",
+        "pareto_front": ["v007"],
+        "fitness_vectors": [],
+    }))
+    out = tmp_path / "leaderboard.md"
+    result = _run(evolve, output=out)
+    assert result.returncode == 0, result.stderr
+    assert "v007" in out.read_text()
+
+
+def test_malformed_ledger_errors(tmp_path):
+    evolve = tmp_path / "evolve"
+    (evolve / "cycles").mkdir(parents=True)
+    (evolve / "ledger").mkdir()
+    (evolve / "ledger" / "cycles.jsonl").write_text('{"cycle": "0001"}\nnot json\n')
+    result = _run(evolve)
+    assert result.returncode != 0
+    assert "malformed ledger" in result.stderr
+
+
+def test_malformed_winners_errors(tmp_path):
+    evolve = tmp_path / "evolve"
+    (evolve / "cycles" / "0001").mkdir(parents=True)
+    (evolve / "ledger").mkdir()
+    (evolve / "ledger" / "cycles.jsonl").write_text(
+        json.dumps({"cycle": "0001", "worker_id": "local", "cycle_dir": "evolve/cycles/0001"}) + "\n"
+    )
+    (evolve / "cycles" / "0001" / "winners.json").write_text("not valid json {{{")
+    result = _run(evolve)
+    assert result.returncode != 0
+    assert "malformed winners.json" in result.stderr
+
+
 def test_multiple_cycles_all_shown(tmp_path):
     fv1 = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
     fv2 = [{"variant": "v002", "dimensions": [{"dim": "hit-rate", "summary": 0.70, "higher_is_better": True}]}]

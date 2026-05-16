@@ -65,7 +65,16 @@ echo "running fitness plugins for v001..."
 
 for plugin in hit-rate per-op-time metadata-size; do
     echo "  $plugin..."
-    "$PYTHON" "$SCRIPT_DIR/fitness/${plugin}.py" > "$FITNESS_DIR/${plugin}.json"
+    OUT="$FITNESS_DIR/${plugin}.json"
+    "$PYTHON" "$SCRIPT_DIR/fitness/${plugin}.py" > "$OUT"
+    if [ ! -s "$OUT" ]; then
+        echo "error: plugin $plugin produced empty output at $OUT" >&2
+        exit 1
+    fi
+    "$PYTHON" -c "import json,sys; json.load(open(sys.argv[1]))" "$OUT" || {
+        echo "error: plugin $plugin produced invalid JSON at $OUT" >&2
+        exit 1
+    }
 done
 
 # --- aggregate fitness vector ---
@@ -73,11 +82,7 @@ done
 
 # --- build variant insight from fitness data ---
 FV_JSON=$(cat "$EVAL_DIR/fitness-vector.json")
-DIM_SUMMARY=$(echo "$FV_JSON" | "$PYTHON" -c "
-import json, sys
-fv = json.load(sys.stdin)
-print(', '.join(f\"{d['dim']}={d['summary']:.4g}\" for d in fv.get('dimensions', [])))
-")
+DIM_SUMMARY=$("$PYTHON" "$SCRIPT_DIR/dim-summary.py" "$EVAL_DIR/fitness-vector.json")
 
 cat > "$CYCLE_DIR/variants/v001/insight.md" <<EOF
 # Variant v001 Insight
@@ -86,8 +91,10 @@ Fitness: $DIM_SUMMARY
 EOF
 
 # --- compute Pareto front (single variant -> trivially itself) ---
+# TODO: when real cohort generation lands, build FV_ARRAY from all variants' fitness-vector.json files.
 FV_ARRAY="[$FV_JSON]"
 PARETO_FRONT=$(echo "$FV_ARRAY" | "$PYTHON" "$SCRIPT_DIR/pareto.py" -)
+VARIANT_COUNT=$(echo "$FV_ARRAY" | "$PYTHON" -c "import json,sys; print(len(json.load(sys.stdin)))")
 
 cat > "$CYCLE_DIR/winners.json" <<EOF
 {
@@ -103,7 +110,7 @@ cat > "$CYCLE_DIR/cycle-insight.md" <<EOF
 
 Pareto front: $PARETO_FRONT
 
-Evaluated 1 variant with real fitness plugins (hit-rate, per-op-time, metadata-size).
+Evaluated $VARIANT_COUNT variant(s) with real fitness plugins (hit-rate, per-op-time, metadata-size).
 EOF
 
 # --- seal ---

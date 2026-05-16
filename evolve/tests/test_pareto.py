@@ -3,6 +3,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 from pareto import compute_pareto_front  # noqa: E402
 
@@ -62,6 +64,28 @@ def test_dimension_tie_both_on_front():
     ]
     front = compute_pareto_front(vecs)
     assert set(front) == {"v001", "v002"}
+
+
+def test_mismatched_dimensions_raises():
+    # v001 has hit_rate only; v002 has per_op_time only → dim sets differ → reject
+    vecs = [
+        _vec("v001", hit_rate=(0.7, True)),
+        _vec("v002", per_op_time=(80.0, False)),
+    ]
+    with pytest.raises(ValueError, match="uniform dimensions"):
+        compute_pareto_front(vecs)
+
+
+def test_nan_summary_raises():
+    vecs = [_vec("v001", hit_rate=(float("nan"), True))]
+    with pytest.raises(ValueError, match="non-finite"):
+        compute_pareto_front(vecs)
+
+
+def test_inf_summary_raises():
+    vecs = [_vec("v001", hit_rate=(float("inf"), True))]
+    with pytest.raises(ValueError, match="non-finite"):
+        compute_pareto_front(vecs)
 
 
 def test_three_way_partial_dominance():

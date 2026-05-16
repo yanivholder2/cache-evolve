@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
 
 def _load_cycles(evolve_root: Path) -> list:
@@ -18,45 +19,39 @@ def _load_cycles(evolve_root: Path) -> list:
     if not ledger.exists():
         return []
     cycles = []
-    for line in ledger.read_text().splitlines():
+    for n, line in enumerate(ledger.read_text().splitlines(), start=1):
         line = line.strip()
-        if line:
-            try:
-                cycles.append(json.loads(line))
-            except json.JSONDecodeError:
-                pass
+        if not line:
+            continue
+        try:
+            cycles.append(json.loads(line))
+        except json.JSONDecodeError as e:
+            print(f"error: malformed ledger line {n} in {ledger}: {e}", file=sys.stderr)
+            sys.exit(1)
     return cycles
 
 
-def _load_winners(evolve_root: Path, cycle_id: str) -> dict | None:
+def _load_winners(evolve_root: Path, cycle_id: str) -> Optional[dict]:
     path = evolve_root / "cycles" / cycle_id / "winners.json"
     if not path.exists():
         return None
     try:
         return json.loads(path.read_text())
-    except json.JSONDecodeError:
-        return None
-
-
-def _collect_dims(fitness_vectors: list) -> list:
-    dims = []
-    for fv in fitness_vectors:
-        for d in fv.get("dimensions", []):
-            if d["dim"] not in dims:
-                dims.append(d["dim"])
-    return dims
+    except json.JSONDecodeError as e:
+        print(f"error: malformed winners.json for cycle {cycle_id}: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def _render(cycles_data: list) -> str:
     if not cycles_data:
         return "# Leaderboard\n\n_No cycles recorded yet._\n"
 
-    # Collect all dimension names across all cycles
     all_dims: list = []
     for row in cycles_data:
-        for d in row["dims"]:
-            if d not in all_dims:
-                all_dims.append(d)
+        for fv in row["fitness_vectors"]:
+            for d in fv.get("dimensions", []):
+                if d["dim"] not in all_dims:
+                    all_dims.append(d["dim"])
 
     if all_dims:
         header = "| Cycle | Variants | " + " | ".join(all_dims) + " |"
@@ -105,12 +100,10 @@ def main():
         winners = _load_winners(args.evolve_root, cycle_id)
         fvs = winners.get("fitness_vectors", []) if winners else []
         pareto_front = winners.get("pareto_front", []) if winners else []
-        dims = _collect_dims(fvs)
         cycles_data.append({
             "cycle": cycle_id,
             "pareto_front": pareto_front,
             "fitness_vectors": fvs,
-            "dims": dims,
         })
 
     content = _render(cycles_data)

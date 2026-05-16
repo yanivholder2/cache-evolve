@@ -1,61 +1,39 @@
 #!/usr/bin/env python3
 """Metadata-size fitness plugin.
 
-Runs the evolve-metadata-size binary and emits:
-  { "dim": "metadata-size", "values": [...], "summary": float, "higher_is_better": false }
+Runs the evolve-metadata-size binary, validates its output against the plugin
+contract, and forwards it.
 
-Usage: metadata-size.py
 Environment:
-  REPO_ROOT   path to the dash-cache-rs repo (default: 4 levels up from this file)
+  REPO_ROOT   path to the dash-cache-rs repo (default: 3 levels up from this file)
 """
 
-import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 
 _HERE = Path(__file__).resolve()
 _DEFAULT_REPO_ROOT = _HERE.parents[3]
+sys.path.insert(0, str(_HERE.parent))
 
+from _common import cargo_build, run_binary  # noqa: E402
+from _contract import ContractError, parse_plugin_stdout  # noqa: E402
 
-def _find_binary(repo_root: Path) -> Path | None:
-    for profile in ("release", "debug"):
-        p = repo_root / "target" / profile / "evolve-metadata-size"
-        if p.exists():
-            return p
-    return None
-
-
-def _build_binary(repo_root: Path) -> Path:
-    result = subprocess.run(
-        ["cargo", "build", "--bin", "evolve-metadata-size"],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(f"error: cargo build failed:\n{result.stderr}", file=sys.stderr)
-        sys.exit(1)
-    return repo_root / "target" / "debug" / "evolve-metadata-size"
+RUN_TIMEOUT_S = 60
 
 
 def main():
     repo_root = Path(os.environ.get("REPO_ROOT", _DEFAULT_REPO_ROOT))
+    cargo_build(repo_root, ["--bin", "evolve-metadata-size"], label="evolve-metadata-size")
+    binary = repo_root / "target" / "debug" / "evolve-metadata-size"
 
-    binary = _find_binary(repo_root) or _build_binary(repo_root)
-
-    result = subprocess.run(
-        [str(binary)],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(f"error: evolve-metadata-size failed: {result.stderr}", file=sys.stderr)
+    result = run_binary([str(binary)], label="evolve-metadata-size", timeout=RUN_TIMEOUT_S)
+    try:
+        parse_plugin_stdout(result.stdout, source="evolve-metadata-size")
+    except ContractError as e:
+        print(f"error: {e}", file=sys.stderr)
         sys.exit(1)
-
-    data = json.loads(result.stdout)
-    print(json.dumps(data))
+    sys.stdout.write(result.stdout)
 
 
 if __name__ == "__main__":

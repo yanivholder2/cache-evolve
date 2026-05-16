@@ -63,8 +63,33 @@ def test_rejects_missing_required_fields(tmp_path):
     assert result.stderr.strip()
 
 
-def test_empty_plugin_dir_produces_empty_dimensions(tmp_path):
+def test_empty_plugin_dir_errors(tmp_path):
     result = _run("v001", tmp_path)
-    assert result.returncode == 0
+    assert result.returncode != 0
+    assert "no plugin outputs" in result.stderr
+
+
+def test_values_propagated(tmp_path):
+    _write_plugin(tmp_path, "hit-rate", {
+        "dim": "hit-rate",
+        "values": [{"cache": "dash", "size": 16, "hit_rate": 0.61}],
+        "summary": 0.61,
+        "higher_is_better": True,
+    })
+    result = _run("v001", tmp_path)
+    assert result.returncode == 0, result.stderr
     fv = json.loads(result.stdout)
-    assert fv["dimensions"] == []
+    [dim] = fv["dimensions"]
+    assert dim["values"] == [{"cache": "dash", "size": 16, "hit_rate": 0.61}]
+
+
+def test_rejects_nan_summary(tmp_path):
+    _write_plugin(tmp_path, "hit-rate", {
+        "dim": "hit-rate",
+        "values": [],
+        "summary": float("nan"),
+        "higher_is_better": True,
+    })
+    result = _run("v001", tmp_path)
+    assert result.returncode != 0
+    assert "finite" in result.stderr.lower()

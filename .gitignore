@@ -1,6 +1,9 @@
 output.log
 rust-logs/
 
+# Microbench harness output (regenerated per run)
+evolve/bench/bench.json
+
 ### Claude Code ###
 .claude/worktrees/
 
