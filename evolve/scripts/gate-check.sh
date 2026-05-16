@@ -49,21 +49,30 @@ fi
 echo "G2: passed" >&2
 
 # --- G3: invariant suite ---
-# Runs the Invariant suite (run_invariant_suite) against the Variant via the
-# g3_invariant harness. Failure → parse the violated invariant name from the
-# panic message (e.g. "P3 slot_legality") and append a structured rejection.
+# Parses the violated invariant name from the panic message
+# (format: "G3 invariant violated: P[1-5] <snake_name>", set by the harness in
+# evolve/harness/g3_invariant.rs and format_err in src/test_utils/invariants.rs).
+# If the marker is absent, the cargo failure is a harness error (compile, OOM,
+# unrelated panic) — not a variant violation — and is reported as such.
 if ! G3_OUTPUT=$(cargo test --manifest-path "$WORK_DIR/Cargo.toml" --test g3_invariant 2>&1); then
     echo "G3: FAILED" >&2
-    INVARIANT=$(echo "$G3_OUTPUT" | grep -oE 'P[1-5] [a-z_]+' | head -n1)
-    INVARIANT="${INVARIANT:-unknown}"
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     FINGERPRINT="${VARIANT_FINGERPRINT:-pending}"
+    MARKER=$(echo "$G3_OUTPUT" | grep -oE 'G3 invariant violated: P[1-5] [a-z_]+' | head -n1 || true)
+    if [[ -n "$MARKER" ]]; then
+        INVARIANT="${MARKER#G3 invariant violated: }"
+        GATE_LABEL="G3 (invariant suite)"
+    else
+        echo "warning: G3 cargo test failed without an invariant marker — treating as harness error" >&2
+        INVARIANT="<harness error — see Error block>"
+        GATE_LABEL="G3 (harness error)"
+    fi
     cat >> "$REJECTION_LOG" <<ENTRY
 
 ## $TIMESTAMP — cycle=$CYCLE_ID variant=$VARIANT_ID
 
 **Fingerprint**: $FINGERPRINT
-**Gate**: G3 (invariant suite)
+**Gate**: $GATE_LABEL
 **Failing invariant**: $INVARIANT
 **Error**:
 \`\`\`

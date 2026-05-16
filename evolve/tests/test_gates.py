@@ -1,11 +1,12 @@
 """Integration tests for scripts/build.sh and scripts/gate-check.sh.
 
 These tests invoke real Rust compilation. They require cargo on PATH and share
-a single CARGO_TARGET_DIR across the session — first case pays the dep-build
-cost (~25s), subsequent cases reuse it.
+a single CARGO_TARGET_DIR across the session — the first case pays the full
+dep-build cost, subsequent cases reuse it.
 """
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -122,6 +123,7 @@ def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path, shared_target_dir):
     assert result.returncode != 0
     assert "G2: passed" in result.stderr
     assert "G3: FAILED" in result.stderr
+    assert result.stderr.index("G2: passed") < result.stderr.index("G3: FAILED")
 
 
 def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path, shared_target_dir):
@@ -133,11 +135,9 @@ def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path, share
     assert "cycle=0001" in content
     assert "variant=v001" in content
     assert "Fingerprint" in content
-    assert "Failing invariant" in content
-    # One of the five proptest invariants must be named in the entry.
-    assert any(p in content for p in ("P1 no_phantom_items", "P2 capacity_bound",
-                                       "P3 slot_legality", "P4 single_eviction_per_put",
-                                       "P5 stash_terminal"))
+    # The extracted **Failing invariant** field must name a P[1-5] property —
+    # not just appear somewhere in the embedded panic block.
+    assert re.search(r"\*\*Failing invariant\*\*: P[1-5] [a-z_]+", content)
 
 
 def test_gate_check_g3_failure_stops_before_success_marker(tmp_path, shared_target_dir):

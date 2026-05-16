@@ -9,7 +9,7 @@ use proptest::test_runner::{TestError, TestRunner};
 /// This is the G3 gate artifact. A Variant's thin harness declares:
 ///
 /// ```toml
-/// [dev-dependencies]
+/// [dependencies]
 /// dash = { path = "../../", features = ["test-utils"] }
 /// ```
 ///
@@ -28,10 +28,10 @@ pub fn run_invariant_suite<S>(factory: impl Fn() -> S) -> Result<(), String>
 where
     S: Segment<i64, i64>,
 {
-    // A fresh `TestRunner` per property: a reused runner accumulates `successes`
-    // across calls, so once P1 reached its case budget, subsequent properties would
-    // exit their while-loop immediately and trivially return Ok — silently skipping
-    // P2–P5.
+    // Each property uses a fresh `TestRunner`: a reused runner accumulates
+    // `successes` across calls, so once P1 hit its case budget, P2–P5 would
+    // exit their while-loop immediately and silently return Ok.
+
     // P1: no_phantom_items
     TestRunner::default()
         .run(&vec(0i64..200, 1..60), |ops| {

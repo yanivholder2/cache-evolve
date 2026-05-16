@@ -2,9 +2,9 @@
 // Kept as a real .rs file so rustfmt and IDEs can target it.
 //
 // Runs the Invariant suite against the Variant's `VariantSegment` via
-// `dash::test_utils::run_invariant_suite` (the G3 artifact from #56). A failure
-// panics with a message prefixed by the invariant name (e.g. "P3 slot_legality"),
-// which the G3 gate parses into rejection-log.md.
+// `dash::test_utils::run_invariant_suite`. A failure panics with a message
+// prefixed by the invariant name (e.g. "P3 slot_legality"), which the G3 gate
+// parses into rejection-log.md.
 use dash::dash::dash_settings::DashSettings;
 use dash::shared::eviction_policy::EvictionPolicy;
 use dash::test_utils::run_invariant_suite;
