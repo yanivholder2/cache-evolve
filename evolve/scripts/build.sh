@@ -39,7 +39,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dash = { package = "dash-cache-rs", path = "$REPO_ROOT" }
+dash = { package = "dash-cache-rs", path = "$REPO_ROOT", features = ["test-utils"] }
 EOF
 
 mkdir -p "$WORK_DIR/src" "$WORK_DIR/tests"
@@ -56,6 +56,7 @@ if [[ -f "$IMPL_DIR/manifest.toml" ]]; then
 fi
 
 cp "$SCRIPT_DIR/../harness/g2_contract.rs" "$WORK_DIR/tests/g2_contract.rs"
+cp "$SCRIPT_DIR/../harness/g3_invariant.rs" "$WORK_DIR/tests/g3_invariant.rs"
 
 echo "G1: compiling variant $VARIANT_ID ..." >&2
 if ! CARGO_OUTPUT=$(cargo build --tests --manifest-path "$WORK_DIR/Cargo.toml" 2>&1); then

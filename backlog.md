@@ -9,7 +9,6 @@ _(none)_
 ### Tasks
 
 - [Review public APIs of each component](#review-public-apis-of-each-component)
-- [CI: GitHub Actions for build + test on PRs](#ci-github-actions-for-build--test-on-prs)
 - [Deduplicate dash JNI boilerplate](#deduplicate-dash-jni-boilerplate)
 - [Review Dash integration tests](#review-dash-integration-tests)
 - [Segment trait abstraction](#segment-trait-abstraction)
@@ -40,10 +39,6 @@ _(none)_
 	- Verify pub visibility is intentional (not over-exposed internals)
 	- Check that each public fn has clear semantics and appropriate error handling
 - Components to review: `Dash`, `DashSegment`, `DashBucket`, `AssociativeCache`, `Bucket` trait, `EvictionPolicy`, JNI layers, shared types
-
-### CI: GitHub Actions for build + test on PRs
-- **Created**: 2026-03-24 | **Priority**: 1
-- Add `.github/workflows/ci.yml` that runs `cargo build` and `cargo test` on every PR. Repo is private — free tier gives 2,000 min/month.
 
 ### Deduplicate dash JNI boilerplate
 - **Created**: 2026-04-28 | **Priority**: 2
