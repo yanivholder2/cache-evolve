@@ -1,3 +1,6 @@
+[workspace]
+members = [".", "evolve/bench"]
+
 [package]
 name = "dash-cache-rs"
 version = "0.1.0"
@@ -21,3 +24,11 @@ proptest = { version = "1", optional = true }
 [dev-dependencies]
 rand = "0.8.5"
 proptest = "1"
+
+[[bin]]
+name = "evolve-hit-rate"
+path = "src/bin/evolve_hit_rate.rs"
+
+[[bin]]
+name = "evolve-metadata-size"
+path = "src/bin/evolve_metadata_size.rs"
