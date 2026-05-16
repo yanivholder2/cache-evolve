@@ -28,10 +28,12 @@ pub fn run_invariant_suite<S>(factory: impl Fn() -> S) -> Result<(), String>
 where
     S: Segment<i64, i64>,
 {
-    let mut runner = TestRunner::default();
-
+    // A fresh `TestRunner` per property: a reused runner accumulates `successes`
+    // across calls, so once P1 reached its case budget, subsequent properties would
+    // exit their while-loop immediately and trivially return Ok — silently skipping
+    // P2–P5.
     // P1: no_phantom_items
-    runner
+    TestRunner::default()
         .run(&vec(0i64..200, 1..60), |ops| {
             let mut cache: Dash<i64, i64, S> = Dash::new(1, || factory());
             for &key in &ops {
@@ -52,7 +54,7 @@ where
         .map_err(|e| format_err("P1 no_phantom_items", e))?;
 
     // P2: capacity_bound
-    runner
+    TestRunner::default()
         .run(&vec(0i64..200, 1..50), |ops| {
             let mut cache: Dash<i64, i64, S> = Dash::new(1, || factory());
             for key in ops {
@@ -72,7 +74,7 @@ where
         .map_err(|e| format_err("P2 capacity_bound", e))?;
 
     // P3: slot_legality
-    runner
+    TestRunner::default()
         .run(&vec(0i64..200, 1..80), |ops| {
             let mut cache: Dash<i64, i64, S> = Dash::new(1, || factory());
             for &key in &ops {
@@ -92,7 +94,7 @@ where
         .map_err(|e| format_err("P3 slot_legality", e))?;
 
     // P4: single_eviction_per_put
-    runner
+    TestRunner::default()
         .run(&vec(0i64..200, 1..60), |ops| {
             let mut cache: Dash<i64, i64, S> = Dash::new(1, || factory());
             for key in ops {
@@ -111,7 +113,7 @@ where
         .map_err(|e| format_err("P4 single_eviction_per_put", e))?;
 
     // P5: stash_terminal
-    runner
+    TestRunner::default()
         .run(&vec(0i64..200, 20..80), |ops| {
             let mut cache: Dash<i64, i64, S> = Dash::new(1, || factory());
             for &key in &ops {
