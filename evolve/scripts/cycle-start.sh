@@ -105,12 +105,19 @@ cat > "$CYCLE_DIR/winners.json" <<EOF
 }
 EOF
 
+# --- run held-out evaluation on Pareto front (only Pareto winners; never all variants) ---
+echo "running held-out fitness for Pareto front..."
+"$PYTHON" "$SCRIPT_DIR/holdout-runner.py" "$CYCLE_DIR"
+HOLDOUT_REGRESSION=$("$PYTHON" -c "import json,sys; print(str(json.load(open(sys.argv[1]))['any_regression']).lower())" "$CYCLE_DIR/holdout.json")
+
 cat > "$CYCLE_DIR/cycle-insight.md" <<EOF
 # Cycle $CYCLE_NUM Insight
 
 Pareto front: $PARETO_FRONT
 
 Evaluated $VARIANT_COUNT variant(s) with real fitness plugins (hit-rate, per-op-time, metadata-size).
+
+Held-out regression: $HOLDOUT_REGRESSION (see holdout.json for per-variant deltas).
 EOF
 
 # --- seal ---
@@ -118,8 +125,8 @@ bash "$SCRIPT_DIR/seal.sh" "$CYCLE_DIR"
 
 # --- append ledger row (repo-relative cycle_dir) ---
 CYCLE_DIR_REL="evolve/cycles/$CYCLE_NUM"
-ROW=$(printf '{"cycle":"%s","worker_id":"%s","cycle_dir":"%s","pareto_front":%s}' \
-    "$CYCLE_NUM" "$WORKER_ID" "$CYCLE_DIR_REL" "$PARETO_FRONT")
+ROW=$(printf '{"cycle":"%s","worker_id":"%s","cycle_dir":"%s","pareto_front":%s,"holdout_regression":%s}' \
+    "$CYCLE_NUM" "$WORKER_ID" "$CYCLE_DIR_REL" "$PARETO_FRONT" "$HOLDOUT_REGRESSION")
 echo "$ROW" | "$PYTHON" "$SCRIPT_DIR/ledger-append.py" "$LEDGER"
 
 # --- update leaderboard (after ledger so this cycle appears) ---

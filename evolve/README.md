@@ -36,11 +36,11 @@ evolve/
   subject/                 # Stable evolution context
     extension-points.md    # Stable trait definitions
     invariants/            # Rust correctness gate suite
-  traces/                  # Evaluation suite (Persistent)
+  traces/                  # Evaluation suite (Persistent) — see traces/README.md
     smoke.trace            # Small trace for G5 smoke-tests
-    dev/                   # Traces visible to the AI
-    holdout/               # Traces hidden from the AI
-    *.profile.md           # Workload characteristics
+    dev/                   # Traces visible to the AI (default fitness suite)
+    holdout/               # Held-out: hidden from the AI; run only on Pareto winners
+    *.profile.md           # Workload characteristics + sign-off frontmatter
   ledger/                  # APPEND-ONLY source of truth (Transient)
     cycles.jsonl           # One JSONL row per Cycle
     insights.jsonl         # Detailed variant insights
@@ -54,6 +54,7 @@ evolve/
       insight.md           # Qualitative variant insight
     cycle-insight.md       # Synthesis of the entire cohort
     winners.json           # Pareto-front variants for this cycle
+    holdout.json           # Held-out hit-rate for Pareto winners + regression flag
   synthesis/               # RECOMPUTABLE narrative views (Transient)
     current.md             # Latest cross-cycle synthesis
     by-topic/              # Categorized research insights
