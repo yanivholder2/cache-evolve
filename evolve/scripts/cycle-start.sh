@@ -1,14 +1,63 @@
 #!/usr/bin/env bash
-# Cycle orchestrator — runs G1+G2 gates and real fitness plugins, aggregates, computes Pareto front.
+# Cycle orchestrator — fans out a cohort of N Variants, runs real G1+G2 gates and
+# fitness plugins per variant, aggregates a Pareto front, seals the cycle, and
+# appends one ledger row.
 #
-# Usage: [HYPOTHESIS="..."] [EVOLVE_ROOT=<path-to-evolve/>] [REPO_ROOT=<dash-crate-root>] [WORKER_ID=<id>] cycle-start.sh
+# Usage:
+#   [HYPOTHESES="h1\nh2\n..."] [COHORT_SIZE=N] [VARIANT_IMPLEMENTER=<cmd>] \
+#   [EVOLVE_ROOT=<path>] [REPO_ROOT=<dash-crate-root>] [WORKER_ID=<id>] \
+#   cycle-start.sh
+#
+# HYPOTHESES overrides COHORT_SIZE (one Variant per line).
+# COHORT_SIZE overrides the config.toml default
+# VARIANT_IMPLEMENTER is invoked once per Variant in parallel as
+#   <cmd> <hypothesis-file> <impl-out-dir>
+# and defaults to scripts/variant-implementer.sh (copies the good fixture).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVOLVE_ROOT="${EVOLVE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
-# Allow callers to pin REPO_ROOT (e.g. tests that copy evolve/ to a temp dir)
 REPO_ROOT="${REPO_ROOT:-$(cd "$EVOLVE_ROOT/.." && pwd)}"
 export REPO_ROOT EVOLVE_ROOT
+
+WORKER_ID="${WORKER_ID:-local}"
+export WORKER_ID
+
+VARIANT_IMPLEMENTER="${VARIANT_IMPLEMENTER:-$SCRIPT_DIR/variant-implementer.sh}"
+
+# --- Resolve cohort size: env override > config.toml > built-in default ---
+CONFIG_FILE="$EVOLVE_ROOT/config.toml"
+COHORT_SIZE_EXPLICIT="${COHORT_SIZE:-}"
+if [ -z "${COHORT_SIZE:-}" ]; then
+    if [ -f "$CONFIG_FILE" ]; then
+        COHORT_SIZE=$(grep -m1 -E '^[[:space:]]*cohort_size[[:space:]]*=' "$CONFIG_FILE" \
+            | sed -E 's/.*=[[:space:]]*([0-9]+).*/\1/')
+    fi
+fi
+COHORT_SIZE="${COHORT_SIZE:-6}"
+
+if ! [[ "$COHORT_SIZE" =~ ^[0-9]+$ ]] || [ "$COHORT_SIZE" -lt 1 ]; then
+    echo "error: COHORT_SIZE must be a positive integer, got: $COHORT_SIZE" >&2
+    exit 1
+fi
+
+# --- Resolve hypotheses list ---
+HYPS=()
+if [ -n "${HYPOTHESES:-}" ]; then
+    # Split on real newlines; skip empty lines. Callers must expand escapes
+    # themselves (use $'...' in bash so \n becomes a literal newline).
+    while IFS= read -r line; do
+        [ -n "$line" ] && HYPS+=("$line")
+    done <<< "$HYPOTHESES"
+    if [ -n "$COHORT_SIZE_EXPLICIT" ] && [ "$COHORT_SIZE_EXPLICIT" != "${#HYPS[@]}" ]; then
+        echo "note: HYPOTHESES has ${#HYPS[@]} entries; COHORT_SIZE=$COHORT_SIZE_EXPLICIT ignored" >&2
+    fi
+    COHORT_SIZE=${#HYPS[@]}
+else
+    for i in $(seq 1 "$COHORT_SIZE"); do
+        HYPS+=("Default hypothesis H$(printf '%02d' "$i"): exploratory Variant from the walking-skeleton stub.")
+    done
+fi
 
 # --- Determine next cycle number ---
 CYCLES_DIR="$EVOLVE_ROOT/cycles"
@@ -18,113 +67,159 @@ CYCLE_NUM=$(printf "%04d" $((10#$LAST_CYCLE + 1)))
 
 CYCLE_DIR="$CYCLES_DIR/$CYCLE_NUM"
 LEDGER="$EVOLVE_ROOT/ledger/cycles.jsonl"
-WORKER_ID="${WORKER_ID:-local}"
-export WORKER_ID
-
-HYPOTHESIS="${1:-${HYPOTHESIS:-"Swap the eviction policy to FIFO as a baseline sanity check."}}"
 
 if [ -d "$CYCLE_DIR" ]; then
     echo "error: cycle $CYCLE_NUM already exists at $CYCLE_DIR" >&2
     exit 1
 fi
 
-FIXTURES_DIR="$EVOLVE_ROOT/fixtures"
-
-# --- Python interpreter from venv if available ---
+# --- Python interpreter ---
 PYTHON="${EVOLVE_ROOT}/.venv/bin/python3"
 if [ ! -x "$PYTHON" ]; then
     PYTHON="python3"
 fi
 
-# --- scaffold cycle directory ---
-mkdir -p "$CYCLE_DIR/variants/v001/impl" "$CYCLE_DIR/variants/v001/eval/fitness"
+# --- Scaffold cycle directory + hypotheses ---
+mkdir -p "$CYCLE_DIR/hypotheses"
 
-# --- populate stub variant impl from good fixture ---
-cp "$FIXTURES_DIR/good/impl/segment.rs"   "$CYCLE_DIR/variants/v001/impl/segment.rs"
-cp "$FIXTURES_DIR/good/impl/manifest.toml" "$CYCLE_DIR/variants/v001/impl/manifest.toml"
+{
+    echo "# Cycle $CYCLE_NUM Cohort"
+    echo
+    echo "Cohort size: $COHORT_SIZE"
+    echo
+    echo "## Hypotheses"
+    echo
+    for i in $(seq 1 "$COHORT_SIZE"); do
+        HID=$(printf "H%02d" "$i")
+        idx=$((i - 1))
+        echo "- [\`$HID\`](hypotheses/$HID.md)"
+        {
+            echo "# Hypothesis $HID"
+            echo
+            echo "${HYPS[$idx]}"
+        } > "$CYCLE_DIR/hypotheses/$HID.md"
+    done
+} > "$CYCLE_DIR/cohort.md"
 
-# --- run gate-check (G1 + G2; G3 is still a stub) ---
-bash "$SCRIPT_DIR/gate-check.sh" "$CYCLE_DIR/variants/v001/impl" "$CYCLE_NUM" "v001" || {
-    echo "error: gate-check failed for v001 in cycle $CYCLE_NUM" >&2
-    exit 1
-}
-
-cat > "$CYCLE_DIR/cohort.md" <<EOF
-# Cycle $CYCLE_NUM Cohort
-
-## Hypothesis H001
-
-$HYPOTHESIS
-EOF
-
-# --- run fitness plugins for v001 ---
-EVAL_DIR="$CYCLE_DIR/variants/v001/eval"
-FITNESS_DIR="$EVAL_DIR/fitness"
-
-echo "running fitness plugins for v001..."
-
-for plugin in hit-rate per-op-time metadata-size; do
-    echo "  $plugin..."
-    OUT="$FITNESS_DIR/${plugin}.json"
-    "$PYTHON" "$SCRIPT_DIR/fitness/${plugin}.py" > "$OUT"
-    if [ ! -s "$OUT" ]; then
-        echo "error: plugin $plugin produced empty output at $OUT" >&2
-        exit 1
-    fi
-    "$PYTHON" -c "import json,sys; json.load(open(sys.argv[1]))" "$OUT" || {
-        echo "error: plugin $plugin produced invalid JSON at $OUT" >&2
-        exit 1
-    }
+# --- Fan-out: invoke variant-implementer in parallel (P1) ---
+PIDS=()
+VIDS=()
+for i in $(seq 1 "$COHORT_SIZE"); do
+    HID=$(printf "H%02d" "$i")
+    VID=$(printf "v%03d" "$i")
+    VARIANT_DIR="$CYCLE_DIR/variants/$VID"
+    mkdir -p "$VARIANT_DIR/impl" "$VARIANT_DIR/eval/fitness"
+    "$VARIANT_IMPLEMENTER" \
+        "$CYCLE_DIR/hypotheses/$HID.md" \
+        "$VARIANT_DIR/impl" \
+        > "$VARIANT_DIR/implementer.log" 2>&1 &
+    PIDS+=("$!")
+    VIDS+=("$VID")
 done
 
-# --- aggregate fitness vector ---
-"$PYTHON" "$SCRIPT_DIR/fitness-aggregate.py" v001 "$FITNESS_DIR" > "$EVAL_DIR/fitness-vector.json"
+EXITS=()
+for pid in "${PIDS[@]}"; do
+    EXIT=0
+    wait "$pid" || EXIT=$?
+    EXITS+=("$EXIT")
+done
 
-# --- build variant insight from fitness data ---
-FV_JSON=$(cat "$EVAL_DIR/fitness-vector.json")
-DIM_SUMMARY=$("$PYTHON" "$SCRIPT_DIR/dim-summary.py" "$EVAL_DIR/fitness-vector.json")
+FAILED=0
+for idx in "${!PIDS[@]}"; do
+    EXIT="${EXITS[$idx]}"
+    if [ "$EXIT" != "0" ]; then
+        VID="${VIDS[$idx]}"
+        echo "error: variant-implementer for $VID failed (exit $EXIT):" >&2
+        cat "$CYCLE_DIR/variants/$VID/implementer.log" >&2
+        FAILED=1
+    fi
+done
+if [ "$FAILED" -eq 1 ]; then
+    exit 1
+fi
 
-cat > "$CYCLE_DIR/variants/v001/insight.md" <<EOF
-# Variant v001 Insight
+# --- Per-variant gates + fitness ---
+# Gates run sequentially (cargo serializes on the shared target dir).
+for i in $(seq 1 "$COHORT_SIZE"); do
+    VID=$(printf "v%03d" "$i")
+    VARIANT_DIR="$CYCLE_DIR/variants/$VID"
+    IMPL_DIR="$VARIANT_DIR/impl"
+
+    bash "$SCRIPT_DIR/gate-check.sh" "$IMPL_DIR" "$CYCLE_NUM" "$VID" || {
+        echo "error: gate-check failed for $VID in cycle $CYCLE_NUM" >&2
+        exit 1
+    }
+
+    EVAL_DIR="$VARIANT_DIR/eval"
+    FITNESS_DIR="$EVAL_DIR/fitness"
+
+    for plugin in hit-rate per-op-time metadata-size; do
+        OUT="$FITNESS_DIR/${plugin}.json"
+        "$PYTHON" "$SCRIPT_DIR/fitness/${plugin}.py" > "$OUT"
+        if [ ! -s "$OUT" ]; then
+            echo "error: plugin $plugin produced empty output for $VID at $OUT" >&2
+            exit 1
+        fi
+        "$PYTHON" -c "import json,sys; json.load(open(sys.argv[1]))" "$OUT" || {
+            echo "error: plugin $plugin produced invalid JSON for $VID at $OUT" >&2
+            exit 1
+        }
+    done
+
+    "$PYTHON" "$SCRIPT_DIR/fitness-aggregate.py" "$VID" "$FITNESS_DIR" > "$EVAL_DIR/fitness-vector.json"
+done
+
+# --- Collect fitness vectors and compute Pareto front over the cohort ---
+FV_LIST=()
+for i in $(seq 1 "$COHORT_SIZE"); do
+    VID=$(printf "v%03d" "$i")
+    FV_LIST+=("$(cat "$CYCLE_DIR/variants/$VID/eval/fitness-vector.json")")
+done
+FV_ARRAY="[$(IFS=,; echo "${FV_LIST[*]}")]"
+PARETO_FRONT=$(echo "$FV_ARRAY" | "$PYTHON" "$SCRIPT_DIR/pareto.py" -)
+
+# --- Per-variant insights ---
+for i in $(seq 1 "$COHORT_SIZE"); do
+    VID=$(printf "v%03d" "$i")
+    EVAL_DIR="$CYCLE_DIR/variants/$VID/eval"
+    DIM_SUMMARY=$("$PYTHON" "$SCRIPT_DIR/dim-summary.py" "$EVAL_DIR/fitness-vector.json")
+    cat > "$CYCLE_DIR/variants/$VID/insight.md" <<EOF
+# Variant $VID Insight
 
 Fitness: $DIM_SUMMARY
 EOF
-
-# --- compute Pareto front (single variant -> trivially itself) ---
-# TODO: when real cohort generation lands, build FV_ARRAY from all variants' fitness-vector.json files.
-FV_ARRAY="[$FV_JSON]"
-PARETO_FRONT=$(echo "$FV_ARRAY" | "$PYTHON" "$SCRIPT_DIR/pareto.py" -)
-VARIANT_COUNT=$(echo "$FV_ARRAY" | "$PYTHON" -c "import json,sys; print(len(json.load(sys.stdin)))")
+done
 
 cat > "$CYCLE_DIR/winners.json" <<EOF
 {
   "cycle": "$CYCLE_NUM",
   "worker_id": "$WORKER_ID",
   "pareto_front": $PARETO_FRONT,
-  "fitness_vectors": [$FV_JSON]
+  "fitness_vectors": $FV_ARRAY
 }
 EOF
 
 cat > "$CYCLE_DIR/cycle-insight.md" <<EOF
 # Cycle $CYCLE_NUM Insight
 
+Cohort size: $COHORT_SIZE
 Pareto front: $PARETO_FRONT
 
-Evaluated $VARIANT_COUNT variant(s) with real fitness plugins (hit-rate, per-op-time, metadata-size).
+Evaluated $COHORT_SIZE variant(s) with real fitness plugins (hit-rate, per-op-time, metadata-size).
 EOF
 
-# --- seal ---
+# --- Seal ---
 bash "$SCRIPT_DIR/seal.sh" "$CYCLE_DIR"
 
-# --- append ledger row (repo-relative cycle_dir) ---
+# --- Append ledger row (repo-relative cycle_dir) ---
 CYCLE_DIR_REL="evolve/cycles/$CYCLE_NUM"
-ROW=$(printf '{"cycle":"%s","worker_id":"%s","cycle_dir":"%s","pareto_front":%s}' \
-    "$CYCLE_NUM" "$WORKER_ID" "$CYCLE_DIR_REL" "$PARETO_FRONT")
+ROW=$(printf '{"cycle":"%s","worker_id":"%s","cycle_dir":"%s","cohort_size":%s,"pareto_front":%s}' \
+    "$CYCLE_NUM" "$WORKER_ID" "$CYCLE_DIR_REL" "$COHORT_SIZE" "$PARETO_FRONT")
 echo "$ROW" | "$PYTHON" "$SCRIPT_DIR/ledger-append.py" "$LEDGER"
 
-# --- update leaderboard (after ledger so this cycle appears) ---
+# --- Regenerate leaderboard ---
 "$PYTHON" "$SCRIPT_DIR/leaderboard.py" \
     --evolve-root "$EVOLVE_ROOT" \
     --output "$EVOLVE_ROOT/leaderboard.md"
 
-echo "cycle $CYCLE_NUM complete — sealed at $CYCLE_DIR"
+echo "cycle $CYCLE_NUM complete — sealed at $CYCLE_DIR (cohort=$COHORT_SIZE)"
