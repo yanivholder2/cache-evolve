@@ -9,7 +9,7 @@
 #   cycle-start.sh
 #
 # HYPOTHESES overrides COHORT_SIZE (one Variant per line).
-# COHORT_SIZE overrides the config.toml default (6).
+# COHORT_SIZE overrides the config.toml default
 # VARIANT_IMPLEMENTER is invoked once per Variant in parallel as
 #   <cmd> <hypothesis-file> <impl-out-dir>
 # and defaults to scripts/variant-implementer.sh (copies the good fixture).
@@ -27,10 +27,10 @@ VARIANT_IMPLEMENTER="${VARIANT_IMPLEMENTER:-$SCRIPT_DIR/variant-implementer.sh}"
 
 # --- Resolve cohort size: env override > config.toml > built-in default ---
 CONFIG_FILE="$EVOLVE_ROOT/config.toml"
+COHORT_SIZE_EXPLICIT="${COHORT_SIZE:-}"
 if [ -z "${COHORT_SIZE:-}" ]; then
     if [ -f "$CONFIG_FILE" ]; then
-        COHORT_SIZE=$(grep -E '^[[:space:]]*cohort_size[[:space:]]*=' "$CONFIG_FILE" \
-            | head -1 \
+        COHORT_SIZE=$(grep -m1 -E '^[[:space:]]*cohort_size[[:space:]]*=' "$CONFIG_FILE" \
             | sed -E 's/.*=[[:space:]]*([0-9]+).*/\1/')
     fi
 fi
@@ -44,10 +44,14 @@ fi
 # --- Resolve hypotheses list ---
 HYPS=()
 if [ -n "${HYPOTHESES:-}" ]; then
-    # newline-separated; respect $'\n' from the caller
+    # Split on real newlines; skip empty lines. Callers must expand escapes
+    # themselves (use $'...' in bash so \n becomes a literal newline).
     while IFS= read -r line; do
         [ -n "$line" ] && HYPS+=("$line")
     done <<< "$HYPOTHESES"
+    if [ -n "$COHORT_SIZE_EXPLICIT" ] && [ "$COHORT_SIZE_EXPLICIT" != "${#HYPS[@]}" ]; then
+        echo "note: HYPOTHESES has ${#HYPS[@]} entries; COHORT_SIZE=$COHORT_SIZE_EXPLICIT ignored" >&2
+    fi
     COHORT_SIZE=${#HYPS[@]}
 else
     for i in $(seq 1 "$COHORT_SIZE"); do
@@ -87,55 +91,55 @@ mkdir -p "$CYCLE_DIR/hypotheses"
     echo
     for i in $(seq 1 "$COHORT_SIZE"); do
         HID=$(printf "H%02d" "$i")
+        idx=$((i - 1))
         echo "- [\`$HID\`](hypotheses/$HID.md)"
+        {
+            echo "# Hypothesis $HID"
+            echo
+            echo "${HYPS[$idx]}"
+        } > "$CYCLE_DIR/hypotheses/$HID.md"
     done
 } > "$CYCLE_DIR/cohort.md"
 
-for i in $(seq 1 "$COHORT_SIZE"); do
-    HID=$(printf "H%02d" "$i")
-    idx=$((i - 1))
-    {
-        echo "# Hypothesis $HID"
-        echo
-        echo "${HYPS[$idx]}"
-    } > "$CYCLE_DIR/hypotheses/$HID.md"
-done
-
 # --- Fan-out: invoke variant-implementer in parallel (P1) ---
 PIDS=()
+VIDS=()
 for i in $(seq 1 "$COHORT_SIZE"); do
     HID=$(printf "H%02d" "$i")
     VID=$(printf "v%03d" "$i")
     VARIANT_DIR="$CYCLE_DIR/variants/$VID"
     mkdir -p "$VARIANT_DIR/impl" "$VARIANT_DIR/eval/fitness"
-    (
-        set +e
-        "$VARIANT_IMPLEMENTER" \
-            "$CYCLE_DIR/hypotheses/$HID.md" \
-            "$VARIANT_DIR/impl" \
-            > "$VARIANT_DIR/implementer.log" 2>&1
-        echo "$?" > "$VARIANT_DIR/implementer.exit"
-    ) &
+    "$VARIANT_IMPLEMENTER" \
+        "$CYCLE_DIR/hypotheses/$HID.md" \
+        "$VARIANT_DIR/impl" \
+        > "$VARIANT_DIR/implementer.log" 2>&1 &
     PIDS+=("$!")
-done
-for pid in "${PIDS[@]}"; do
-    wait "$pid" || true
+    VIDS+=("$VID")
 done
 
-for i in $(seq 1 "$COHORT_SIZE"); do
-    VID=$(printf "v%03d" "$i")
-    VARIANT_DIR="$CYCLE_DIR/variants/$VID"
-    EXIT=$(cat "$VARIANT_DIR/implementer.exit")
+EXITS=()
+for pid in "${PIDS[@]}"; do
+    EXIT=0
+    wait "$pid" || EXIT=$?
+    EXITS+=("$EXIT")
+done
+
+FAILED=0
+for idx in "${!PIDS[@]}"; do
+    EXIT="${EXITS[$idx]}"
     if [ "$EXIT" != "0" ]; then
+        VID="${VIDS[$idx]}"
         echo "error: variant-implementer for $VID failed (exit $EXIT):" >&2
-        cat "$VARIANT_DIR/implementer.log" >&2
-        exit 1
+        cat "$CYCLE_DIR/variants/$VID/implementer.log" >&2
+        FAILED=1
     fi
 done
+if [ "$FAILED" -eq 1 ]; then
+    exit 1
+fi
 
 # --- Per-variant gates + fitness ---
-# Gates run sequentially (cargo serializes against its target dir); fitness
-# plugins are deterministic short Python runs.
+# Gates run sequentially (cargo serializes on the shared target dir).
 for i in $(seq 1 "$COHORT_SIZE"); do
     VID=$(printf "v%03d" "$i")
     VARIANT_DIR="$CYCLE_DIR/variants/$VID"
