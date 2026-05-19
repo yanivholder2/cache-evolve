@@ -28,3 +28,15 @@ jobs:
 
       - name: Test
         run: cargo test --all-features
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: pip install -r evolve/requirements.txt
+
+      - name: Python tests
+        working-directory: evolve
+        run: pytest

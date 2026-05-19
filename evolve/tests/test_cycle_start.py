@@ -5,6 +5,9 @@ Runs scripts/cycle-start.sh against a temp copy of evolve/ and asserts:
 - ledger gains exactly one row
 - row has worker_id and no absolute paths
 - cycle is sealed (read-only marker present)
+
+Gate cargo is mocked (conftest.py); fitness-plugin cargo runs for real.
+A small COHORT_SIZE keeps the per-variant plugin work bounded.
 """
 
 import json
@@ -25,6 +28,7 @@ def run_cycle_start(repo_root: Path) -> subprocess.CompletedProcess:
         **os.environ,
         "EVOLVE_ROOT": str(repo_root / "evolve"),
         "REPO_ROOT": str(REAL_REPO_ROOT),
+        "COHORT_SIZE": "2",
     }
     return subprocess.run(
         [str(CYCLE_START)],

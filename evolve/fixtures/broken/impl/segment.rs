@@ -1,4 +1,5 @@
 // Intentionally broken fixture: calls a non-existent method to trigger a G1 compile error.
+// MOCK_CARGO: g1_fail
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
 use dash::shared::item::Item;

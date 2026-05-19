@@ -1,4 +1,5 @@
 // Bad-Variant fixture: compiles, passes G2 round-trip, violates P3 slot_legality.
+// MOCK_CARGO: g3_fail P3 slot_legality
 //
 // On construction, force-pushes a phantom item into bucket 0 whose key hashes to
 // a different bucket. The legit Segment surface (`get`, `put`) still works, so G1

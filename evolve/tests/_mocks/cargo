@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Mock cargo for evolve gate-script tests.
+#
+# Handles the cargo invocations made by scripts/build.sh and scripts/gate-check.sh
+# (i.e. variant-crate `cargo build --tests` and `cargo test --test {g2_contract,g3_invariant}`)
+# by inspecting markers in the variant source — no real Rust compilation runs:
+#   // MOCK_CARGO: g1_fail              -> `cargo build --tests` fails
+#   // MOCK_CARGO: g3_fail P<n> <name>  -> `cargo test --test g3_invariant` fails
+#                                          with the matching panic format
+# `cargo test --test g2_contract` fails when the manifest declares
+# eviction_policy_ordinal > 5 (mirrors the real harness check).
+#
+# Any other cargo invocation (fitness plugins building real binaries, etc.)
+# is forwarded to the real cargo found on PATH after stripping this shim's dir.
+set -uo pipefail
+
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+_delegate_to_real_cargo() {
+    local real_path
+    real_path=$(echo "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | tr '\n' ':')
+    real_path="${real_path%:}"
+    local real_cargo
+    real_cargo=$(PATH="$real_path" command -v cargo || true)
+    if [ -z "$real_cargo" ]; then
+        echo "mock cargo: no real cargo on PATH for passthrough: $*" >&2
+        exit 127
+    fi
+    PATH="$real_path" exec "$real_cargo" "$@"
+}
+
+SUBCMD="${1:-}"
+ALL_ARGS=("$@")
+shift || true
+
+# Detect gate-mode invocations by walking args.
+IS_GATE_BUILD=false
+IS_GATE_TEST=""
+MANIFEST=""
+ARGS=("$@")
+i=0
+while [ $i -lt ${#ARGS[@]} ]; do
+    case "${ARGS[$i]}" in
+        --manifest-path) MANIFEST="${ARGS[$((i+1))]}"; i=$((i+2));;
+        --tests)         IS_GATE_BUILD=true; i=$((i+1));;
+        --test)
+            case "${ARGS[$((i+1))]}" in
+                g2_contract|g3_invariant) IS_GATE_TEST="${ARGS[$((i+1))]}";;
+            esac
+            i=$((i+2));;
+        *) i=$((i+1));;
+    esac
+done
+
+if [ "$SUBCMD" = "build" ] && ! $IS_GATE_BUILD; then
+    _delegate_to_real_cargo "${ALL_ARGS[@]}"
+fi
+if [ "$SUBCMD" = "test" ] && [ -z "$IS_GATE_TEST" ]; then
+    _delegate_to_real_cargo "${ALL_ARGS[@]}"
+fi
+if [ "$SUBCMD" != "build" ] && [ "$SUBCMD" != "test" ]; then
+    _delegate_to_real_cargo "${ALL_ARGS[@]}"
+fi
+
+WORK_DIR=""
+if [ -n "$MANIFEST" ]; then
+    WORK_DIR="$(dirname "$MANIFEST")"
+fi
+VARIANT_RS="${WORK_DIR}/src/variant.rs"
+MANIFEST_TOML="${WORK_DIR}/manifest.toml"
+
+if [ "$SUBCMD" = "build" ]; then
+    if [ -f "$VARIANT_RS" ] && grep -q '^// MOCK_CARGO: g1_fail' "$VARIANT_RS"; then
+        echo "error[E0599]: mock cargo: g1_fail marker present in $VARIANT_RS" >&2
+        exit 101
+    fi
+    exit 0
+fi
+
+# Gate test path
+case "$IS_GATE_TEST" in
+    g2_contract)
+        if [ -f "$MANIFEST_TOML" ]; then
+            ORD=$(grep -oE 'eviction_policy_ordinal[[:space:]]*=[[:space:]]*[0-9]+' "$MANIFEST_TOML" \
+                | grep -oE '[0-9]+$' || true)
+            if [ -n "$ORD" ] && [ "$ORD" -gt 5 ]; then
+                echo "thread 'main' panicked: G2 trait contract failed: eviction_policy_ordinal $ORD out of range 0..=5" >&2
+                exit 101
+            fi
+        fi
+        exit 0
+        ;;
+    g3_invariant)
+        if [ -f "$VARIANT_RS" ]; then
+            MARK=$(grep -oE '^// MOCK_CARGO: g3_fail P[1-5] [a-z_]+' "$VARIANT_RS" | head -n1 || true)
+            if [ -n "$MARK" ]; then
+                INV="${MARK#// MOCK_CARGO: g3_fail }"
+                echo "thread 'tokio-runtime-worker' panicked at evolve/harness/g3_invariant.rs:1:1:" >&2
+                echo "G3 invariant violated: $INV" >&2
+                exit 101
+            fi
+        fi
+        exit 0
+        ;;
+esac
+exit 0
