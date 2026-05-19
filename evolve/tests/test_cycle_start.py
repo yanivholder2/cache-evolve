@@ -19,6 +19,7 @@ from pathlib import Path
 EVOLVE_SRC = Path(__file__).parent.parent
 SCRIPTS_DIR = EVOLVE_SRC / "scripts"
 CYCLE_START = SCRIPTS_DIR / "cycle-start.py"
+LLM_STUB = EVOLVE_SRC / "tests" / "_mocks" / "llm-stub.sh"
 # Real repo root — fitness plugins need it to find/build Rust binaries
 REAL_REPO_ROOT = EVOLVE_SRC.parent
 
@@ -29,6 +30,8 @@ def run_cycle_start(repo_root: Path) -> subprocess.CompletedProcess:
         "EVOLVE_ROOT": str(repo_root / "evolve"),
         "REPO_ROOT": str(REAL_REPO_ROOT),
         "COHORT_SIZE": "2",
+        "EVOLVE_LLM_CMD": str(LLM_STUB),
+        "STUB_LINES": "2",
     }
     return subprocess.run(
         [str(CYCLE_START)],

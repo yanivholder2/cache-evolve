@@ -27,6 +27,7 @@ import pytest
 EVOLVE_SRC = Path(__file__).parent.parent
 SCRIPTS_DIR = EVOLVE_SRC / "scripts"
 CYCLE_START = SCRIPTS_DIR / "cycle-start.py"
+LLM_STUB = EVOLVE_SRC / "tests" / "_mocks" / "llm-stub.sh"
 REAL_REPO_ROOT = EVOLVE_SRC.parent
 
 EXPECTED_DEFAULT_COHORT_SIZE = 6
@@ -55,9 +56,15 @@ def _run_cycle(repo_root: Path, extra_env=None) -> subprocess.CompletedProcess:
         "REPO_ROOT": str(REAL_REPO_ROOT),
         # default to a small cohort for test speed
         "COHORT_SIZE": "2",
+        # Default the LLM to a deterministic stub; tests override or set
+        # HYPOTHESES= directly to bypass the wrapper.
+        "EVOLVE_LLM_CMD": str(LLM_STUB),
     }
     if extra_env:
         env.update(extra_env)
+    # Match stub line count to the effective cohort size unless the test
+    # already pinned STUB_LINES itself.
+    env.setdefault("STUB_LINES", env["COHORT_SIZE"])
     return subprocess.run(
         [str(CYCLE_START)],
         capture_output=True,

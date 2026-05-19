@@ -91,11 +91,20 @@ def _validate_positive_int(value: str) -> int:
     return int(value)
 
 
-def resolve_hypotheses(env_value: str | None, cohort_size: int, explicit_cohort: str | None) -> tuple[list[str], int]:
+def resolve_hypotheses(
+    env_value: str | None,
+    cohort_size: int,
+    explicit_cohort: str | None,
+    *,
+    scripts_dir: Path,
+    cycle_num: str,
+    python: str,
+) -> tuple[list[str], int]:
     """Return (hypotheses, effective_cohort_size).
 
-    If HYPOTHESES is set: one Variant per non-empty line; warn if explicit
-    COHORT_SIZE disagrees. Otherwise synthesize default stubs.
+    Precedence: explicit HYPOTHESES env wins (one Variant per non-empty line);
+    otherwise invoke scripts/hypothesis-writer.py for the LLM-authored cohort.
+    No silent fallback — wrapper failure aborts the cycle.
     """
     if env_value:
         hyps = [line for line in env_value.splitlines() if line]
@@ -106,10 +115,22 @@ def resolve_hypotheses(env_value: str | None, cohort_size: int, explicit_cohort:
             )
         return hyps, len(hyps)
 
-    hyps = [
-        f"Default hypothesis H{i:02d}: exploratory Variant from the walking-skeleton stub."
-        for i in range(1, cohort_size + 1)
-    ]
+    writer = scripts_dir / "hypothesis-writer.py"
+    log.info("invoking hypothesis-writer (N=%d, cycle=%s)", cohort_size, cycle_num)
+    proc = subprocess.run(
+        [python, str(writer), str(cohort_size)],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "CYCLE_NUM": cycle_num},
+    )
+    if proc.returncode != 0:
+        sys.stderr.write(proc.stderr)
+        die(f"hypothesis-writer failed (exit {proc.returncode})")
+    hyps = [line for line in proc.stdout.splitlines() if line.strip()]
+    if len(hyps) != cohort_size:
+        die(
+            f"hypothesis-writer returned {len(hyps)} hypotheses, expected {cohort_size}"
+        )
     return hyps, cohort_size
 
 
@@ -276,14 +297,11 @@ def main() -> None:
     log.debug("evolve_root=%s repo_root=%s worker_id=%s", evolve_root, repo_root, worker_id)
     log.debug("implementer=%s", implementer)
 
-    # --- Resolve cohort size + hypotheses list ---
+    # --- Resolve cohort size (hypotheses come after cycle_num so the wrapper
+    #     can stamp its raw log with the right CYCLE_NUM). ---
     cohort_size, explicit_cohort = resolve_cohort_size(
         evolve_root / "config.toml", os.environ.get("COHORT_SIZE")
     )
-    hypotheses, cohort_size = resolve_hypotheses(
-        os.environ.get("HYPOTHESES"), cohort_size, explicit_cohort
-    )
-    log.info("cohort_size=%d (explicit_env=%s, hypotheses=%d)", cohort_size, explicit_cohort, len(hypotheses))
 
     # --- Allocate next cycle slot ---
     cycles_dir = evolve_root / "cycles"
@@ -303,6 +321,16 @@ def main() -> None:
     if not (os.path.isfile(python_bin) and os.access(python_bin, os.X_OK)):
         python_bin = "python3"
     log.debug("python_bin=%s", python_bin)
+
+    hypotheses, cohort_size = resolve_hypotheses(
+        os.environ.get("HYPOTHESES"),
+        cohort_size,
+        explicit_cohort,
+        scripts_dir=script_dir,
+        cycle_num=cycle_num,
+        python=python_bin,
+    )
+    log.info("cohort_size=%d (explicit_env=%s, hypotheses=%d)", cohort_size, explicit_cohort, len(hypotheses))
 
     # --- Scaffold cohort, fan out implementers, gate + score each variant ---
     log.info("--- scaffold cohort ---")
