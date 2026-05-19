@@ -31,6 +31,9 @@ To keep the repository clean, only the framework logic and source assets are per
 evolve/
   config.toml              # Framework configuration (action_space, budget, etc.)
   scripts/                 # Deterministic verbs (ledger-append, seal, etc.)
+    evolve.py              # Framework entry — runs EVOLVE_CYCLES cycles
+    hypothesis-writer.py   # Thin wrapper around the hypothesis-writer agent
+    agents/                # Per-CLI LLM adapters (ADR-0005); see README
   tests/                   # Framework validation suite
   setup-evolve.sh          # Environment bootstrap script
   subject/                 # Stable evolution context
@@ -60,15 +63,25 @@ evolve/
   leaderboard.md           # Derived performance view (Transient)
   rejection-log.md         # G1/G2/G3 failure records (Transient)
   bench/                   # Rust micro-benchmark harness
-  .claude/                 # Claude Code adapter (Planned)
-    skills/                # Framework-specific skills
-    agents/                # Subagent prompt definitions
 ```
+
+Agent prompts (`.agents/agents/<name>.md`, project-scoped + agent-agnostic per
+ADR-0005) and per-CLI adapters (`evolve/scripts/agents/<cli>.sh`) live outside
+the cycle-artifact tree.
 
 ## Usage
 
 The `evolve/scripts/` directory provides utilities for managing your research.
 
+- **Run a cycle (or N cycles):**
+  ```bash
+  EVOLVE_CYCLES=1 COHORT_SIZE=6 ./scripts/evolve.py
+  ```
+  See the script header for the full env-var contract (`HYPOTHESES`,
+  `VARIANT_IMPLEMENTER`, `EVOLVE_LLM_CMD`, etc.). With `HYPOTHESES=` unset,
+  `evolve.py` invokes the hypothesis-writer agent through the configured LLM
+  adapter (`scripts/agents/gemini.sh` by default; see
+  [`scripts/agents/README.md`](scripts/agents/README.md)).
 - **Ledger Append:**
   Record a new insight to the active ledger:
   ```bash
