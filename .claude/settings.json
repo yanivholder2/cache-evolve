@@ -5,7 +5,7 @@
       "Bash(cargo *)",
       "Bash(gradlew*)",
       "Bash(pytest*)",
-      "Bash(evolve/scripts/cycle-start.sh*)",
+      "Bash(evolve/scripts/cycle-start.py*)",
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",
       "Skill(sim)",

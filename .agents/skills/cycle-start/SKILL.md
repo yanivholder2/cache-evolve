@@ -5,7 +5,7 @@ description: Start a new evolve research cycle. Use when the user says "start a 
 
 # cycle-start skill
 
-Run `bash evolve/scripts/cycle-start.sh`. The script self-documents its env vars (`COHORT_SIZE`, `HYPOTHESES`, `VARIANT_IMPLEMENTER`, `WORKER_ID`) in its header and errors on missing prerequisites. Success ends with `cycle <NNNN> complete — sealed at <path> (cohort=N)`.
+Run `evolve/scripts/cycle-start.py`. The script self-documents its env vars (`COHORT_SIZE`, `HYPOTHESES`, `VARIANT_IMPLEMENTER`, `WORKER_ID`) in its header and errors on missing prerequisites. Success ends with `cycle <NNNN> complete — sealed at <path> (cohort=N)`.
 
 ## Pre-warm (optional)
 
