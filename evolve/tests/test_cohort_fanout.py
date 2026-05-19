@@ -1,4 +1,4 @@
-"""Cohort fan-out tests for cycle-start.sh.
+"""Cohort fan-out tests for cycle-start.py.
 
 Covers:
 - cohort_size knob (config.toml) honored
@@ -26,7 +26,7 @@ import pytest
 
 EVOLVE_SRC = Path(__file__).parent.parent
 SCRIPTS_DIR = EVOLVE_SRC / "scripts"
-CYCLE_START = SCRIPTS_DIR / "cycle-start.sh"
+CYCLE_START = SCRIPTS_DIR / "cycle-start.py"
 REAL_REPO_ROOT = EVOLVE_SRC.parent
 
 EXPECTED_DEFAULT_COHORT_SIZE = 6

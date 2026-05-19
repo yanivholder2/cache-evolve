@@ -1,6 +1,6 @@
-"""End-to-end test for cycle-start.sh.
+"""End-to-end test for cycle-start.py.
 
-Runs scripts/cycle-start.sh against a temp copy of evolve/ and asserts:
+Runs scripts/cycle-start.py against a temp copy of evolve/ and asserts:
 - cycles/0001/ exists with required files
 - ledger gains exactly one row
 - row has worker_id and no absolute paths
@@ -18,7 +18,7 @@ from pathlib import Path
 
 EVOLVE_SRC = Path(__file__).parent.parent
 SCRIPTS_DIR = EVOLVE_SRC / "scripts"
-CYCLE_START = SCRIPTS_DIR / "cycle-start.sh"
+CYCLE_START = SCRIPTS_DIR / "cycle-start.py"
 # Real repo root — fitness plugins need it to find/build Rust binaries
 REAL_REPO_ROOT = EVOLVE_SRC.parent
 
