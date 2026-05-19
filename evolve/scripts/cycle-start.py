@@ -19,18 +19,53 @@ from __future__ import annotations
 
 import concurrent.futures
 import json
+import logging
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 DEFAULT_COHORT_SIZE = 6
 
+log = logging.getLogger("cycle-start")
 
-def die(msg: str, code: int = 1) -> "None":
+
+def die(msg: str) -> NoReturn:
+    log.error(msg)
     print(f"error: {msg}", file=sys.stderr)
-    sys.exit(code)
+    sys.exit(1)
+
+
+def variant_dir(cycle_dir: Path, i: int) -> Path:
+    return cycle_dir / "variants" / f"v{i:03d}"
+
+
+def setup_logging(log_file: Path | None) -> None:
+    """Attach stderr + (optional) file handlers. Idempotent across calls."""
+    log.setLevel(logging.DEBUG)
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%H:%M:%S")
+    if not any(isinstance(h, logging.StreamHandler) and getattr(h, "stream", None) is sys.stderr for h in log.handlers):
+        sh = logging.StreamHandler(sys.stderr)
+        sh.setFormatter(fmt)
+        sh.setLevel(logging.DEBUG)
+        log.addHandler(sh)
+    if log_file is not None and not any(isinstance(h, logging.FileHandler) for h in log.handlers):
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        fh = logging.FileHandler(log_file, encoding="utf-8")
+        fh.setFormatter(fmt)
+        fh.setLevel(logging.DEBUG)
+        log.addHandler(fh)
+        log.debug("file logging started at %s", log_file)
+
+
+def run_logged(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
+    """subprocess.run wrapper that logs command + exit. Use for non-redirected calls."""
+    log.debug("run: %s", " ".join(cmd))
+    proc = subprocess.run(cmd, **kwargs)
+    log.debug("exit %d: %s", proc.returncode, Path(cmd[0]).name)
+    return proc
 
 
 def resolve_cohort_size(config_file: Path, env_value: str | None) -> tuple[int, str | None]:
@@ -43,7 +78,7 @@ def resolve_cohort_size(config_file: Path, env_value: str | None) -> tuple[int, 
         return _validate_positive_int(explicit), explicit
 
     if config_file.is_file():
-        for line in config_file.read_text().splitlines():
+        for line in config_file.read_text(encoding="utf-8").splitlines():
             m = re.match(r"\s*cohort_size\s*=\s*(\d+)", line)
             if m:
                 return _validate_positive_int(m.group(1)), None
@@ -94,8 +129,22 @@ def scaffold_cohort(cycle_dir: Path, hypotheses: list[str]) -> None:
     for i, text in enumerate(hypotheses, start=1):
         hid = f"H{i:02d}"
         lines.append(f"- [`{hid}`](hypotheses/{hid}.md)")
-        (hyp_dir / f"{hid}.md").write_text(f"# Hypothesis {hid}\n\n{text}\n")
-    (cycle_dir / "cohort.md").write_text("\n".join(lines) + "\n")
+        (hyp_dir / f"{hid}.md").write_text(f"# Hypothesis {hid}\n\n{text}\n", encoding="utf-8")
+    (cycle_dir / "cohort.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _run_implementer(job: tuple[str, str, Path, Path]) -> tuple[str, int, Path]:
+    vid, implementer, hyp_file, vdir = job
+    log_path = vdir / "implementer.log"
+    log.debug("%s: implementer %s %s -> %s", vid, implementer, hyp_file, log_path)
+    with open(log_path, "wb") as f:
+        proc = subprocess.run(
+            [implementer, str(hyp_file), str(vdir / "impl")],
+            stdout=f,
+            stderr=subprocess.STDOUT,
+        )
+    log.debug("%s: implementer exit %d", vid, proc.returncode)
+    return vid, proc.returncode, log_path
 
 
 def fan_out_implementers(
@@ -104,35 +153,25 @@ def fan_out_implementers(
     implementer: str,
 ) -> None:
     """Invoke VARIANT_IMPLEMENTER once per Variant in parallel. Aborts on any failure."""
+    log.info("fan-out: %d implementer(s) in parallel (%s)", cohort_size, implementer)
     jobs = []
     for i in range(1, cohort_size + 1):
-        hid = f"H{i:02d}"
-        vid = f"v{i:03d}"
-        variant_dir = cycle_dir / "variants" / vid
-        (variant_dir / "impl").mkdir(parents=True, exist_ok=True)
-        (variant_dir / "eval" / "fitness").mkdir(parents=True, exist_ok=True)
-        jobs.append((vid, variant_dir, cycle_dir / "hypotheses" / f"{hid}.md"))
-
-    def _run(job):
-        vid, variant_dir, hyp_file = job
-        log_path = variant_dir / "implementer.log"
-        with open(log_path, "wb") as log:
-            proc = subprocess.run(
-                [implementer, str(hyp_file), str(variant_dir / "impl")],
-                stdout=log,
-                stderr=subprocess.STDOUT,
-            )
-        return vid, proc.returncode, log_path
+        vdir = variant_dir(cycle_dir, i)
+        (vdir / "impl").mkdir(parents=True, exist_ok=True)
+        (vdir / "eval" / "fitness").mkdir(parents=True, exist_ok=True)
+        jobs.append((f"v{i:03d}", implementer, cycle_dir / "hypotheses" / f"H{i:02d}.md", vdir))
 
     failed = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=cohort_size) as pool:
-        for vid, code, log_path in pool.map(_run, jobs):
+        for vid, code, log_path in pool.map(_run_implementer, jobs):
             if code != 0:
                 print(f"error: variant-implementer for {vid} failed (exit {code}):", file=sys.stderr)
-                sys.stderr.write(log_path.read_text())
+                sys.stderr.write(log_path.read_text(encoding="utf-8"))
+                log.error("implementer %s failed (exit %d), see %s", vid, code, log_path)
                 failed = True
     if failed:
         sys.exit(1)
+    log.info("fan-out: all %d implementers succeeded", cohort_size)
 
 
 def run_gates_and_fitness(
@@ -149,28 +188,30 @@ def run_gates_and_fitness(
     plugins = ("hit-rate", "per-op-time", "metadata-size")
     for i in range(1, cohort_size + 1):
         vid = f"v{i:03d}"
-        variant_dir = cycle_dir / "variants" / vid
-        impl_dir = variant_dir / "impl"
+        vdir = variant_dir(cycle_dir, i)
+        log.info("[%s] gate-check + fitness (cycle %s)", vid, cycle_num)
 
-        gate = subprocess.run(
-            ["bash", str(scripts_dir / "gate-check.sh"), str(impl_dir), cycle_num, vid]
+        gate = run_logged(
+            ["bash", str(scripts_dir / "gate-check.sh"), str(vdir / "impl"), cycle_num, vid]
         )
         if gate.returncode != 0:
             die(f"gate-check failed for {vid} in cycle {cycle_num}")
 
-        fitness_dir = variant_dir / "eval" / "fitness"
+        fitness_dir = vdir / "eval" / "fitness"
         for plugin in plugins:
             out = fitness_dir / f"{plugin}.json"
+            log.debug("[%s] plugin %s -> %s", vid, plugin, out)
             with open(out, "wb") as f:
                 subprocess.run([python, str(scripts_dir / "fitness" / f"{plugin}.py")], stdout=f, check=True)
             if out.stat().st_size == 0:
                 die(f"plugin {plugin} produced empty output for {vid} at {out}")
             try:
-                json.loads(out.read_text())
+                json.loads(out.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 die(f"plugin {plugin} produced invalid JSON for {vid} at {out}")
 
-        with open(variant_dir / "eval" / "fitness-vector.json", "wb") as f:
+        log.debug("[%s] aggregate fitness-vector", vid)
+        with open(vdir / "eval" / "fitness-vector.json", "wb") as f:
             subprocess.run(
                 [python, str(scripts_dir / "fitness-aggregate.py"), vid, str(fitness_dir)],
                 stdout=f,
@@ -181,13 +222,13 @@ def run_gates_and_fitness(
 def collect_fitness_vectors(cycle_dir: Path, cohort_size: int) -> list[dict]:
     vectors = []
     for i in range(1, cohort_size + 1):
-        vid = f"v{i:03d}"
-        path = cycle_dir / "variants" / vid / "eval" / "fitness-vector.json"
-        vectors.append(json.loads(path.read_text()))
+        path = variant_dir(cycle_dir, i) / "eval" / "fitness-vector.json"
+        vectors.append(json.loads(path.read_text(encoding="utf-8")))
     return vectors
 
 
 def compute_pareto_front(scripts_dir: Path, python: str, fitness_vectors: list[dict]) -> list[str]:
+    log.debug("pareto: %d fitness vector(s)", len(fitness_vectors))
     proc = subprocess.run(
         [python, str(scripts_dir / "pareto.py"), "-"],
         input=json.dumps(fitness_vectors),
@@ -195,25 +236,33 @@ def compute_pareto_front(scripts_dir: Path, python: str, fitness_vectors: list[d
         text=True,
         check=True,
     )
-    return json.loads(proc.stdout)
+    front = json.loads(proc.stdout)
+    log.info("pareto front: %s", front)
+    return front
 
 
 def write_per_variant_insights(scripts_dir: Path, cycle_dir: Path, cohort_size: int, python: str) -> None:
     for i in range(1, cohort_size + 1):
         vid = f"v{i:03d}"
-        eval_dir = cycle_dir / "variants" / vid / "eval"
+        vdir = variant_dir(cycle_dir, i)
         dim_summary = subprocess.run(
-            [python, str(scripts_dir / "dim-summary.py"), str(eval_dir / "fitness-vector.json")],
+            [python, str(scripts_dir / "dim-summary.py"), str(vdir / "eval" / "fitness-vector.json")],
             capture_output=True,
             text=True,
             check=True,
         ).stdout.rstrip("\n")
-        (cycle_dir / "variants" / vid / "insight.md").write_text(
-            f"# Variant {vid} Insight\n\nFitness: {dim_summary}\n"
+        log.debug("[%s] insight: %s", vid, dim_summary)
+        (vdir / "insight.md").write_text(
+            f"# Variant {vid} Insight\n\nFitness: {dim_summary}\n",
+            encoding="utf-8",
         )
 
 
 def main() -> None:
+    # Stderr logging from the top; file handler attached once cycle_num exists.
+    setup_logging(None)
+
+    # --- Roots + env propagated to all subprocesses ---
     script_dir = Path(__file__).resolve().parent
     evolve_root = Path(os.environ.get("EVOLVE_ROOT") or script_dir.parent).resolve()
     repo_root = Path(os.environ.get("REPO_ROOT") or evolve_root.parent).resolve()
@@ -224,14 +273,19 @@ def main() -> None:
     os.environ["WORKER_ID"] = worker_id
 
     implementer = os.environ.get("VARIANT_IMPLEMENTER") or str(script_dir / "variant-implementer.sh")
+    log.debug("evolve_root=%s repo_root=%s worker_id=%s", evolve_root, repo_root, worker_id)
+    log.debug("implementer=%s", implementer)
 
+    # --- Resolve cohort size + hypotheses list ---
     cohort_size, explicit_cohort = resolve_cohort_size(
         evolve_root / "config.toml", os.environ.get("COHORT_SIZE")
     )
     hypotheses, cohort_size = resolve_hypotheses(
         os.environ.get("HYPOTHESES"), cohort_size, explicit_cohort
     )
+    log.info("cohort_size=%d (explicit_env=%s, hypotheses=%d)", cohort_size, explicit_cohort, len(hypotheses))
 
+    # --- Allocate next cycle slot ---
     cycles_dir = evolve_root / "cycles"
     cycle_num = next_cycle_num(cycles_dir)
     cycle_dir = cycles_dir / cycle_num
@@ -240,17 +294,28 @@ def main() -> None:
     if cycle_dir.is_dir():
         die(f"cycle {cycle_num} already exists at {cycle_dir}")
 
+    # File handler under evolve/logs/ — outside cycle_dir so writes survive the seal step.
+    setup_logging(evolve_root / "logs" / f"cycle-{cycle_num}.log")
+    log.info("=== cycle %s allocated at %s ===", cycle_num, cycle_dir)
+
+    # Prefer the project venv so fitness plugins / aggregator pick up pinned deps.
     python_bin = str(evolve_root / ".venv" / "bin" / "python3")
     if not (os.path.isfile(python_bin) and os.access(python_bin, os.X_OK)):
         python_bin = "python3"
+    log.debug("python_bin=%s", python_bin)
 
+    # --- Scaffold cohort, fan out implementers, gate + score each variant ---
+    log.info("--- scaffold cohort ---")
     scaffold_cohort(cycle_dir, hypotheses)
+    log.info("--- fan out implementers ---")
     fan_out_implementers(cycle_dir, cohort_size, implementer)
+    log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
     run_gates_and_fitness(script_dir, cycle_dir, cycle_num, cohort_size, python_bin)
 
+    # --- Aggregate cohort: fitness vectors → Pareto front → insights ---
+    log.info("--- aggregate cohort ---")
     fitness_vectors = collect_fitness_vectors(cycle_dir, cohort_size)
     pareto_front = compute_pareto_front(script_dir, python_bin, fitness_vectors)
-
     write_per_variant_insights(script_dir, cycle_dir, cohort_size, python_bin)
 
     (cycle_dir / "winners.json").write_text(
@@ -261,7 +326,8 @@ def main() -> None:
                 "pareto_front": pareto_front,
                 "fitness_vectors": fitness_vectors,
             }
-        )
+        ),
+        encoding="utf-8",
     )
 
     pareto_str = json.dumps(pareto_front)
@@ -270,11 +336,16 @@ def main() -> None:
         f"Cohort size: {cohort_size}\n"
         f"Pareto front: {pareto_str}\n\n"
         f"Evaluated {cohort_size} variant(s) with real fitness plugins "
-        f"(hit-rate, per-op-time, metadata-size).\n"
+        f"(hit-rate, per-op-time, metadata-size).\n",
+        encoding="utf-8",
     )
 
-    subprocess.run(["bash", str(script_dir / "seal.sh"), str(cycle_dir)], check=True)
+    # --- Seal cycle dir (chmod -w, drop SEALED marker) ---
+    log.info("--- seal cycle dir ---")
+    run_logged(["bash", str(script_dir / "seal.sh"), str(cycle_dir)], check=True)
 
+    # --- Append ledger row, then regenerate leaderboard from ledger + winners ---
+    log.info("--- append ledger row ---")
     row = {
         "cycle": cycle_num,
         "worker_id": worker_id,
@@ -282,6 +353,7 @@ def main() -> None:
         "cohort_size": cohort_size,
         "pareto_front": pareto_front,
     }
+    log.debug("ledger row: %s", row)
     subprocess.run(
         [python_bin, str(script_dir / "ledger-append.py"), str(ledger)],
         input=json.dumps(row),
@@ -289,7 +361,8 @@ def main() -> None:
         check=True,
     )
 
-    subprocess.run(
+    log.info("--- regenerate leaderboard ---")
+    run_logged(
         [
             python_bin,
             str(script_dir / "leaderboard.py"),
@@ -301,8 +374,13 @@ def main() -> None:
         check=True,
     )
 
+    log.info("=== cycle %s complete (cohort=%d) ===", cycle_num, cohort_size)
     print(f"cycle {cycle_num} complete — sealed at {cycle_dir} (cohort={cohort_size})")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except subprocess.CalledProcessError as e:
+        cmd = e.cmd[0] if isinstance(e.cmd, (list, tuple)) and e.cmd else str(e.cmd)
+        die(f"{Path(cmd).name} failed (exit {e.returncode})")
