@@ -4,7 +4,7 @@ commandPrefix = [
     "cargo",
     "gradlew",
     "pytest",
-    "evolve/scripts/cycle-start.py",
+    "evolve/scripts/evolve.py",
 ]
 decision = "allow"
 priority = 100

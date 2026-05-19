@@ -1,133 +1,40 @@
 #!/usr/bin/env python3
-"""Hypothesis writer — assembles a prompt and asks the LLM for N Hypotheses.
+"""Hypothesis-writer wrapper — invokes the configurable LLM adapter and
+verifies it wrote exactly N H<NN>.md files (ADR-0005).
 
 Usage:
   hypothesis-writer.py N
 
-Emits exactly N non-empty lines on stdout, one Hypothesis per line. Fails
-loudly on any deviation (wrong line count, empty output, LLM non-zero exit).
-
 Env:
-  EVOLVE_ROOT       — path to evolve/ (default: parent of this script's dir)
-  EVOLVE_LLM_CMD    — full LLM CLI invocation per ADR-0005
-                      (default: "gemini -p"). Prompt appended as final argv.
-  CYCLE_NUM         — used for the raw-log filename. Default "0000".
+  EVOLVE_ROOT     — path to evolve/ (default: parent of this script's dir)
+  EVOLVE_LLM_CMD  — adapter command (default: evolve/scripts/agents/gemini.sh)
+  CYCLE_NUM       — cycle number (default "0001"). Drives output-dir layout.
 
-Inputs (token-frugal, ADR-0002): the wrapper concatenates the subagent
-markdown (`.claude/agents/hypothesis-writer.md`) with a `## Context` block
-containing the whole `evolve/leaderboard.md`, the whole `evolve/ledger/
-cycles.jsonl`, and the whole `evolve/subject/extension-points.md`. The LLM
-reads files only via this assembled prompt — never directly. Section sizes
-are logged so prompt blow-up is observable; the unbounded read is acceptable
-while the ledger is small and is the single hand-off point for #64 to swap
-in a curated context bundle.
+Output: prints discovered hypothesis-file paths on stdout, one per line.
+Aborts loudly on adapter failure or wrong file count.
+
+Swap target for #64: when the curated context-bundle assembler lands, the
+agent's `task.md` (assembled below) will point at the bundle instead of raw
+leaderboard / ledger paths.
 """
 from __future__ import annotations
 
-import logging
 import os
+import re
 import shlex
 import subprocess
 import sys
 from pathlib import Path
 from typing import NoReturn
 
-DEFAULT_LLM_CMD = "gemini -p"
-
-log = logging.getLogger("hypothesis-writer")
+AGENT_NAME = "hypothesis-writer"
+DEFAULT_ADAPTER = "evolve/scripts/agents/gemini.sh"
+HYPOTHESIS_FILE_RE = re.compile(r"H\d{2}\.md")
 
 
 def die(msg: str) -> NoReturn:
-    log.error(msg)
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(1)
-
-
-def setup_logging() -> None:
-    log.setLevel(logging.DEBUG)
-    if not log.handlers:
-        sh = logging.StreamHandler(sys.stderr)
-        sh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%H:%M:%S"))
-        log.addHandler(sh)
-
-
-def read_or_empty(path: Path) -> str:
-    if path.is_file():
-        return path.read_text(encoding="utf-8")
-    return ""
-
-
-def assemble_prompt(evolve_root: Path, repo_root: Path, n: int) -> str:
-    subagent_md = repo_root / ".claude" / "agents" / "hypothesis-writer.md"
-    leaderboard = read_or_empty(evolve_root / "leaderboard.md")
-    ledger = read_or_empty(evolve_root / "ledger" / "cycles.jsonl")
-    extension_points = read_or_empty(evolve_root / "subject" / "extension-points.md")
-    subagent_body = read_or_empty(subagent_md)
-    if not subagent_body:
-        die(f"subagent prompt not found at {subagent_md}")
-
-    log.info(
-        "prompt sections: subagent=%dB leaderboard=%dB ledger=%dB extension_points=%dB",
-        len(subagent_body),
-        len(leaderboard),
-        len(ledger),
-        len(extension_points),
-    )
-
-    parts = [
-        subagent_body.rstrip(),
-        "",
-        "## Context",
-        "",
-        "### Leaderboard",
-        "",
-        leaderboard.rstrip() or "(empty — cold start)",
-        "",
-        "### Ledger",
-        "",
-        ledger.rstrip() or "(empty — cold start)",
-        "",
-        "### Extension points",
-        "",
-        extension_points.rstrip() or "(empty)",
-        "",
-        "## Task",
-        "",
-        f"Emit exactly {n} Hypotheses, one per line. No numbering, no prose, no blank lines.",
-        "",
-    ]
-    prompt = "\n".join(parts)
-    log.info("prompt total: %dB / %d lines", len(prompt), prompt.count("\n") + 1)
-    return prompt
-
-
-def invoke_llm(llm_cmd: str, prompt: str) -> str:
-    argv = shlex.split(llm_cmd) + [prompt]
-    log.debug("llm argv head: %s", argv[:-1])
-    try:
-        proc = subprocess.run(argv, capture_output=True, text=True)
-    except FileNotFoundError as e:
-        die(f"LLM command not found: {e}")
-    if proc.returncode != 0:
-        log.error("llm stderr: %s", proc.stderr.rstrip())
-        die(f"LLM exited {proc.returncode} (cmd: {llm_cmd!r})")
-    return proc.stdout
-
-
-def parse_strict(raw: str, n: int) -> list[str]:
-    """Strict: exactly N non-empty lines. No cleanup, no tolerance."""
-    lines = [line for line in raw.splitlines() if line.strip()]
-    if len(lines) != n:
-        die(f"expected {n} hypothesis lines from LLM, got {len(lines)}")
-    return lines
-
-
-def write_raw_log(evolve_root: Path, cycle_num: str, raw: str) -> None:
-    logs_dir = evolve_root / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-    log_path = logs_dir / f"cycle-{cycle_num}-hypothesis-writer.log"
-    log_path.write_text(raw, encoding="utf-8")
-    log.info("raw log: %s (%dB)", log_path, len(raw))
 
 
 def parse_n(argv: list[str]) -> int:
@@ -142,26 +49,55 @@ def parse_n(argv: list[str]) -> int:
     return n
 
 
+def write_task_md(output_dir: Path, n: int, cycle_num: str, evolve_root: Path) -> None:
+    body = (
+        f"# Task: hypothesis-writer (cycle {cycle_num})\n\n"
+        f"N: {n}\n"
+        f"Cycle: {cycle_num}\n"
+        f"Output dir: {output_dir}\n\n"
+        f"## Read for context\n\n"
+        f"- {evolve_root / 'leaderboard.md'}\n"
+        f"- {evolve_root / 'ledger' / 'cycles.jsonl'}\n"
+        f"- {evolve_root / 'subject' / 'extension-points.md'}\n\n"
+        f"## Write\n\n"
+        f"Exactly {n} files: H01.md..H{n:02d}.md under the output dir.\n"
+        f"Each file's first non-empty non-header line is the canonical "
+        f"Hypothesis text. Files must be distinct.\n"
+    )
+    (output_dir / "task.md").write_text(body, encoding="utf-8")
+
+
 def main() -> None:
-    setup_logging()
     n = parse_n(sys.argv)
 
     script_dir = Path(__file__).resolve().parent
     evolve_root = Path(os.environ.get("EVOLVE_ROOT") or script_dir.parent).resolve()
     repo_root = Path(os.environ.get("REPO_ROOT") or evolve_root.parent).resolve()
-    llm_cmd = os.environ.get("EVOLVE_LLM_CMD") or DEFAULT_LLM_CMD
-    cycle_num = os.environ.get("CYCLE_NUM") or "0000"
+    cycle_num = os.environ.get("CYCLE_NUM") or "0001"
 
-    log.info("evolve_root=%s repo_root=%s cycle_num=%s", evolve_root, repo_root, cycle_num)
-    log.info("EVOLVE_LLM_CMD=%s", llm_cmd)
+    output_dir = evolve_root / "cycles" / cycle_num / "hypotheses"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    write_task_md(output_dir, n, cycle_num, evolve_root)
 
-    prompt = assemble_prompt(evolve_root, repo_root, n)
-    raw = invoke_llm(llm_cmd, prompt)
-    write_raw_log(evolve_root, cycle_num, raw)
-    lines = parse_strict(raw, n)
+    default_adapter = repo_root / DEFAULT_ADAPTER
+    llm_cmd = os.environ.get("EVOLVE_LLM_CMD") or str(default_adapter)
+    argv = shlex.split(llm_cmd) + [AGENT_NAME, str(output_dir), "--writable", str(output_dir)]
 
-    for line in lines:
-        print(line)
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True)
+    except FileNotFoundError as e:
+        die(f"adapter not found: {e}")
+    if proc.returncode != 0:
+        if proc.stderr:
+            sys.stderr.write(proc.stderr)
+        die(f"adapter exited {proc.returncode} (cmd: {llm_cmd!r})")
+
+    files = sorted(p for p in output_dir.iterdir() if HYPOTHESIS_FILE_RE.fullmatch(p.name))
+    if len(files) != n:
+        die(f"expected {n} H<NN>.md files in {output_dir}, got {len(files)}")
+
+    for p in files:
+        print(p)
 
 
 if __name__ == "__main__":

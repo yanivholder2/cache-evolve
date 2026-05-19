@@ -1,6 +1,6 @@
-"""End-to-end test for cycle-start.py.
+"""End-to-end test for evolve.py.
 
-Runs scripts/cycle-start.py against a temp copy of evolve/ and asserts:
+Runs scripts/evolve.py against a temp copy of evolve/ and asserts:
 - cycles/0001/ exists with required files
 - ledger gains exactly one row
 - row has worker_id and no absolute paths
@@ -18,13 +18,13 @@ from pathlib import Path
 
 EVOLVE_SRC = Path(__file__).parent.parent
 SCRIPTS_DIR = EVOLVE_SRC / "scripts"
-CYCLE_START = SCRIPTS_DIR / "cycle-start.py"
+EVOLVE_PY = SCRIPTS_DIR / "evolve.py"
 LLM_STUB = EVOLVE_SRC / "tests" / "_mocks" / "llm-stub.sh"
 # Real repo root — fitness plugins need it to find/build Rust binaries
 REAL_REPO_ROOT = EVOLVE_SRC.parent
 
 
-def run_cycle_start(repo_root: Path) -> subprocess.CompletedProcess:
+def run_evolve(repo_root: Path) -> subprocess.CompletedProcess:
     env = {
         **os.environ,
         "EVOLVE_ROOT": str(repo_root / "evolve"),
@@ -34,7 +34,7 @@ def run_cycle_start(repo_root: Path) -> subprocess.CompletedProcess:
         "STUB_LINES": "2",
     }
     return subprocess.run(
-        [str(CYCLE_START)],
+        [str(EVOLVE_PY)],
         capture_output=True,
         text=True,
         cwd=repo_root,
@@ -50,9 +50,9 @@ def _setup_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_cycle_start_produces_sealed_cycle(tmp_path):
+def test_evolve_produces_sealed_cycle(tmp_path):
     repo_root = _setup_repo(tmp_path)
-    result = run_cycle_start(repo_root)
+    result = run_evolve(repo_root)
     assert result.returncode == 0, result.stderr
 
     cycle_dir = repo_root / "evolve" / "cycles" / "0001"
@@ -71,9 +71,9 @@ def test_cycle_start_produces_sealed_cycle(tmp_path):
     assert (cycle_dir / "SEALED").is_file()
 
 
-def test_cycle_start_appends_exactly_one_ledger_row(tmp_path):
+def test_evolve_appends_exactly_one_ledger_row(tmp_path):
     repo_root = _setup_repo(tmp_path)
-    result = run_cycle_start(repo_root)
+    result = run_evolve(repo_root)
     assert result.returncode == 0, result.stderr
 
     ledger = repo_root / "evolve" / "ledger" / "cycles.jsonl"
@@ -84,7 +84,7 @@ def test_cycle_start_appends_exactly_one_ledger_row(tmp_path):
 
 def test_ledger_row_has_worker_id_and_relative_paths(tmp_path):
     repo_root = _setup_repo(tmp_path)
-    run_cycle_start(repo_root)
+    run_evolve(repo_root)
 
     ledger = repo_root / "evolve" / "ledger" / "cycles.jsonl"
     row = json.loads(ledger.read_text().splitlines()[0])

@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Cycle orchestrator — fans out a cohort of N Variants, runs real G1+G2+G3
-gates and fitness plugins per variant, aggregates a Pareto front, seals the
-cycle, and appends one ledger row.
+"""Evolve framework entry — runs `EVOLVE_CYCLES` (default 1) cycles. Each
+cycle fans out a cohort of N Variants, runs real G1+G2+G3 gates and fitness
+plugins per variant, aggregates a Pareto front, seals the cycle, and appends
+one ledger row.
 
 Usage:
-  [HYPOTHESES="h1\\nh2\\n..."] [COHORT_SIZE=N] [VARIANT_IMPLEMENTER=<cmd>] \\
+  [EVOLVE_CYCLES=N] [HYPOTHESES="h1\\nh2\\n..."] [COHORT_SIZE=N] \\
+  [VARIANT_IMPLEMENTER=<cmd>] [EVOLVE_LLM_CMD=<adapter>] \\
   [EVOLVE_ROOT=<path>] [REPO_ROOT=<dash-crate-root>] [WORKER_ID=<id>] \\
-  cycle-start.py
+  evolve.py
 
-HYPOTHESES overrides COHORT_SIZE (one Variant per line).
-COHORT_SIZE overrides the config.toml default.
+HYPOTHESES (one Variant per line) overrides COHORT_SIZE and bypasses the
+hypothesis-writer agent. Without HYPOTHESES, the wrapper invokes the LLM
+adapter (ADR-0005) and verifies it wrote N H<NN>.md files.
+
 VARIANT_IMPLEMENTER is invoked once per Variant in parallel as
   <cmd> <hypothesis-file> <impl-out-dir>
 and defaults to scripts/variant-implementer.sh (copies the good fixture).
@@ -29,7 +33,7 @@ from typing import NoReturn
 
 DEFAULT_COHORT_SIZE = 6
 
-log = logging.getLogger("cycle-start")
+log = logging.getLogger("evolve")
 
 
 def die(msg: str) -> NoReturn:
@@ -43,7 +47,8 @@ def variant_dir(cycle_dir: Path, i: int) -> Path:
 
 
 def setup_logging(log_file: Path | None) -> None:
-    """Attach stderr + (optional) file handlers. Idempotent across calls."""
+    """Attach a stderr handler once; swap the file handler per-cycle when
+    log_file is given (so each cycle in an N-cycle loop gets its own file)."""
     log.setLevel(logging.DEBUG)
     fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%H:%M:%S")
     if not any(isinstance(h, logging.StreamHandler) and getattr(h, "stream", None) is sys.stderr for h in log.handlers):
@@ -51,7 +56,11 @@ def setup_logging(log_file: Path | None) -> None:
         sh.setFormatter(fmt)
         sh.setLevel(logging.DEBUG)
         log.addHandler(sh)
-    if log_file is not None and not any(isinstance(h, logging.FileHandler) for h in log.handlers):
+    if log_file is not None:
+        for h in list(log.handlers):
+            if isinstance(h, logging.FileHandler):
+                log.removeHandler(h)
+                h.close()
         log_file.parent.mkdir(parents=True, exist_ok=True)
         fh = logging.FileHandler(log_file, encoding="utf-8")
         fh.setFormatter(fmt)
@@ -91,20 +100,34 @@ def _validate_positive_int(value: str) -> int:
     return int(value)
 
 
+HYPOTHESIS_FILE_RE = re.compile(r"H\d{2}\.md")
+
+
+def _first_canonical_line(body: str) -> str:
+    """Return the first non-empty, non-header line of a hypothesis body."""
+    for raw in body.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        return line
+    return ""
+
+
 def resolve_hypotheses(
     env_value: str | None,
     cohort_size: int,
     explicit_cohort: str | None,
     *,
     scripts_dir: Path,
+    cycle_dir: Path,
     cycle_num: str,
     python: str,
-) -> tuple[list[str], int]:
-    """Return (hypotheses, effective_cohort_size).
+) -> tuple[list[str], int, bool]:
+    """Return (hypotheses, effective_cohort_size, wrote_files).
 
-    Precedence: explicit HYPOTHESES env wins (one Variant per non-empty line);
-    otherwise invoke scripts/hypothesis-writer.py for the LLM-authored cohort.
-    No silent fallback — wrapper failure aborts the cycle.
+    Precedence: explicit HYPOTHESES env wins (one Variant per non-empty line;
+    caller scaffolds HNN.md from these strings); otherwise the wrapper invokes
+    the agent which writes the files itself (caller re-reads them).
     """
     if env_value:
         hyps = [line for line in env_value.splitlines() if line]
@@ -113,7 +136,7 @@ def resolve_hypotheses(
                 f"note: HYPOTHESES has {len(hyps)} entries; COHORT_SIZE={explicit_cohort} ignored",
                 file=sys.stderr,
             )
-        return hyps, len(hyps)
+        return hyps, len(hyps), False
 
     writer = scripts_dir / "hypothesis-writer.py"
     log.info("invoking hypothesis-writer (N=%d, cycle=%s)", cohort_size, cycle_num)
@@ -126,12 +149,19 @@ def resolve_hypotheses(
     if proc.returncode != 0:
         sys.stderr.write(proc.stderr)
         die(f"hypothesis-writer failed (exit {proc.returncode})")
-    hyps = [line for line in proc.stdout.splitlines() if line.strip()]
-    if len(hyps) != cohort_size:
+
+    hyp_dir = cycle_dir / "hypotheses"
+    files = sorted(p for p in hyp_dir.iterdir() if HYPOTHESIS_FILE_RE.fullmatch(p.name))
+    if len(files) != cohort_size:
         die(
-            f"hypothesis-writer returned {len(hyps)} hypotheses, expected {cohort_size}"
+            f"hypothesis-writer wrote {len(files)} H<NN>.md files in {hyp_dir}, "
+            f"expected {cohort_size}"
         )
-    return hyps, cohort_size
+    hyps = [_first_canonical_line(p.read_text(encoding="utf-8")) for p in files]
+    for p, line in zip(files, hyps):
+        if not line:
+            die(f"{p} has no canonical hypothesis line (first non-empty non-header)")
+    return hyps, cohort_size, True
 
 
 def next_cycle_num(cycles_dir: Path) -> str:
@@ -141,8 +171,9 @@ def next_cycle_num(cycles_dir: Path) -> str:
     return f"{last + 1:04d}"
 
 
-def scaffold_cohort(cycle_dir: Path, hypotheses: list[str]) -> None:
-    """Write cohort.md plus hypotheses/HNN.md for every hypothesis."""
+def scaffold_cohort(cycle_dir: Path, hypotheses: list[str], *, write_hyp_files: bool) -> None:
+    """Write cohort.md (always) plus hypotheses/HNN.md (when not already
+    written by the agent)."""
     hyp_dir = cycle_dir / "hypotheses"
     hyp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -150,7 +181,8 @@ def scaffold_cohort(cycle_dir: Path, hypotheses: list[str]) -> None:
     for i, text in enumerate(hypotheses, start=1):
         hid = f"H{i:02d}"
         lines.append(f"- [`{hid}`](hypotheses/{hid}.md)")
-        (hyp_dir / f"{hid}.md").write_text(f"# Hypothesis {hid}\n\n{text}\n", encoding="utf-8")
+        if write_hyp_files:
+            (hyp_dir / f"{hid}.md").write_text(f"# Hypothesis {hid}\n\n{text}\n", encoding="utf-8")
     (cycle_dir / "cohort.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -279,10 +311,18 @@ def write_per_variant_insights(scripts_dir: Path, cycle_dir: Path, cohort_size: 
         )
 
 
-def main() -> None:
-    # Stderr logging from the top; file handler attached once cycle_num exists.
-    setup_logging(None)
+def _parse_cycles_env(raw: str | None) -> int:
+    if raw in (None, ""):
+        return 1
+    if not re.fullmatch(r"\d+", raw) or int(raw) < 1:
+        die(f"EVOLVE_CYCLES must be a positive integer, got: {raw}")
+    return int(raw)
 
+
+def run_cycle() -> None:
+    """Run a single evolve cycle end-to-end (allocate → scaffold → fan-out →
+    gates → aggregate → seal → ledger). Reads env at call time so the outer
+    N-cycle loop sees a fresh slot per iteration."""
     # --- Roots + env propagated to all subprocesses ---
     script_dir = Path(__file__).resolve().parent
     evolve_root = Path(os.environ.get("EVOLVE_ROOT") or script_dir.parent).resolve()
@@ -297,8 +337,6 @@ def main() -> None:
     log.debug("evolve_root=%s repo_root=%s worker_id=%s", evolve_root, repo_root, worker_id)
     log.debug("implementer=%s", implementer)
 
-    # --- Resolve cohort size (hypotheses come after cycle_num so the wrapper
-    #     can stamp its raw log with the right CYCLE_NUM). ---
     cohort_size, explicit_cohort = resolve_cohort_size(
         evolve_root / "config.toml", os.environ.get("COHORT_SIZE")
     )
@@ -322,11 +360,16 @@ def main() -> None:
         python_bin = "python3"
     log.debug("python_bin=%s", python_bin)
 
-    hypotheses, cohort_size = resolve_hypotheses(
+    # The agent writes H<NN>.md into cycle_dir/hypotheses/; pre-create so the
+    # adapter has a writable target.
+    (cycle_dir / "hypotheses").mkdir(parents=True, exist_ok=True)
+
+    hypotheses, cohort_size, wrote_files = resolve_hypotheses(
         os.environ.get("HYPOTHESES"),
         cohort_size,
         explicit_cohort,
         scripts_dir=script_dir,
+        cycle_dir=cycle_dir,
         cycle_num=cycle_num,
         python=python_bin,
     )
@@ -334,7 +377,7 @@ def main() -> None:
 
     # --- Scaffold cohort, fan out implementers, gate + score each variant ---
     log.info("--- scaffold cohort ---")
-    scaffold_cohort(cycle_dir, hypotheses)
+    scaffold_cohort(cycle_dir, hypotheses, write_hyp_files=not wrote_files)
     log.info("--- fan out implementers ---")
     fan_out_implementers(cycle_dir, cohort_size, implementer)
     log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
@@ -404,6 +447,16 @@ def main() -> None:
 
     log.info("=== cycle %s complete (cohort=%d) ===", cycle_num, cohort_size)
     print(f"cycle {cycle_num} complete — sealed at {cycle_dir} (cohort={cohort_size})")
+
+
+def main() -> None:
+    # Stderr logging from the top; file handler attached per-cycle once cycle_num exists.
+    setup_logging(None)
+    n_cycles = _parse_cycles_env(os.environ.get("EVOLVE_CYCLES"))
+    log.info("EVOLVE_CYCLES=%d", n_cycles)
+    for i in range(1, n_cycles + 1):
+        log.info("--- evolve loop: cycle %d/%d ---", i, n_cycles)
+        run_cycle()
 
 
 if __name__ == "__main__":

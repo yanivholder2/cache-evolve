@@ -1,4 +1,4 @@
-"""Cohort fan-out tests for cycle-start.py.
+"""Cohort fan-out tests for evolve.py.
 
 Covers:
 - cohort_size knob (config.toml) honored
@@ -26,7 +26,7 @@ import pytest
 
 EVOLVE_SRC = Path(__file__).parent.parent
 SCRIPTS_DIR = EVOLVE_SRC / "scripts"
-CYCLE_START = SCRIPTS_DIR / "cycle-start.py"
+EVOLVE_PY = SCRIPTS_DIR / "evolve.py"
 LLM_STUB = EVOLVE_SRC / "tests" / "_mocks" / "llm-stub.sh"
 REAL_REPO_ROOT = EVOLVE_SRC.parent
 
@@ -66,7 +66,7 @@ def _run_cycle(repo_root: Path, extra_env=None) -> subprocess.CompletedProcess:
     # already pinned STUB_LINES itself.
     env.setdefault("STUB_LINES", env["COHORT_SIZE"])
     return subprocess.run(
-        [str(CYCLE_START)],
+        [str(EVOLVE_PY)],
         capture_output=True,
         text=True,
         cwd=repo_root,
@@ -120,7 +120,7 @@ def test_cohort_writes_cohort_md_and_per_hypothesis_docs(shared_cohort_run):
 
     hypotheses = shared_cohort_run.cycle / "hypotheses"
     assert hypotheses.is_dir()
-    files = sorted(p.name for p in hypotheses.iterdir() if p.suffix == ".md")
+    files = sorted(p.name for p in hypotheses.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name))
     assert files == ["H01.md", "H02.md", "H03.md"]
 
     body = cohort_md.read_text()
