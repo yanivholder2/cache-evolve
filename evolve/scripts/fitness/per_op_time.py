@@ -17,6 +17,7 @@ sys.path.insert(0, str(_HERE.parent))
 
 from _common import cargo_build, cargo_env  # noqa: E402
 from _contract import validate_plugin_dict  # noqa: E402
+from paths import Layout  # noqa: E402
 
 RUN_TIMEOUT_S = 120
 METADATA_TIMEOUT_S = 60
@@ -45,7 +46,7 @@ def _resolve_target_dir(bench_dir: Path, target_dir: Path | None) -> Path:
 def compute(*, evolve_root: Path, target_dir: Path | None = None) -> dict:
     """Build + run dash-bench; return the validated plugin record."""
 
-    bench_dir = evolve_root / "bench"
+    bench_dir = Layout(evolve_root=evolve_root).bench_dir
     cargo_build(bench_dir, ["--release"], label="dash-bench", target_dir=target_dir)
     binary = _resolve_target_dir(bench_dir, target_dir) / "release" / "dash-bench"
 

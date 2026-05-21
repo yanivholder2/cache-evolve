@@ -10,6 +10,7 @@ from typing import Callable
 import pytest
 
 from evolve import run_cycle
+from paths import Layout
 
 from _stubs import StubLLMAdapter
 
@@ -32,15 +33,15 @@ def _run_cycles(evolve_root: Path, n: int, *, implementer: Callable[..., None] |
     for _ in range(n):
         kwargs = {"implementer": implementer} if implementer is not None else {}
         run_cycle(
-            evolve_root=evolve_root,
+            layout=Layout(evolve_root=evolve_root, outputs_root=evolve_root / "outputs"),
             repo_root=REAL_REPO_ROOT,
             cohort_size=COHORT,
             adapter=StubLLMAdapter(n_lines=COHORT),
-            outputs_root=evolve_root / "outputs",
             **kwargs,
         )
 
 
+@pytest.mark.slow
 def test_two_cycles_both_sealed(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run_cycles(evolve_root, 2)
@@ -55,6 +56,7 @@ def test_two_cycles_both_sealed(tmp_path):
     assert len(rows) == 2
 
 
+@pytest.mark.slow
 def test_single_cycle_default(tmp_path):
     """One cycle → exactly one sealed directory."""
 

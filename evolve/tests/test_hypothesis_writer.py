@@ -21,8 +21,13 @@ import pytest
 
 from evolve import run_cycle
 from hypothesis_writer import write_hypotheses
+from paths import Layout
 
 from _stubs import StubLLMAdapter
+
+
+def _layout(evolve: Path) -> Layout:
+    return Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
 
 EVOLVE_SRC = Path(__file__).parent.parent
 REPO_ROOT = EVOLVE_SRC.parent
@@ -66,7 +71,7 @@ def test_emits_n_distinct_files(tmp_path):
     """Happy path: exactly N H<NN>.md files in the output dir."""
 
     evolve = _setup_evolve(tmp_path, with_ledger=True, with_leaderboard=True)
-    files = write_hypotheses(3, evolve_root=evolve, outputs_root=evolve / "outputs", cycle_num="0001", adapter=StubLLMAdapter(n_lines=3))
+    files = write_hypotheses(3, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=3))
     assert [p.name for p in files] == ["H01.md", "H02.md", "H03.md"]
     bodies = {p.read_text() for p in files}
     assert len(bodies) == 3, "files must be distinct"
@@ -77,7 +82,7 @@ def test_too_few_files_fails(tmp_path):
 
     evolve = _setup_evolve(tmp_path)
     with pytest.raises(ValueError, match="expected 3"):
-        write_hypotheses(3, evolve_root=evolve, outputs_root=evolve / "outputs", cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
+        write_hypotheses(3, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
 
 
 def test_too_many_files_fails(tmp_path):
@@ -85,7 +90,7 @@ def test_too_many_files_fails(tmp_path):
 
     evolve = _setup_evolve(tmp_path)
     with pytest.raises(ValueError, match="expected 3"):
-        write_hypotheses(3, evolve_root=evolve, outputs_root=evolve / "outputs", cycle_num="0001", adapter=StubLLMAdapter(n_lines=4))
+        write_hypotheses(3, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=4))
 
 
 def test_no_files_fails(tmp_path):
@@ -93,7 +98,7 @@ def test_no_files_fails(tmp_path):
 
     evolve = _setup_evolve(tmp_path)
     with pytest.raises(ValueError):
-        write_hypotheses(2, evolve_root=evolve, outputs_root=evolve / "outputs", cycle_num="0001", adapter=StubLLMAdapter())
+        write_hypotheses(2, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter())
 
 
 def test_adapter_nonzero_exit_propagates(tmp_path):
@@ -103,8 +108,7 @@ def test_adapter_nonzero_exit_propagates(tmp_path):
     with pytest.raises(subprocess.CalledProcessError):
         write_hypotheses(
             3,
-            evolve_root=evolve,
-            outputs_root=evolve / "outputs",
+            layout=_layout(evolve),
             cycle_num="0001",
             adapter=StubLLMAdapter(exit_code=5, n_lines=3),
         )
@@ -114,7 +118,7 @@ def test_cold_start_with_empty_ledger_and_no_leaderboard(tmp_path):
     """Cold start: same code path; empty sections; succeeds."""
 
     evolve = _setup_evolve(tmp_path, with_ledger=False, with_leaderboard=False)
-    files = write_hypotheses(2, evolve_root=evolve, outputs_root=evolve / "outputs", cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
+    files = write_hypotheses(2, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
     assert len(files) == 2
 
 
@@ -125,8 +129,7 @@ def test_adapter_invoked_with_expected_argv(tmp_path):
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
-        evolve_root=evolve,
-        outputs_root=evolve / "outputs",
+        layout=_layout(evolve),
         cycle_num="0001",
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
@@ -143,8 +146,7 @@ def test_task_md_written_to_output_dir(tmp_path):
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
-        evolve_root=evolve,
-        outputs_root=evolve / "outputs",
+        layout=_layout(evolve),
         cycle_num="0007",
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
@@ -158,11 +160,12 @@ def test_returns_hypothesis_file_paths(tmp_path):
     """Function returns discovered file paths so evolve.py can skip re-globbing."""
 
     evolve = _setup_evolve(tmp_path)
-    files = write_hypotheses(2, evolve_root=evolve, outputs_root=evolve / "outputs", cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
+    files = write_hypotheses(2, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
     output_dir = evolve / "outputs" / "cycles" / "0001" / "hypotheses"
     assert sorted(files) == [output_dir / "H01.md", output_dir / "H02.md"]
 
 
+@pytest.mark.slow
 def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
     """E2E AC: a cold cycle writes real, distinct HNN.md files from the (stub) LLM."""
 
@@ -172,11 +175,10 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
         "Lazy promotion cuts per-op time on read-heavy workloads.",
     ]
     run_cycle(
-        evolve_root=evolve_root,
+        layout=_layout(evolve_root),
         repo_root=REPO_ROOT,
         cohort_size=2,
         adapter=StubLLMAdapter(hypothesis_lines=lines),
-        outputs_root=evolve_root / "outputs",
     )
 
     h01 = (evolve_root / "outputs" / "cycles" / "0001" / "hypotheses" / "H01.md").read_text()

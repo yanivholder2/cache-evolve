@@ -27,6 +27,7 @@ from gates_and_fitness import run_gates_and_fitness
 from hypothesis_writer import write_hypotheses
 from leaderboard import regenerate as regenerate_leaderboard
 from ledger_append import append_row
+from paths import Layout
 from scaffold import write_cohort_md
 from seal import seal_cycle
 from variant_implementer import Implementer, fan_out
@@ -40,11 +41,11 @@ def die(msg: str) -> NoReturn:
     sys.exit(1)
 
 
-def _variant_dir(cycle_dir: Path, i: int) -> Path:
-    return cycle_dir / "variants" / f"v{i:03d}"
-
-
 def _next_cycle_num(cycles_dir: Path) -> str:
+    """Return the next zero-padded 4-digit cycle ID by scanning `cycles_dir`
+    for existing `NNNN` subdirs. Not atomic — caller must guard against
+    concurrent allocation collisions."""
+
     cycles_dir.mkdir(parents=True, exist_ok=True)
     existing = [p.name for p in cycles_dir.iterdir() if re.fullmatch(r"\d{4}", p.name)]
     last = max((int(n) for n in existing), default=0)
@@ -53,88 +54,86 @@ def _next_cycle_num(cycles_dir: Path) -> str:
 
 def run_cycle(
     *,
-    evolve_root: Path,
+    layout: Layout,
     repo_root: Path,
     cohort_size: int,
     adapter: LLMAdapter,
-    outputs_root: Path,
     implementer: Implementer | None = None,
     log_level: str = "DEBUG",
 ) -> None:
     """Run a single evolve cycle end-to-end (allocate → scaffold → fan-out →
     gates → aggregate → seal → ledger).
 
-    `evolve_root` is the read-only source root (config, traces, subject, harness).
-    `outputs_root` is the read-write working dir for cycles, ledger, logs, and
-    the rendered leaderboard.
+    `layout` owns the evolve+outputs paths; `repo_root` is the git repo root
+    (a sibling concern — used by gate-check and fitness binaries).
     """
 
-    cycles_dir = outputs_root / "cycles"
-    cycle_num = _next_cycle_num(cycles_dir)
-    cycle_dir = cycles_dir / cycle_num
-    ledger = outputs_root / "ledger" / "cycles.jsonl"
-
-    if cycle_dir.is_dir():
-        die(f"cycle {cycle_num} already exists at {cycle_dir}")
-
-    # File handler under outputs/logs/ — outside cycle_dir so writes survive the seal step.
-    _log.setup(outputs_root / "logs" / f"cycle-{cycle_num}.log", level=log_level)
-    log.info("=== cycle %s allocated at %s ===", cycle_num, cycle_dir)
-
-    hypothesis_files = write_hypotheses(
-        cohort_size,
-        evolve_root=evolve_root,
-        outputs_root=outputs_root,
-        cycle_num=cycle_num,
-        adapter=adapter,
-    )
-    log.info("cohort_size=%d", cohort_size)
-    variant_dirs = [_variant_dir(cycle_dir, i) for i in range(1, cohort_size + 1)]
-
-    log.info("--- scaffold cohort ---")
-    write_cohort_md(cycle_dir, hypothesis_files)
-    log.info("--- fan out implementers ---")
-    fan_out(
-        cycle_dir,
-        cohort_size,
-        evolve_root=evolve_root,
-        outputs_root=outputs_root,
-        adapter=adapter,
-        implementer=implementer,
-    )
-    log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
     try:
-        run_gates_and_fitness(
-            variant_dirs,
-            cycle_num,
-            evolve_root=evolve_root,
-            outputs_root=outputs_root,
-            repo_root=repo_root,
+        cycle_num = _next_cycle_num(layout.cycles_dir)
+        cycle_layout = layout.cycle(cycle_num)
+        cycle_dir = cycle_layout.root
+
+        if cycle_dir.is_dir():
+            die(f"cycle {cycle_num} already exists at {cycle_dir}")
+
+        # File handler under outputs_root/logs/ — outside cycle_dir so writes survive the seal step.
+        _log.setup(layout.cycle_log(cycle_num), level=log_level)
+        log.info("=== cycle %s allocated at %s ===", cycle_num, cycle_dir)
+
+        log.info("--- write hypotheses ---")
+        hypothesis_files = write_hypotheses(
+            cohort_size,
+            layout=layout,
+            cycle_num=cycle_num,
+            adapter=adapter,
         )
-    except RuntimeError as e:
-        die(str(e))
+        variant_layouts = [cycle_layout.variant(i) for i in range(1, cohort_size + 1)]
 
-    log.info("--- aggregate cohort ---")
-    pareto_front = aggregate_cohort(cycle_dir, variant_dirs, cycle_num)
+        log.info("--- scaffold cohort ---")
+        write_cohort_md(cycle_dir, hypothesis_files)
+        log.info("--- fan out implementers ---")
+        fan_out(
+            cycle_layout,
+            cohort_size,
+            layout=layout,
+            adapter=adapter,
+            implementer=implementer,
+        )
+        log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
+        try:
+            run_gates_and_fitness(
+                variant_layouts,
+                cycle_num,
+                layout=layout,
+                repo_root=repo_root,
+            )
+        except RuntimeError as e:
+            die(str(e))
 
-    log.info("--- seal cycle dir ---")
-    seal_cycle(cycle_dir)
+        log.info("--- aggregate cohort ---")
+        pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_num)
 
-    log.info("--- append ledger row ---")
-    row = {
-        "cycle": cycle_num,
-        "cycle_dir": f"evolve/outputs/cycles/{cycle_num}",
-        "cohort_size": cohort_size,
-        "pareto_front": pareto_front,
-    }
-    log.debug("ledger row: %s", row)
-    append_row(ledger, row)
+        log.info("--- seal cycle dir ---")
+        seal_cycle(cycle_dir)
 
-    log.info("--- regenerate leaderboard ---")
-    regenerate_leaderboard(outputs_root=outputs_root, output=outputs_root / "leaderboard.md")
+        log.info("--- append ledger row ---")
+        row = {
+            "cycle": cycle_num,
+            "cycle_dir": layout.cycle_ledger_path(cycle_num),
+            "cohort_size": cohort_size,
+            "pareto_front": pareto_front,
+        }
+        log.debug("ledger row: %s", row)
+        append_row(layout.ledger, row)
 
-    log.info("=== cycle %s complete (cohort=%d) ===", cycle_num, cohort_size)
-    print(f"cycle {cycle_num} complete — sealed at {cycle_dir} (cohort={cohort_size})")
+        log.info("--- regenerate leaderboard ---")
+        regenerate_leaderboard(layout=layout, output=layout.leaderboard_md)
+
+        log.info("=== cycle %s complete (cohort=%d) ===", cycle_num, cohort_size)
+        print(f"cycle {cycle_num} complete — sealed at {cycle_dir} (cohort={cohort_size})")
+    except Exception as e:
+        log.exception("run_cycle failed: %s", e)
+        raise
 
 
 def _load_framework_config(evolve_root: Path) -> dict:
@@ -213,6 +212,7 @@ def main(argv: list[str] | None = None) -> None:
     adapter = _resolve_adapter(flag=args.ai_agent_tool, defaults=defaults)
     outputs_root = _resolve_outputs_root(args.outputs_root, defaults, evolve_root=evolve_root)
     log_level = _resolve_log_level(args.log_level, defaults)
+    layout = Layout(evolve_root=evolve_root, outputs_root=outputs_root)
 
     _log.setup(None, level=log_level)
     log.debug("evolve_root=%s repo_root=%s", evolve_root, repo_root)
@@ -222,11 +222,10 @@ def main(argv: list[str] | None = None) -> None:
     for i in range(1, n_cycles + 1):
         log.info("--- evolve loop: cycle %d/%d ---", i, n_cycles)
         run_cycle(
-            evolve_root=evolve_root,
+            layout=layout,
             repo_root=repo_root,
             cohort_size=cohort_size,
             adapter=adapter,
-            outputs_root=outputs_root,
             log_level=log_level,
         )
 

@@ -5,29 +5,29 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
 
 from dim_summary import format_dimensions
 from pareto import compute_pareto_front
+from paths import CycleLayout, VariantLayout
 
 log = logging.getLogger(__name__)
 
 
 def aggregate_cohort(
-    cycle_dir: Path,
-    variant_dirs: list[Path],
+    cycle_layout: CycleLayout,
+    variant_layouts: list[VariantLayout],
     cycle_num: str,
 ) -> list[str]:
     """Run the aggregation stage end-to-end. Returns the Pareto front
     (variant IDs) for the ledger row."""
 
-    fitness_vectors = _collect_fitness_vectors(variant_dirs)
+    fitness_vectors = _collect_fitness_vectors(variant_layouts)
     pareto_front = compute_pareto_front(fitness_vectors)
     log.info("pareto front: %s", pareto_front)
-    _write_per_variant_insights(variant_dirs, fitness_vectors)
+    _write_per_variant_insights(variant_layouts, fitness_vectors)
 
-    cohort_size = len(variant_dirs)
-    (cycle_dir / "winners.json").write_text(
+    cohort_size = len(variant_layouts)
+    cycle_layout.winners_json.write_text(
         json.dumps({
             "cycle": cycle_num,
             "pareto_front": pareto_front,
@@ -35,7 +35,7 @@ def aggregate_cohort(
         }),
         encoding="utf-8",
     )
-    (cycle_dir / "cycle-insight.md").write_text(
+    cycle_layout.cycle_insight_md.write_text(
         f"# Cycle {cycle_num} Insight\n\n"
         f"Cohort size: {cohort_size}\n"
         f"Pareto front: {json.dumps(pareto_front)}\n\n"
@@ -46,19 +46,19 @@ def aggregate_cohort(
     return pareto_front
 
 
-def _collect_fitness_vectors(variant_dirs: list[Path]) -> list[dict]:
+def _collect_fitness_vectors(variant_layouts: list[VariantLayout]) -> list[dict]:
     return [
-        json.loads((vdir / "eval" / "fitness-vector.json").read_text(encoding="utf-8"))
-        for vdir in variant_dirs
+        json.loads(v.fitness_vector_json.read_text(encoding="utf-8"))
+        for v in variant_layouts
     ]
 
 
-def _write_per_variant_insights(variant_dirs: list[Path], fitness_vectors: list[dict]) -> None:
-    for vdir, fv in zip(variant_dirs, fitness_vectors):
-        vid = vdir.name
+def _write_per_variant_insights(variant_layouts: list[VariantLayout], fitness_vectors: list[dict]) -> None:
+    for variant_layout, fv in zip(variant_layouts, fitness_vectors):
+        vid = variant_layout.id
         summary = format_dimensions(fv)
         log.debug("[%s] insight: %s", vid, summary)
-        (vdir / "insight.md").write_text(
+        variant_layout.insight_md.write_text(
             f"# Variant {vid} Insight\n\nFitness: {summary}\n",
             encoding="utf-8",
         )

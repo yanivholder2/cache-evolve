@@ -1,6 +1,6 @@
 """Render leaderboard.md from the cycle ledger and per-cycle winners.json files.
 
-Library: `regenerate(*, outputs_root, output=None) -> str`. Reads
+Library: `regenerate(*, layout, output=None) -> str`. Reads
 outputs/ledger/cycles.jsonl and each cycle's winners.json, writes markdown to
 `output` (if given) and returns the rendered content.
 """
@@ -11,13 +11,15 @@ import json
 from pathlib import Path
 from typing import Optional
 
+from paths import Layout
+
 
 class LeaderboardError(Exception):
     pass
 
 
-def _load_cycles(outputs_root: Path) -> list:
-    ledger = outputs_root / "ledger" / "cycles.jsonl"
+def _load_cycles(layout: Layout) -> list:
+    ledger = layout.ledger
     if not ledger.exists():
         return []
     cycles = []
@@ -32,8 +34,8 @@ def _load_cycles(outputs_root: Path) -> list:
     return cycles
 
 
-def _load_winners(outputs_root: Path, cycle_id: str) -> Optional[dict]:
-    path = outputs_root / "cycles" / cycle_id / "winners.json"
+def _load_winners(layout: Layout, cycle_id: str) -> Optional[dict]:
+    path = layout.cycle(cycle_id).winners_json
     if not path.exists():
         return None
     try:
@@ -86,15 +88,15 @@ def _render(cycles_data: list) -> str:
     return "\n".join(lines)
 
 
-def regenerate(*, outputs_root: Path, output: Path | None = None) -> str:
+def regenerate(*, layout: Layout, output: Path | None = None) -> str:
     """Build the markdown leaderboard from ledger + winners; optionally write
     to `output`. Returns the rendered string either way."""
 
-    ledger_rows = _load_cycles(outputs_root)
+    ledger_rows = _load_cycles(layout)
     cycles_data = []
     for row in ledger_rows:
         cycle_id = row["cycle"]
-        winners = _load_winners(outputs_root, cycle_id)
+        winners = _load_winners(layout, cycle_id)
         fvs = winners.get("fitness_vectors", []) if winners else []
         pareto_front = winners.get("pareto_front", []) if winners else []
         cycles_data.append({

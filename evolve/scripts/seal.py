@@ -11,6 +11,8 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from paths import CycleLayout
+
 log = logging.getLogger("seal")
 
 
@@ -31,7 +33,7 @@ def seal_cycle(cycle_dir: Path) -> None:
     if not cycle_dir.is_dir():
         raise FileNotFoundError(f"not a directory: {cycle_dir}")
 
-    marker = cycle_dir / "SEALED"
+    marker = CycleLayout(root=cycle_dir).sealed_marker
     if marker.is_file():
         log.info("already sealed: %s", cycle_dir)
         return
