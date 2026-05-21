@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Mock cargo for evolve gate-script tests.
 #
-# Handles the cargo invocations made by scripts/build.sh and scripts/gate-check.sh
+# Handles the cargo invocations made by scripts/build.py and scripts/gate-check.py
 # (i.e. variant-crate `cargo build --tests` and `cargo test --test {g2_contract,g3_invariant}`)
 # by inspecting markers in the variant source — no real Rust compilation runs:
 #   // MOCK_CARGO: g1_fail              -> `cargo build --tests` fails

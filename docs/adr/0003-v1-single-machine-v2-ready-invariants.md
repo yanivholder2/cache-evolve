@@ -5,7 +5,7 @@ building that for v1 is a semester of distributed-systems work (work queues,
 atomic cross-machine ledger, worker-death recovery) that is not cache research
 and that delays evidence of the framework's value. **v1 ships single-machine**
 with P1 (variant-level within a cycle) + P2 (trace-level within a variant)
-parallelism, bounded by local cores. **v2 multi-machine is deferred**, but five
+parallelism, bounded by local cores. **v2 multi-machine is deferred**, but four
 invariants are baked into v1 so that v2 becomes a storage-layer swap rather
 than a refactor:
 
@@ -14,9 +14,7 @@ than a refactor:
    `scripts/ledger-append.py`, works locally and across NFS / shared blob in v2.
 3. **Stable Variant fingerprint** — hash of `impl/` contents for cross-worker
    dedup and cross-cycle re-proposal detection.
-4. **`worker_id` field on every artifact** — `local` in v1, machine identity in
-   v2.
-5. **Insight ledger is the only synchronization point** — all other state is
+4. **Insight ledger is the only synchronization point** — all other state is
    per-Cycle, per-Variant, write-once.
 
 ## Considered options
@@ -35,8 +33,8 @@ than a refactor:
 - v1 scaling claim is honest: "scales to a single multi-core machine; the
   architecture is designed so multi-machine execution requires swapping the
   storage layer."
-- The invariants are non-negotiable in v1 code review — any artifact without
-  `worker_id`, any absolute path, any non-atomic ledger write is a v1 bug.
+- The invariants are non-negotiable in v1 code review — any absolute path or
+  non-atomic ledger write is a v1 bug.
 - v2 work is bounded: replace the shared-filesystem ledger with a remote ledger
   service, add a work queue, add worker-death recovery. The framework itself
   does not change shape.

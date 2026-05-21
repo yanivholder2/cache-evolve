@@ -8,7 +8,7 @@
 // `VariantSegment` is declared `<K, V>` to match the shape every Variant must
 // expose (the shared g2_contract harness instantiates `VariantSegment::<i64, i64>`);
 // only the `<i64, i64>` constructor is provided because the rejection-log
-// machinery in scripts/gate-check.sh is wired for that key/value type.
+// machinery in scripts/gate-check.py is wired for that key/value type.
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
 use dash::get_index;

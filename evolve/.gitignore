@@ -10,16 +10,9 @@ dist/
 build/
 
 # Evolution Run Artifacts (Transient)
-# These are generated during a run and should not be pushed to git.
-cycles/
-ledger/
-logs/
-synthesis/
-leaderboard.md
-rejection-log.md
-
-# Source Assets (Persistent)
-# Traces, subject context, and benchmarks are required to start from scratch.
-
-# Ensure all .gitkeep files are tracked to preserve the walking skeleton
-!**/.gitkeep
+# Everything an evolve run writes lands under outputs/ (cycles, ledger, logs,
+# synthesis, leaderboard.md, rejection-log.md). Ignore the contents but
+# preserve the directory layout via .gitkeep so a fresh clone shows it.
+outputs/**
+!outputs/**/
+!outputs/**/.gitkeep

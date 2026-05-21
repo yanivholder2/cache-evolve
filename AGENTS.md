@@ -8,6 +8,13 @@ M.Sc. thesis on mitigating the **hot set problem** in N-way associative caches u
 # Source Control & Workflow
 After completing a logical unit of work (feature, fix, refactor, etc.), propose a commit. Avoid staging/committing changes unless explicitly requested.
 
+# Evolve Framework
+
+Research framework under `evolve/` that drives the cache-policy evolution loop (cycles, cohorts, gates, fitness, ledger). See `evolve/README.md` for details.
+
+- Always use the venv python: `evolve/.venv/bin/python` (never system `python`/`python3`).
+- Run `evolve/setup-evolve.sh` to create the venv and install `requirements.txt` if missing.
+
 # Caffeine Simulator Integration
 Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI.
 

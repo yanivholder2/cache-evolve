@@ -55,13 +55,6 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** modifying insert, evict, or migration logic.
 
-### [0005 — Agent-agnostic LLM CLI contract](adr/0005-agent-agnostic-llm-cli-contract.md)
-
-* Considered options
-* Consequences
-
-**Read when** adding or changing any framework script that invokes an LLM (hypothesis-writer, variant-implementer, smoke-reviewer, insight-writer).
-
 ## Conventions
 
 ### [docs/CONVENTIONS.md](CONVENTIONS.md)

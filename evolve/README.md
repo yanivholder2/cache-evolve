@@ -1,91 +1,52 @@
 # Evolve
 
-The `evolve` directory contains scripts, tools, and configurations to manage the experimental lifecycle and evolution of the Dash Cache system. This includes managing research cycles, maintaining the insight ledger, tracking traces, synthesizing results, and running benchmarks.
+`evolve/` is the research framework that drives caches experimental loop. It runs **cycles** of cache-policy evolution: each cycle proposes a **cohort** of hypotheses, generates one Rust variant per hypothesis, runs correctness gates (G1/G2/G3) plus three fitness plugins (hit-rate, per-op time, metadata size), computes a Pareto front, and appends one row to the immutable ledger.
+
+Subagents handle judgment work (hypothesize, implement) via per-CLI adapters. Scripts handle everything deterministic — scaffolding, gates, scoring, sealing, ledger/leaderboard maintenance. Everything a run writes lands under `evolve/outputs/` (gitignored): cycle artifacts at `outputs/cycles/NNNN/` (sealed `chmod -w` once complete), plus `outputs/ledger/cycles.jsonl` and `outputs/leaderboard.md` as the persistent across-cycle views.
 
 ## Environment Setup
 
-The automation and scripts in this directory rely on Python. To ensure dependencies are managed cleanly, we use a local virtual environment (`.venv`).
-
-To initialize the environment and install all necessary dependencies, run:
+The scripts rely on Python; dependencies live in a local venv.
 
 ```bash
-./setup.sh
+./setup-evolve.sh
 ```
 
-This will automatically create a Python virtual environment at `evolve/.venv` (if it doesn't already exist) and install the packages specified in `evolve/requirements.txt`.
-
-## Running with the Virtual Environment
-
-To use the Python tools or run tests, call the binaries directly from the virtual environment:
-
-```bash
-.venv/bin/python scripts/ledger-append.py "your insight here"
-.venv/bin/pytest tests/
-```
-
-## Directory Structure
-
-To keep the repository clean, only the framework logic and source assets are persistent. Artifacts from a specific evolution run are ignored by Git.
-
-```text
-evolve/
-  config.toml              # Framework configuration (action_space, budget, etc.)
-  scripts/                 # Deterministic verbs (ledger-append, seal, etc.)
-  tests/                   # Framework validation suite
-  setup-evolve.sh          # Environment bootstrap script
-  subject/                 # Stable evolution context
-    extension-points.md    # Stable trait definitions
-    invariants/            # Rust correctness gate suite
-  traces/                  # Evaluation suite (Persistent)
-    smoke.trace            # Small trace for G5 smoke-tests
-    dev/                   # Traces visible to the AI
-    holdout/               # Traces hidden from the AI
-    *.profile.md           # Workload characteristics
-  ledger/                  # APPEND-ONLY source of truth (Transient)
-    cycles.jsonl           # One JSONL row per Cycle
-    insights.jsonl         # Detailed variant insights
-  cycles/NNNN/             # Immutable after sealing (Transient)
-    cohort.md              # The Cohort's hypotheses and plan
-    hypotheses/            # Detailed hypothesis definitions
-    variants/vNNN/         # Per-variant artifacts
-      impl/                # Generated Rust implementation
-      attempts/NN/         # Self-repair iterations
-      eval/                # Raw evaluation metrics and logs
-      insight.md           # Qualitative variant insight
-    cycle-insight.md       # Synthesis of the entire cohort
-    winners.json           # Pareto-front variants for this cycle
-  synthesis/               # RECOMPUTABLE narrative views (Transient)
-    current.md             # Latest cross-cycle synthesis
-    by-topic/              # Categorized research insights
-  leaderboard.md           # Derived performance view (Transient)
-  rejection-log.md         # G1/G2/G3 failure records (Transient)
-  bench/                   # Rust micro-benchmark harness
-  .claude/                 # Claude Code adapter (Planned)
-    skills/                # Framework-specific skills
-    agents/                # Subagent prompt definitions
-```
+Creates `evolve/.venv` if missing and installs `requirements.txt`.
 
 ## Usage
 
-The `evolve/scripts/` directory provides utilities for managing your research.
-
-- **Ledger Append:**
-  Record a new insight to the active ledger:
-  ```bash
-  .venv/bin/python scripts/ledger-append.py "Observation about cache eviction..."
-  ```
-- **Seal:**
-  Execute the shell script to seal a cycle:
-  ```bash
-  ./scripts/seal.sh
-  ```
-
-## Testing
-
-Tests for the Python scripts and utilities are located in the `evolve/tests/` directory and use the `pytest` framework.
-
-To execute the full test suite, use the virtual environment's `pytest`:
+Framework entry point is `evolve/scripts/evolve.py`. Run it through the project venv (all examples below assume `cd evolve/`):
 
 ```bash
-.venv/bin/pytest tests/
+.venv/bin/python scripts/evolve.py [flags]
 ```
+
+Flags (defaults sourced from [`config.toml`](config.toml); flags override per-run):
+
+| Flag                     | Config key                 | Purpose                                                                                |
+| ------------------------ | -------------------------- | -------------------------------------------------------------------------------------- |
+| `--cycles N`             | `framework.cycles`         | Number of cycles to run sequentially. Aborts on first failure.                         |
+| `--cohort-size N`        | `framework.cohort_size`    | Number of variants per cycle.                                                          |
+| `--ai-agent-tool <name>` | `framework.ai_agent_tool`  | AI agent CLI to drive subagents. Choices: `gemini`.                                    |
+| `--outputs-root <path>`  | —                          | Read-write dir for cycles/ledger/logs (default: `outputs/`).                           |
+| `--log-level <level>`    | `framework.log_level`      | Log verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                 |
+
+Examples:
+
+```bash
+# Single cycle, defaults from config.toml
+.venv/bin/python scripts/evolve.py
+
+# Three cycles, cohort of 4
+.venv/bin/python scripts/evolve.py --cycles 3 --cohort-size 4
+
+# Override AI agent tool for one run
+.venv/bin/python scripts/evolve.py --ai-agent-tool gemini
+```
+
+Each cycle ends with `cycle <NNNN> complete — sealed at <path> (cohort=N)`.
+
+### Configuration
+
+Defaults for every flag live in [`config.toml`](config.toml) under `[framework]`. Edit the file to change defaults persistently; pass the corresponding flag to override on a single run. Precedence: **flag > `config.toml` > built-in fallback**.

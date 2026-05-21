@@ -19,6 +19,7 @@ class ContractError(ValueError):
 
 def validate_plugin_dict(data: dict, *, source: str) -> dict:
     """Validate a parsed plugin record. Returns it unchanged on success."""
+
     if not isinstance(data, dict):
         raise ContractError(f"{source}: expected JSON object, got {type(data).__name__}")
     missing = [f for f in REQUIRED_FIELDS if f not in data]
@@ -40,6 +41,7 @@ def validate_plugin_dict(data: dict, *, source: str) -> dict:
 
 def parse_plugin_stdout(stdout: str, *, source: str) -> dict:
     """Parse stdout as JSON and validate against the plugin contract."""
+
     try:
         data = json.loads(stdout)
     except json.JSONDecodeError as e:

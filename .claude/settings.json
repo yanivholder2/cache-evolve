@@ -5,11 +5,10 @@
       "Bash(cargo *)",
       "Bash(gradlew*)",
       "Bash(pytest*)",
-      "Bash(evolve/scripts/cycle-start.py*)",
+      "Bash(evolve/scripts/evolve.py*)",
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",
-      "Skill(sim)",
-      "Skill(cycle-start)"
+      "Skill(sim)"
     ],
     "additionalDirectories": [
       "~/projects/caffeine"

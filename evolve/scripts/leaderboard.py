@@ -1,21 +1,23 @@
-#!/usr/bin/env python3
 """Render leaderboard.md from the cycle ledger and per-cycle winners.json files.
 
-Usage: leaderboard.py --evolve-root <path> [--output <path>]
-
-Reads evolve/ledger/cycles.jsonl and each cycle's winners.json,
-then writes (or prints) a markdown leaderboard.
+Library: `regenerate(*, outputs_root, output=None) -> str`. Reads
+outputs/ledger/cycles.jsonl and each cycle's winners.json, writes markdown to
+`output` (if given) and returns the rendered content.
 """
 
-import argparse
+from __future__ import annotations
+
 import json
-import sys
 from pathlib import Path
 from typing import Optional
 
 
-def _load_cycles(evolve_root: Path) -> list:
-    ledger = evolve_root / "ledger" / "cycles.jsonl"
+class LeaderboardError(Exception):
+    pass
+
+
+def _load_cycles(outputs_root: Path) -> list:
+    ledger = outputs_root / "ledger" / "cycles.jsonl"
     if not ledger.exists():
         return []
     cycles = []
@@ -26,20 +28,18 @@ def _load_cycles(evolve_root: Path) -> list:
         try:
             cycles.append(json.loads(line))
         except json.JSONDecodeError as e:
-            print(f"error: malformed ledger line {n} in {ledger}: {e}", file=sys.stderr)
-            sys.exit(1)
+            raise LeaderboardError(f"malformed ledger line {n} in {ledger}: {e}") from e
     return cycles
 
 
-def _load_winners(evolve_root: Path, cycle_id: str) -> Optional[dict]:
-    path = evolve_root / "cycles" / cycle_id / "winners.json"
+def _load_winners(outputs_root: Path, cycle_id: str) -> Optional[dict]:
+    path = outputs_root / "cycles" / cycle_id / "winners.json"
     if not path.exists():
         return None
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError as e:
-        print(f"error: malformed winners.json for cycle {cycle_id}: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise LeaderboardError(f"malformed winners.json for cycle {cycle_id}: {e}") from e
 
 
 def _render(cycles_data: list) -> str:
@@ -86,18 +86,15 @@ def _render(cycles_data: list) -> str:
     return "\n".join(lines)
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--evolve-root", required=True, type=Path)
-    parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
+def regenerate(*, outputs_root: Path, output: Path | None = None) -> str:
+    """Build the markdown leaderboard from ledger + winners; optionally write
+    to `output`. Returns the rendered string either way."""
 
-    ledger_rows = _load_cycles(args.evolve_root)
-
+    ledger_rows = _load_cycles(outputs_root)
     cycles_data = []
     for row in ledger_rows:
         cycle_id = row["cycle"]
-        winners = _load_winners(args.evolve_root, cycle_id)
+        winners = _load_winners(outputs_root, cycle_id)
         fvs = winners.get("fitness_vectors", []) if winners else []
         pareto_front = winners.get("pareto_front", []) if winners else []
         cycles_data.append({
@@ -107,12 +104,6 @@ def main():
         })
 
     content = _render(cycles_data)
-
-    if args.output:
-        args.output.write_text(content)
-    else:
-        sys.stdout.write(content)
-
-
-if __name__ == "__main__":
-    main()
+    if output is not None:
+        output.write_text(content)
+    return content

@@ -4,7 +4,7 @@ commandPrefix = [
     "cargo",
     "gradlew",
     "pytest",
-    "evolve/scripts/cycle-start.py",
+    "evolve/scripts/evolve.py",
 ]
 decision = "allow"
 priority = 100
@@ -18,8 +18,7 @@ argsPattern = """
 .*"name":\\s*"(\
 caffeine-sweep|\
 caffeine-sim|\
-sim|\,
-cycle-start\
+sim\
 )".*"""
 decision = "allow"
 priority = 100

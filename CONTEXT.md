@@ -340,8 +340,8 @@ _Avoid_: Token budget (means a numeric cap; the principle is architectural).
 **v2-ready invariants**:
 Architectural commitments that make v2 multi-machine execution a
 storage-layer swap rather than a refactor: repo-relative paths only, atomic
-ledger append, stable Variant fingerprint, `worker_id` on every artifact,
-ledger as the only synchronization point.
+ledger append, stable Variant fingerprint, ledger as the only synchronization
+point.
 _Avoid_: Distributed prerequisites, cluster invariants.
 
 ## Flagged ambiguities

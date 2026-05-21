@@ -1,16 +1,13 @@
 """Tests for the Pareto front computer (scripts/pareto.py)."""
 
-import sys
-from pathlib import Path
-
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
-from pareto import compute_pareto_front  # noqa: E402
+from pareto import compute_pareto_front
 
 
 def _vec(variant, **dims):
     """Build a FitnessVector dict. Each kwarg: dim_name=(summary, higher_is_better)."""
+
     return {
         "variant": variant,
         "dimensions": [

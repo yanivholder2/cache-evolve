@@ -60,6 +60,7 @@ def parse_args():
 
 def resolve_rust_path(args_rust_path):
 	"""Resolve the target/release path, handling worktrees."""
+
 	if args_rust_path:
 		return args_rust_path
 	return os.path.join(REPO_ROOT, "target", "release")
@@ -73,11 +74,13 @@ def build_dll():
 
 def format_sizes(size_list):
 	"""Format sizes with underscore separators for Gradle (e.g., 16384 -> 16_384)."""
+
 	return ",".join(f"{s:,}".replace(",", "_") for s in size_list)
 
 
 def trace_display_name(trace):
 	"""'lirs:multi1.trace.gz' -> 'multi1_lirs'."""
+
 	fmt, filename = trace.split(":", 1)
 	basename = os.path.basename(filename)
 	name = basename.split(".")[0]
@@ -86,6 +89,7 @@ def trace_display_name(trace):
 
 def run_simulation(trace, sizes_str, policies, args, rust_path):
 	"""Run simulator:simulate for a single trace with all sizes."""
+
 	trace_name = trace_display_name(trace)
 	debug_mode = 2 if args.debug else 0
 	jvm_args = f"-XX:+UseParallelGC,-Xmx8g,-Djava.library.path={rust_path}"
@@ -117,6 +121,7 @@ def run_simulation(trace, sizes_str, policies, args, rust_path):
 
 def collect_results(trace_name, output_dir):
 	"""Copy simulate output to a per-trace directory before next run overwrites it."""
+
 	trace_dir = os.path.join(output_dir, trace_name)
 	os.makedirs(trace_dir, exist_ok=True)
 
@@ -135,6 +140,7 @@ def collect_results(trace_name, output_dir):
 
 def create_summary_csv(output_dir, trace_results):
 	"""Aggregate per-trace combined CSVs into a single summary."""
+
 	summary_path = os.path.join(output_dir, "summary.csv")
 	all_rows = []
 	header = None
