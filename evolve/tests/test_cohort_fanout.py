@@ -24,6 +24,7 @@ from typing import Callable
 import pytest
 
 from evolve import run_cycle
+from src.paths import CycleLayout, Layout
 
 from _stubs import StubLLMAdapter
 
@@ -48,6 +49,10 @@ def _setup_repo(tmp_path: Path) -> Path:
     return evolve_dst
 
 
+def _layout(evolve_root: Path) -> Layout:
+    return Layout(evolve_root=evolve_root, outputs_root=evolve_root / "outputs")
+
+
 def _run_cycle(
     evolve_root: Path,
     *,
@@ -64,11 +69,10 @@ def _run_cycle(
         adapter = StubLLMAdapter(hypothesis_lines=hypothesis_lines) if hypothesis_lines else StubLLMAdapter(n_lines=cohort_size)
         kwargs = {"implementer": implementer} if implementer is not None else {}
         run_cycle(
-            evolve_root=evolve_root,
+            layout=_layout(evolve_root),
             repo_root=REAL_REPO_ROOT,
             cohort_size=cohort_size,
             adapter=adapter,
-            outputs_root=evolve_root / "outputs",
             **kwargs,
         )
         return handler.stream.getvalue()
@@ -78,7 +82,7 @@ def _run_cycle(
 
 @dataclass
 class CohortRun:
-    cycle: Path
+    cycle_layout: CycleLayout
     log: str
 
 
@@ -92,29 +96,32 @@ def shared_cohort_run(tmp_path_factory):
 
     evolve_root = _setup_repo(tmp_path_factory.mktemp("shared"))
     log = _run_cycle(evolve_root, cohort_size=3)
-    return CohortRun(cycle=evolve_root / "outputs" / "cycles" / "0001", log=log)
+    return CohortRun(cycle_layout=_layout(evolve_root).cycle("0001"), log=log)
 
 
+@pytest.mark.slow
 def test_cohort_produces_n_variants(shared_cohort_run):
     """A cohort run produces N parallel Variants in one cycle directory."""
 
-    variants_dir = shared_cohort_run.cycle / "variants"
+    variants_dir = shared_cohort_run.cycle_layout.variants_dir
     variants = sorted(p.name for p in variants_dir.iterdir() if p.is_dir())
     assert variants == ["v001", "v002", "v003"]
-    for v in variants:
-        assert (variants_dir / v / "impl" / "segment.rs").is_file()
-        assert (variants_dir / v / "impl" / "manifest.toml").is_file()
-        assert (variants_dir / v / "eval" / "fitness-vector.json").is_file()
-        assert (variants_dir / v / "insight.md").is_file()
+    for i in (1, 2, 3):
+        variant_layout = shared_cohort_run.cycle_layout.variant(i)
+        assert (variant_layout.impl_dir / "segment.rs").is_file()
+        assert (variant_layout.impl_dir / "manifest.toml").is_file()
+        assert variant_layout.fitness_vector_json.is_file()
+        assert variant_layout.insight_md.is_file()
 
 
+@pytest.mark.slow
 def test_cohort_writes_cohort_md_and_per_hypothesis_docs(shared_cohort_run):
     """Orchestrator writes cohort.md and hypotheses/HNN.md per Hypothesis."""
 
-    cohort_md = shared_cohort_run.cycle / "cohort.md"
+    cohort_md = shared_cohort_run.cycle_layout.cohort_md
     assert cohort_md.is_file()
 
-    hypotheses = shared_cohort_run.cycle / "hypotheses"
+    hypotheses = shared_cohort_run.cycle_layout.hypotheses_dir
     assert hypotheses.is_dir()
     files = sorted(p.name for p in hypotheses.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name))
     assert files == ["H01.md", "H02.md", "H03.md"]
@@ -124,6 +131,7 @@ def test_cohort_writes_cohort_md_and_per_hypothesis_docs(shared_cohort_run):
         assert hid in body, f"cohort.md must reference {hid}"
 
 
+@pytest.mark.slow
 def test_variant_implementer_invoked_in_parallel(tmp_path):
     """Orchestrator fans out N variant-implementer invocations in parallel (P1).
 
@@ -138,13 +146,13 @@ def test_variant_implementer_invoked_in_parallel(tmp_path):
 
     good_impl = Path(__file__).parent / "fixtures" / "good" / "impl"
 
-    def sleep_implementer(hyp_file, output_impl_dir, *, evolve_root, outputs_root):
-        vid = output_impl_dir.parent.name
+    def sleep_implementer(hyp_file, variant_layout, *, layout):
+        vid = variant_layout.id
         (stamp_dir / f"{vid}.start").write_text(f"{time.time()}")
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
-        output_impl_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy(good_impl / "segment.rs", output_impl_dir / "segment.rs")
-        shutil.copy(good_impl / "manifest.toml", output_impl_dir / "manifest.toml")
+        variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy(good_impl / "segment.rs", variant_layout.impl_dir / "segment.rs")
+        shutil.copy(good_impl / "manifest.toml", variant_layout.impl_dir / "manifest.toml")
         (stamp_dir / f"{vid}.end").write_text(f"{time.time()}")
 
     _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE, implementer=sleep_implementer)
@@ -162,6 +170,7 @@ def test_variant_implementer_invoked_in_parallel(tmp_path):
     )
 
 
+@pytest.mark.slow
 def test_each_variant_flows_through_real_gates(shared_cohort_run):
     """Each Variant flows through the real G1 + G2 + G3 gates."""
 
@@ -173,10 +182,11 @@ def test_each_variant_flows_through_real_gates(shared_cohort_run):
     assert g3 == 3, f"expected G3 once per variant, saw {g3}: {shared_cohort_run.log}"
 
 
+@pytest.mark.slow
 def test_winners_pareto_front_spans_cohort(shared_cohort_run):
     """All variants evaluated and considered in the Pareto front computation."""
 
-    winners = json.loads((shared_cohort_run.cycle / "winners.json").read_text())
+    winners = json.loads(shared_cohort_run.cycle_layout.winners_json.read_text())
     assert len(winners["fitness_vectors"]) == 3
     fv_ids = sorted(fv["variant"] for fv in winners["fitness_vectors"])
     assert fv_ids == ["v001", "v002", "v003"]
@@ -186,9 +196,9 @@ def test_winners_pareto_front_spans_cohort(shared_cohort_run):
 
 
 def test_variant_implementer_agent_markdown_exists():
-    """variant-implementer system prompt ships under evolve/scripts/agents/."""
+    """variant-implementer system prompt ships under evolve/src/agents/."""
 
-    agent_md = EVOLVE_SRC / "scripts" / "agents" / "variant-implementer.md"
+    agent_md = EVOLVE_SRC / "src" / "agents" / "variant-implementer.md"
     assert agent_md.is_file(), f"missing {agent_md}"
     body = agent_md.read_text()
     assert "hypothesis" in body.lower()
@@ -202,7 +212,7 @@ def test_failing_variant_implementer_aborts_cycle(tmp_path, capsys):
 
     evolve_root = _setup_repo(tmp_path)
 
-    def failing(hyp_file, output_impl_dir, *, evolve_root, outputs_root):
+    def failing(hyp_file, variant_layout, *, layout):
         raise RuntimeError(f"boom on {hyp_file.name}")
 
     with pytest.raises(SystemExit):
@@ -213,9 +223,10 @@ def test_failing_variant_implementer_aborts_cycle(tmp_path, capsys):
     assert "variant-implementer for v002 failed" in captured.err
     assert captured.err.count("boom on") >= 2
     # Cycle never completed → no winners.json.
-    assert not (evolve_root / "outputs" / "cycles" / "0001" / "winners.json").exists()
+    assert not _layout(evolve_root).cycle("0001").winners_json.exists()
 
 
+@pytest.mark.slow
 def test_hypothesis_lines_map_to_variants(tmp_path):
     """Each non-empty hypothesis line lands in HNN.md and spawns a Variant."""
 
@@ -227,15 +238,15 @@ def test_hypothesis_lines_map_to_variants(tmp_path):
     ]
     _run_cycle(evolve_root, cohort_size=3, hypothesis_lines=lines)
 
-    cycle = evolve_root / "outputs" / "cycles" / "0001"
+    cycle_layout = _layout(evolve_root).cycle("0001")
     files = sorted(
-        p.name for p in (cycle / "hypotheses").iterdir() if re.fullmatch(r"H\d{2}\.md", p.name)
+        p.name for p in cycle_layout.hypotheses_dir.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name)
     )
     assert files == ["H01.md", "H02.md", "H03.md"]
-    assert "first hypothesis text" in (cycle / "hypotheses" / "H01.md").read_text()
-    assert "second hypothesis text" in (cycle / "hypotheses" / "H02.md").read_text()
-    assert "third hypothesis text" in (cycle / "hypotheses" / "H03.md").read_text()
-    variants = sorted(p.name for p in (cycle / "variants").iterdir() if p.is_dir())
+    assert "first hypothesis text" in cycle_layout.hypothesis_file(1).read_text()
+    assert "second hypothesis text" in cycle_layout.hypothesis_file(2).read_text()
+    assert "third hypothesis text" in cycle_layout.hypothesis_file(3).read_text()
+    variants = sorted(p.name for p in cycle_layout.variants_dir.iterdir() if p.is_dir())
     assert variants == ["v001", "v002", "v003"]
 
 
@@ -248,17 +259,14 @@ def test_hypothesis_count_must_match_cohort(tmp_path):
         _run_cycle(evolve_root, cohort_size=10, hypothesis_lines=lines)
 
 
-def test_invalid_cohort_size_rejected(tmp_path):
+def test_invalid_cohort_size_rejected(capsys):
     """cohort_size must be a positive integer; CLI validation rejects 0/-1."""
 
     from evolve import main
 
-    evolve_root = _setup_repo(tmp_path)
     for bad in ("0", "-1"):
-        with pytest.raises(SystemExit):
-            main([
-                "--evolve-root", str(evolve_root),
-                "--repo-root", str(REAL_REPO_ROOT),
-                "--cohort-size", bad,
-            ])
-    assert not (evolve_root / "outputs" / "cycles" / "0001").exists()
+        with pytest.raises(SystemExit) as exc_info:
+            main(["--cohort-size", bad])
+        # die() exits 1; argparse would exit 2 — distinguish to avoid vacuous pass.
+        assert exc_info.value.code == 1
+        assert "--cohort-size" in capsys.readouterr().err

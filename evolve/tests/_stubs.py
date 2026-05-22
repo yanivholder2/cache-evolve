@@ -15,11 +15,13 @@ GOOD_IMPL = Path(__file__).parent / "fixtures" / "good" / "impl"
 
 class StubLLMAdapter:
     """Deterministic in-process adapter. Dispatches by agent_name; writes
-    canned files into output_dir.
+    canned files into workspace.
 
     Knobs:
-      hypothesis_lines  explicit per-file text (one entry → H01.md, etc.)
+      hypothesis_lines  explicit per-file canonical lines (one entry → H01.md, etc.)
       n_lines           shorthand: write N stub files "stub hypothesis K"
+      parents           per-hypothesis parent identifier (defaults to "baseline" for each)
+      changes           per-hypothesis '## Changes' prose (defaults to "stub changes")
       exit_code         raise CalledProcessError(exit_code) before writing
       capture_file      log each invocation + task.md into this file
     """
@@ -29,34 +31,39 @@ class StubLLMAdapter:
         *,
         hypothesis_lines: list[str] | None = None,
         n_lines: int | None = None,
+        parents: list[str] | None = None,
+        changes: list[str] | None = None,
         exit_code: int = 0,
         capture_file: Path | None = None,
     ) -> None:
         self.hypothesis_lines = hypothesis_lines
         self.n_lines = n_lines
+        self.parents = parents
+        self.changes = changes
         self.exit_code = exit_code
         self.capture_file = capture_file
 
     def run(
         self,
         agent_name: str,
-        output_dir: Path,
+        workspace: Path,
         *,
-        read_only: bool = False,
+        readable_roots: list[Path],
+        read_only: bool,
     ) -> None:
         if self.capture_file is not None:
-            self._capture(agent_name, output_dir, read_only)
+            self._capture(agent_name, workspace, readable_roots, read_only)
         if self.exit_code != 0:
             raise subprocess.CalledProcessError(self.exit_code, "stub-adapter")
 
-        if agent_name == "hypothesis-writer":
-            self._write_hypotheses(output_dir)
+        if agent_name == "hypotheses-writer":
+            self._write_hypotheses(workspace)
         elif agent_name == "variant-implementer":
-            self._write_variant(output_dir)
+            self._write_variant(workspace)
         else:
             raise RuntimeError(f"stub-adapter: unknown agent {agent_name!r}")
 
-    def _write_hypotheses(self, output_dir: Path) -> None:
+    def _write_hypotheses(self, workspace: Path) -> None:
         if self.hypothesis_lines is not None:
             lines = [line for line in self.hypothesis_lines if line]
         elif self.n_lines is not None:
@@ -65,24 +72,27 @@ class StubLLMAdapter:
             return  # write nothing — wrapper should fail with wrong count
 
         for i, line in enumerate(lines, start=1):
-            (output_dir / f"H{i:02d}.md").write_text(
-                f"# Hypothesis H{i:02d}\n\n{line}\n",
+            parent = self.parents[i - 1] if self.parents and i - 1 < len(self.parents) else "baseline"
+            change = self.changes[i - 1] if self.changes and i - 1 < len(self.changes) else "stub changes"
+            (workspace / f"H{i:02d}.md").write_text(
+                f"# Hypothesis H{i:02d}\n\n{line}\n\n## Parent\n\n{parent}\n\n## Changes\n\n{change}\n",
                 encoding="utf-8",
             )
 
-    def _write_variant(self, output_dir: Path) -> None:
+    def _write_variant(self, workspace: Path) -> None:
         for name in ("segment.rs", "manifest.toml"):
-            shutil.copy(GOOD_IMPL / name, output_dir / name)
+            shutil.copy(GOOD_IMPL / name, workspace / name)
 
-    def _capture(self, agent_name, output_dir, read_only):
+    def _capture(self, agent_name, workspace, readable_roots, read_only):
         task_md = ""
-        task_path = output_dir / "task.md"
+        task_path = workspace / "task.md"
         if task_path.is_file():
             task_md = task_path.read_text(encoding="utf-8")
         with open(self.capture_file, "a", encoding="utf-8") as f:
             f.write("----- invocation -----\n")
             f.write(f"agent: {agent_name}\n")
-            f.write(f"output-dir: {output_dir}\n")
+            f.write(f"workspace: {workspace}\n")
+            f.write(f"readable-roots: {readable_roots}\n")
             f.write(f"read-only: {read_only}\n")
             f.write("----- task.md -----\n")
             f.write(task_md if task_md.endswith("\n") else task_md + "\n")

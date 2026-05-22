@@ -10,6 +10,7 @@ from typing import Callable
 import pytest
 
 from evolve import run_cycle
+from src.paths import Layout
 
 from _stubs import StubLLMAdapter
 
@@ -28,39 +29,44 @@ def _setup_repo(tmp_path: Path) -> Path:
     return evolve_dst
 
 
+def _layout(evolve_root: Path) -> Layout:
+    return Layout(evolve_root=evolve_root, outputs_root=evolve_root / "outputs")
+
+
 def _run_cycles(evolve_root: Path, n: int, *, implementer: Callable[..., None] | None = None) -> None:
     for _ in range(n):
         kwargs = {"implementer": implementer} if implementer is not None else {}
         run_cycle(
-            evolve_root=evolve_root,
+            layout=_layout(evolve_root),
             repo_root=REAL_REPO_ROOT,
             cohort_size=COHORT,
             adapter=StubLLMAdapter(n_lines=COHORT),
-            outputs_root=evolve_root / "outputs",
             **kwargs,
         )
 
 
+@pytest.mark.slow
 def test_two_cycles_both_sealed(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run_cycles(evolve_root, 2)
 
+    layout = _layout(evolve_root)
     for n in ("0001", "0002"):
-        cycle_dir = evolve_root / "outputs" / "cycles" / n
-        assert cycle_dir.is_dir(), f"missing cycle {n}"
-        assert (cycle_dir / "SEALED").is_file(), f"cycle {n} not sealed"
+        cycle_layout = layout.cycle(n)
+        assert cycle_layout.root.is_dir(), f"missing cycle {n}"
+        assert cycle_layout.sealed_marker.is_file(), f"cycle {n} not sealed"
 
-    ledger = evolve_root / "outputs" / "ledger" / "cycles.jsonl"
-    rows = ledger.read_text().splitlines()
+    rows = layout.ledger.read_text().splitlines()
     assert len(rows) == 2
 
 
+@pytest.mark.slow
 def test_single_cycle_default(tmp_path):
     """One cycle → exactly one sealed directory."""
 
     evolve_root = _setup_repo(tmp_path)
     _run_cycles(evolve_root, 1)
-    cycles_root = evolve_root / "outputs" / "cycles"
+    cycles_root = _layout(evolve_root).cycles_dir
     cycles = sorted(p.name for p in cycles_root.iterdir() if p.is_dir())
     assert cycles == ["0001"]
 
@@ -76,4 +82,4 @@ def test_loop_aborts_on_cycle_failure(tmp_path):
     with pytest.raises(SystemExit):
         _run_cycles(evolve_root, 2, implementer=failing)
 
-    assert not (evolve_root / "outputs" / "cycles" / "0002").exists()
+    assert not _layout(evolve_root).cycle("0002").root.exists()

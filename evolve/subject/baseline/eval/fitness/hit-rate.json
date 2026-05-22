@@ -1,0 +1,27 @@
+{
+  "dim": "hit-rate",
+  "values": [
+    {
+      "cache": "assoc",
+      "size": 16,
+      "hit_rate": 0.8775
+    },
+    {
+      "cache": "assoc",
+      "size": 32,
+      "hit_rate": 0.9055
+    },
+    {
+      "cache": "dash",
+      "size": 16,
+      "hit_rate": 0.9655
+    },
+    {
+      "cache": "dash",
+      "size": 32,
+      "hit_rate": 0.929
+    }
+  ],
+  "summary": 0.94725,
+  "higher_is_better": true
+}

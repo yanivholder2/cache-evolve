@@ -5,7 +5,7 @@ Shape: { "dim": str, "values": list, "summary": float, "higher_is_better": bool 
 
 from pathlib import Path
 
-from fitness import hit_rate, metadata_size, per_op_time
+from src.fitness import hit_rate, metadata_size, per_op_time
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 EVOLVE_ROOT = Path(__file__).parent.parent

@@ -39,4 +39,4 @@ jobs:
 
       - name: Python tests
         working-directory: evolve
-        run: pytest
+        run: pytest --slow
