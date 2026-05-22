@@ -5,12 +5,43 @@ A CLI-based counterpart (`ClaudeCliAdapter`) may be added later.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, TextIO
 
-from .base_llm_adapter import LLMAdapter
+from .base_llm_adapter import LLMAdapter, Usage
+
+
+def _format_args(args: Any) -> str:
+    try:
+        return "```json\n" + json.dumps(args, indent=2, ensure_ascii=False) + "\n```"
+    except (TypeError, ValueError):
+        return f"`{args!r}`"
+
+
+def _now_hms() -> str:
+    return datetime.now(timezone.utc).strftime("%H:%M:%S")
+
+
+def _usage_from_result(message: Any) -> Usage | None:
+    """Normalise a ResultMessage's usage/cost into the base adapter's keys."""
+    raw = message.usage or {}
+    key_map = {
+        "input_tokens": "input_tokens",
+        "output_tokens": "output_tokens",
+        "cache_read_input_tokens": "cache_read_tokens",
+        "cache_creation_input_tokens": "cache_write_tokens",
+    }
+    usage: Usage = {}
+    for src, dst in key_map.items():
+        value = raw.get(src)
+        if value is not None:
+            usage[dst] = value
+    if message.total_cost_usd is not None:
+        usage["cost_usd"] = round(message.total_cost_usd, 6)
+    return usage or None
 
 
 class Model(StrEnum):
@@ -45,7 +76,7 @@ class ClaudeSdkAdapter(LLMAdapter):
         repo_src: Path,
         read_only: bool,
         log_io: TextIO,
-    ) -> None:
+    ) -> Usage | None:
         from claude_agent_sdk import (
             ClaudeAgentOptions,
             ClaudeSDKClient,
@@ -55,6 +86,7 @@ class ClaudeSdkAdapter(LLMAdapter):
         )
         from claude_agent_sdk.types import (
             AssistantMessage,
+            ResultMessage,
             TextBlock,
             ThinkingBlock,
             ToolUseBlock,
@@ -128,34 +160,28 @@ class ClaudeSdkAdapter(LLMAdapter):
             can_use_tool=gate,
         )
 
-        text_chunks: list[str] = []
-        tool_events: list[str] = []
-        thought_chunks: list[str] = []
+        events: list[tuple[str, str, str]] = []
+        usage: Usage | None = None
 
         async with ClaudeSDKClient(options=options) as client:
             await client.query(user_prompt)
             async for message in client.receive_response():
-                if not isinstance(message, AssistantMessage):
-                    continue
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        text_chunks.append(block.text)
-                    elif isinstance(block, ThinkingBlock):
-                        thought_chunks.append(block.thinking)
-                    elif isinstance(block, ToolUseBlock):
-                        ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
-                        tool_events.append(f"- {ts} `{block.name}` args={block.input!r}")
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            events.append((_now_hms(), "chat", block.text.rstrip("\n")))
+                        elif isinstance(block, ThinkingBlock):
+                            events.append((_now_hms(), "thinking", block.thinking.rstrip("\n")))
+                        elif isinstance(block, ToolUseBlock):
+                            events.append((_now_hms(), f"tool: {block.name}", _format_args(block.input)))
+                elif isinstance(message, ResultMessage):
+                    usage = _usage_from_result(message)
 
-        log_io.write("## chat\n\n")
-        log_io.write("".join(text_chunks) or "_(no conversational text)_\n")
-        if not text_chunks[-1:] == ["\n"]:
-            log_io.write("\n")
+        log_io.write("## timeline\n\n")
+        if not events:
+            log_io.write("_(no events)_\n")
+        else:
+            for ts, kind, body in events:
+                log_io.write(f"### {ts} {kind}\n\n{body}\n\n")
 
-        log_io.write("\n## tool calls\n\n")
-        log_io.write("\n".join(tool_events) if tool_events else "_(none)_")
-        log_io.write("\n")
-
-        log_io.write("\n## thoughts\n\n")
-        log_io.write("".join(thought_chunks) if thought_chunks else "_(none)_\n")
-        if thought_chunks and not thought_chunks[-1].endswith("\n"):
-            log_io.write("\n")
+        return usage

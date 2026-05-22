@@ -6,13 +6,45 @@ A CLI-based counterpart (`AntigravityCliAdapter`) may be added later.
 from __future__ import annotations
 
 import asyncio
+import json
 import os
+import time
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
-from typing import TextIO
+from typing import Any, TextIO
 
-from .base_llm_adapter import LLMAdapter
+from .base_llm_adapter import LLMAdapter, Usage
+
+
+def _format_args(args: Any) -> str:
+    try:
+        return "```json\n" + json.dumps(args, indent=2, ensure_ascii=False) + "\n```"
+    except (TypeError, ValueError):
+        return f"`{args!r}`"
+
+
+def _stamp() -> tuple[float, str]:
+    return time.monotonic(), datetime.now(timezone.utc).strftime("%H:%M:%S")
+
+
+def _usage_from_metadata(um: Any) -> Usage | None:
+    """Normalise an antigravity UsageMetadata into the base adapter's keys."""
+    if um is None:
+        return None
+    key_map = {
+        "prompt_token_count": "input_tokens",
+        "candidates_token_count": "output_tokens",
+        "cached_content_token_count": "cache_read_tokens",
+        "thoughts_token_count": "thinking_tokens",
+        "total_token_count": "total_tokens",
+    }
+    usage: Usage = {}
+    for src, dst in key_map.items():
+        value = getattr(um, src, None)
+        if value is not None:
+            usage[dst] = value
+    return usage or None
 
 
 class Model(StrEnum):
@@ -37,7 +69,7 @@ class AntigravitySdkAdapter(LLMAdapter):
         repo_src: Path,
         read_only: bool,
         log_io: TextIO,
-    ) -> None:
+    ) -> Usage | None:
         from google.antigravity import CapabilitiesConfig, LocalAgentConfig
         from google.antigravity.agent import Agent
         from google.antigravity.hooks import policy
@@ -69,24 +101,24 @@ class AntigravitySdkAdapter(LLMAdapter):
             policies=policies,
         )
 
-        text_chunks: list[str] = []
-        tool_events: list[str] = []
-        thought_chunks: list[str] = []
+        # (monotonic, ts_hms, kind, body) — monotonic orders events emitted by
+        # the three concurrent collectors below; ts_hms is for display only.
+        events: list[tuple[float, str, str, str]] = []
 
         async def collect_text(response) -> None:
             async for token in response:
-                text_chunks.append(token)
+                mono, ts = _stamp()
+                events.append((mono, ts, "chat", token))
 
         async def collect_tools(response) -> None:
             async for call in response.tool_calls:
-                ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
-                name = getattr(call, "name", "?")
-                args = getattr(call, "args", None)
-                tool_events.append(f"- {ts} `{name}` args={args!r}")
+                mono, ts = _stamp()
+                events.append((mono, ts, f"tool: {call.name}", _format_args(call.args)))
 
         async def collect_thoughts(response) -> None:
             async for thought in response.thoughts:
-                thought_chunks.append(str(thought))
+                mono, ts = _stamp()
+                events.append((mono, ts, "thinking", thought))
 
         async with Agent(config) as agent:
             response = await agent.chat(user_prompt)
@@ -95,17 +127,26 @@ class AntigravitySdkAdapter(LLMAdapter):
                 collect_tools(response),
                 collect_thoughts(response),
             )
+            usage = _usage_from_metadata(response.usage_metadata)
 
-        log_io.write("## chat\n\n")
-        log_io.write("".join(text_chunks) or "_(no conversational text)_\n")
-        if not text_chunks[-1:] == ["\n"]:
-            log_io.write("\n")
+        # The text/thoughts streams yield tokens, not blocks. Coalesce
+        # consecutive same-kind events so the timeline shows one entry per
+        # logical block (a tool call between two chat runs splits them).
+        events.sort(key=lambda e: e[0])
+        merged: list[tuple[str, str, str]] = []
+        for _, ts, kind, body in events:
+            if merged and merged[-1][1] == kind and kind in ("chat", "thinking"):
+                prev_ts, prev_kind, prev_body = merged[-1]
+                merged[-1] = (prev_ts, prev_kind, prev_body + body)
+            else:
+                merged.append((ts, kind, body))
 
-        log_io.write("\n## tool calls\n\n")
-        log_io.write("\n".join(tool_events) if tool_events else "_(none)_")
-        log_io.write("\n")
+        log_io.write("## timeline\n\n")
+        if not merged:
+            log_io.write("_(no events)_\n")
+        else:
+            for ts, kind, body in merged:
+                body = body.rstrip("\n") if kind in ("chat", "thinking") else body
+                log_io.write(f"### {ts} {kind}\n\n{body}\n\n")
 
-        log_io.write("\n## thoughts\n\n")
-        log_io.write("".join(thought_chunks) if thought_chunks else "_(none)_\n")
-        if thought_chunks and not thought_chunks[-1].endswith("\n"):
-            log_io.write("\n")
+        return usage

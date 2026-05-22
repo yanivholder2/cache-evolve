@@ -27,7 +27,9 @@ import logging
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TextIO
+from typing import Any, TextIO
+
+Usage = dict[str, Any]
 
 AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
 REPO_SRC = Path(__file__).resolve().parents[3] / "src"
@@ -71,11 +73,12 @@ class LLMAdapter:
         started_wall = datetime.now(timezone.utc)
         started_mono = time.monotonic()
         status = "ok"
+        usage: Usage | None = None
         try:
             with log_path.open("w", encoding="utf-8") as log_io:
                 _write_header(log_io, agent_name, output_dir, read_only, started_wall, type(self).__name__)
                 try:
-                    asyncio.run(
+                    usage = asyncio.run(
                         self.call_llm_and_log(
                             system_prompt,
                             user_prompt,
@@ -89,7 +92,7 @@ class LLMAdapter:
                     status = f"error: {type(exc).__name__}: {exc}"
                     raise
                 finally:
-                    _write_footer(log_io, status, time.monotonic() - started_mono)
+                    _write_footer(log_io, status, time.monotonic() - started_mono, usage)
         finally:
             log.debug("agent log written into %s", log_path)
 
@@ -102,7 +105,7 @@ class LLMAdapter:
         repo_src: Path,
         read_only: bool,
         log_io: TextIO,
-    ) -> None:
+    ) -> Usage | None:
         """Subclass extension point for talking to a specific backend.
 
         Implemented as an async coroutine; the base wraps it in
@@ -125,6 +128,12 @@ class LLMAdapter:
 
         Receives the caller's `read_only` intent and is responsible for
         translating it into whatever permission model the backend exposes.
+
+        Returns an optional token-usage dict the base appends to the
+        footer. Recommended keys (all optional, omit what the backend
+        doesn't expose): `input_tokens`, `output_tokens`,
+        `cache_read_tokens`, `cache_write_tokens`, `thinking_tokens`,
+        `total_tokens`, `cost_usd`.
         """
         raise NotImplementedError
 
@@ -145,9 +154,12 @@ def _write_header(
     log_io.flush()
 
 
-def _write_footer(log_io: TextIO, status: str, duration_s: float) -> None:
+def _write_footer(log_io: TextIO, status: str, duration_s: float, usage: Usage | None) -> None:
     log_io.write("\n---\n\n")
     log_io.write(f"- finished: {datetime.now(timezone.utc).isoformat(timespec='seconds')}\n")
     log_io.write(f"- duration: {duration_s:.2f}s\n")
     log_io.write(f"- status: {status}\n")
+    if usage:
+        for key, value in usage.items():
+            log_io.write(f"- {key}: {value}\n")
     log_io.flush()
