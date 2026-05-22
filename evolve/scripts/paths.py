@@ -33,6 +33,14 @@ class VariantLayout:
         return self.impl_dir / "task.md"
 
     @property
+    def manifest_toml(self) -> Path:
+        return self.impl_dir / "manifest.toml"
+
+    @property
+    def segment_rs(self) -> Path:
+        return self.impl_dir / "segment.rs"
+
+    @property
     def eval_dir(self) -> Path:
         return self.root / "eval"
 
@@ -122,6 +130,10 @@ class Layout:
         return self.outputs_root / "leaderboard.md"
 
     @property
+    def synthesis_md(self) -> Path:
+        return self.outputs_root / "synthesis" / "current.md"
+
+    @property
     def rejection_log(self) -> Path:
         return self.outputs_root / "rejection-log.md"
 
@@ -143,6 +155,17 @@ class Layout:
     @property
     def extension_points_md(self) -> Path:
         return self.evolve_root / "subject" / "extension-points.md"
+
+    @property
+    def baseline(self) -> VariantLayout:
+        """Permanent research baseline at evolve/subject/baseline/.
+
+        Mirrors VariantLayout shape so cycle 1 reads the baseline
+        with the same file conventions cycle 2+ uses for the previous cycle's
+        variants.
+        """
+
+        return VariantLayout(root=self.evolve_root / "subject" / "baseline")
 
     @property
     def bench_dir(self) -> Path:

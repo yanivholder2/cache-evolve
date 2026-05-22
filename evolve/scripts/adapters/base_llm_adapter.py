@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import TextIO
 
 AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
+REPO_SRC = Path(__file__).resolve().parents[3] / "src"
 
 log = logging.getLogger("llm-adapter")
 
@@ -79,6 +80,7 @@ class LLMAdapter:
                             system_prompt,
                             user_prompt,
                             workspace=output_dir,
+                            repo_src=REPO_SRC,
                             read_only=read_only,
                             log_io=log_io,
                         )
@@ -97,6 +99,7 @@ class LLMAdapter:
         user_prompt: str,
         *,
         workspace: Path,
+        repo_src: Path,
         read_only: bool,
         log_io: TextIO,
     ) -> None:
@@ -106,9 +109,13 @@ class LLMAdapter:
         `asyncio.run`, so subclasses don't manage the event loop.
 
         `workspace` is the only directory the backend should let the agent
-        read or write. Adapters that can enforce this must do so. Adapters
+        write to. Adapters that can enforce this must do so. Adapters
         that can't should at least steer the agent via prompt or accept
         the looser scope.
+
+        `repo_src` is an additional read-only source the agent may browse
+        for context (dash repo Rust code). Adapters should expose it for
+        reading and deny writes.
 
         `log_io` is an open, writable text file dedicated to this
         invocation. Adapters should write everything they would otherwise

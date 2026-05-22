@@ -42,6 +42,7 @@ class ClaudeSdkAdapter(LLMAdapter):
         user_prompt: str,
         *,
         workspace: Path,
+        repo_src: Path,
         read_only: bool,
         log_io: TextIO,
     ) -> None:
@@ -61,16 +62,21 @@ class ClaudeSdkAdapter(LLMAdapter):
 
         allowed_set = set(READ_ONLY_TOOLS if read_only else READ_ONLY_TOOLS + WRITE_TOOLS)
         workspace_root = workspace.resolve()
+        repo_src_root = repo_src.resolve()
+        write_tools = set(WRITE_TOOLS)
 
-        def _in_workspace(raw: str) -> bool:
-            p = Path(raw)
-            if not p.is_absolute():
-                p = workspace_root / p
+        def _under(p: Path, root: Path) -> bool:
             try:
-                p.resolve().relative_to(workspace_root)
+                p.relative_to(root)
             except ValueError:
                 return False
             return True
+
+        def _resolve(raw: str) -> Path:
+            p = Path(raw)
+            if not p.is_absolute():
+                p = workspace_root / p
+            return p.resolve()
 
         async def gate(
             tool_name: str,
@@ -89,14 +95,27 @@ class ClaudeSdkAdapter(LLMAdapter):
             path_key = PATH_INPUT_KEYS.get(tool_name)
             if path_key is not None:
                 raw = input_data.get(path_key)
-                if raw is not None and not _in_workspace(str(raw)):
-                    return PermissionResultDeny(
-                        behavior="deny",
-                        message=(
-                            f"path {raw!r} is outside the workspace. "
-                            f"all file operations must stay under {workspace_root}."
-                        ),
-                    )
+                if raw is not None:
+                    abs_path = _resolve(str(raw))
+                    in_workspace = _under(abs_path, workspace_root)
+                    in_repo_src = _under(abs_path, repo_src_root)
+                    is_write = tool_name in write_tools
+                    if is_write and not in_workspace:
+                        return PermissionResultDeny(
+                            behavior="deny",
+                            message=(
+                                f"path {raw!r} is outside the workspace. "
+                                f"writes must stay under {workspace_root}."
+                            ),
+                        )
+                    if not is_write and not (in_workspace or in_repo_src):
+                        return PermissionResultDeny(
+                            behavior="deny",
+                            message=(
+                                f"path {raw!r} is outside the allowed roots. "
+                                f"reads must stay under {workspace_root} or {repo_src_root}."
+                            ),
+                        )
             return PermissionResultAllow(behavior="allow")
 
         # `allowed_tools` pre-approves and bypasses the callback, so leave it

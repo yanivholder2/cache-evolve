@@ -6,6 +6,7 @@
       "Bash(gradlew*)",
       "Bash(pytest*)",
       "Bash(evolve/.venv/bin/python -m pytest*)",
+      "Bash(.venv/bin/python -m pytest*)",
       "Bash(evolve/scripts/evolve.py*)",
       "Skill(caffeine-sweep)",
       "Skill(caffeine-sim)",

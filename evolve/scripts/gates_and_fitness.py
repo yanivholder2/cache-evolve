@@ -46,8 +46,8 @@ def run_gates_and_fitness(
         for name, fn in plugins.items():
             log.debug("[%s] plugin %s", variant_layout.id, name)
             record = fn()
-            (fitness_dir / f"{name}.json").write_text(json.dumps(record), encoding="utf-8")
+            (fitness_dir / f"{name}.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
         log.debug("[%s] aggregate fitness-vector", variant_layout.id)
         fv = aggregate(variant_layout.id, fitness_dir)
-        variant_layout.fitness_vector_json.write_text(json.dumps(fv), encoding="utf-8")
+        variant_layout.fitness_vector_json.write_text(json.dumps(fv, indent=2) + "\n", encoding="utf-8")

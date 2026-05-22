@@ -191,6 +191,95 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
     assert h01 != h02
 
 
+def test_cold_start_task_md_grounds_in_baseline(tmp_path):
+    """Cycle 0001 task.md points the writer at every baseline file."""
+
+    evolve = _setup_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_num="0001",
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+    )
+    task_md = capture.read_text()
+    baseline = _layout(evolve).baseline
+    assert str(baseline.segment_rs) in task_md
+    assert str(baseline.manifest_toml) in task_md
+    assert str(baseline.fitness_vector_json) in task_md
+    assert str(baseline.insight_md) in task_md
+
+
+def test_cold_start_task_md_omits_cross_cycle_stubs(tmp_path):
+    """Cycle 0001 has no history; task.md does not list leaderboard/ledger/synthesis."""
+
+    evolve = _setup_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_num="0001",
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+    )
+    task_md = capture.read_text()
+    layout = _layout(evolve)
+    assert str(layout.leaderboard_md) not in task_md
+    assert str(layout.ledger) not in task_md
+    assert str(layout.synthesis_md) not in task_md
+
+
+def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
+    """Cycle 0002+ task.md points the writer at the previous cycle's artefacts."""
+
+    evolve = _setup_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_num="0002",
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+    )
+    task_md = capture.read_text()
+    prev = _layout(evolve).cycle("0001")
+    assert str(prev.variants_dir) in task_md
+    assert str(prev.winners_json) in task_md
+    assert str(prev.cycle_insight_md) in task_md
+
+
+def test_continuation_task_md_omits_baseline(tmp_path):
+    """Baseline is a cycle-1-only anchor; cycle 0002+ does not reference it."""
+
+    evolve = _setup_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_num="0002",
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+    )
+    task_md = capture.read_text()
+    baseline = _layout(evolve).baseline
+    assert str(baseline.root) not in task_md
+
+
+def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
+    """Cycle 0002+ task.md includes leaderboard, ledger, and synthesis paths."""
+
+    evolve = _setup_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_num="0002",
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+    )
+    task_md = capture.read_text()
+    layout = _layout(evolve)
+    assert str(layout.leaderboard_md) in task_md
+    assert str(layout.ledger) in task_md
+    assert str(layout.synthesis_md) in task_md
+
+
 def test_subagent_markdown_exists():
     """hypotheses-writer system prompt ships under evolve/scripts/agents/."""
 

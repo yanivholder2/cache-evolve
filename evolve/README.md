@@ -47,6 +47,31 @@ Examples:
 
 Each cycle ends with `cycle <NNNN> complete — sealed at <path> (cohort=N)`.
 
+### Baseline and per-cycle grounding
+
+`evolve/subject/baseline/` is a checked-in permanent research baseline. It mirrors a variant's on-disk shape:
+
+```
+evolve/subject/baseline/
+  impl/segment.rs           # baseline Segment implementation
+  impl/manifest.toml        # name, eviction policy, ordinal
+  eval/fitness-vector.json  # measured fitness, produced by measure_baseline.py
+  insight.md                # short prose describing the baseline
+```
+
+The hypotheses-writer reads it differently on cycle 1 vs cycle 2+:
+
+- **Cycle 1 (cold start):** reads `subject/baseline/` (as a singleton "previous variant") plus `subject/extension-points.md`. Cross-cycle artefacts are empty stubs and not listed.
+- **Cycle 2+:** reads every variant under `cycles/<N-1>/variants/`, plus `cycles/<N-1>/winners.json` and `cycles/<N-1>/cycle-insight.md`, plus cross-cycle artefacts (`leaderboard.md`, `cycles.jsonl`, `synthesis/current.md`), plus `subject/extension-points.md`. **Baseline is not read.**
+
+### Measuring the baseline
+
+`fitness-vector.json` is a checked-in artefact. Re-measure (and commit the diff) whenever bench config or fitness plugins change:
+
+```bash
+.venv/bin/python scripts/measure_baseline.py
+```
+
 ### Configuration
 
 Defaults for every flag live in [`config.toml`](config.toml) under `[framework]`. Edit the file to change defaults persistently; pass the corresponding flag to override on a single run. Precedence: **flag > `config.toml` > built-in fallback**.

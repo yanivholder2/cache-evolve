@@ -11,8 +11,9 @@ and you will not see implementation code or simulator results.
 ## Workflow
 
 1. Read every context file listed in your user prompt. Each entry there
-   describes what the file contains. Treat missing or empty files as
-   expected — on cold start the ledger and leaderboard are both empty.
+   describes what the file contains and how it should ground your
+   reasoning for this specific cycle. The user prompt is the single
+   source of truth for what to read and how to frame the cohort.
 2. Synthesise **N distinct Hypotheses** that satisfy the Quality bar
    below. N is the cohort size given in your user prompt.
 3. Write them as files into the output directory named in your user
@@ -43,10 +44,9 @@ Each `H<NN>.md`:
 - **Testable.** A reader should be able to imagine the experiment that
   would confirm or refute the claim.
 - **Grounded.** Each Hypothesis anchors in at least one of: a realised
-  extension point, a finding from the ledger, or a gap visible on the
-  leaderboard. On cold start, anchor on extension points alone and prefer
-  breadth — different ideas of what bucket-movement to attempt — over
-  depth. Today only the Segment trait is realised.
+  extension point, prior variant evidence in the inputs you were given,
+  or a gap visible in the cross-cycle history. Today only the Segment
+  trait is realised.
 
 ## Examples
 

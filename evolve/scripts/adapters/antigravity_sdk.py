@@ -6,6 +6,7 @@ A CLI-based counterpart (`AntigravityCliAdapter`) may be added later.
 from __future__ import annotations
 
 import asyncio
+import os
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
@@ -33,22 +34,39 @@ class AntigravitySdkAdapter(LLMAdapter):
         user_prompt: str,
         *,
         workspace: Path,
+        repo_src: Path,
         read_only: bool,
         log_io: TextIO,
     ) -> None:
         from google.antigravity import CapabilitiesConfig, LocalAgentConfig
         from google.antigravity.agent import Agent
+        from google.antigravity.hooks import policy
         from google.antigravity.types import BuiltinTools
 
         enabled = BuiltinTools.read_only()
         if not read_only:
             enabled = enabled + [BuiltinTools.CREATE_FILE, BuiltinTools.EDIT_FILE]
 
+        repo_src_str = str(repo_src.resolve())
+
+        def _inside_repo_src(tc) -> bool:
+            path = tc.canonical_path or ""
+            if not path:
+                return False
+            abs_path = os.path.abspath(path)
+            return abs_path == repo_src_str or abs_path.startswith(repo_src_str + os.sep)
+
+        policies = [
+            policy.deny("create_file", when=_inside_repo_src, name="repo_src_read_only"),
+            policy.deny("edit_file", when=_inside_repo_src, name="repo_src_read_only"),
+        ]
+
         config = LocalAgentConfig(
             model=MODEL.value,
             system_instructions=system_prompt,
             capabilities=CapabilitiesConfig(enabled_tools=enabled),
-            workspaces=[str(workspace)],
+            workspaces=[str(workspace), repo_src_str],
+            policies=policies,
         )
 
         text_chunks: list[str] = []
