@@ -268,19 +268,21 @@ class Layout:
         return self.sources.dash_src
 
     # repo-relative ledger formatting
-    def cycle_ledger_path(self, cycle_num: str, repo_root: Path) -> str:
+    def cycle_ledger_path(self, cycle_num: str) -> str:
         """Repo-relative path string for a cycle dir, suitable for ledger rows.
 
-        ADR-0003 requires repo-relative paths in artifacts; raises ValueError
-        if outputs_root (hence the cycle dir) is not under repo_root.
+        ADR-0003 requires repo-relative paths in artifacts. Anchored to
+        `evolve_root.parent` — the conventional repo root in real runs, and
+        the test workspace root under pytest's tmp_path.
         """
 
+        anchor = self.evolve_root.parent
         cycle_dir = self.cycle(cycle_num).root
         try:
-            rel = cycle_dir.relative_to(repo_root)
+            rel = cycle_dir.relative_to(anchor)
         except ValueError as e:
             raise ValueError(
-                f"cycle dir {cycle_dir} is not under repo_root {repo_root}; "
+                f"cycle dir {cycle_dir} is not under evolve_root.parent {anchor}; "
                 "outputs_root must live inside the repo (ADR-0003: repo-relative paths only)"
             ) from e
         return str(rel)

@@ -125,7 +125,7 @@ def run_cycle(
         log.info("--- append ledger row ---")
         row = {
             "cycle": cycle_num,
-            "cycle_dir": layout.cycle_ledger_path(cycle_num, repo_root),
+            "cycle_dir": layout.cycle_ledger_path(cycle_num),
             "cohort_size": cohort_size,
             "pareto_front": pareto_front,
         }
