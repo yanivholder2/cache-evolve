@@ -2,20 +2,29 @@
 
 You write one Variant's Rust source for the evolve research loop. The
 orchestrator spawns one invocation per Variant in a cohort, in parallel.
-You see only your own Hypothesis — not the cohort, not peer Variants.
+You see only your own Hypothesis and its declared parent — not the
+cohort, not peer Variants, not the ledger.
 
 ## Workflow
 
 1. Read `$OUTPUT_DIR/task.md` for your assignment — it states the cycle
-   number, variant id, hypothesis-file path, and which paths to read for
-   context.
-2. Read the files listed in `task.md`. Today they are:
-   - The hypothesis file (`evolve/outputs/cycles/<NNNN>/hypotheses/H<NN>.md`)
-     — one testable claim about Dash bucket-movement.
-   - `evolve/subject/extension-points.md` — the authoritative list of
-     stable plug-in seams. The Segment trait is the only realised one.
-   - `evolve/tests/fixtures/good/impl/segment.rs` — canonical shape and
-     signatures for `VariantSegment`.
+   number, variant id, hypothesis-file path, the parent identifier, and
+   the parent's directory.
+2. Read the files listed in `task.md`:
+   - **Hypothesis file** — the `## Changes` section is your concrete
+     assignment. Apply only those changes against the parent's
+     `segment.rs`. The canonical line states the testable claim.
+   - **Parent's `segment.rs`** — the Rust source you are modifying.
+   - **Parent's `manifest.toml`** — eviction policy + ordinal of the
+     parent. Your variant's manifest typically inherits these unless the
+     `## Changes` section says otherwise.
+   - **Parent's `fitness-vector.json`** and **`insight.md`** when
+     present — context on what the parent achieves, so your changes are
+     deliberate refinements rather than blind rewrites.
+   - **`extension-points.md`** — authoritative list of stable plug-in
+     seams. The Segment trait is the only realised one.
+   - **`subject/baseline/impl/segment.rs`** — canonical shape and
+     signatures for `VariantSegment` (the permanent research baseline).
 3. Write **exactly two files** into `$OUTPUT_DIR/`:
    - `segment.rs`
    - `manifest.toml`
@@ -36,6 +45,11 @@ You see only your own Hypothesis — not the cohort, not peer Variants.
 
 - **Write only under `$OUTPUT_DIR`.** Do not touch `src/`, the cycle dir,
   the ledger, sibling Variants, or any other path.
+- **Apply only the `## Changes` diff.** Your variant is an experiment
+  isolating one change against the parent. Do not invent unrelated
+  improvements, refactor unrelated code, or rewrite the parent from
+  scratch. If the hypothesis is wrong, the experiment fails — that is
+  evidence the framework needs.
 - **Stay inside extension points.** Level-3 work plugs into stable seams.
 - **Public API only.** `get_index`, `buckets`, and `stash_buckets` are
   `pub(crate)`. Compose existing `PromotionColdSegment` /
@@ -45,6 +59,10 @@ You see only your own Hypothesis — not the cohort, not peer Variants.
   Hypothesis. A pass-through that ignores it is a defect, not a baseline.
 - **No external dependencies.** Add no crates beyond what the harness
   already wires (`dash` package = `dash-cache-rs`).
+- **Do not read the parent's `task.md`.** Reason from `segment.rs` plus
+  your own hypothesis, not from the parent's prompt. Other past variants,
+  sibling Variants in your cohort, the ledger, the leaderboard, and
+  cycles other than the one containing your parent are off-limits.
 
 ## Failure modes
 

@@ -8,7 +8,7 @@ cycles = 1
 # Variants proposed and evaluated per cycle (--cohort-size).
 cohort_size = 3
 
-# AI agent CLI to drive subagents (--ai-agent-tool). One of the keys in
+# AI agent backend to drive subagents (--ai-agent-tool). One of the keys in
 # evolve/src/adapters/REGISTRY.
 ai_agent_tool = "claude-sdk"
 

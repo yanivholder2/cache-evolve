@@ -34,17 +34,16 @@ REPO_ROOT = EVOLVE_SRC.parent
 
 
 def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard: bool = False) -> Path:
-    """Copy a minimal evolve/ into tmp_path and return that evolve_root.
+    """Build a minimal evolve layout under `tmp_path/evolve/`.
 
-    Outputs (ledger, leaderboard) live under `<evolve_root>/outputs/`.
+    `write_hypotheses` doesn't read the evolve source tree — it just
+    references baseline/extension-points paths in the task.md it writes.
+    Outputs (ledger, leaderboard) live under `<evolve_root>/outputs/`;
+    create the ones the test needs and skip the rest of the tree.
     """
 
     dst = tmp_path / "evolve"
-    shutil.copytree(
-        EVOLVE_SRC,
-        dst,
-        ignore=shutil.ignore_patterns(".venv", "outputs", "__pycache__", "*.pyc"),
-    )
+    dst.mkdir()
     layout = _layout(dst)
     layout.ledger.parent.mkdir(parents=True, exist_ok=True)
     if with_ledger:
@@ -63,8 +62,29 @@ def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard
     return dst
 
 
+def _copy_real_evolve(tmp_path: Path) -> Path:
+    """Full copy of the real evolve tree — only needed for the e2e slow
+    test that drives `run_cycle` past task.md into baseline-reading code."""
+
+    dst = tmp_path / "evolve"
+    shutil.copytree(
+        EVOLVE_SRC,
+        dst,
+        ignore=shutil.ignore_patterns(".venv", "outputs", "__pycache__", "*.pyc"),
+    )
+    layout = _layout(dst)
+    layout.ledger.parent.mkdir(parents=True, exist_ok=True)
+    layout.ledger.write_text("", encoding="utf-8")
+    return dst
+
+
 def _hypothesis_files(output_dir: Path) -> list[Path]:
     return sorted(p for p in output_dir.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name))
+
+
+def _stage_prev_cycle(evolve: Path, prev_num: str) -> None:
+    """Continuation cycles require the prev cycle's variants/ dir to exist."""
+    _layout(evolve).cycle(prev_num).variants_dir.mkdir(parents=True, exist_ok=True)
 
 
 def test_emits_n_distinct_files(tmp_path):
@@ -135,14 +155,34 @@ def test_adapter_invoked_with_expected_argv(tmp_path):
     )
     body = capture.read_text()
     assert "agent: hypotheses-writer" in body
-    output_dir = _layout(evolve).cycle("0001").hypotheses_dir
-    assert f"output-dir: {output_dir}" in body
+    workspace = _layout(evolve).cycle("0001").hypotheses_dir
+    assert f"workspace: {workspace}" in body
+
+
+def test_hypotheses_writer_passes_outputs_and_subject_as_readable_roots(tmp_path):
+    """write_hypotheses must expose outputs_root, dash_src, and subject_dir
+    so the agent can read prior cycles, the dash crate, and baseline."""
+
+    evolve = _setup_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_num="0001",
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+    )
+    body = capture.read_text()
+    layout = _layout(evolve)
+    assert str(layout.outputs_root) in body
+    assert str(layout.dash_src) in body
+    assert str(layout.subject_dir) in body
 
 
 def test_task_md_written_to_output_dir(tmp_path):
     """task.md exists in the output dir and mentions N + cycle."""
 
     evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, "0006")
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
@@ -153,7 +193,7 @@ def test_task_md_written_to_output_dir(tmp_path):
     body = capture.read_text()
     assert "----- task.md -----" in body
     assert "0007" in body
-    assert "N: 2" in body
+    assert "Number of hypotheses: 2" in body
 
 
 def test_returns_hypothesis_file_paths(tmp_path):
@@ -169,7 +209,7 @@ def test_returns_hypothesis_file_paths(tmp_path):
 def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
     """E2E AC: a cold cycle writes real, distinct HNN.md files from the (stub) LLM."""
 
-    evolve_root = _setup_evolve(tmp_path)
+    evolve_root = _copy_real_evolve(tmp_path)
     lines = [
         "Stash-bias eviction lifts hot-set hit rate on Zipfian traces.",
         "Lazy promotion cuts per-op time on read-heavy workloads.",
@@ -204,10 +244,11 @@ def test_cold_start_task_md_grounds_in_baseline(tmp_path):
     )
     task_md = capture.read_text()
     baseline = _layout(evolve).baseline
-    assert str(baseline.segment_rs) in task_md
-    assert str(baseline.manifest_toml) in task_md
-    assert str(baseline.fitness_vector_json) in task_md
-    assert str(baseline.insight_md) in task_md
+    # Anchor on the "baseline" segment so a stray "segment.rs" elsewhere
+    # doesn't satisfy the check; assert each filename appears near it.
+    assert "baseline" in task_md
+    for path in (baseline.segment_rs, baseline.manifest_toml, baseline.fitness_vector_json, baseline.insight_md):
+        assert path.name in task_md, f"{path.name} missing from task.md"
 
 
 def test_cold_start_task_md_omits_cross_cycle_stubs(tmp_path):
@@ -232,6 +273,7 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
     """Cycle 0002+ task.md points the writer at the previous cycle's artefacts."""
 
     evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, "0001")
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
@@ -241,15 +283,18 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
     )
     task_md = capture.read_text()
     prev = _layout(evolve).cycle("0001")
-    assert str(prev.variants_dir) in task_md
-    assert str(prev.winners_json) in task_md
-    assert str(prev.cycle_insight_md) in task_md
+    # `0001/` anchors the references to the prev cycle so a leaked path
+    # from a different cycle wouldn't satisfy the filename checks alone.
+    assert "0001" in task_md
+    for path in (prev.variants_dir, prev.winners_json, prev.cycle_insight_md):
+        assert path.name in task_md, f"{path.name} missing from task.md"
 
 
-def test_continuation_task_md_omits_baseline(tmp_path):
-    """Baseline is a cycle-1-only anchor; cycle 0002+ does not reference it."""
+def test_continuation_task_md_lists_baseline_as_valid_parent(tmp_path):
+    """Baseline is always a valid parent — continuation task.md names it."""
 
     evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, "0001")
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
@@ -258,14 +303,14 @@ def test_continuation_task_md_omits_baseline(tmp_path):
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = capture.read_text()
-    baseline = _layout(evolve).baseline
-    assert str(baseline.root) not in task_md
+    assert "baseline" in task_md
 
 
 def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
     """Cycle 0002+ task.md includes leaderboard, ledger, and synthesis paths."""
 
     evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, "0001")
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
@@ -275,16 +320,43 @@ def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
     )
     task_md = capture.read_text()
     layout = _layout(evolve)
-    assert str(layout.leaderboard_md) in task_md
-    assert str(layout.ledger) in task_md
-    assert str(layout.synthesis_md) in task_md
+    assert layout.leaderboard_md.name in task_md  # leaderboard.md
+    assert layout.ledger.name in task_md          # cycles.jsonl
+    # synthesis_md basename is generic ("current.md"); anchor on the dir.
+    assert "synthesis" in task_md and layout.synthesis_md.name in task_md
 
 
-def test_subagent_markdown_exists():
-    """hypotheses-writer system prompt ships under evolve/src/agents/."""
+def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):
+    """Cycle 0002+ without cycles/0001/variants/ on disk must fail fast,
+    not emit task.md pointing at nonexistent paths."""
+
+    evolve = _setup_evolve(tmp_path)
+    with pytest.raises(FileNotFoundError, match="previous cycle"):
+        write_hypotheses(
+            2,
+            layout=_layout(evolve),
+            cycle_num="0002",
+            adapter=StubLLMAdapter(n_lines=2),
+        )
+
+
+def test_subagent_markdown_states_contract():
+    """The hypotheses-writer system prompt ships the contract the framework
+    depends on: exactly N H<NN>.md files, baseline-or-past-variant grounding,
+    and a workspace scope limit so the agent doesn't escape the cohort dir.
+    """
 
     agent_md = EVOLVE_SRC / "src" / "agents" / "hypotheses-writer.md"
     assert agent_md.is_file(), f"missing {agent_md}"
     body = agent_md.read_text()
     assert "hypothesis" in body.lower()
-    assert "H01.md" in body or "H<NN>.md" in body
+    # Output count + naming pattern: exactly N files named H<NN>.md.
+    assert "H<NN>.md" in body
+    assert "N distinct" in body or "N Hypotheses" in body
+    # Required sections downstream parsers rely on.
+    assert "## Parent" in body
+    assert "## Changes" in body
+    # Grounding: parent must be baseline or a past variant.
+    assert "baseline" in body and "cycle/<NNNN>/v<NNN>" in body
+    # Scope limit: must not write outside the output dir.
+    assert "outside" in body.lower() and "output" in body.lower()

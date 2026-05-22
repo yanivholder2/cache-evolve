@@ -1,5 +1,5 @@
 """Hypotheses-writer driver — invokes an LLMAdapter and verifies it wrote
-exactly N H<NN>.md files.
+exactly `hypotheses_num` H<NN>.md files.
 
 Cycle 1 (cold start) and cycle 2+ get different task.md texts: cycle 1
 grounds in the permanent baseline at `evolve/subject/baseline/`; cycle 2+
@@ -15,28 +15,38 @@ import re
 from pathlib import Path
 
 from src.adapters import LLMAdapter
-from src.paths import Layout, VariantLayout
+from src.paths import CYCLE_ID_WIDTH, HYPOTHESIS_ID_WIDTH, Layout, VariantLayout
 
 AGENT_NAME = "hypotheses-writer"
-HYPOTHESIS_FILE_RE = re.compile(r"H\d{2}\.md")
-COLD_START_CYCLE = "0001"
+HYPOTHESIS_FILE_RE = re.compile(rf"H\d{{{HYPOTHESIS_ID_WIDTH}}}\.md")
+COLD_START_CYCLE = f"{1:0{CYCLE_ID_WIDTH}d}"
 
 log = logging.getLogger("hypotheses-writer")
 
 
-def _write_cold_start_task_md(hypotheses_num: int, cycle_num: str, layout: Layout) -> None:
-    cycle_layout = layout.cycle(cycle_num)
-    baseline_layout = layout.baseline
-    body = (
-        f"# Task: hypotheses-writer (cycle {cycle_num} — cold start)\n\n"
+def _task_md_header(cycle_num: str, hypotheses_num: int, hypotheses_dir: Path, *, title_suffix: str = "") -> str:
+    return (
+        f"# Task: hypotheses-writer (cycle {cycle_num}{title_suffix})\n\n"
         f"Cycle: {cycle_num}\n"
-        f"N: {hypotheses_num}\n"
-        f"Output dir: {cycle_layout.hypotheses_dir}\n\n"
+        f"Number of hypotheses: {hypotheses_num}\n"
+        f"Output dir: {hypotheses_dir}\n\n"
+    )
+
+
+def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
+    cycle_layout = layout.cycle(COLD_START_CYCLE)
+    baseline_layout = layout.baseline
+    body = _task_md_header(
+        COLD_START_CYCLE, hypotheses_num, cycle_layout.hypotheses_dir,
+        title_suffix=" — cold start",
+    ) + (
         f"## Framing\n\n"
-        f"This is the first cycle. No prior cohort exists. You are proposing the "
+        f"This is the first cycle. No prior variants exist. You are proposing the "
         f"first batch of {hypotheses_num} hypotheses against the permanent research "
         f"baseline below. Prefer breadth — distinct strategies for bucket-movement — "
         f"over depth on any single idea.\n\n"
+        f"Every hypothesis in this cycle MUST cite `baseline` as its parent. "
+        f"No other parent is valid in cycle {COLD_START_CYCLE}.\n\n"
         f"## Read for context\n\n"
         f"- {layout.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
         f"- {baseline_layout.segment_rs} — baseline Segment implementation. The code your hypotheses propose to improve.\n"
@@ -49,19 +59,23 @@ def _write_cold_start_task_md(hypotheses_num: int, cycle_num: str, layout: Layou
 
 def _write_continuation_task_md(hypotheses_num: int, cycle_num: str, layout: Layout) -> None:
     cycle_layout = layout.cycle(cycle_num)
-    prev_num = f"{int(cycle_num) - 1:04d}"
+    prev_num = f"{int(cycle_num) - 1:0{CYCLE_ID_WIDTH}d}"
     prev_cycle_layout = layout.cycle(prev_num)
+    if not prev_cycle_layout.variants_dir.is_dir():
+        raise FileNotFoundError(
+            f"cycle {cycle_num} expects previous cycle at {prev_cycle_layout.root}, "
+            f"but {prev_cycle_layout.variants_dir} is missing"
+        )
     prev_cycle_variant_layout = VariantLayout(root=prev_cycle_layout.variants_dir / "v<NNN>")
-    body = (
-        f"# Task: hypotheses-writer (cycle {cycle_num})\n\n"
-        f"Cycle: {cycle_num}\n"
-        f"N: {hypotheses_num}\n"
-        f"Output dir: {cycle_layout.hypotheses_dir}\n\n"
+    body = _task_md_header(
+        cycle_num, hypotheses_num, cycle_layout.hypotheses_dir,
+    ) + (
         f"## Framing\n\n"
-        f"You are proposing the next batch of {hypotheses_num} hypotheses. Ground "
-        f"each in either the previous cycle's variants (refine a winner, diversify "
-        f"from a loser) or the cross-cycle history. Aim for distinct strategies — "
-        f"near-duplicates collapse the cohort's Pareto front.\n\n"
+        f"You are proposing the next batch of {hypotheses_num} hypotheses. Each "
+        f"hypothesis MUST cite exactly one parent: either `baseline` or a past "
+        f"variant `cycle/<NNNN>/v<NNN>` from any prior cycle (1..{int(cycle_num) - 1}). "
+        f"Prefer refining recent winners or diversifying from recent losers; aim for "
+        f"distinct strategies — near-duplicates collapse the cohort's Pareto front.\n\n"
         f"## Read for context\n\n"
         f"### Previous cycle ({prev_num})\n\n"
         f"- {prev_cycle_layout.variants_dir} — every variant directory `v<NNN>/` under this path. For each variant read:\n"
@@ -75,7 +89,8 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_num: str, layout: Lay
         f"- {layout.leaderboard_md} — current Pareto-front variants and fitness summaries across all cycles.\n"
         f"- {layout.ledger} — one JSON row per completed cycle (cohort size, Pareto front, insights).\n"
         f"- {layout.synthesis_md} — long-running narrative of what has been learned. Stub today; read if present.\n\n"
-        f"### Extension points\n\n"
+        f"### Baseline + extension points\n\n"
+        f"- {layout.baseline.root} — the permanent baseline (always a valid parent).\n"
         f"- {layout.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
     )
     cycle_layout.hypotheses_task_md.write_text(body, encoding="utf-8")
@@ -88,32 +103,41 @@ def write_hypotheses(
     cycle_num: str,
     adapter: LLMAdapter,
 ) -> list[Path]:
-    """Drive the adapter to produce N H<NN>.md files; return their paths.
+    """Drive the adapter to produce `hypotheses_num` H<NN>.md files; return their paths.
 
-    Raises ValueError on bad N or wrong file count, and propagates any
-    exception raised by the adapter.
+    Raises ValueError on bad `hypotheses_num` or wrong file count, and
+    propagates any exception raised by the adapter.
     """
 
     if hypotheses_num < 1:
-        raise ValueError(f"N must be >= 1, got {hypotheses_num}")
+        raise ValueError(f"hypotheses_num must be >= 1, got {hypotheses_num}")
 
     cycle_layout = layout.cycle(cycle_num)
-    output_dir = cycle_layout.hypotheses_dir
-    output_dir.mkdir(parents=True, exist_ok=True)
-    log.info("generating %d hypotheses for cycle %s into %s", hypotheses_num, cycle_num, output_dir)
+    hypotheses_dir = cycle_layout.hypotheses_dir
+    hypotheses_dir.mkdir(parents=True, exist_ok=True)
+    log.info("generating %d hypotheses for cycle %s into %s", hypotheses_num, cycle_num, hypotheses_dir)
 
     if cycle_num == COLD_START_CYCLE:
-        _write_cold_start_task_md(hypotheses_num, cycle_num, layout)
+        _write_cold_start_task_md(hypotheses_num, layout)
     else:
         _write_continuation_task_md(hypotheses_num, cycle_num, layout)
     log.debug("wrote task spec: %s", cycle_layout.hypotheses_task_md)
 
-    adapter.run(agent_name=AGENT_NAME, output_dir=output_dir, read_only=False)
+    adapter.run(
+        agent_name=AGENT_NAME,
+        workspace=hypotheses_dir,
+        readable_roots=[layout.outputs_root, layout.dash_src, layout.subject_dir],
+        read_only=False,
+    )
 
-    files = sorted(p for p in output_dir.iterdir() if HYPOTHESIS_FILE_RE.fullmatch(p.name))
+    entries = sorted(p for p in hypotheses_dir.iterdir() if p.is_file())
+    files = [p for p in entries if HYPOTHESIS_FILE_RE.fullmatch(p.name)]
     if len(files) != hypotheses_num:
+        agent_log = hypotheses_dir / f"{AGENT_NAME}.log.md"
+        other = [p.name for p in entries if not HYPOTHESIS_FILE_RE.fullmatch(p.name)]
         raise ValueError(
-            f"adapter wrote {len(files)} H<NN>.md files in {output_dir}, expected {hypotheses_num}"
+            f"adapter wrote {len(files)} H<NN>.md files in {hypotheses_dir}, expected {hypotheses_num}; "
+            f"matched={[p.name for p in files]}; other_files={other}; agent_log={agent_log}"
         )
-    log.info("adapter produced %d hypothesis files in %s", len(files), output_dir)
+    log.info("adapter produced %d hypothesis files in %s", len(files), hypotheses_dir)
     return files

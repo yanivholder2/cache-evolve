@@ -4,16 +4,25 @@ The base reads two prompt sources:
 
 - `evolve/src/agents/<agent_name>.md` — system prompt (the agent's role,
   contract, and constraints).
-- `<output_dir>/task.md` — user prompt (this invocation's assignment;
+- `<workspace>/task.md` — user prompt (this invocation's assignment;
   written by the framework before calling `run`).
 
 Subclasses implement only `call_llm_and_log(...)` — an async coroutine that talks
 to whatever backend they need (SDK, HTTP, subprocess). The base drives the
 event loop via `asyncio.run`, so subclasses never call it themselves.
-Adapters never see file paths beyond `workspace`.
+
+The adapter exposes two filesystem scopes to the agent:
+
+- `workspace` — the single directory the agent is allowed to *write* into
+  when `read_only=False`. Also where `task.md` lives.
+- `readable_roots` — additional directories or files the agent may *read*
+  but never write. Callers list whatever surfaces the agent needs (e.g.
+  outputs_root, dash_src, evolve/subject, a specific past variant dir).
+  Adapters that can enforce containment must do so; adapters that can't
+  should at least steer the agent via prompt or accept the looser scope.
 
 The base also owns the per-invocation log file at
-`<output_dir>/<agent_name>.log.md`. It writes a header before the call
+`<workspace>/<agent_name>.log.md`. It writes a header before the call
 and a footer after, and hands the open file to the adapter as `log_io`
 so the adapter can stream its own content (chat tokens, thoughts, tool
 calls, subprocess stdout, etc.) into the same file. Nothing is written
@@ -32,7 +41,6 @@ from typing import Any, TextIO
 Usage = dict[str, Any]
 
 AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
-REPO_SRC = Path(__file__).resolve().parents[3] / "src"
 
 log = logging.getLogger("llm-adapter")
 
@@ -45,45 +53,56 @@ class LLMAdapter:
     call sites.
     """
 
-    def run(self, agent_name: str, output_dir: Path, *, read_only: bool) -> None:
+    def run(
+        self,
+        agent_name: str,
+        workspace: Path,
+        *,
+        readable_roots: list[Path],
+        read_only: bool,
+    ) -> None:
         """Single entry point the framework uses to invoke an agent.
 
-        Centralises prompt sourcing and log-file lifecycle so call sites
-        and adapters both stay simpler. `read_only` expresses the caller's
-        intent about whether the agent is allowed to mutate the workspace.
+        Centralises prompt sourcing, scope validation, and log-file
+        lifecycle so call sites and adapters both stay simpler. `read_only`
+        expresses the caller's intent about whether the agent is allowed
+        to mutate the workspace.
         """
         agent_file = AGENTS_DIR / f"{agent_name}.md"
         if not agent_file.is_file():
             raise FileNotFoundError(f"agent prompt not found: {agent_file}")
-        task_file = output_dir / "task.md"
+        task_file = workspace / "task.md"
         if not task_file.is_file():
             raise FileNotFoundError(f"task.md not found: {task_file}")
+
+        resolved_roots = _validate_readable_roots(readable_roots)
 
         system_prompt = agent_file.read_text(encoding="utf-8")
         user_prompt = task_file.read_text(encoding="utf-8")
         log.debug(
-            "dispatch %s -> %s (workspace=%s, read_only=%s)",
+            "dispatch %s into %s (adapter=%s, read_only=%s, readable_roots=%s)",
             agent_name,
             type(self).__name__,
-            output_dir,
+            workspace,
             read_only,
+            resolved_roots,
         )
 
-        log_path = output_dir / f"{agent_name}.log.md"
+        log_path = workspace / f"{agent_name}.log.md"
         started_wall = datetime.now(timezone.utc)
         started_mono = time.monotonic()
         status = "ok"
         usage: Usage | None = None
         try:
             with log_path.open("w", encoding="utf-8") as log_io:
-                _write_header(log_io, agent_name, output_dir, read_only, started_wall, type(self).__name__)
+                _write_header(log_io, agent_name, workspace, read_only, started_wall, type(self).__name__)
                 try:
                     usage = asyncio.run(
                         self.call_llm_and_log(
                             system_prompt,
                             user_prompt,
-                            workspace=output_dir,
-                            repo_src=REPO_SRC,
+                            workspace=workspace,
+                            readable_roots=resolved_roots,
                             read_only=read_only,
                             log_io=log_io,
                         )
@@ -102,7 +121,7 @@ class LLMAdapter:
         user_prompt: str,
         *,
         workspace: Path,
-        repo_src: Path,
+        readable_roots: list[Path],
         read_only: bool,
         log_io: TextIO,
     ) -> Usage | None:
@@ -112,13 +131,14 @@ class LLMAdapter:
         `asyncio.run`, so subclasses don't manage the event loop.
 
         `workspace` is the only directory the backend should let the agent
-        write to. Adapters that can enforce this must do so. Adapters
-        that can't should at least steer the agent via prompt or accept
-        the looser scope.
+        write to (and only when `read_only=False`). Adapters that can
+        enforce this must do so.
 
-        `repo_src` is an additional read-only source the agent may browse
-        for context (dash repo Rust code). Adapters should expose it for
-        reading and deny writes.
+        `readable_roots` is the additional read-only scope: dirs or single
+        files the agent may browse but never write. The base has already
+        validated existence and resolved relative paths; adapters should
+        translate this list into whatever containment check their backend
+        supports.
 
         `log_io` is an open, writable text file dedicated to this
         invocation. Adapters should write everything they would otherwise
@@ -136,6 +156,17 @@ class LLMAdapter:
         `total_tokens`, `cost_usd`.
         """
         raise NotImplementedError
+
+
+def _validate_readable_roots(roots: list[Path]) -> list[Path]:
+    if not roots:
+        raise ValueError("readable_roots must be non-empty")
+    resolved = []
+    for r in roots:
+        if not r.exists():
+            raise FileNotFoundError(f"readable_root does not exist: {r}")
+        resolved.append(r.resolve())
+    return resolved
 
 
 def _write_header(
@@ -163,3 +194,19 @@ def _write_footer(log_io: TextIO, status: str, duration_s: float, usage: Usage |
         for key, value in usage.items():
             log_io.write(f"- {key}: {value}\n")
     log_io.flush()
+
+
+def write_timeline(log_io: TextIO, events: list[tuple[str, str, str]]) -> None:
+    """Render `(ts, kind, body)` events into the adapter log under `## timeline`.
+
+    Adapters collect events from their backend's streaming primitives and
+    hand the normalised list off here so the on-disk format stays uniform.
+    Trailing newlines on bodies are stripped to keep entries flush.
+    """
+    log_io.write("## timeline\n\n")
+    if not events:
+        log_io.write("_(no events)_\n")
+        return
+    for ts, kind, body in events:
+        body = body.rstrip("\n")
+        log_io.write(f"### {ts} {kind}\n\n{body}\n\n")

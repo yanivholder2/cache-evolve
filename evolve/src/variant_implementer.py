@@ -22,6 +22,7 @@ import traceback
 from pathlib import Path
 from typing import Callable
 
+from src import hypothesis_parser
 from src.adapters import LLMAdapter
 from src.paths import CycleLayout, Layout, VariantLayout
 
@@ -36,16 +37,24 @@ log = logging.getLogger("variant-implementer")
 def _write_task_md(
     variant_layout: VariantLayout,
     hypothesis_file: Path,
+    parent_dir: Path,
+    parent_id: str,
     layout: Layout,
 ) -> None:
+    parent = VariantLayout(root=parent_dir)
     body = (
         f"# Task: variant-implementer\n\n"
         f"Hypothesis: {hypothesis_file}\n"
+        f"Parent: {parent_id} ({parent_dir})\n"
         f"Output dir: {variant_layout.impl_dir}\n\n"
         f"## Read for context\n\n"
-        f"- {hypothesis_file}\n"
-        f"- {layout.extension_points_md}\n"
-        f"- {layout.good_segment_rs}\n\n"
+        f"- {hypothesis_file} — your hypothesis. The `## Changes` section is your assignment.\n"
+        f"- {parent.segment_rs} — the parent's Rust source. Apply the changes against this.\n"
+        f"- {parent.manifest_toml} — the parent's manifest (eviction policy, ordinal).\n"
+        f"- {parent.fitness_vector_json} — the parent's measured fitness vector (if present).\n"
+        f"- {parent.insight_md} — short prose describing what the parent does (if present).\n"
+        f"- {layout.extension_points_md} — extension-point reference.\n"
+        f"- {layout.baseline.segment_rs} — canonical shape/signatures for VariantSegment.\n\n"
         f"## Write\n\n"
         f"Exactly two files under the output dir: `segment.rs` and `manifest.toml`.\n"
     )
@@ -68,12 +77,20 @@ def implement_variant(
     if not hypothesis_file.is_file():
         raise FileNotFoundError(f"hypothesis file not found: {hypothesis_file}")
 
+    hypothesis = hypothesis_parser.parse(hypothesis_file)
+    parent_dir = hypothesis_parser.resolve_parent_dir(hypothesis.parent, layout)
+
     impl_dir = variant_layout.impl_dir
     impl_dir.mkdir(parents=True, exist_ok=True)
-    _write_task_md(variant_layout, hypothesis_file, layout)
+    _write_task_md(variant_layout, hypothesis_file, parent_dir, hypothesis.parent, layout)
     log.debug("wrote %s", variant_layout.impl_task_md)
 
-    adapter.run(agent_name=AGENT_NAME, output_dir=impl_dir, read_only=False)
+    adapter.run(
+        agent_name=AGENT_NAME,
+        workspace=impl_dir,
+        readable_roots=[hypothesis_file, parent_dir, layout.dash_src, layout.subject_dir],
+        read_only=False,
+    )
 
     missing = [n for n in REQUIRED_OUTPUTS if not (impl_dir / n).is_file()]
     if missing:

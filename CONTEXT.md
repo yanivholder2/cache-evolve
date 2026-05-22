@@ -334,7 +334,7 @@ _Avoid_: Hash, signature.
 Anything that doesn't require LLM judgment is a script. The LLM is for
 hypothesizing, code-writing, smoke-log judgment, and insight synthesis;
 everything else (ledger reads, leaderboard computation, log filtering, context
-bundling) is mechanical and lives in `evolve/scripts/`.
+bundling) is mechanical and lives in `evolve/src/`.
 _Avoid_: Token budget (means a numeric cap; the principle is architectural).
 
 **v2-ready invariants**:

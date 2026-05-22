@@ -93,7 +93,10 @@ def build_variant(
         log.info("G1: FAILED")
         _append_rejection(rejection_log, cycle_id, variant_id, proc.stdout + proc.stderr)
         log.info("rejection logged to %s", rejection_log)
-        shutil.rmtree(work_dir, ignore_errors=True)
+        shutil.rmtree(
+            work_dir,
+            onexc=lambda fn, path, exc: log.warning("workspace cleanup failed for %s: %s", path, exc),
+        )
         raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
     log.info("G1: passed")

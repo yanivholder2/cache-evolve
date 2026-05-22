@@ -15,6 +15,9 @@ from src.paths import CycleLayout
 
 log = logging.getLogger("seal")
 
+# u+w | g+w | o+w — the bits stripped when sealing a cycle directory.
+WRITE_BITS = 0o222
+
 
 def _strip_write_bits(root: Path) -> None:
     """Recursively clear write bits (a-w) on root and everything under it."""
@@ -22,8 +25,8 @@ def _strip_write_bits(root: Path) -> None:
     for dirpath, dirnames, filenames in os.walk(root):
         for name in filenames + dirnames:
             p = Path(dirpath) / name
-            os.chmod(p, p.stat().st_mode & ~0o222)
-    os.chmod(root, root.stat().st_mode & ~0o222)
+            os.chmod(p, p.stat().st_mode & ~WRITE_BITS)
+    os.chmod(root, root.stat().st_mode & ~WRITE_BITS)
 
 
 def seal_cycle(cycle_dir: Path) -> None:

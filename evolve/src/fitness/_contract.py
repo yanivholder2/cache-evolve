@@ -1,10 +1,6 @@
 """Plugin JSON contract validator.
 
 Required shape: { dim, values, summary, higher_is_better }.
-
-Used by `fitness-aggregate.py` and by each plugin to validate the Rust binary's
-stdout before forwarding it. Keeps the contract in one place so a producer-side
-field rename is caught at the boundary, not silently downstream.
 """
 
 import json

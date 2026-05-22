@@ -1,20 +1,16 @@
-"""Antigravity SDK adapter — uses `google.antigravity.Agent` in-process.
-
-A CLI-based counterpart (`AntigravityCliAdapter`) may be added later.
-"""
+"""Antigravity SDK adapter — uses `google.antigravity.Agent` in-process."""
 
 from __future__ import annotations
 
 import asyncio
 import json
-import os
 import time
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, TextIO
 
-from .base_llm_adapter import LLMAdapter, Usage
+from .base_llm_adapter import LLMAdapter, Usage, write_timeline
 
 
 def _format_args(args: Any) -> str:
@@ -66,7 +62,7 @@ class AntigravitySdkAdapter(LLMAdapter):
         user_prompt: str,
         *,
         workspace: Path,
-        repo_src: Path,
+        readable_roots: list[Path],
         read_only: bool,
         log_io: TextIO,
     ) -> Usage | None:
@@ -79,30 +75,33 @@ class AntigravitySdkAdapter(LLMAdapter):
         if not read_only:
             enabled = enabled + [BuiltinTools.CREATE_FILE, BuiltinTools.EDIT_FILE]
 
-        repo_src_str = str(repo_src.resolve())
+        readable_resolved = [r.resolve() for r in readable_roots]
 
-        def _inside_repo_src(tc) -> bool:
-            path = tc.canonical_path or ""
-            if not path:
+        def _inside_readable(tc) -> bool:
+            raw = tc.canonical_path or ""
+            if not raw:
                 return False
-            abs_path = os.path.abspath(path)
-            return abs_path == repo_src_str or abs_path.startswith(repo_src_str + os.sep)
+            abs_path = Path(raw).resolve()
+            return any(abs_path.is_relative_to(r) for r in readable_resolved)
 
         policies = [
-            policy.deny("create_file", when=_inside_repo_src, name="repo_src_read_only"),
-            policy.deny("edit_file", when=_inside_repo_src, name="repo_src_read_only"),
+            policy.deny("create_file", when=_inside_readable, name="readable_root_read_only"),
+            policy.deny("edit_file", when=_inside_readable, name="readable_root_read_only"),
         ]
 
         config = LocalAgentConfig(
             model=MODEL.value,
             system_instructions=system_prompt,
             capabilities=CapabilitiesConfig(enabled_tools=enabled),
-            workspaces=[str(workspace), repo_src_str],
+            workspaces=[str(workspace), *(str(r) for r in readable_resolved)],
             policies=policies,
         )
 
         # (monotonic, ts_hms, kind, body) — monotonic orders events emitted by
         # the three concurrent collectors below; ts_hms is for display only.
+        # The three iterators are independent cursors over a shared buffer
+        # (see ChatResponse docstring); concurrent gather is the SDK-blessed
+        # usage and is serialised internally by a pull lock.
         events: list[tuple[float, str, str, str]] = []
 
         async def collect_text(response) -> None:
@@ -141,12 +140,5 @@ class AntigravitySdkAdapter(LLMAdapter):
             else:
                 merged.append((ts, kind, body))
 
-        log_io.write("## timeline\n\n")
-        if not merged:
-            log_io.write("_(no events)_\n")
-        else:
-            for ts, kind, body in merged:
-                body = body.rstrip("\n") if kind in ("chat", "thinking") else body
-                log_io.write(f"### {ts} {kind}\n\n{body}\n\n")
-
+        write_timeline(log_io, merged)
         return usage

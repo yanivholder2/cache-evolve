@@ -259,17 +259,14 @@ def test_hypothesis_count_must_match_cohort(tmp_path):
         _run_cycle(evolve_root, cohort_size=10, hypothesis_lines=lines)
 
 
-def test_invalid_cohort_size_rejected(tmp_path):
+def test_invalid_cohort_size_rejected(capsys):
     """cohort_size must be a positive integer; CLI validation rejects 0/-1."""
 
     from evolve import main
 
-    evolve_root = _setup_repo(tmp_path)
     for bad in ("0", "-1"):
-        with pytest.raises(SystemExit):
-            main([
-                "--evolve-root", str(evolve_root),
-                "--repo-root", str(REAL_REPO_ROOT),
-                "--cohort-size", bad,
-            ])
-    assert not _layout(evolve_root).cycle("0001").root.exists()
+        with pytest.raises(SystemExit) as exc_info:
+            main(["--cohort-size", bad])
+        # die() exits 1; argparse would exit 2 — distinguish to avoid vacuous pass.
+        assert exc_info.value.code == 1
+        assert "--cohort-size" in capsys.readouterr().err

@@ -7,15 +7,19 @@ Two autouse fixtures:
   markers in the variant source) and transparently delegates any other
   cargo call to the real binary — so fitness plugins, dash-bench, etc.
   still see a working cargo.
-- session-scoped: ensure `evolve/` and `evolve/scripts/` are on sys.path so tests can
-  `from src.paths import ...`, `from src.adapters import ...`, and
-  `from evolve import run_cycle` (scripts/evolve.py).
+
+Import setup: tests import `src.*` and the `evolve` script via importlib
+registration in `sys.modules` rather than dropping `evolve/` itself on
+`sys.path` — that would also expose sibling dirs (`bench`, `subject`,
+`harness`, `traces`) as top-level imports, with shadow risk against
+installed packages of the same name.
 
 Slow-test gating: tests marked `@pytest.mark.slow` (full run_cycle paths
 that drive real cargo builds of fitness binaries) are skipped unless
 `--slow` is passed.
 """
 
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -27,12 +31,35 @@ SCRIPTS_DIR = EVOLVE_DIR / "scripts"
 TESTS_DIR = Path(__file__).parent
 MOCKS_DIR = TESTS_DIR / "_mocks"
 
-# Make the `src` package, evolve scripts, and test helpers importable at
-# collection time. (Fixtures run too late — pytest imports test modules
-# before fixtures fire.)
-for p in (str(EVOLVE_DIR), str(SCRIPTS_DIR), str(TESTS_DIR)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
+
+def _register_module(name: str, file: Path, *, is_package: bool = False) -> None:
+    """Load `file` as `name` and stash it in `sys.modules`.
+
+    Avoids adding `evolve/` to `sys.path`, which would expose every
+    sibling dir as a top-level import.
+    """
+    if name in sys.modules:
+        return
+    submodule_search = [str(file.parent)] if is_package else None
+    spec = importlib.util.spec_from_file_location(
+        name, file, submodule_search_locations=submodule_search
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"could not build spec for {name} from {file}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+
+
+# `src` and `evolve` must be importable at collection time — fixtures
+# fire too late, pytest imports test modules first.
+_register_module("src", EVOLVE_DIR / "src" / "__init__.py", is_package=True)
+_register_module("evolve", SCRIPTS_DIR / "evolve.py")
+
+# Test helpers (`_stubs`) live alongside the tests; tests import them
+# bare. Putting TESTS_DIR on sys.path is local and doesn't leak.
+if str(TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(TESTS_DIR))
 
 
 def pytest_addoption(parser):

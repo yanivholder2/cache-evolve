@@ -1,7 +1,4 @@
-"""Claude Agent SDK adapter — uses `claude_agent_sdk.ClaudeSDKClient` in-process.
-
-A CLI-based counterpart (`ClaudeCliAdapter`) may be added later.
-"""
+"""Claude Agent SDK adapter — uses `claude_agent_sdk.ClaudeSDKClient` in-process."""
 
 from __future__ import annotations
 
@@ -11,7 +8,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, TextIO
 
-from .base_llm_adapter import LLMAdapter, Usage
+from .base_llm_adapter import LLMAdapter, Usage, write_timeline
 
 
 def _format_args(args: Any) -> str:
@@ -73,7 +70,7 @@ class ClaudeSdkAdapter(LLMAdapter):
         user_prompt: str,
         *,
         workspace: Path,
-        repo_src: Path,
+        readable_roots: list[Path],
         read_only: bool,
         log_io: TextIO,
     ) -> Usage | None:
@@ -94,15 +91,7 @@ class ClaudeSdkAdapter(LLMAdapter):
 
         allowed_set = set(READ_ONLY_TOOLS if read_only else READ_ONLY_TOOLS + WRITE_TOOLS)
         workspace_root = workspace.resolve()
-        repo_src_root = repo_src.resolve()
         write_tools = set(WRITE_TOOLS)
-
-        def _under(p: Path, root: Path) -> bool:
-            try:
-                p.relative_to(root)
-            except ValueError:
-                return False
-            return True
 
         def _resolve(raw: str) -> Path:
             p = Path(raw)
@@ -129,8 +118,8 @@ class ClaudeSdkAdapter(LLMAdapter):
                 raw = input_data.get(path_key)
                 if raw is not None:
                     abs_path = _resolve(str(raw))
-                    in_workspace = _under(abs_path, workspace_root)
-                    in_repo_src = _under(abs_path, repo_src_root)
+                    in_workspace = abs_path.is_relative_to(workspace_root)
+                    in_readable = any(abs_path.is_relative_to(r) for r in readable_roots)
                     is_write = tool_name in write_tools
                     if is_write and not in_workspace:
                         return PermissionResultDeny(
@@ -140,24 +129,24 @@ class ClaudeSdkAdapter(LLMAdapter):
                                 f"writes must stay under {workspace_root}."
                             ),
                         )
-                    if not is_write and not (in_workspace or in_repo_src):
+                    if not is_write and not (in_workspace or in_readable):
                         return PermissionResultDeny(
                             behavior="deny",
                             message=(
                                 f"path {raw!r} is outside the allowed roots. "
-                                f"reads must stay under {workspace_root} or {repo_src_root}."
+                                f"reads must stay under {workspace_root} or one of {readable_roots}."
                             ),
                         )
             return PermissionResultAllow(behavior="allow")
 
-        # `allowed_tools` pre-approves and bypasses the callback, so leave it
-        # empty: every call must go through `gate` for both tool- and
-        # path-level checks.
+        # `setting_sources=[]` prevents user/project `permissions.allow` rules
+        # from pre-approving tools and bypassing `gate`.
         options = ClaudeAgentOptions(
             model=MODEL.value,
             system_prompt=system_prompt,
-            cwd=str(workspace),
+            cwd=str(workspace_root),
             can_use_tool=gate,
+            setting_sources=[],
         )
 
         events: list[tuple[str, str, str]] = []
@@ -177,11 +166,5 @@ class ClaudeSdkAdapter(LLMAdapter):
                 elif isinstance(message, ResultMessage):
                     usage = _usage_from_result(message)
 
-        log_io.write("## timeline\n\n")
-        if not events:
-            log_io.write("_(no events)_\n")
-        else:
-            for ts, kind, body in events:
-                log_io.write(f"### {ts} {kind}\n\n{body}\n\n")
-
+        write_timeline(log_io, events)
         return usage

@@ -1,11 +1,3 @@
-"""Aggregate fitness plugin outputs into a FitnessVector for a variant.
-
-Reads all *.json files from the plugin output dir, validates each against the
-plugin contract, and returns a FitnessVector dict.
-
-Required plugin JSON shape: { dim, values, summary, higher_is_better }.
-"""
-
 from __future__ import annotations
 
 import json

@@ -13,6 +13,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+# Zero-pad widths used in on-disk identifiers across the layout.
+CYCLE_ID_WIDTH = 4       # cycle dir: cycles/<NNNN>
+VARIANT_ID_WIDTH = 3     # variant dir: variants/v<NNN>
+HYPOTHESIS_ID_WIDTH = 2  # hypothesis file: hypotheses/H<NN>.md
+
 
 @dataclass(frozen=True)
 class VariantLayout:
@@ -96,65 +101,29 @@ class CycleLayout:
         return self.root / "SEALED"
 
     def hypothesis_file(self, i: int) -> Path:
-        return self.hypotheses_dir / f"H{i:02d}.md"
+        return self.hypotheses_dir / f"H{i:0{HYPOTHESIS_ID_WIDTH}d}.md"
 
     def variant(self, i: int) -> VariantLayout:
-        return VariantLayout(root=self.variants_dir / f"v{i:03d}")
+        return VariantLayout(root=self.variants_dir / f"v{i:0{VARIANT_ID_WIDTH}d}")
 
 
 @dataclass(frozen=True)
-class Layout:
-    """Filesystem layout for one evolve invocation.
+class SourcesLayout:
+    """Paths in the read-only evolve sources subtree (subject, bench, dash src).
 
-    `evolve_root` is the read-only source root (config, traces, subject,
-    harness, bench). `outputs_root` is the read-write working dir (cycles,
-    ledger, logs, leaderboard, cargo target). Either may be omitted when a
-    caller only needs paths from the other half — accessing the missing
-    subtree raises TypeError.
+    Use this when a caller only needs source-side paths and has no
+    outputs_root to pass. When both halves are available, prefer Layout.
     """
 
-    evolve_root: Path | None = None
-    outputs_root: Path | None = None
-
-    # outputs subtree (read-write)
-    @property
-    def cycles_dir(self) -> Path:
-        return self.outputs_root / "cycles"
+    root: Path
 
     @property
-    def ledger(self) -> Path:
-        return self.outputs_root / "ledger" / "cycles.jsonl"
+    def subject_dir(self) -> Path:
+        return self.root / "subject"
 
-    @property
-    def leaderboard_md(self) -> Path:
-        return self.outputs_root / "leaderboard.md"
-
-    @property
-    def synthesis_md(self) -> Path:
-        return self.outputs_root / "synthesis" / "current.md"
-
-    @property
-    def rejection_log(self) -> Path:
-        return self.outputs_root / "rejection-log.md"
-
-    @property
-    def target_dir(self) -> Path:
-        return self.outputs_root / "target"
-
-    @property
-    def logs_dir(self) -> Path:
-        return self.outputs_root / "logs"
-
-    def cycle_log(self, cycle_num: str) -> Path:
-        return self.logs_dir / f"cycle-{cycle_num}.log"
-
-    def cycle(self, cycle_num: str) -> CycleLayout:
-        return CycleLayout(root=self.cycles_dir / cycle_num)
-
-    # evolve subtree (read-only sources)
     @property
     def extension_points_md(self) -> Path:
-        return self.evolve_root / "subject" / "extension-points.md"
+        return self.subject_dir / "extension-points.md"
 
     @property
     def baseline(self) -> VariantLayout:
@@ -165,19 +134,153 @@ class Layout:
         variants.
         """
 
-        return VariantLayout(root=self.evolve_root / "subject" / "baseline")
+        return VariantLayout(root=self.subject_dir / "baseline")
 
     @property
     def bench_dir(self) -> Path:
-        return self.evolve_root / "bench"
+        return self.root / "bench"
 
     @property
-    def good_segment_rs(self) -> Path:
-        return self.evolve_root / "tests" / "fixtures" / "good" / "impl" / "segment.rs"
+    def dash_src(self) -> Path:
+        return self.root.parent / "src"
+
+
+@dataclass(frozen=True)
+class OutputsLayout:
+    """Paths in the read-write outputs subtree (cycles, ledger, logs, leaderboard).
+
+    Use this when a caller only needs outputs-side paths. When both halves are
+    available, prefer Layout.
+    """
+
+    root: Path
+
+    @property
+    def cycles_dir(self) -> Path:
+        return self.root / "cycles"
+
+    @property
+    def ledger(self) -> Path:
+        return self.root / "ledger" / "cycles.jsonl"
+
+    @property
+    def leaderboard_md(self) -> Path:
+        return self.root / "leaderboard.md"
+
+    @property
+    def synthesis_md(self) -> Path:
+        return self.root / "synthesis" / "current.md"
+
+    @property
+    def rejection_log(self) -> Path:
+        return self.root / "rejection-log.md"
+
+    @property
+    def target_dir(self) -> Path:
+        return self.root / "target"
+
+    @property
+    def logs_dir(self) -> Path:
+        return self.root / "logs"
+
+    def cycle_log(self, cycle_num: str) -> Path:
+        return self.logs_dir / f"cycle-{cycle_num}.log"
+
+    def cycle(self, cycle_num: str) -> CycleLayout:
+        return CycleLayout(root=self.cycles_dir / cycle_num)
+
+
+@dataclass(frozen=True)
+class Layout:
+    """Filesystem layout for one evolve invocation.
+
+    `evolve_root` is the read-only source root (config, traces, subject,
+    harness, bench). `outputs_root` is the read-write working dir (cycles,
+    ledger, logs, leaderboard, cargo target). Both are required; callers
+    that need only one half should use SourcesLayout or OutputsLayout.
+    """
+
+    evolve_root: Path
+    outputs_root: Path
+
+    @property
+    def sources(self) -> SourcesLayout:
+        return SourcesLayout(root=self.evolve_root)
+
+    @property
+    def outputs(self) -> OutputsLayout:
+        return OutputsLayout(root=self.outputs_root)
+
+    # outputs subtree (read-write)
+    @property
+    def cycles_dir(self) -> Path:
+        return self.outputs.cycles_dir
+
+    @property
+    def ledger(self) -> Path:
+        return self.outputs.ledger
+
+    @property
+    def leaderboard_md(self) -> Path:
+        return self.outputs.leaderboard_md
+
+    @property
+    def synthesis_md(self) -> Path:
+        return self.outputs.synthesis_md
+
+    @property
+    def rejection_log(self) -> Path:
+        return self.outputs.rejection_log
+
+    @property
+    def target_dir(self) -> Path:
+        return self.outputs.target_dir
+
+    @property
+    def logs_dir(self) -> Path:
+        return self.outputs.logs_dir
+
+    def cycle_log(self, cycle_num: str) -> Path:
+        return self.outputs.cycle_log(cycle_num)
+
+    def cycle(self, cycle_num: str) -> CycleLayout:
+        return self.outputs.cycle(cycle_num)
+
+    # evolve subtree (read-only sources)
+    @property
+    def subject_dir(self) -> Path:
+        return self.sources.subject_dir
+
+    @property
+    def extension_points_md(self) -> Path:
+        return self.sources.extension_points_md
+
+    @property
+    def baseline(self) -> VariantLayout:
+        return self.sources.baseline
+
+    @property
+    def bench_dir(self) -> Path:
+        return self.sources.bench_dir
+
+    @property
+    def dash_src(self) -> Path:
+        return self.sources.dash_src
 
     # repo-relative ledger formatting
-    def cycle_ledger_path(self, cycle_num: str) -> str:
-        """Repo-relative path string for a cycle dir, suitable for ledger rows."""
+    def cycle_ledger_path(self, cycle_num: str, repo_root: Path) -> str:
+        """Repo-relative path string for a cycle dir, suitable for ledger rows.
 
-        rel = self.cycle(cycle_num).root.relative_to(self.outputs_root)
-        return f"evolve/outputs/{rel}"
+        ADR-0003 requires repo-relative paths in artifacts; raises ValueError
+        if outputs_root (hence the cycle dir) is not under repo_root.
+        """
+
+        cycle_dir = self.cycle(cycle_num).root
+        try:
+            rel = cycle_dir.relative_to(repo_root)
+        except ValueError as e:
+            raise ValueError(
+                f"cycle dir {cycle_dir} is not under repo_root {repo_root}; "
+                "outputs_root must live inside the repo (ADR-0003: repo-relative paths only)"
+            ) from e
+        return str(rel)

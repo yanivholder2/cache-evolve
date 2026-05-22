@@ -26,8 +26,7 @@ def main() -> None:
     evolve_root = script_dir.parent.resolve()
     repo_root = evolve_root.parent.resolve()
 
-    baseline_root = Layout(evolve_root=evolve_root).baseline.root
-    layout = Layout(evolve_root=evolve_root, outputs_root=baseline_root / "outputs")
+    layout = Layout(evolve_root=evolve_root, outputs_root=evolve_root / "outputs")
     baseline = layout.baseline
 
     if not baseline.segment_rs.is_file():

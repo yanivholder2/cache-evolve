@@ -13,7 +13,7 @@ from pathlib import Path
 
 from src.fitness._common import cargo_build, cargo_env
 from src.fitness._contract import validate_plugin_dict
-from src.paths import Layout
+from src.paths import SourcesLayout
 
 RUN_TIMEOUT_S = 120
 METADATA_TIMEOUT_S = 60
@@ -42,7 +42,7 @@ def _resolve_target_dir(bench_dir: Path, target_dir: Path | None) -> Path:
 def compute(*, evolve_root: Path, target_dir: Path | None = None) -> dict:
     """Build + run dash-bench; return the validated plugin record."""
 
-    bench_dir = Layout(evolve_root=evolve_root).bench_dir
+    bench_dir = SourcesLayout(root=evolve_root).bench_dir
     cargo_build(bench_dir, ["--release"], label="dash-bench", target_dir=target_dir)
     binary = _resolve_target_dir(bench_dir, target_dir) / "release" / "dash-bench"
 

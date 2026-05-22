@@ -11,14 +11,14 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from src.paths import Layout
+from src.paths import OutputsLayout
 
 
 class LeaderboardError(Exception):
     pass
 
 
-def _load_cycles(layout: Layout) -> list:
+def _load_cycles(layout: OutputsLayout) -> list:
     ledger = layout.ledger
     if not ledger.exists():
         return []
@@ -34,7 +34,7 @@ def _load_cycles(layout: Layout) -> list:
     return cycles
 
 
-def _load_winners(layout: Layout, cycle_id: str) -> Optional[dict]:
+def _load_winners(layout: OutputsLayout, cycle_id: str) -> Optional[dict]:
     path = layout.cycle(cycle_id).winners_json
     if not path.exists():
         return None
@@ -88,7 +88,7 @@ def _render(cycles_data: list) -> str:
     return "\n".join(lines)
 
 
-def regenerate(*, layout: Layout, output: Path | None = None) -> str:
+def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
     """Build the markdown leaderboard from ledger + winners; optionally write
     to `output`. Returns the rendered string either way."""
 

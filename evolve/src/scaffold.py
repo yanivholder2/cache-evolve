@@ -7,8 +7,7 @@ from pathlib import Path
 from src.paths import CycleLayout
 
 
-def write_cohort_md(cycle_dir: Path, hypothesis_files: list[Path]) -> None:
-    cycle_layout = CycleLayout(root=cycle_dir)
+def write_cohort_md(cycle_layout: CycleLayout, hypothesis_files: list[Path]) -> None:
     lines = [
         f"# Cycle {cycle_layout.num} Cohort", "",
         f"Cohort size: {len(hypothesis_files)}", "",

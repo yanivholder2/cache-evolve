@@ -123,7 +123,10 @@ def run_gates(
         if not _check_g3(work_dir, cycle_id, variant_id, rejection_log, fingerprint):
             return False
     finally:
-        shutil.rmtree(work_dir, ignore_errors=True)
+        shutil.rmtree(
+            work_dir,
+            onexc=lambda fn, path, exc: log.warning("workspace cleanup failed for %s: %s", path, exc),
+        )
 
     log.info("gate-check: all gates passed for %s", variant_id)
     return True
