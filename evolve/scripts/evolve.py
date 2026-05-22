@@ -146,12 +146,15 @@ def _check_no_leftovers(layout: Layout) -> None:
     """Die if outputs_root has artifacts from previous runs. Ignores target/
     (cargo cache, intended to persist)."""
 
+    def has_non_gitkeep(d: Path) -> bool:
+        return d.is_dir() and any(p.name != ".gitkeep" for p in d.iterdir())
+
     leftovers = []
-    if layout.cycles_dir.is_dir() and any(layout.cycles_dir.iterdir()):
+    if has_non_gitkeep(layout.cycles_dir):
         leftovers.append(str(layout.cycles_dir))
     if layout.ledger.exists():
         leftovers.append(str(layout.ledger))
-    if layout.logs_dir.is_dir() and any(layout.logs_dir.iterdir()):
+    if has_non_gitkeep(layout.logs_dir):
         leftovers.append(str(layout.logs_dir))
     if layout.leaderboard_md.exists():
         leftovers.append(str(layout.leaderboard_md))

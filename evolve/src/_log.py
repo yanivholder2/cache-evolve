@@ -51,3 +51,4 @@ def setup(log_file: Path | None, level: str = "DEBUG") -> None:
         root.addHandler(fh)
     for h in root.handlers:
         h.setLevel(lvl)
+    logging.getLogger("claude_agent_sdk").setLevel(logging.WARNING)

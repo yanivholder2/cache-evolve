@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Reset evolve/outputs/ to its pristine, just-cloned state by deleting every
-gitignored file and directory under it. Tracked files (the per-subdir
-.gitkeep markers) are preserved.
+untracked file and directory under it (both gitignored and merely untracked).
+Tracked files (the per-subdir .gitkeep markers) are preserved.
 
-Wraps `git clean -fdX evolve/outputs` so the ignore rules are sourced from
+Wraps `git clean -fdx evolve/outputs` so the ignore rules are sourced from
 git itself rather than re-implemented here.
 """
 
@@ -21,7 +21,7 @@ def main() -> int:
         print(f"error: {outputs} does not exist", file=sys.stderr)
         return 1
 
-    cmd = ["git", "clean", "-fdX", "--", str(outputs)]
+    cmd = ["git", "clean", "-fdx", "--", str(outputs)]
     return subprocess.run(cmd, cwd=evolve_root.parent).returncode
 
 
