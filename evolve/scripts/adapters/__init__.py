@@ -1,10 +1,12 @@
 """LLM adapters. `REGISTRY` maps `--ai-agent-tool` choice → adapter class."""
 
-from ._base import LLMAdapter
-from .gemini import GeminiCliAdapter
+from .base_llm_adapter import LLMAdapter
+from .antigravity_sdk import AntigravitySdkAdapter
+from .claude_sdk import ClaudeSdkAdapter
 
 REGISTRY: dict[str, type[LLMAdapter]] = {
-    "gemini": GeminiCliAdapter,
+    "antigravity-sdk": AntigravitySdkAdapter,
+    "claude-sdk": ClaudeSdkAdapter,
 }
 
 __all__ = ["LLMAdapter", "REGISTRY"]

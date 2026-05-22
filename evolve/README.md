@@ -28,7 +28,7 @@ Flags (defaults sourced from [`config.toml`](config.toml); flags override per-ru
 | ------------------------ | -------------------------- | -------------------------------------------------------------------------------------- |
 | `--cycles N`             | `framework.cycles`         | Number of cycles to run sequentially. Aborts on first failure.                         |
 | `--cohort-size N`        | `framework.cohort_size`    | Number of variants per cycle.                                                          |
-| `--ai-agent-tool <name>` | `framework.ai_agent_tool`  | AI agent CLI to drive subagents. Choices: `gemini`.                                    |
+| `--ai-agent-tool <name>` | `framework.ai_agent_tool`  | AI agent backend to drive subagents. Choices: `antigravity-sdk`, `claude-sdk`.         |
 | `--outputs-root <path>`  | —                          | Read-write dir for cycles/ledger/logs (default: `outputs/`).                           |
 | `--log-level <level>`    | `framework.log_level`      | Log verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                 |
 
