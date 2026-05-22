@@ -10,7 +10,7 @@ from typing import Callable
 import pytest
 
 from evolve import run_cycle
-from paths import Layout
+from src.paths import Layout
 
 from _stubs import StubLLMAdapter
 

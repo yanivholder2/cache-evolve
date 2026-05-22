@@ -52,16 +52,16 @@
       "values": [
         {
           "op": "get",
-          "p50_ns": 45,
-          "p99_ns": 172
+          "p50_ns": 30,
+          "p99_ns": 120
         },
         {
           "op": "put",
-          "p50_ns": 169,
-          "p99_ns": 285
+          "p50_ns": 124,
+          "p99_ns": 231
         }
       ],
-      "summary": 45,
+      "summary": 30,
       "higher_is_better": false
     }
   ]

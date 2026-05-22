@@ -11,10 +11,10 @@ import json
 import logging
 from pathlib import Path
 
-from fitness import hit_rate, metadata_size, per_op_time
-from fitness_aggregate import aggregate
-from gate_check import run_gates
-from paths import Layout, VariantLayout
+from src.fitness import hit_rate, metadata_size, per_op_time
+from src.fitness_aggregate import aggregate
+from src.gate_check import run_gates
+from src.paths import Layout, VariantLayout
 
 log = logging.getLogger(__name__)
 

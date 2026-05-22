@@ -1,11 +1,11 @@
-"""Tests for scripts/ledger_append.append_row — atomic concurrent append."""
+"""Tests for src/ledger_append.append_row — atomic concurrent append."""
 
 import json
 import threading
 
 import pytest
 
-from ledger_append import append_row
+from src.ledger_append import append_row
 
 
 def test_single_append_writes_one_row(tmp_path):

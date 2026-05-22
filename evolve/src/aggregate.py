@@ -6,9 +6,9 @@ from __future__ import annotations
 import json
 import logging
 
-from dim_summary import format_dimensions
-from pareto import compute_pareto_front
-from paths import CycleLayout, VariantLayout
+from src.dim_summary import format_dimensions
+from src.paths import CycleLayout, VariantLayout
+from src.pareto import compute_pareto_front
 
 log = logging.getLogger(__name__)
 

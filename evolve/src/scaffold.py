@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from paths import CycleLayout
+from src.paths import CycleLayout
 
 
 def write_cohort_md(cycle_dir: Path, hypothesis_files: list[Path]) -> None:

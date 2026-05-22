@@ -8,16 +8,12 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
-_HERE = Path(__file__).resolve()
-sys.path.insert(0, str(_HERE.parent))
-
-from _common import cargo_build, cargo_env  # noqa: E402
-from _contract import validate_plugin_dict  # noqa: E402
-from paths import Layout  # noqa: E402
+from src.fitness._common import cargo_build, cargo_env
+from src.fitness._contract import validate_plugin_dict
+from src.paths import Layout
 
 RUN_TIMEOUT_S = 120
 METADATA_TIMEOUT_S = 60

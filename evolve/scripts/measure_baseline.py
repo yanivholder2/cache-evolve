@@ -13,8 +13,10 @@ import logging
 import sys
 from pathlib import Path
 
-from gates_and_fitness import run_gates_and_fitness
-from paths import Layout
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.gates_and_fitness import run_gates_and_fitness  # noqa: E402
+from src.paths import Layout  # noqa: E402
 
 
 def main() -> None:

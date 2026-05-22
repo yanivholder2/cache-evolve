@@ -19,18 +19,20 @@ import tomllib
 from pathlib import Path
 from typing import NoReturn
 
-import _log
-from _log import LEVELS as LOG_LEVELS
-from adapters import REGISTRY, LLMAdapter
-from aggregate import aggregate_cohort
-from gates_and_fitness import run_gates_and_fitness
-from hypotheses_writer import write_hypotheses
-from leaderboard import regenerate as regenerate_leaderboard
-from ledger_append import append_row
-from paths import Layout
-from scaffold import write_cohort_md
-from seal import seal_cycle
-from variant_implementer import Implementer, fan_out
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src import _log  # noqa: E402
+from src._log import LEVELS as LOG_LEVELS  # noqa: E402
+from src.adapters import REGISTRY, LLMAdapter  # noqa: E402
+from src.aggregate import aggregate_cohort  # noqa: E402
+from src.gates_and_fitness import run_gates_and_fitness  # noqa: E402
+from src.hypotheses_writer import write_hypotheses  # noqa: E402
+from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
+from src.ledger_append import append_row  # noqa: E402
+from src.paths import Layout  # noqa: E402
+from src.scaffold import write_cohort_md  # noqa: E402
+from src.seal import seal_cycle  # noqa: E402
+from src.variant_implementer import Implementer, fan_out  # noqa: E402
 
 log = logging.getLogger("evolve")
 

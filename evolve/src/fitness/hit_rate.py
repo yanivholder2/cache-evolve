@@ -7,14 +7,10 @@ per-invocation plugin records into a single output:
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-_HERE = Path(__file__).resolve()
-sys.path.insert(0, str(_HERE.parent))
-
-from _common import cargo_build, run_binary  # noqa: E402
-from _contract import parse_plugin_stdout  # noqa: E402
+from src.fitness._common import cargo_build, run_binary
+from src.fitness._contract import parse_plugin_stdout
 
 CONFIGS = [
     {"cache": "assoc", "size": 16},

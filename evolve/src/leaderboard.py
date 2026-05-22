@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from paths import Layout
+from src.paths import Layout
 
 
 class LeaderboardError(Exception):

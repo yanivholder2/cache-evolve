@@ -14,7 +14,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from build import build_variant
+from src.build import build_variant
 
 log = logging.getLogger("gate-check")
 

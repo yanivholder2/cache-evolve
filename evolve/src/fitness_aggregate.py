@@ -9,12 +9,9 @@ Required plugin JSON shape: { dim, values, summary, higher_is_better }.
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "fitness"))
-
-from _contract import ContractError, validate_plugin_dict  # noqa: E402
+from src.fitness._contract import ContractError, validate_plugin_dict
 
 
 class FitnessAggregateError(Exception):

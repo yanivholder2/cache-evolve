@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from paths import CycleLayout
+from src.paths import CycleLayout
 
 log = logging.getLogger("seal")
 

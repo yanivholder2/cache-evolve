@@ -1,4 +1,4 @@
-"""Tests for scripts/build.py and scripts/gate_check.py.
+"""Tests for src/build.py and src/gate_check.py.
 
 Cargo is mocked via tests/_mocks/cargo (autouse-wired in conftest.py). The
 shim short-circuits build/test calls based on markers embedded in the
@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from build import build_variant
-from gate_check import run_gates
+from src.build import build_variant
+from src.gate_check import run_gates
 
 EVOLVE_ROOT = Path(__file__).parent.parent
 FIXTURES_DIR = Path(__file__).parent / "fixtures"

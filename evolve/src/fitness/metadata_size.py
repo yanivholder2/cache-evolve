@@ -6,14 +6,10 @@ contract, and returns the parsed record.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-_HERE = Path(__file__).resolve()
-sys.path.insert(0, str(_HERE.parent))
-
-from _common import cargo_build, run_binary  # noqa: E402
-from _contract import parse_plugin_stdout  # noqa: E402
+from src.fitness._common import cargo_build, run_binary
+from src.fitness._contract import parse_plugin_stdout
 
 RUN_TIMEOUT_S = 60
 

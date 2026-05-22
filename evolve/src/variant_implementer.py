@@ -9,7 +9,7 @@ Owns everything related to materializing Variant impls in a cycle:
 - `Implementer`: callable protocol so tests can inject stubs.
 
 The agent-side contract (what the LLM must write, constraints, failure
-modes) lives in `evolve/scripts/agents/variant-implementer.md`.
+modes) lives in `evolve/src/agents/variant-implementer.md`.
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ import traceback
 from pathlib import Path
 from typing import Callable
 
-from adapters import LLMAdapter
-from paths import CycleLayout, Layout, VariantLayout
+from src.adapters import LLMAdapter
+from src.paths import CycleLayout, Layout, VariantLayout
 
 AGENT_NAME = "variant-implementer"
 REQUIRED_OUTPUTS = ("segment.rs", "manifest.toml")

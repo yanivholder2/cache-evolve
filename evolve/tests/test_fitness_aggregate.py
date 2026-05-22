@@ -1,10 +1,10 @@
-"""Tests for scripts/fitness_aggregate.aggregate."""
+"""Tests for src/fitness_aggregate.aggregate."""
 
 import json
 
 import pytest
 
-from fitness_aggregate import FitnessAggregateError, aggregate
+from src.fitness_aggregate import FitnessAggregateError, aggregate
 
 
 def _write_plugin(plugin_dir, name, data):

@@ -1,4 +1,4 @@
-"""Tests for evolve/scripts/hypotheses_writer.write_hypotheses (Round-2 agentic, file-out).
+"""Tests for evolve/src/hypotheses_writer.write_hypotheses (Round-2 agentic, file-out).
 
 Covers the contract:
 - adapter is invoked with the expected agent_name + output dir
@@ -7,7 +7,7 @@ Covers the contract:
 - adapter raising aborts
 - cold-start path still succeeds
 - E2E AC: a cold cycle through evolve.run_cycle writes real, distinct HNN.md files
-- subagent prompt ships under evolve/scripts/agents/
+- subagent prompt ships under evolve/src/agents/
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
-from hypotheses_writer import write_hypotheses
-from paths import Layout
+from src.hypotheses_writer import write_hypotheses
+from src.paths import Layout
 
 from _stubs import StubLLMAdapter
 
@@ -281,9 +281,9 @@ def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
 
 
 def test_subagent_markdown_exists():
-    """hypotheses-writer system prompt ships under evolve/scripts/agents/."""
+    """hypotheses-writer system prompt ships under evolve/src/agents/."""
 
-    agent_md = EVOLVE_SRC / "scripts" / "agents" / "hypotheses-writer.md"
+    agent_md = EVOLVE_SRC / "src" / "agents" / "hypotheses-writer.md"
     assert agent_md.is_file(), f"missing {agent_md}"
     body = agent_md.read_text()
     assert "hypothesis" in body.lower()

@@ -14,8 +14,8 @@ import logging
 import re
 from pathlib import Path
 
-from adapters import LLMAdapter
-from paths import Layout, VariantLayout
+from src.adapters import LLMAdapter
+from src.paths import Layout, VariantLayout
 
 AGENT_NAME = "hypotheses-writer"
 HYPOTHESIS_FILE_RE = re.compile(r"H\d{2}\.md")

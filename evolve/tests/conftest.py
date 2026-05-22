@@ -7,8 +7,9 @@ Two autouse fixtures:
   markers in the variant source) and transparently delegates any other
   cargo call to the real binary — so fitness plugins, dash-bench, etc.
   still see a working cargo.
-- session-scoped: ensure `evolve/scripts/` is on sys.path so tests can
-  `from evolve import run_cycle`, `from adapters import ...`, etc.
+- session-scoped: ensure `evolve/` and `evolve/scripts/` are on sys.path so tests can
+  `from src.paths import ...`, `from src.adapters import ...`, and
+  `from evolve import run_cycle` (scripts/evolve.py).
 
 Slow-test gating: tests marked `@pytest.mark.slow` (full run_cycle paths
 that drive real cargo builds of fitness binaries) are skipped unless
@@ -26,9 +27,10 @@ SCRIPTS_DIR = EVOLVE_DIR / "scripts"
 TESTS_DIR = Path(__file__).parent
 MOCKS_DIR = TESTS_DIR / "_mocks"
 
-# Make evolve scripts + test helpers importable at collection time.
-# (Fixtures run too late — pytest imports test modules before fixtures fire.)
-for p in (str(SCRIPTS_DIR), str(TESTS_DIR)):
+# Make the `src` package, evolve scripts, and test helpers importable at
+# collection time. (Fixtures run too late — pytest imports test modules
+# before fixtures fire.)
+for p in (str(EVOLVE_DIR), str(SCRIPTS_DIR), str(TESTS_DIR)):
     if p not in sys.path:
         sys.path.insert(0, p)
 

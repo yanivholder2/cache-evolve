@@ -1,11 +1,11 @@
-"""Tests for scripts/leaderboard.regenerate."""
+"""Tests for src/leaderboard.regenerate."""
 
 import json
 
 import pytest
 
-from leaderboard import LeaderboardError, regenerate
-from paths import Layout
+from src.leaderboard import LeaderboardError, regenerate
+from src.paths import Layout
 
 
 def _setup_cycle(layout: Layout, cycle_id, variants):

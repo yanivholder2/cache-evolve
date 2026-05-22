@@ -2,7 +2,7 @@
 
 The base reads two prompt sources:
 
-- `evolve/scripts/agents/<agent_name>.md` — system prompt (the agent's role,
+- `evolve/src/agents/<agent_name>.md` — system prompt (the agent's role,
   contract, and constraints).
 - `<output_dir>/task.md` — user prompt (this invocation's assignment;
   written by the framework before calling `run`).

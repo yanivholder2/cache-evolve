@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from evolve import _next_cycle_num, run_cycle
-from paths import Layout
+from src.paths import Layout
 
 from _stubs import StubLLMAdapter
 

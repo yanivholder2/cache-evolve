@@ -24,7 +24,7 @@ from typing import Callable
 import pytest
 
 from evolve import run_cycle
-from paths import CycleLayout, Layout
+from src.paths import CycleLayout, Layout
 
 from _stubs import StubLLMAdapter
 
@@ -196,9 +196,9 @@ def test_winners_pareto_front_spans_cohort(shared_cohort_run):
 
 
 def test_variant_implementer_agent_markdown_exists():
-    """variant-implementer system prompt ships under evolve/scripts/agents/."""
+    """variant-implementer system prompt ships under evolve/src/agents/."""
 
-    agent_md = EVOLVE_SRC / "scripts" / "agents" / "variant-implementer.md"
+    agent_md = EVOLVE_SRC / "src" / "agents" / "variant-implementer.md"
     assert agent_md.is_file(), f"missing {agent_md}"
     body = agent_md.read_text()
     assert "hypothesis" in body.lower()
