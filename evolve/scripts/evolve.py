@@ -138,6 +138,27 @@ def run_cycle(
         raise
 
 
+def _check_no_leftovers(layout: Layout) -> None:
+    """Die if outputs_root has artifacts from previous runs. Ignores target/
+    (cargo cache, intended to persist)."""
+
+    leftovers = []
+    if layout.cycles_dir.is_dir() and any(layout.cycles_dir.iterdir()):
+        leftovers.append(str(layout.cycles_dir))
+    if layout.ledger.exists():
+        leftovers.append(str(layout.ledger))
+    if layout.logs_dir.is_dir() and any(layout.logs_dir.iterdir()):
+        leftovers.append(str(layout.logs_dir))
+    if layout.leaderboard_md.exists():
+        leftovers.append(str(layout.leaderboard_md))
+    if layout.synthesis_md.exists():
+        leftovers.append(str(layout.synthesis_md))
+    if layout.rejection_log.exists():
+        leftovers.append(str(layout.rejection_log))
+    if leftovers:
+        die(f"outputs_root has leftovers from previous runs: {', '.join(leftovers)}")
+
+
 def _load_framework_config(evolve_root: Path) -> dict:
     cfg_path = evolve_root / "config.toml"
     if not cfg_path.is_file():
@@ -217,6 +238,7 @@ def main(argv: list[str] | None = None) -> None:
     layout = Layout(evolve_root=evolve_root, outputs_root=outputs_root)
 
     _log.setup(None, level=log_level)
+    _check_no_leftovers(layout)
     log.debug("evolve_root=%s repo_root=%s", evolve_root, repo_root)
     log.debug("adapter=%s outputs_root=%s log_level=%s", type(adapter).__name__, outputs_root, log_level)
     log.info("cycles=%d cohort_size=%d", n_cycles, cohort_size)
