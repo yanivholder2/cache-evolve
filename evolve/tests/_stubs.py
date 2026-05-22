@@ -42,14 +42,14 @@ class StubLLMAdapter:
         agent_name: str,
         output_dir: Path,
         *,
-        read_only: bool = False,
+        read_only: bool,
     ) -> None:
         if self.capture_file is not None:
             self._capture(agent_name, output_dir, read_only)
         if self.exit_code != 0:
             raise subprocess.CalledProcessError(self.exit_code, "stub-adapter")
 
-        if agent_name == "hypothesis-writer":
+        if agent_name == "hypotheses-writer":
             self._write_hypotheses(output_dir)
         elif agent_name == "variant-implementer":
             self._write_variant(output_dir)

@@ -73,7 +73,7 @@ def implement_variant(
     _write_task_md(variant_layout, hypothesis_file, layout)
     log.debug("wrote %s", variant_layout.impl_task_md)
 
-    adapter.run(agent_name=AGENT_NAME, output_dir=impl_dir)
+    adapter.run(agent_name=AGENT_NAME, output_dir=impl_dir, read_only=False)
 
     missing = [n for n in REQUIRED_OUTPUTS if not (impl_dir / n).is_file()]
     if missing:

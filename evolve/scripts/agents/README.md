@@ -7,8 +7,8 @@ agent-skills convention (markdown body = role + contract + constraints).
 
 `evolve/scripts/adapters/_base.py` reads `<agent_name>.md` from this
 directory and `<output_dir>/task.md` (written by the caller) and hands both
-strings to the adapter subclass via `_call_llm(system, user)`.
+strings to the adapter subclass via `_call_llm(system_prompt, user_prompt)`.
 
-Today `hypothesis-writer.md` and `variant-implementer.md` are wired. Add a
+Today `hypotheses-writer.md` and `variant-implementer.md` are wired. Add a
 new prompt here when you add a new framework call site that needs LLM
 judgment (e.g. `smoke-reviewer`, `insight-writer`).

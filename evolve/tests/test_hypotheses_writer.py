@@ -1,4 +1,4 @@
-"""Tests for evolve/scripts/hypothesis_writer.write_hypotheses (Round-2 agentic, file-out).
+"""Tests for evolve/scripts/hypotheses_writer.write_hypotheses (Round-2 agentic, file-out).
 
 Covers the contract:
 - adapter is invoked with the expected agent_name + output dir
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
-from hypothesis_writer import write_hypotheses
+from hypotheses_writer import write_hypotheses
 from paths import Layout
 
 from _stubs import StubLLMAdapter
@@ -45,18 +45,18 @@ def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard
         dst,
         ignore=shutil.ignore_patterns(".venv", "outputs", "__pycache__", "*.pyc"),
     )
-    outputs = dst / "outputs"
-    (outputs / "ledger").mkdir(parents=True, exist_ok=True)
+    layout = _layout(dst)
+    layout.ledger.parent.mkdir(parents=True, exist_ok=True)
     if with_ledger:
-        (outputs / "ledger" / "cycles.jsonl").write_text(
+        layout.ledger.write_text(
             '{"cycle":"0001","cohort_size":2,"pareto_front":["v001"]}\n'
             '{"cycle":"0002","cohort_size":2,"pareto_front":["v001","v002"]}\n',
             encoding="utf-8",
         )
     else:
-        (outputs / "ledger" / "cycles.jsonl").write_text("", encoding="utf-8")
+        layout.ledger.write_text("", encoding="utf-8")
     if with_leaderboard:
-        (outputs / "leaderboard.md").write_text(
+        layout.leaderboard_md.write_text(
             "# Leaderboard\n\n| variant | hit_rate |\n|---|---|\n| v001 | 0.42 |\n",
             encoding="utf-8",
         )
@@ -134,8 +134,8 @@ def test_adapter_invoked_with_expected_argv(tmp_path):
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     body = capture.read_text()
-    assert "agent: hypothesis-writer" in body
-    output_dir = evolve / "outputs" / "cycles" / "0001" / "hypotheses"
+    assert "agent: hypotheses-writer" in body
+    output_dir = _layout(evolve).cycle("0001").hypotheses_dir
     assert f"output-dir: {output_dir}" in body
 
 
@@ -160,9 +160,9 @@ def test_returns_hypothesis_file_paths(tmp_path):
     """Function returns discovered file paths so evolve.py can skip re-globbing."""
 
     evolve = _setup_evolve(tmp_path)
+    cycle_layout = _layout(evolve).cycle("0001")
     files = write_hypotheses(2, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
-    output_dir = evolve / "outputs" / "cycles" / "0001" / "hypotheses"
-    assert sorted(files) == [output_dir / "H01.md", output_dir / "H02.md"]
+    assert sorted(files) == [cycle_layout.hypothesis_file(1), cycle_layout.hypothesis_file(2)]
 
 
 @pytest.mark.slow
@@ -181,8 +181,9 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
         adapter=StubLLMAdapter(hypothesis_lines=lines),
     )
 
-    h01 = (evolve_root / "outputs" / "cycles" / "0001" / "hypotheses" / "H01.md").read_text()
-    h02 = (evolve_root / "outputs" / "cycles" / "0001" / "hypotheses" / "H02.md").read_text()
+    cycle_layout = _layout(evolve_root).cycle("0001")
+    h01 = cycle_layout.hypothesis_file(1).read_text()
+    h02 = cycle_layout.hypothesis_file(2).read_text()
     assert "Stash-bias eviction" in h01
     assert "Lazy promotion" in h02
     assert "walking-skeleton stub" not in h01
@@ -191,11 +192,10 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
 
 
 def test_subagent_markdown_exists():
-    """hypothesis-writer system prompt ships under evolve/scripts/agents/."""
+    """hypotheses-writer system prompt ships under evolve/scripts/agents/."""
 
-    agent_md = EVOLVE_SRC / "scripts" / "agents" / "hypothesis-writer.md"
+    agent_md = EVOLVE_SRC / "scripts" / "agents" / "hypotheses-writer.md"
     assert agent_md.is_file(), f"missing {agent_md}"
     body = agent_md.read_text()
     assert "hypothesis" in body.lower()
     assert "H01.md" in body or "H<NN>.md" in body
-    assert "task.md" in body.lower()

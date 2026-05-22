@@ -24,7 +24,7 @@ from _log import LEVELS as LOG_LEVELS
 from adapters import REGISTRY, LLMAdapter
 from aggregate import aggregate_cohort
 from gates_and_fitness import run_gates_and_fitness
-from hypothesis_writer import write_hypotheses
+from hypotheses_writer import write_hypotheses
 from leaderboard import regenerate as regenerate_leaderboard
 from ledger_append import append_row
 from paths import Layout
