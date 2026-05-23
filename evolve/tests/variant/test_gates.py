@@ -35,15 +35,15 @@ def _stage(tmp_path: Path, fixture_name: str) -> tuple[Layout, CycleVariant]:
 
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "out")
     layout.evolve_root.mkdir(parents=True, exist_ok=True)
-    layout.harness_dir.symlink_to(EVOLVE_ROOT / "harness")
-    variant_dir = layout.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
+    layout.sources.harness_dir.symlink_to(EVOLVE_ROOT / "harness")
+    variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
     shutil.copytree(FIXTURES_DIR / fixture_name / "impl", variant_dir.impl_dir)
     return layout, VARIANT
 
 
 def test_build_good_fixture_returns_workspace(tmp_path):
     layout, variant = _stage(tmp_path, "good")
-    workspace = build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+    workspace = build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
     assert workspace.root.is_dir()
     shutil.rmtree(workspace.root, ignore_errors=True)
 
@@ -51,39 +51,39 @@ def test_build_good_fixture_returns_workspace(tmp_path):
 def test_build_broken_fixture_raises(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
 
 
 def test_build_broken_fixture_logs_structured_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = read_utf8(layout.rejection_log)
+        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
+    content = read_utf8(layout.outputs.rejection_log)
     assert "G1 (build)" in content
     assert EXPECTED_VARIANT_TAG in content
 
 
 def test_gate_check_good_fixture_passes(tmp_path):
     layout, variant = _stage(tmp_path, "good")
-    assert run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+    assert run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
 
 
 def test_gate_check_good_fixture_produces_no_rejection_entry(tmp_path):
     layout, variant = _stage(tmp_path, "good")
-    run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    log = layout.rejection_log
+    run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
+    log = layout.outputs.rejection_log
     assert not log.is_file() or read_utf8(log).strip() == ""
 
 
 def test_gate_check_broken_fixture_fails(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
-    assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+    assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
 
 
 def test_gate_check_broken_fixture_logs_structured_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
-    run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = read_utf8(layout.rejection_log)
+    run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
+    content = read_utf8(layout.outputs.rejection_log)
     assert "G1 (build)" in content
     assert EXPECTED_VARIANT_TAG in content
 
@@ -94,15 +94,15 @@ def test_gate_check_invalid_ordinal_fails_g2(tmp_path):
         variant.resolve(layout).manifest_toml,
         "[variant]\neviction_policy_ordinal = 99\n",
     )
-    assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = read_utf8(layout.rejection_log)
+    assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
+    content = read_utf8(layout.outputs.rejection_log)
     assert "G2 (trait contract)" in content
     assert "99" in content
 
 
 def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
-    result = run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+    result = run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
     assert result.g1_passed is True
     assert result.g2_passed is True
     assert result.g3_passed is False
@@ -111,8 +111,8 @@ def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path):
 
 def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
-    run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = read_utf8(layout.rejection_log)
+    run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
+    content = read_utf8(layout.outputs.rejection_log)
     assert "G3 (invariant suite)" in content
     assert EXPECTED_VARIANT_TAG in content
     assert "Fingerprint" in content
@@ -123,9 +123,9 @@ def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
 
 def test_gate_check_good_fixture_passes_g3(tmp_path):
     layout, variant = _stage(tmp_path, "good")
-    result = run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+    result = run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.outputs.rejection_log)
     assert result.g1_passed is True
     assert result.g2_passed is True
     assert result.g3_passed is True
     assert result.all_passed
-    assert not layout.rejection_log.is_file() or read_utf8(layout.rejection_log).strip() == ""
+    assert not layout.outputs.rejection_log.is_file() or read_utf8(layout.outputs.rejection_log).strip() == ""

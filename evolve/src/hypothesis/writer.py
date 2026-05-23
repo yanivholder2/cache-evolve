@@ -28,8 +28,8 @@ def _task_md_header(cycle_id: CycleId, hypotheses_num: int, hypotheses_dir: Path
 
 
 def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
-    cycle_layout = layout.cycle(COLD_START_CYCLE)
-    baseline_layout = layout.baseline
+    cycle_layout = layout.outputs.cycle(COLD_START_CYCLE)
+    baseline_layout = layout.sources.baseline
     body = _task_md_header(
         COLD_START_CYCLE, hypotheses_num, cycle_layout.hypotheses_dir,
         title_suffix=" — cold start",
@@ -42,7 +42,7 @@ def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
         f"Every hypothesis in this cycle MUST cite `baseline` as its parent variant. "
         f"No other parent variant is valid in cycle {COLD_START_CYCLE}.\n\n"
         f"## Read for context\n\n"
-        f"- {layout.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
+        f"- {layout.sources.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
         f"- {baseline_layout.segment_rs} — baseline Segment implementation. The code your hypotheses propose to improve.\n"
         f"- {baseline_layout.manifest_toml} — baseline manifest (eviction policy, ordinal).\n"
         f"- {baseline_layout.fitness_vector_json} — baseline's measured fitness vector. Numeric anchor your hypotheses target dimensions of.\n"
@@ -52,9 +52,9 @@ def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
 
 
 def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: Layout) -> None:
-    cycle_layout = layout.cycle(cycle_id)
+    cycle_layout = layout.outputs.cycle(cycle_id)
     prev_cycle_id = cycle_id.prev()
-    prev_cycle_layout = layout.cycle(prev_cycle_id)
+    prev_cycle_layout = layout.outputs.cycle(prev_cycle_id)
     if not prev_cycle_layout.variants_dir.is_dir():
         raise FileNotFoundError(
             f"cycle {cycle_id} expects previous cycle at {prev_cycle_layout.root}, "
@@ -80,12 +80,12 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: 
         f"- {prev_cycle_layout.winners_json} — Pareto front + per-variant fitness vectors for the cycle.\n"
         f"- {prev_cycle_layout.cycle_insight_md} — cycle-level summary.\n\n"
         f"### Cross-cycle history\n\n"
-        f"- {layout.leaderboard_md} — current Pareto-front variants and fitness summaries across all cycles.\n"
-        f"- {layout.ledger} — one JSON row per completed cycle (cohort size, Pareto front, insights).\n"
-        f"- {layout.synthesis_md} — long-running narrative of what has been learned. Stub today; read if present.\n\n"
+        f"- {layout.outputs.leaderboard_md} — current Pareto-front variants and fitness summaries across all cycles.\n"
+        f"- {layout.outputs.ledger} — one JSON row per completed cycle (cohort size, Pareto front, insights).\n"
+        f"- {layout.outputs.synthesis_md} — long-running narrative of what has been learned. Stub today; read if present.\n\n"
         f"### Baseline + extension points\n\n"
-        f"- {layout.baseline.root} — the permanent baseline (always a valid parent variant).\n"
-        f"- {layout.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
+        f"- {layout.sources.baseline.root} — the permanent baseline (always a valid parent variant).\n"
+        f"- {layout.sources.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
     )
     write_utf8(cycle_layout.hypotheses_task_md, body)
 
@@ -106,7 +106,7 @@ def write_hypotheses(
     if hypotheses_num < 1:
         raise ValueError(f"hypotheses_num must be >= 1, got {hypotheses_num}")
 
-    cycle_layout = layout.cycle(cycle_id)
+    cycle_layout = layout.outputs.cycle(cycle_id)
     hypotheses_dir = cycle_layout.hypotheses_dir
     hypotheses_dir.mkdir(parents=True, exist_ok=True)
     log.info("generating %d hypotheses for cycle %s into %s", hypotheses_num, cycle_id, hypotheses_dir)
@@ -120,7 +120,7 @@ def write_hypotheses(
     adapter.run(
         agent_name=AGENT_NAME,
         workspace=hypotheses_dir,
-        readable_roots=[layout.outputs_root, layout.dash_src, layout.subject_dir],
+        readable_roots=[layout.outputs_root, layout.sources.dash_src, layout.sources.subject_dir],
         allow_edits=True,
     )
 

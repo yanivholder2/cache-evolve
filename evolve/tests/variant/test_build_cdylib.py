@@ -36,7 +36,7 @@ def _stage_baseline(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "out")
     layout.evolve_root.mkdir(parents=True, exist_ok=True)
     layout.sources.caffeine_jni_dir.symlink_to(EVOLVE_ROOT / "caffeine_jni")
-    variant_dir = layout.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
+    variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
     shutil.copytree(EVOLVE_ROOT / "subject" / "baseline" / "impl", variant_dir.impl_dir)
     return layout, VARIANT
 

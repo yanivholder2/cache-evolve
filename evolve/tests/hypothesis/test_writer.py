@@ -32,18 +32,18 @@ def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard
     dst = tmp_path / "evolve"
     dst.mkdir()
     layout = _layout(dst)
-    layout.ledger.parent.mkdir(parents=True, exist_ok=True)
+    layout.outputs.ledger.parent.mkdir(parents=True, exist_ok=True)
     if with_ledger:
         write_utf8(
-            layout.ledger,
+            layout.outputs.ledger,
             '{"cycle":"0001","cohort_size":2,"pareto_front":["v001"]}\n'
             '{"cycle":"0002","cohort_size":2,"pareto_front":["v001","v002"]}\n',
         )
     else:
-        write_utf8(layout.ledger, "")
+        write_utf8(layout.outputs.ledger, "")
     if with_leaderboard:
         write_utf8(
-            layout.leaderboard_md,
+            layout.outputs.leaderboard_md,
             "# Leaderboard\n\n| variant | hit_rate |\n|---|---|\n| v001 | 0.42 |\n",
         )
     return dst
@@ -59,8 +59,8 @@ def _copy_real_evolve(tmp_path: Path) -> Path:
         ignore=shutil.ignore_patterns(".venv", "outputs", "__pycache__", "*.pyc"),
     )
     layout = _layout(dst)
-    layout.ledger.parent.mkdir(parents=True, exist_ok=True)
-    write_utf8(layout.ledger, "")
+    layout.outputs.ledger.parent.mkdir(parents=True, exist_ok=True)
+    write_utf8(layout.outputs.ledger, "")
     return dst
 
 
@@ -70,7 +70,7 @@ def _hypothesis_files(output_dir: Path) -> list[Path]:
 
 def _stage_prev_cycle(evolve: Path, prev_cycle_id: CycleId) -> None:
     # Continuation cycles require the prev cycle's variants/ dir to exist.
-    _layout(evolve).cycle(prev_cycle_id).variants_dir.mkdir(parents=True, exist_ok=True)
+    _layout(evolve).outputs.cycle(prev_cycle_id).variants_dir.mkdir(parents=True, exist_ok=True)
 
 
 def test_emits_n_distinct_files(tmp_path):
@@ -127,7 +127,7 @@ def test_adapter_invoked_with_expected_argv(tmp_path):
     )
     body = read_utf8(capture)
     assert "agent: hypotheses-writer" in body
-    workspace = _layout(evolve).cycle(CycleId(1)).hypotheses_dir
+    workspace = _layout(evolve).outputs.cycle(CycleId(1)).hypotheses_dir
     assert f"workspace: {workspace}" in body
 
 
@@ -143,8 +143,8 @@ def test_hypotheses_writer_passes_outputs_and_subject_as_readable_roots(tmp_path
     body = read_utf8(capture)
     layout = _layout(evolve)
     assert str(layout.outputs_root) in body
-    assert str(layout.dash_src) in body
-    assert str(layout.subject_dir) in body
+    assert str(layout.sources.dash_src) in body
+    assert str(layout.sources.subject_dir) in body
 
 
 def test_task_md_written_to_output_dir(tmp_path):
@@ -165,7 +165,7 @@ def test_task_md_written_to_output_dir(tmp_path):
 
 def test_returns_hypothesis_file_paths(tmp_path):
     evolve = _setup_evolve(tmp_path)
-    cycle_layout = _layout(evolve).cycle(CycleId(1))
+    cycle_layout = _layout(evolve).outputs.cycle(CycleId(1))
     files = write_hypotheses(2, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter(n_lines=2))
     assert sorted(files) == [cycle_layout.hypothesis_file(HypothesisId(1)), cycle_layout.hypothesis_file(HypothesisId(2))]
 
@@ -184,7 +184,7 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
         adapter=StubLLMAdapter(hypothesis_lines=lines),
     )
 
-    cycle_layout = _layout(evolve_root).cycle(CycleId(1))
+    cycle_layout = _layout(evolve_root).outputs.cycle(CycleId(1))
     h01 = read_utf8(cycle_layout.hypothesis_file(HypothesisId(1)))
     h02 = read_utf8(cycle_layout.hypothesis_file(HypothesisId(2)))
     assert "Stash-bias eviction" in h01
@@ -204,7 +204,7 @@ def test_cold_start_task_md_grounds_in_baseline(tmp_path):
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = read_utf8(capture)
-    baseline = _layout(evolve).baseline
+    baseline = _layout(evolve).sources.baseline
     # Anchor on "baseline" so a stray "segment.rs" elsewhere doesn't satisfy
     # the check.
     assert "baseline" in task_md
@@ -223,9 +223,9 @@ def test_cold_start_task_md_omits_cross_cycle_stubs(tmp_path):
     )
     task_md = read_utf8(capture)
     layout = _layout(evolve)
-    assert str(layout.leaderboard_md) not in task_md
-    assert str(layout.ledger) not in task_md
-    assert str(layout.synthesis_md) not in task_md
+    assert str(layout.outputs.leaderboard_md) not in task_md
+    assert str(layout.outputs.ledger) not in task_md
+    assert str(layout.outputs.synthesis_md) not in task_md
 
 
 def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
@@ -239,7 +239,7 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = read_utf8(capture)
-    prev = _layout(evolve).cycle(CycleId(1))
+    prev = _layout(evolve).outputs.cycle(CycleId(1))
     # Anchor on "0001" so a leaked path from a different cycle wouldn't
     # satisfy the filename checks alone.
     assert "0001" in task_md
@@ -273,10 +273,10 @@ def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
     )
     task_md = read_utf8(capture)
     layout = _layout(evolve)
-    assert layout.leaderboard_md.name in task_md
-    assert layout.ledger.name in task_md
+    assert layout.outputs.leaderboard_md.name in task_md
+    assert layout.outputs.ledger.name in task_md
     # synthesis_md basename is generic ("current.md") — anchor on the dir.
-    assert "synthesis" in task_md and layout.synthesis_md.name in task_md
+    assert "synthesis" in task_md and layout.outputs.synthesis_md.name in task_md
 
 
 def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):

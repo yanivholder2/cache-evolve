@@ -39,7 +39,7 @@ def _write_hypothesis(path: Path, *, parent_variant: str, body: str = "test clai
 def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
     evolve = _setup_evolve(tmp_path)
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
-    cycle_layout = layout.cycle(CycleId(1))
+    cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
 
     hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
@@ -54,7 +54,7 @@ def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
     )
 
     body = read_utf8(capture)
-    baseline_root = layout.baseline.root
+    baseline_root = layout.sources.baseline.root
     assert str(baseline_root) in body, "task.md should embed baseline parent dir"
     assert str(baseline_root) in body.split("readable-roots:")[1].split("\n")[0]
 
@@ -64,10 +64,10 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
 
     # Materialize a past variant cycle/0001/v001 so the parser can resolve it.
-    past_variant_dir = layout.cycle(CycleId(1)).variant(VariantId(1)).root
+    past_variant_dir = layout.outputs.cycle(CycleId(1)).variant(VariantId(1)).root
     past_variant_dir.mkdir(parents=True)
 
-    current_cycle = layout.cycle(CycleId(2))
+    current_cycle = layout.outputs.cycle(CycleId(2))
     current_variant = current_cycle.variant(VariantId(1))
     hypothesis = current_cycle.hypothesis_file(HypothesisId(1))
     _write_hypothesis(hypothesis, parent_variant="cycle/0001/v001")
@@ -99,7 +99,7 @@ class _SilentNoOpAdapter:
 def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
     evolve = _setup_evolve(tmp_path)
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
-    cycle_layout = layout.cycle(CycleId(1))
+    cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
 
     hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
@@ -117,7 +117,7 @@ def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
 def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
     evolve = _setup_evolve(tmp_path)
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
-    cycle_layout = layout.cycle(CycleId(1))
+    cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
 
     hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))

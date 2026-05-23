@@ -80,15 +80,15 @@ def run_cycle(
     """Run a single evolve cycle end-to-end."""
 
     try:
-        cycle_id = _next_cycle_id(layout.cycles_dir)
-        cycle_layout = layout.cycle(cycle_id)
+        cycle_id = _next_cycle_id(layout.outputs.cycles_dir)
+        cycle_layout = layout.outputs.cycle(cycle_id)
         cycle_dir = cycle_layout.root
 
         if cycle_dir.is_dir():
             die(f"cycle {cycle_id} already exists at {cycle_dir}")
 
         # Log file lives outside cycle_dir so writes survive the seal step.
-        _log.setup(layout.cycle_log(cycle_id), level=log_level)
+        _log.setup(layout.outputs.cycle_log(cycle_id), level=log_level)
         log.info("=== cycle %s allocated at %s ===", cycle_id, cycle_dir)
         log.info("cohort_size=%d adapter=%s", cohort_size, adapter.identity())
 
@@ -119,7 +119,7 @@ def run_cycle(
                 log.info("[%s] gate-check + fitness", variant)
                 if not run_gates(
                     variant,
-                    layout=layout, repo_root=repo_root, rejection_log=layout.rejection_log,
+                    layout=layout, repo_root=repo_root, rejection_log=layout.outputs.rejection_log,
                 ):
                     log.warning("[%s] gate-check failed, skipping fitness", variant)
                     continue
@@ -142,10 +142,10 @@ def run_cycle(
                 "pareto_front": pareto_front,
             }
             log.debug("ledger row: %s", row)
-            append_row(layout.ledger, row)
+            append_row(layout.outputs.ledger, row)
 
         with _phase("regenerate leaderboard"):
-            regenerate_leaderboard(layout=layout.outputs, output=layout.leaderboard_md)
+            regenerate_leaderboard(layout=layout.outputs, output=layout.outputs.leaderboard_md)
 
         log.info("=== cycle %s complete (cohort=%d) ===", cycle_id, cohort_size)
         print(f"cycle {cycle_id} complete — sealed at {cycle_dir} (cohort={cohort_size})")
@@ -164,18 +164,18 @@ def _check_no_leftovers(layout: Layout) -> None:
         return d.is_dir() and any(p.name != ".gitkeep" for p in d.iterdir())
 
     leftovers = []
-    if has_non_gitkeep(layout.cycles_dir):
-        leftovers.append(str(layout.cycles_dir))
-    if layout.ledger.exists():
-        leftovers.append(str(layout.ledger))
-    if has_non_gitkeep(layout.logs_dir):
-        leftovers.append(str(layout.logs_dir))
-    if layout.leaderboard_md.exists():
-        leftovers.append(str(layout.leaderboard_md))
-    if layout.synthesis_md.exists():
-        leftovers.append(str(layout.synthesis_md))
-    if layout.rejection_log.exists():
-        leftovers.append(str(layout.rejection_log))
+    if has_non_gitkeep(layout.outputs.cycles_dir):
+        leftovers.append(str(layout.outputs.cycles_dir))
+    if layout.outputs.ledger.exists():
+        leftovers.append(str(layout.outputs.ledger))
+    if has_non_gitkeep(layout.outputs.logs_dir):
+        leftovers.append(str(layout.outputs.logs_dir))
+    if layout.outputs.leaderboard_md.exists():
+        leftovers.append(str(layout.outputs.leaderboard_md))
+    if layout.outputs.synthesis_md.exists():
+        leftovers.append(str(layout.outputs.synthesis_md))
+    if layout.outputs.rejection_log.exists():
+        leftovers.append(str(layout.outputs.rejection_log))
     if leftovers:
         die(f"outputs_root has leftovers from previous runs: {', '.join(leftovers)}")
 

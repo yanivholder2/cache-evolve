@@ -25,7 +25,7 @@ def main() -> None:
     repo_root = evolve_root.parent.resolve()
 
     layout = Layout(evolve_root=evolve_root, outputs_root=evolve_root / "outputs")
-    baseline = layout.baseline
+    baseline = layout.sources.baseline
 
     if not baseline.segment_rs.is_file():
         raise FileNotFoundError(f"{baseline.segment_rs} not found - seed the baseline before measuring")
@@ -36,7 +36,7 @@ def main() -> None:
     variant = Baseline()
 
     logging.info("measuring baseline at %s", baseline.root)
-    if not run_gates(variant, layout=layout, repo_root=repo_root, rejection_log=layout.rejection_log):
+    if not run_gates(variant, layout=layout, repo_root=repo_root, rejection_log=layout.outputs.rejection_log):
         raise RuntimeError("baseline failed gate-check")
     compute_fitness(variant, layout=layout, repo_root=repo_root)
     logging.info("baseline fitness measured - %s", baseline.fitness_vector_json)

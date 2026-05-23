@@ -29,7 +29,7 @@ def compute_fitness(
     and write the aggregated fitness vector."""
 
     variant_dir = variant.resolve(layout)
-    target_dir = layout.target_dir
+    target_dir = layout.outputs.target_dir
     fitness_dir = variant_dir.fitness_dir
     fitness_dir.mkdir(parents=True, exist_ok=True)
 

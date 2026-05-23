@@ -326,66 +326,6 @@ class Layout:
     def outputs(self) -> OutputsLayout:
         return OutputsLayout(root=self.outputs_root)
 
-    # outputs subtree (read-write)
-    @property
-    def cycles_dir(self) -> Path:
-        return self.outputs.cycles_dir
-
-    @property
-    def ledger(self) -> Path:
-        return self.outputs.ledger
-
-    @property
-    def leaderboard_md(self) -> Path:
-        return self.outputs.leaderboard_md
-
-    @property
-    def synthesis_md(self) -> Path:
-        return self.outputs.synthesis_md
-
-    @property
-    def rejection_log(self) -> Path:
-        return self.outputs.rejection_log
-
-    @property
-    def target_dir(self) -> Path:
-        return self.outputs.target_dir
-
-    @property
-    def logs_dir(self) -> Path:
-        return self.outputs.logs_dir
-
-    def cycle_log(self, cycle_id: CycleId) -> Path:
-        return self.outputs.cycle_log(cycle_id)
-
-    def cycle(self, cycle_id: CycleId) -> CycleLayout:
-        return self.outputs.cycle(cycle_id)
-
-    # evolve subtree (read-only sources)
-    @property
-    def subject_dir(self) -> Path:
-        return self.sources.subject_dir
-
-    @property
-    def extension_points_md(self) -> Path:
-        return self.sources.extension_points_md
-
-    @property
-    def baseline(self) -> VariantDir:
-        return self.sources.baseline
-
-    @property
-    def bench_dir(self) -> Path:
-        return self.sources.bench_dir
-
-    @property
-    def harness_dir(self) -> Path:
-        return self.sources.harness_dir
-
-    @property
-    def dash_src(self) -> Path:
-        return self.sources.dash_src
-
     # repo-relative ledger formatting
     def cycle_ledger_path(self, cycle_id: CycleId) -> str:
         """Repo-relative path string for a cycle dir (ADR-0003).
@@ -394,7 +334,7 @@ class Layout:
         """
 
         anchor = self.evolve_root.parent
-        cycle_dir = self.cycle(cycle_id).root
+        cycle_dir = self.outputs.cycle(cycle_id).root
         try:
             rel = cycle_dir.relative_to(anchor)
         except ValueError as e:
@@ -415,7 +355,7 @@ class Baseline:
     """The permanent research baseline."""
 
     def resolve(self, layout: Layout) -> VariantDir:
-        return layout.baseline
+        return layout.sources.baseline
 
     @property
     def label(self) -> str:
@@ -434,7 +374,7 @@ class CycleVariant:
     variant_id: VariantId
 
     def resolve(self, layout: Layout) -> CycleVariantDir:
-        return layout.cycle(self.cycle_id).variant(self.variant_id)
+        return layout.outputs.cycle(self.cycle_id).variant(self.variant_id)
 
     @property
     def label(self) -> str:
