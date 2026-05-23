@@ -38,8 +38,8 @@ the cohort, not peer Variants, not the ledger.
   The G1 build harness compiles this against the live `dash-cache-rs`
   crate; the G2 contract test instantiates `VariantSegment` and exercises
   the trait.
-- `manifest.toml` has a `[variant]` table with `name`, `eviction_policy`,
-  and `eviction_policy_ordinal` (must be a valid `EvictionPolicy` ordinal;
+- `manifest.toml` has a `[variant]` table with `eviction_policy` and
+  `eviction_policy_ordinal` (must be a valid `EvictionPolicy` ordinal;
   G2 calls `EvictionPolicy::from_usize` to validate).
 
 ## Constraints

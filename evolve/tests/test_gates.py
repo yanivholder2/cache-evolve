@@ -81,7 +81,7 @@ def test_gate_check_invalid_ordinal_fails_g2(tmp_path):
     impl_dir.mkdir(parents=True)
     shutil.copy(GOOD_FIXTURE / "segment.rs", impl_dir / "segment.rs")
     (impl_dir / "manifest.toml").write_text(
-        "[variant]\nname = 'bad'\neviction_policy_ordinal = 99\n"
+        "[variant]\neviction_policy_ordinal = 99\n"
     )
     log = _rejection_log(tmp_path)
     assert not run_gates(impl_dir, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
