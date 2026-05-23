@@ -13,10 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-# Zero-pad widths used in on-disk identifiers across the layout.
-CYCLE_ID_WIDTH = 4       # cycle dir: cycles/<NNNN>
-VARIANT_ID_WIDTH = 3     # variant dir: variants/v<NNN>
-HYPOTHESIS_ID_WIDTH = 2  # hypothesis file: hypotheses/H<NN>.md
+from src.identifiers import CycleId, HypothesisId, VariantId
 
 
 @dataclass(frozen=True)
@@ -26,8 +23,8 @@ class VariantLayout:
     root: Path
 
     @property
-    def id(self) -> str:
-        return self.root.name
+    def variant_id(self) -> VariantId:
+        return VariantId.from_str(self.root.name)
 
     @property
     def impl_dir(self) -> Path:
@@ -69,8 +66,8 @@ class CycleLayout:
     root: Path
 
     @property
-    def num(self) -> str:
-        return self.root.name
+    def cycle_id(self) -> CycleId:
+        return CycleId.from_str(self.root.name)
 
     @property
     def hypotheses_dir(self) -> Path:
@@ -96,11 +93,11 @@ class CycleLayout:
     def sealed_marker(self) -> Path:
         return self.root / "SEALED"
 
-    def hypothesis_file(self, i: int) -> Path:
-        return self.hypotheses_dir / f"H{i:0{HYPOTHESIS_ID_WIDTH}d}.md"
+    def hypothesis_file(self, hypothesis_id: HypothesisId) -> Path:
+        return self.hypotheses_dir / f"{hypothesis_id}.md"
 
-    def variant(self, i: int) -> VariantLayout:
-        return VariantLayout(root=self.variants_dir / f"v{i:0{VARIANT_ID_WIDTH}d}")
+    def variant(self, variant_id: VariantId) -> VariantLayout:
+        return VariantLayout(root=self.variants_dir / str(variant_id))
 
 
 @dataclass(frozen=True)
@@ -179,11 +176,11 @@ class OutputsLayout:
     def logs_dir(self) -> Path:
         return self.root / "logs"
 
-    def cycle_log(self, cycle_num: str) -> Path:
-        return self.logs_dir / f"cycle-{cycle_num}.log"
+    def cycle_log(self, cycle_id: CycleId) -> Path:
+        return self.logs_dir / f"cycle-{cycle_id}.log"
 
-    def cycle(self, cycle_num: str) -> CycleLayout:
-        return CycleLayout(root=self.cycles_dir / cycle_num)
+    def cycle(self, cycle_id: CycleId) -> CycleLayout:
+        return CycleLayout(root=self.cycles_dir / str(cycle_id))
 
 
 @dataclass(frozen=True)
@@ -236,11 +233,11 @@ class Layout:
     def logs_dir(self) -> Path:
         return self.outputs.logs_dir
 
-    def cycle_log(self, cycle_num: str) -> Path:
-        return self.outputs.cycle_log(cycle_num)
+    def cycle_log(self, cycle_id: CycleId) -> Path:
+        return self.outputs.cycle_log(cycle_id)
 
-    def cycle(self, cycle_num: str) -> CycleLayout:
-        return self.outputs.cycle(cycle_num)
+    def cycle(self, cycle_id: CycleId) -> CycleLayout:
+        return self.outputs.cycle(cycle_id)
 
     # evolve subtree (read-only sources)
     @property
@@ -264,7 +261,7 @@ class Layout:
         return self.sources.dash_src
 
     # repo-relative ledger formatting
-    def cycle_ledger_path(self, cycle_num: str) -> str:
+    def cycle_ledger_path(self, cycle_id: CycleId) -> str:
         """Repo-relative path string for a cycle dir, suitable for ledger rows.
 
         ADR-0003 requires repo-relative paths in artifacts. Anchored to
@@ -273,7 +270,7 @@ class Layout:
         """
 
         anchor = self.evolve_root.parent
-        cycle_dir = self.cycle(cycle_num).root
+        cycle_dir = self.cycle(cycle_id).root
         try:
             rel = cycle_dir.relative_to(anchor)
         except ValueError as e:

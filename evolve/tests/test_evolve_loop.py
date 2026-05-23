@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
+from src.identifiers import CycleId
 from src.paths import Layout
 
 from _stubs import StubLLMAdapter
@@ -80,4 +81,4 @@ def test_loop_aborts_on_cycle_failure(tmp_path, monkeypatch):
     with pytest.raises(SystemExit):
         _run_cycles(evolve_root, 2)
 
-    assert not _layout(evolve_root).cycle("0002").root.exists()
+    assert not _layout(evolve_root).cycle(CycleId(2)).root.exists()

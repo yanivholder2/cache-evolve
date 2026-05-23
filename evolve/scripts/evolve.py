@@ -32,7 +32,8 @@ from src.gates_and_fitness import run_gates_and_fitness  # noqa: E402
 from src.hypotheses_writer import write_hypotheses  # noqa: E402
 from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
 from src.ledger_append import append_row  # noqa: E402
-from src.paths import CYCLE_ID_WIDTH, Layout  # noqa: E402
+from src.identifiers import CYCLE_ID_WIDTH, CycleId, VariantId  # noqa: E402
+from src.paths import Layout  # noqa: E402
 from src.seal import seal_cycle  # noqa: E402
 from src.variant_implementer import implement_variants  # noqa: E402
 
@@ -45,16 +46,16 @@ def die(msg: str) -> NoReturn:
     sys.exit(1)
 
 
-def _next_cycle_num(cycles_dir: Path) -> str:
-    """Return the next zero-padded cycle ID by scanning `cycles_dir` for
-    existing `NNNN` subdirs. Not atomic — caller must guard against
-    concurrent allocation collisions."""
+def _next_cycle_id(cycles_dir: Path) -> CycleId:
+    """Return the next CycleId by scanning `cycles_dir` for existing `NNNN`
+    subdirs. Not atomic — caller must guard against concurrent allocation
+    collisions."""
 
     cycles_dir.mkdir(parents=True, exist_ok=True)
     cycle_re = re.compile(rf"\d{{{CYCLE_ID_WIDTH}}}")
     existing = [p.name for p in cycles_dir.iterdir() if cycle_re.fullmatch(p.name)]
     last = max((int(n) for n in existing), default=0)
-    return f"{last + 1:0{CYCLE_ID_WIDTH}d}"
+    return CycleId(last + 1)
 
 
 def run_cycle(
@@ -73,22 +74,22 @@ def run_cycle(
     """
 
     try:
-        cycle_num = _next_cycle_num(layout.cycles_dir)
-        cycle_layout = layout.cycle(cycle_num)
+        cycle_id = _next_cycle_id(layout.cycles_dir)
+        cycle_layout = layout.cycle(cycle_id)
         cycle_dir = cycle_layout.root
 
         if cycle_dir.is_dir():
-            die(f"cycle {cycle_num} already exists at {cycle_dir}")
+            die(f"cycle {cycle_id} already exists at {cycle_dir}")
 
         # File handler under outputs_root/logs/ — outside cycle_dir so writes survive the seal step.
-        _log.setup(layout.cycle_log(cycle_num), level=log_level)
-        log.info("=== cycle %s allocated at %s ===", cycle_num, cycle_dir)
+        _log.setup(layout.cycle_log(cycle_id), level=log_level)
+        log.info("=== cycle %s allocated at %s ===", cycle_id, cycle_dir)
 
         log.info("--- write hypotheses ---")
         write_hypotheses(
             cohort_size,
             layout=layout,
-            cycle_num=cycle_num,
+            cycle_id=cycle_id,
             adapter=adapter,
         )
 
@@ -100,11 +101,11 @@ def run_cycle(
             adapter=adapter,
         )
         log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
-        variant_layouts = [cycle_layout.variant(i) for i in range(1, cohort_size + 1)]
+        variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
         try:
             run_gates_and_fitness(
                 variant_layouts,
-                cycle_num,
+                cycle_id,
                 layout=layout,
                 repo_root=repo_root,
             )
@@ -112,15 +113,15 @@ def run_cycle(
             die(str(e))
 
         log.info("--- aggregate cohort ---")
-        pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_num)
+        pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_id)
 
         log.info("--- seal cycle dir ---")
         seal_cycle(cycle_dir)
 
         log.info("--- append ledger row ---")
         row = {
-            "cycle": cycle_num,
-            "cycle_dir": layout.cycle_ledger_path(cycle_num),
+            "cycle": str(cycle_id),
+            "cycle_dir": layout.cycle_ledger_path(cycle_id),
             "cohort_size": cohort_size,
             "pareto_front": pareto_front,
         }
@@ -130,8 +131,8 @@ def run_cycle(
         log.info("--- regenerate leaderboard ---")
         regenerate_leaderboard(layout=layout.outputs, output=layout.leaderboard_md)
 
-        log.info("=== cycle %s complete (cohort=%d) ===", cycle_num, cohort_size)
-        print(f"cycle {cycle_num} complete — sealed at {cycle_dir} (cohort={cohort_size})")
+        log.info("=== cycle %s complete (cohort=%d) ===", cycle_id, cohort_size)
+        print(f"cycle {cycle_id} complete — sealed at {cycle_dir} (cohort={cohort_size})")
     except Exception:
         log.exception("run_cycle failed")
         raise

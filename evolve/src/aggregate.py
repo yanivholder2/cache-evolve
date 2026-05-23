@@ -7,6 +7,7 @@ import json
 import logging
 
 from src.dim_summary import format_dimensions
+from src.identifiers import CycleId
 from src.paths import CycleLayout, VariantLayout
 from src.pareto import compute_pareto_front
 
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 def aggregate_cohort(
     cycle_layout: CycleLayout,
     variant_layouts: list[VariantLayout],
-    cycle_num: str,
+    cycle_id: CycleId,
 ) -> list[str]:
     """Run the aggregation stage end-to-end. Returns the Pareto front
     (variant IDs) for the ledger row."""
@@ -29,14 +30,14 @@ def aggregate_cohort(
     cohort_size = len(variant_layouts)
     cycle_layout.winners_json.write_text(
         json.dumps({
-            "cycle": cycle_num,
+            "cycle": str(cycle_id),
             "pareto_front": pareto_front,
             "fitness_vectors": fitness_vectors,
         }),
         encoding="utf-8",
     )
     cycle_layout.cycle_insight_md.write_text(
-        f"# Cycle {cycle_num} Insight\n\n"
+        f"# Cycle {cycle_id} Insight\n\n"
         f"Cohort size: {cohort_size}\n"
         f"Pareto front: {json.dumps(pareto_front)}\n\n"
         f"Evaluated {cohort_size} variant(s) with real fitness plugins "
@@ -56,8 +57,9 @@ def _collect_fitness_vectors(variant_layouts: list[VariantLayout]) -> list[dict]
 def _write_per_variant_insights(variant_layouts: list[VariantLayout], fitness_vectors: list[dict]) -> None:
     for variant_layout, fv in zip(variant_layouts, fitness_vectors):
         summary = format_dimensions(fv)
-        log.debug("[%s] insight: %s", variant_layout.id, summary)
+        variant_id = variant_layout.variant_id
+        log.debug("[%s] insight: %s", variant_id, summary)
         variant_layout.insight_md.write_text(
-            f"# Variant {variant_layout.id} Insight\n\nFitness: {summary}\n",
+            f"# Variant {variant_id} Insight\n\nFitness: {summary}\n",
             encoding="utf-8",
         )

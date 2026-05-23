@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from src.identifiers import CycleId, HypothesisId, VariantId
 from src.paths import Layout
 from src.variant_implementer import implement_variant
 
@@ -31,10 +32,10 @@ def _setup_evolve(tmp_path: Path) -> Path:
     return dst
 
 
-def _write_hypothesis(path: Path, *, parent: str, body: str = "test claim") -> None:
+def _write_hypothesis(path: Path, *, parent_variant: str, body: str = "test claim") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        f"# H01\n\n{body}\n\n## Parent\n\n{parent}\n\n## Changes\n\nstuff\n",
+        f"# H01\n\n{body}\n\n## Parent\n\n{parent_variant}\n\n## Changes\n\nstuff\n",
         encoding="utf-8",
     )
 
@@ -42,11 +43,11 @@ def _write_hypothesis(path: Path, *, parent: str, body: str = "test claim") -> N
 def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
     evolve = _setup_evolve(tmp_path)
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
-    cycle_layout = layout.cycle("0001")
-    variant_layout = cycle_layout.variant(1)
+    cycle_layout = layout.cycle(CycleId(1))
+    variant_layout = cycle_layout.variant(VariantId(1))
 
-    hypothesis = cycle_layout.hypothesis_file(1)
-    _write_hypothesis(hypothesis, parent="baseline")
+    hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
+    _write_hypothesis(hypothesis, parent_variant="baseline")
 
     capture = tmp_path / "capture.txt"
     implement_variant(
@@ -67,13 +68,13 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
 
     # Materialize a past variant cycle/0001/v001 so resolve_parent_dir finds it.
-    past_variant_dir = layout.cycle("0001").variant(1).root
+    past_variant_dir = layout.cycle(CycleId(1)).variant(VariantId(1)).root
     past_variant_dir.mkdir(parents=True)
 
-    current_cycle = layout.cycle("0002")
-    current_variant = current_cycle.variant(1)
-    hypothesis = current_cycle.hypothesis_file(1)
-    _write_hypothesis(hypothesis, parent="cycle/0001/v001")
+    current_cycle = layout.cycle(CycleId(2))
+    current_variant = current_cycle.variant(VariantId(1))
+    hypothesis = current_cycle.hypothesis_file(HypothesisId(1))
+    _write_hypothesis(hypothesis, parent_variant="cycle/0001/v001")
 
     capture = tmp_path / "capture.txt"
     implement_variant(
@@ -92,10 +93,10 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
 def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
     evolve = _setup_evolve(tmp_path)
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
-    cycle_layout = layout.cycle("0001")
-    variant_layout = cycle_layout.variant(1)
+    cycle_layout = layout.cycle(CycleId(1))
+    variant_layout = cycle_layout.variant(VariantId(1))
 
-    hypothesis = cycle_layout.hypothesis_file(1)
+    hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
     hypothesis.parent.mkdir(parents=True, exist_ok=True)
     hypothesis.write_text("just a claim line\n\n## Changes\n\nstuff\n", encoding="utf-8")
 

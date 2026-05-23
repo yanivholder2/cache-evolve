@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
+from src.identifiers import CycleId
 from src.paths import OutputsLayout
 
 
@@ -34,7 +35,7 @@ def _load_cycles(layout: OutputsLayout) -> list:
     return cycles
 
 
-def _load_winners(layout: OutputsLayout, cycle_id: str) -> Optional[dict]:
+def _load_winners(layout: OutputsLayout, cycle_id: CycleId) -> Optional[dict]:
     path = layout.cycle(cycle_id).winners_json
     if not path.exists():
         return None
@@ -95,12 +96,12 @@ def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
     ledger_rows = _load_cycles(layout)
     cycles_data = []
     for row in ledger_rows:
-        cycle_id = row["cycle"]
+        cycle_id = CycleId.from_str(row["cycle"])
         winners = _load_winners(layout, cycle_id)
         fvs = winners.get("fitness_vectors", []) if winners else []
         pareto_front = winners.get("pareto_front", []) if winners else []
         cycles_data.append({
-            "cycle": cycle_id,
+            "cycle": str(cycle_id),
             "pareto_front": pareto_front,
             "fitness_vectors": fvs,
         })

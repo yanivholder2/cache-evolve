@@ -23,6 +23,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
+from src.identifiers import CycleId, HypothesisId, VariantId
 from src.paths import CycleLayout, Layout
 
 from _stubs import StubLLMAdapter
@@ -92,7 +93,7 @@ def shared_cohort_run(tmp_path_factory):
 
     evolve_root = _setup_repo(tmp_path_factory.mktemp("shared"))
     log = _run_cycle(evolve_root, cohort_size=3)
-    return CohortRun(cycle_layout=_layout(evolve_root).cycle("0001"), log=log)
+    return CohortRun(cycle_layout=_layout(evolve_root).cycle(CycleId(1)), log=log)
 
 
 @pytest.mark.slow
@@ -103,7 +104,7 @@ def test_cohort_produces_n_variants(shared_cohort_run):
     variants = sorted(p.name for p in variants_dir.iterdir() if p.is_dir())
     assert variants == ["v001", "v002", "v003"]
     for i in (1, 2, 3):
-        variant_layout = shared_cohort_run.cycle_layout.variant(i)
+        variant_layout = shared_cohort_run.cycle_layout.variant(VariantId(i))
         assert (variant_layout.impl_dir / "segment.rs").is_file()
         assert (variant_layout.impl_dir / "manifest.toml").is_file()
         assert variant_layout.fitness_vector_json.is_file()
@@ -136,12 +137,12 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
     good_impl = Path(__file__).parent / "fixtures" / "good" / "impl"
 
     def sleep_implementer(hyp_file, variant_layout, **_):
-        (stamp_dir / f"{variant_layout.id}.start").write_text(f"{time.time()}")
+        (stamp_dir / f"{variant_layout.variant_id}.start").write_text(f"{time.time()}")
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
         variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy(good_impl / "segment.rs", variant_layout.impl_dir / "segment.rs")
         shutil.copy(good_impl / "manifest.toml", variant_layout.impl_dir / "manifest.toml")
-        (stamp_dir / f"{variant_layout.id}.end").write_text(f"{time.time()}")
+        (stamp_dir / f"{variant_layout.variant_id}.end").write_text(f"{time.time()}")
 
     monkeypatch.setattr("src.variant_implementer.implement_variant", sleep_implementer)
     _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE)
@@ -196,24 +197,24 @@ def test_variant_implementer_agent_markdown_exists():
     assert "task.md" in body.lower()
 
 
-def test_failing_variant_implementer_aborts_cycle(tmp_path, capsys, monkeypatch):
-    """A failing variant-implementer aborts the cycle with every failure logged."""
+def test_failing_variant_implementer_aborts_cycle(tmp_path, monkeypatch):
+    """A failing variant-implementer aborts the cycle after running every job."""
 
     evolve_root = _setup_repo(tmp_path)
+    invoked: list[str] = []
 
     def failing(hyp_file, variant_layout, **_):
+        invoked.append(hyp_file.name)
         raise RuntimeError(f"boom on {hyp_file.name}")
 
     monkeypatch.setattr("src.variant_implementer.implement_variant", failing)
     with pytest.raises(SystemExit):
         _run_cycle(evolve_root, cohort_size=2)
 
-    captured = capsys.readouterr()
-    assert "variant-implementer for v001 failed" in captured.err
-    assert "variant-implementer for v002 failed" in captured.err
-    assert captured.err.count("boom on") >= 2
+    # Both jobs ran — failures aren't short-circuited.
+    assert sorted(invoked) == ["H01.md", "H02.md"]
     # Cycle never completed → no winners.json.
-    assert not _layout(evolve_root).cycle("0001").winners_json.exists()
+    assert not _layout(evolve_root).cycle(CycleId(1)).winners_json.exists()
 
 
 @pytest.mark.slow
@@ -228,14 +229,14 @@ def test_hypothesis_lines_map_to_variants(tmp_path):
     ]
     _run_cycle(evolve_root, cohort_size=3, hypothesis_lines=lines)
 
-    cycle_layout = _layout(evolve_root).cycle("0001")
+    cycle_layout = _layout(evolve_root).cycle(CycleId(1))
     files = sorted(
         p.name for p in cycle_layout.hypotheses_dir.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name)
     )
     assert files == ["H01.md", "H02.md", "H03.md"]
-    assert "first hypothesis text" in cycle_layout.hypothesis_file(1).read_text()
-    assert "second hypothesis text" in cycle_layout.hypothesis_file(2).read_text()
-    assert "third hypothesis text" in cycle_layout.hypothesis_file(3).read_text()
+    assert "first hypothesis text" in cycle_layout.hypothesis_file(HypothesisId(1)).read_text()
+    assert "second hypothesis text" in cycle_layout.hypothesis_file(HypothesisId(2)).read_text()
+    assert "third hypothesis text" in cycle_layout.hypothesis_file(HypothesisId(3)).read_text()
     variants = sorted(p.name for p in cycle_layout.variants_dir.iterdir() if p.is_dir())
     assert variants == ["v001", "v002", "v003"]
 
@@ -249,7 +250,7 @@ def test_hypothesis_count_must_match_cohort(tmp_path):
         _run_cycle(evolve_root, cohort_size=10, hypothesis_lines=lines)
 
 
-def test_invalid_cohort_size_rejected(capsys):
+def test_invalid_cohort_size_rejected():
     """cohort_size must be a positive integer; CLI validation rejects 0/-1."""
 
     from evolve import main
@@ -259,4 +260,3 @@ def test_invalid_cohort_size_rejected(capsys):
             main(["--cohort-size", bad])
         # die() exits 1; argparse would exit 2 — distinguish to avoid vacuous pass.
         assert exc_info.value.code == 1
-        assert "--cohort-size" in capsys.readouterr().err

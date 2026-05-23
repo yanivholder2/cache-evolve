@@ -20,7 +20,7 @@ class StubLLMAdapter:
     Knobs:
       hypothesis_lines  explicit per-file claim lines (one entry → H01.md, etc.)
       n_lines           shorthand: write N stub files "stub hypothesis K"
-      parents           per-hypothesis parent identifier (defaults to "baseline" for each)
+      parent_variants   per-hypothesis parent-variant identifier (defaults to "baseline" for each)
       changes           per-hypothesis '## Changes' prose (defaults to "stub changes")
       exit_code         raise CalledProcessError(exit_code) before writing
       capture_file      log each invocation + task.md into this file
@@ -31,14 +31,14 @@ class StubLLMAdapter:
         *,
         hypothesis_lines: list[str] | None = None,
         n_lines: int | None = None,
-        parents: list[str] | None = None,
+        parent_variants: list[str] | None = None,
         changes: list[str] | None = None,
         exit_code: int = 0,
         capture_file: Path | None = None,
     ) -> None:
         self.hypothesis_lines = hypothesis_lines
         self.n_lines = n_lines
-        self.parents = parents
+        self.parent_variants = parent_variants
         self.changes = changes
         self.exit_code = exit_code
         self.capture_file = capture_file
@@ -72,10 +72,10 @@ class StubLLMAdapter:
             return  # write nothing — wrapper should fail with wrong count
 
         for i, line in enumerate(lines, start=1):
-            parent = self.parents[i - 1] if self.parents and i - 1 < len(self.parents) else "baseline"
+            parent_variant = self.parent_variants[i - 1] if self.parent_variants and i - 1 < len(self.parent_variants) else "baseline"
             change = self.changes[i - 1] if self.changes and i - 1 < len(self.changes) else "stub changes"
             (workspace / f"H{i:02d}.md").write_text(
-                f"# Hypothesis H{i:02d}\n\n{line}\n\n## Parent\n\n{parent}\n\n## Changes\n\n{change}\n",
+                f"# Hypothesis H{i:02d}\n\n{line}\n\n## Parent\n\n{parent_variant}\n\n## Changes\n\n{change}\n",
                 encoding="utf-8",
             )
 

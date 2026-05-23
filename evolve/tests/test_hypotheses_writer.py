@@ -21,6 +21,7 @@ import pytest
 
 from evolve import run_cycle
 from src.hypotheses_writer import write_hypotheses
+from src.identifiers import CycleId, HypothesisId
 from src.paths import Layout
 
 from _stubs import StubLLMAdapter
@@ -82,16 +83,16 @@ def _hypothesis_files(output_dir: Path) -> list[Path]:
     return sorted(p for p in output_dir.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name))
 
 
-def _stage_prev_cycle(evolve: Path, prev_num: str) -> None:
+def _stage_prev_cycle(evolve: Path, prev_cycle_id: CycleId) -> None:
     """Continuation cycles require the prev cycle's variants/ dir to exist."""
-    _layout(evolve).cycle(prev_num).variants_dir.mkdir(parents=True, exist_ok=True)
+    _layout(evolve).cycle(prev_cycle_id).variants_dir.mkdir(parents=True, exist_ok=True)
 
 
 def test_emits_n_distinct_files(tmp_path):
     """Happy path: exactly N H<NN>.md files in the output dir."""
 
     evolve = _setup_evolve(tmp_path, with_ledger=True, with_leaderboard=True)
-    files = write_hypotheses(3, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=3))
+    files = write_hypotheses(3, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter(n_lines=3))
     assert [p.name for p in files] == ["H01.md", "H02.md", "H03.md"]
     bodies = {p.read_text() for p in files}
     assert len(bodies) == 3, "files must be distinct"
@@ -102,7 +103,7 @@ def test_too_few_files_fails(tmp_path):
 
     evolve = _setup_evolve(tmp_path)
     with pytest.raises(ValueError, match="expected 3"):
-        write_hypotheses(3, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
+        write_hypotheses(3, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter(n_lines=2))
 
 
 def test_too_many_files_fails(tmp_path):
@@ -110,7 +111,7 @@ def test_too_many_files_fails(tmp_path):
 
     evolve = _setup_evolve(tmp_path)
     with pytest.raises(ValueError, match="expected 3"):
-        write_hypotheses(3, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=4))
+        write_hypotheses(3, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter(n_lines=4))
 
 
 def test_no_files_fails(tmp_path):
@@ -118,7 +119,7 @@ def test_no_files_fails(tmp_path):
 
     evolve = _setup_evolve(tmp_path)
     with pytest.raises(ValueError):
-        write_hypotheses(2, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter())
+        write_hypotheses(2, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter())
 
 
 def test_adapter_nonzero_exit_propagates(tmp_path):
@@ -129,7 +130,7 @@ def test_adapter_nonzero_exit_propagates(tmp_path):
         write_hypotheses(
             3,
             layout=_layout(evolve),
-            cycle_num="0001",
+            cycle_id=CycleId(1),
             adapter=StubLLMAdapter(exit_code=5, n_lines=3),
         )
 
@@ -138,7 +139,7 @@ def test_cold_start_with_empty_ledger_and_no_leaderboard(tmp_path):
     """Cold start: same code path; empty sections; succeeds."""
 
     evolve = _setup_evolve(tmp_path, with_ledger=False, with_leaderboard=False)
-    files = write_hypotheses(2, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
+    files = write_hypotheses(2, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter(n_lines=2))
     assert len(files) == 2
 
 
@@ -150,12 +151,12 @@ def test_adapter_invoked_with_expected_argv(tmp_path):
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0001",
+        cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     body = capture.read_text()
     assert "agent: hypotheses-writer" in body
-    workspace = _layout(evolve).cycle("0001").hypotheses_dir
+    workspace = _layout(evolve).cycle(CycleId(1)).hypotheses_dir
     assert f"workspace: {workspace}" in body
 
 
@@ -168,7 +169,7 @@ def test_hypotheses_writer_passes_outputs_and_subject_as_readable_roots(tmp_path
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0001",
+        cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     body = capture.read_text()
@@ -182,12 +183,12 @@ def test_task_md_written_to_output_dir(tmp_path):
     """task.md exists in the output dir and mentions N + cycle."""
 
     evolve = _setup_evolve(tmp_path)
-    _stage_prev_cycle(evolve, "0006")
+    _stage_prev_cycle(evolve, CycleId(6))
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0007",
+        cycle_id=CycleId(7),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     body = capture.read_text()
@@ -200,9 +201,9 @@ def test_returns_hypothesis_file_paths(tmp_path):
     """Function returns discovered file paths so evolve.py can skip re-globbing."""
 
     evolve = _setup_evolve(tmp_path)
-    cycle_layout = _layout(evolve).cycle("0001")
-    files = write_hypotheses(2, layout=_layout(evolve), cycle_num="0001", adapter=StubLLMAdapter(n_lines=2))
-    assert sorted(files) == [cycle_layout.hypothesis_file(1), cycle_layout.hypothesis_file(2)]
+    cycle_layout = _layout(evolve).cycle(CycleId(1))
+    files = write_hypotheses(2, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter(n_lines=2))
+    assert sorted(files) == [cycle_layout.hypothesis_file(HypothesisId(1)), cycle_layout.hypothesis_file(HypothesisId(2))]
 
 
 @pytest.mark.slow
@@ -221,9 +222,9 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
         adapter=StubLLMAdapter(hypothesis_lines=lines),
     )
 
-    cycle_layout = _layout(evolve_root).cycle("0001")
-    h01 = cycle_layout.hypothesis_file(1).read_text()
-    h02 = cycle_layout.hypothesis_file(2).read_text()
+    cycle_layout = _layout(evolve_root).cycle(CycleId(1))
+    h01 = cycle_layout.hypothesis_file(HypothesisId(1)).read_text()
+    h02 = cycle_layout.hypothesis_file(HypothesisId(2)).read_text()
     assert "Stash-bias eviction" in h01
     assert "Lazy promotion" in h02
     assert "walking-skeleton stub" not in h01
@@ -239,7 +240,7 @@ def test_cold_start_task_md_grounds_in_baseline(tmp_path):
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0001",
+        cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = capture.read_text()
@@ -259,7 +260,7 @@ def test_cold_start_task_md_omits_cross_cycle_stubs(tmp_path):
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0001",
+        cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = capture.read_text()
@@ -273,16 +274,16 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
     """Cycle 0002+ task.md points the writer at the previous cycle's artefacts."""
 
     evolve = _setup_evolve(tmp_path)
-    _stage_prev_cycle(evolve, "0001")
+    _stage_prev_cycle(evolve, CycleId(1))
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0002",
+        cycle_id=CycleId(2),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = capture.read_text()
-    prev = _layout(evolve).cycle("0001")
+    prev = _layout(evolve).cycle(CycleId(1))
     # `0001/` anchors the references to the prev cycle so a leaked path
     # from a different cycle wouldn't satisfy the filename checks alone.
     assert "0001" in task_md
@@ -290,16 +291,16 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
         assert path.name in task_md, f"{path.name} missing from task.md"
 
 
-def test_continuation_task_md_lists_baseline_as_valid_parent(tmp_path):
-    """Baseline is always a valid parent — continuation task.md names it."""
+def test_continuation_task_md_lists_baseline_as_valid_parent_variant(tmp_path):
+    """Baseline is always a valid parent variant — continuation task.md names it."""
 
     evolve = _setup_evolve(tmp_path)
-    _stage_prev_cycle(evolve, "0001")
+    _stage_prev_cycle(evolve, CycleId(1))
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0002",
+        cycle_id=CycleId(2),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = capture.read_text()
@@ -310,12 +311,12 @@ def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
     """Cycle 0002+ task.md includes leaderboard, ledger, and synthesis paths."""
 
     evolve = _setup_evolve(tmp_path)
-    _stage_prev_cycle(evolve, "0001")
+    _stage_prev_cycle(evolve, CycleId(1))
     capture = tmp_path / "argv-capture.txt"
     write_hypotheses(
         2,
         layout=_layout(evolve),
-        cycle_num="0002",
+        cycle_id=CycleId(2),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
     task_md = capture.read_text()
@@ -335,7 +336,7 @@ def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):
         write_hypotheses(
             2,
             layout=_layout(evolve),
-            cycle_num="0002",
+            cycle_id=CycleId(2),
             adapter=StubLLMAdapter(n_lines=2),
         )
 
@@ -356,7 +357,7 @@ def test_subagent_markdown_states_contract():
     # Required sections downstream parsers rely on.
     assert "## Parent" in body
     assert "## Changes" in body
-    # Grounding: parent must be baseline or a past variant.
+    # Grounding: parent variant must be baseline or a past variant.
     assert "baseline" in body and "cycle/<NNNN>/v<NNN>" in body
     # Scope limit: must not write outside the output dir.
     assert "outside" in body.lower() and "output" in body.lower()

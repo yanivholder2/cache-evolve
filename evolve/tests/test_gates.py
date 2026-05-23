@@ -16,6 +16,7 @@ import pytest
 
 from src.build import build_variant
 from src.gate_check import run_gates
+from src.identifiers import CycleId, VariantId
 
 EVOLVE_ROOT = Path(__file__).parent.parent
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -31,20 +32,20 @@ def _rejection_log(tmp_path) -> Path:
 
 
 def test_build_good_fixture_returns_workspace(tmp_path):
-    work = build_variant(GOOD_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=_rejection_log(tmp_path))
+    work = build_variant(GOOD_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=_rejection_log(tmp_path))
     assert work.is_dir()
     shutil.rmtree(work, ignore_errors=True)
 
 
 def test_build_broken_fixture_raises(tmp_path):
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant(BROKEN_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=_rejection_log(tmp_path))
+        build_variant(BROKEN_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=_rejection_log(tmp_path))
 
 
 def test_build_broken_fixture_logs_structured_entry(tmp_path):
     log = _rejection_log(tmp_path)
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant(BROKEN_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
+        build_variant(BROKEN_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     content = log.read_text()
     assert "G1 (build)" in content
     assert "cycle=0001" in content
@@ -53,23 +54,23 @@ def test_build_broken_fixture_logs_structured_entry(tmp_path):
 
 def test_gate_check_good_fixture_passes(tmp_path):
     log = _rejection_log(tmp_path)
-    assert run_gates(GOOD_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
+    assert run_gates(GOOD_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
 
 
 def test_gate_check_good_fixture_produces_no_rejection_entry(tmp_path):
     log = _rejection_log(tmp_path)
-    run_gates(GOOD_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
+    run_gates(GOOD_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     assert not log.is_file() or log.read_text().strip() == ""
 
 
 def test_gate_check_broken_fixture_fails(tmp_path):
     log = _rejection_log(tmp_path)
-    assert not run_gates(BROKEN_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
+    assert not run_gates(BROKEN_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
 
 
 def test_gate_check_broken_fixture_logs_structured_entry(tmp_path):
     log = _rejection_log(tmp_path)
-    run_gates(BROKEN_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
+    run_gates(BROKEN_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     content = log.read_text()
     assert "G1 (build)" in content
     assert "cycle=0001" in content
@@ -86,29 +87,28 @@ def test_gate_check_invalid_ordinal_fails_g2(tmp_path):
         "[variant]\nname = 'bad'\neviction_policy_ordinal = 99\n"
     )
     log = _rejection_log(tmp_path)
-    assert not run_gates(impl_dir, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
+    assert not run_gates(impl_dir, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     content = log.read_text()
     assert "G2 (trait contract)" in content
     assert "99" in content
 
 
-def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path, caplog):
+def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path):
     """The bad-invariant fixture compiles, passes G2, then fails G3 cleanly."""
 
     log = _rejection_log(tmp_path)
-    with caplog.at_level("INFO"):
-        assert not run_gates(BAD_INVARIANT_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
-    messages = "\n".join(r.getMessage() for r in caplog.records)
-    assert "G2: passed" in messages
-    assert "G3: FAILED" in messages
-    assert messages.index("G2: passed") < messages.index("G3: FAILED")
+    result = run_gates(BAD_INVARIANT_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
+    assert result.g1_passed is True
+    assert result.g2_passed is True
+    assert result.g3_passed is False
+    assert not result.all_passed
 
 
 def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     """The G3 rejection entry names the violated invariant + carries an error excerpt."""
 
     log = _rejection_log(tmp_path)
-    run_gates(BAD_INVARIANT_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
+    run_gates(BAD_INVARIANT_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     content = log.read_text()
     assert "G3 (invariant suite)" in content
     assert "cycle=0001" in content
@@ -119,22 +119,13 @@ def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     assert re.search(r"\*\*Failing invariant\*\*: P[1-5] [a-z_]+", content)
 
 
-def test_gate_check_g3_failure_stops_before_success_marker(tmp_path, caplog):
-    """Gate ordering: a G3-failing variant never reaches the all-gates-passed marker."""
-
-    log = _rejection_log(tmp_path)
-    with caplog.at_level("INFO"):
-        assert not run_gates(BAD_INVARIANT_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
-    messages = "\n".join(r.getMessage() for r in caplog.records)
-    assert "all gates passed" not in messages
-
-
-def test_gate_check_good_fixture_passes_g3(tmp_path, caplog):
+def test_gate_check_good_fixture_passes_g3(tmp_path):
     """The good fixture clears G1, G2, and G3 — no rejection entry."""
 
     log = _rejection_log(tmp_path)
-    with caplog.at_level("INFO"):
-        assert run_gates(GOOD_FIXTURE, "0001", "v001", repo_root=REPO_ROOT, rejection_log=log)
-    messages = "\n".join(r.getMessage() for r in caplog.records)
-    assert "G3: passed" in messages
+    result = run_gates(GOOD_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
+    assert result.g1_passed is True
+    assert result.g2_passed is True
+    assert result.g3_passed is True
+    assert result.all_passed
     assert not log.is_file() or log.read_text().strip() == ""

@@ -15,19 +15,20 @@ import re
 from pathlib import Path
 
 from src.adapters import LLMAdapter
-from src.paths import CYCLE_ID_WIDTH, HYPOTHESIS_ID_WIDTH, Layout, VariantLayout
+from src.identifiers import HYPOTHESIS_ID_WIDTH, CycleId
+from src.paths import Layout, VariantLayout
 
 AGENT_NAME = "hypotheses-writer"
 HYPOTHESIS_FILE_RE = re.compile(rf"H\d{{{HYPOTHESIS_ID_WIDTH}}}\.md")
-COLD_START_CYCLE = f"{1:0{CYCLE_ID_WIDTH}d}"
+COLD_START_CYCLE = CycleId.cold_start()
 
 log = logging.getLogger("hypotheses-writer")
 
 
-def _task_md_header(cycle_num: str, hypotheses_num: int, hypotheses_dir: Path, *, title_suffix: str = "") -> str:
+def _task_md_header(cycle_id: CycleId, hypotheses_num: int, hypotheses_dir: Path, *, title_suffix: str = "") -> str:
     return (
-        f"# Task: hypotheses-writer (cycle {cycle_num}{title_suffix})\n\n"
-        f"Cycle: {cycle_num}\n"
+        f"# Task: hypotheses-writer (cycle {cycle_id}{title_suffix})\n\n"
+        f"Cycle: {cycle_id}\n"
         f"Number of hypotheses: {hypotheses_num}\n"
         f"Output dir: {hypotheses_dir}\n\n"
     )
@@ -45,8 +46,8 @@ def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
         f"first batch of {hypotheses_num} hypotheses against the permanent research "
         f"baseline below. Prefer breadth — distinct strategies for bucket-movement — "
         f"over depth on any single idea.\n\n"
-        f"Every hypothesis in this cycle MUST cite `baseline` as its parent. "
-        f"No other parent is valid in cycle {COLD_START_CYCLE}.\n\n"
+        f"Every hypothesis in this cycle MUST cite `baseline` as its parent variant. "
+        f"No other parent variant is valid in cycle {COLD_START_CYCLE}.\n\n"
         f"## Read for context\n\n"
         f"- {layout.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
         f"- {baseline_layout.segment_rs} — baseline Segment implementation. The code your hypotheses propose to improve.\n"
@@ -57,27 +58,27 @@ def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
     cycle_layout.hypotheses_task_md.write_text(body, encoding="utf-8")
 
 
-def _write_continuation_task_md(hypotheses_num: int, cycle_num: str, layout: Layout) -> None:
-    cycle_layout = layout.cycle(cycle_num)
-    prev_num = f"{int(cycle_num) - 1:0{CYCLE_ID_WIDTH}d}"
-    prev_cycle_layout = layout.cycle(prev_num)
+def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: Layout) -> None:
+    cycle_layout = layout.cycle(cycle_id)
+    prev_cycle_id = cycle_id.prev()
+    prev_cycle_layout = layout.cycle(prev_cycle_id)
     if not prev_cycle_layout.variants_dir.is_dir():
         raise FileNotFoundError(
-            f"cycle {cycle_num} expects previous cycle at {prev_cycle_layout.root}, "
+            f"cycle {cycle_id} expects previous cycle at {prev_cycle_layout.root}, "
             f"but {prev_cycle_layout.variants_dir} is missing"
         )
     prev_cycle_variant_layout = VariantLayout(root=prev_cycle_layout.variants_dir / "v<NNN>")
     body = _task_md_header(
-        cycle_num, hypotheses_num, cycle_layout.hypotheses_dir,
+        cycle_id, hypotheses_num, cycle_layout.hypotheses_dir,
     ) + (
         f"## Framing\n\n"
         f"You are proposing the next batch of {hypotheses_num} hypotheses. Each "
-        f"hypothesis MUST cite exactly one parent: either `baseline` or a past "
-        f"variant `cycle/<NNNN>/v<NNN>` from any prior cycle (1..{int(cycle_num) - 1}). "
+        f"hypothesis MUST cite exactly one parent variant: either `baseline` or a past "
+        f"variant `cycle/<NNNN>/v<NNN>` from any prior cycle (1..{prev_cycle_id.value}). "
         f"Prefer refining recent winners or diversifying from recent losers; aim for "
         f"distinct strategies — near-duplicates collapse the cohort's Pareto front.\n\n"
         f"## Read for context\n\n"
-        f"### Previous cycle ({prev_num})\n\n"
+        f"### Previous cycle ({prev_cycle_id})\n\n"
         f"- {prev_cycle_layout.variants_dir} — every variant directory `v<NNN>/` under this path. For each variant read:\n"
         f"  - {prev_cycle_variant_layout.segment_rs} — the Rust source the variant tried.\n"
         f"  - {prev_cycle_variant_layout.manifest_toml} — the variant's declared eviction policy.\n"
@@ -90,7 +91,7 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_num: str, layout: Lay
         f"- {layout.ledger} — one JSON row per completed cycle (cohort size, Pareto front, insights).\n"
         f"- {layout.synthesis_md} — long-running narrative of what has been learned. Stub today; read if present.\n\n"
         f"### Baseline + extension points\n\n"
-        f"- {layout.baseline.root} — the permanent baseline (always a valid parent).\n"
+        f"- {layout.baseline.root} — the permanent baseline (always a valid parent variant).\n"
         f"- {layout.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
     )
     cycle_layout.hypotheses_task_md.write_text(body, encoding="utf-8")
@@ -100,7 +101,7 @@ def write_hypotheses(
     hypotheses_num: int,
     *,
     layout: Layout,
-    cycle_num: str,
+    cycle_id: CycleId,
     adapter: LLMAdapter,
 ) -> list[Path]:
     """Drive the adapter to produce `hypotheses_num` H<NN>.md files; return their paths.
@@ -112,15 +113,15 @@ def write_hypotheses(
     if hypotheses_num < 1:
         raise ValueError(f"hypotheses_num must be >= 1, got {hypotheses_num}")
 
-    cycle_layout = layout.cycle(cycle_num)
+    cycle_layout = layout.cycle(cycle_id)
     hypotheses_dir = cycle_layout.hypotheses_dir
     hypotheses_dir.mkdir(parents=True, exist_ok=True)
-    log.info("generating %d hypotheses for cycle %s into %s", hypotheses_num, cycle_num, hypotheses_dir)
+    log.info("generating %d hypotheses for cycle %s into %s", hypotheses_num, cycle_id, hypotheses_dir)
 
-    if cycle_num == COLD_START_CYCLE:
+    if cycle_id == COLD_START_CYCLE:
         _write_cold_start_task_md(hypotheses_num, layout)
     else:
-        _write_continuation_task_md(hypotheses_num, cycle_num, layout)
+        _write_continuation_task_md(hypotheses_num, cycle_id, layout)
     log.debug("wrote task spec: %s", cycle_layout.hypotheses_task_md)
 
     adapter.run(

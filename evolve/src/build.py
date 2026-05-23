@@ -14,6 +14,8 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src.identifiers import CycleId, VariantId
+
 log = logging.getLogger("build")
 
 HARNESS_DIR = Path(__file__).resolve().parent.parent / "harness"
@@ -48,7 +50,7 @@ def _scaffold_workspace(work_dir: Path, impl_dir: Path, repo_root: Path) -> None
     shutil.copy(HARNESS_DIR / "g3_invariant.rs", work_dir / "tests" / "g3_invariant.rs")
 
 
-def _append_rejection(rejection_log: Path, cycle_id: str, variant_id: str, cargo_output: str) -> None:
+def _append_rejection(rejection_log: Path, cycle_id: CycleId, variant_id: VariantId, cargo_output: str) -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     entry = (
         f"\n## {ts} — cycle={cycle_id} variant={variant_id}\n\n"
