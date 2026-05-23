@@ -33,7 +33,6 @@ from src.hypotheses_writer import write_hypotheses  # noqa: E402
 from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
 from src.ledger_append import append_row  # noqa: E402
 from src.paths import CYCLE_ID_WIDTH, Layout  # noqa: E402
-from src.scaffold import write_cohort_md  # noqa: E402
 from src.seal import seal_cycle  # noqa: E402
 from src.variant_implementer import Implementer, fan_out  # noqa: E402
 
@@ -67,7 +66,7 @@ def run_cycle(
     implementer: Implementer | None = None,
     log_level: str = "DEBUG",
 ) -> None:
-    """Run a single evolve cycle end-to-end (allocate → scaffold → fan-out →
+    """Run a single evolve cycle end-to-end (allocate → fan-out →
     gates → aggregate → seal → ledger).
 
     `layout` owns the evolve+outputs paths; `repo_root` is the git repo root
@@ -87,7 +86,7 @@ def run_cycle(
         log.info("=== cycle %s allocated at %s ===", cycle_num, cycle_dir)
 
         log.info("--- write hypotheses ---")
-        hypothesis_files = write_hypotheses(
+        write_hypotheses(
             cohort_size,
             layout=layout,
             cycle_num=cycle_num,
@@ -95,8 +94,6 @@ def run_cycle(
         )
         variant_layouts = [cycle_layout.variant(i) for i in range(1, cohort_size + 1)]
 
-        log.info("--- scaffold cohort ---")
-        write_cohort_md(cycle_layout, hypothesis_files)
         log.info("--- fan out implementers ---")
         fan_out(
             cycle_layout,

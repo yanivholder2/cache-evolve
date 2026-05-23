@@ -89,10 +89,6 @@ class CycleLayout:
         return self.root / "winners.json"
 
     @property
-    def cohort_md(self) -> Path:
-        return self.root / "cohort.md"
-
-    @property
     def cycle_insight_md(self) -> Path:
         return self.root / "cycle-insight.md"
 
