@@ -137,12 +137,19 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
 
 @pytest.mark.slow
 def test_each_variant_flows_through_real_gates(shared_cohort_run):
-    g1 = shared_cohort_run.log.count("G1: passed")
-    g2 = shared_cohort_run.log.count("G2: passed")
-    g3 = shared_cohort_run.log.count("G3: passed")
-    assert g1 == 3, f"expected G1 once per variant, saw {g1}: {shared_cohort_run.log}"
-    assert g2 == 3, f"expected G2 once per variant, saw {g2}: {shared_cohort_run.log}"
-    assert g3 == 3, f"expected G3 once per variant, saw {g3}: {shared_cohort_run.log}"
+    # fitness_vector.json is only written when G1+G2+G3 all pass
+    # (see gates_and_fitness.run_gates_and_fitness), so a complete vector
+    # per variant is the structural proof that every variant cleared the gates.
+    expected_dims = {"hit-rate", "per-op-time", "metadata-size"}
+    for i in (1, 2, 3):
+        variant_layout = shared_cohort_run.cycle_layout.variant(VariantId(i))
+        fv = json.loads(variant_layout.fitness_vector_json.read_text())
+        assert fv["variant"] == f"v{i:03d}"
+        dims = {d["dim"] for d in fv["dimensions"]}
+        assert dims == expected_dims, f"v{i:03d} dimensions {dims} != {expected_dims}"
+
+    winners = json.loads(shared_cohort_run.cycle_layout.winners_json.read_text())
+    assert {fv["variant"] for fv in winners["fitness_vectors"]} == {"v001", "v002", "v003"}
 
 
 @pytest.mark.slow

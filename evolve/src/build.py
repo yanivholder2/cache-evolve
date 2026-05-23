@@ -59,8 +59,8 @@ def _append_rejection(rejection_log: Path, cycle_id: CycleId, variant_id: Varian
 
 def build_variant(
     impl_dir: Path,
-    cycle_id: str,
-    variant_id: str,
+    cycle_id: CycleId,
+    variant_id: VariantId,
     *,
     repo_root: Path,
     rejection_log: Path,

@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,11 +19,14 @@ from src.paths import CycleLayout, Layout, VariantLayout
 
 @dataclass(frozen=True)
 class ImplementerJob:
-    id: VariantId
     hypothesis_file: Path
     variant_layout: VariantLayout
     layout: Layout
     adapter: LLMAdapter
+
+    @property
+    def variant_id(self) -> VariantId:
+        return self.variant_layout.variant_id
 
 AGENT_NAME = "variant-implementer"
 REQUIRED_OUTPUTS = ("segment.rs", "manifest.toml")
@@ -44,14 +46,17 @@ def _write_task_md(
         f"# Task: variant-implementer\n\n"
         f"Variant: {variant_layout.variant_id}\n"
         f"Parent variant: {parent_variant} ({parent_dir})\n"
-        f"Hypothesis: {hypothesis_file}\n\n"
+        f"Hypothesis: {hypothesis_file}\n"
+        f"Output dir: {variant_layout.impl_dir}\n\n"
         f"## Paths\n\n"
         f"- Parent segment.rs:     {parent_layout.segment_rs}\n"
         f"- Parent manifest.toml:  {parent_layout.manifest_toml}\n"
         f"- Parent fitness-vector: {parent_layout.fitness_vector_json}\n"
         f"- Parent insight.md:     {parent_layout.insight_md}\n"
         f"- Extension points:      {layout.extension_points_md}\n"
-        f"- Baseline segment.rs:   {layout.baseline.segment_rs}\n"
+        f"- Baseline segment.rs:   {layout.baseline.segment_rs}\n\n"
+        f"## Write\n\n"
+        f"Exactly two files under the output dir: `segment.rs` and `manifest.toml`.\n"
     )
     variant_layout.impl_task_md.write_text(body, encoding="utf-8")
 
@@ -91,10 +96,11 @@ def implement_variant(
     log.info("variant materialized at %s", impl_dir)
 
 
-def _run_implementer_job(job: ImplementerJob) -> tuple[VariantId, Exception | None]:
-    """Pool worker. Returns (job_id, exception) so failures don't crash the pool."""
+def _run_implementer_job(job: ImplementerJob) -> tuple[VariantId, BaseException | None]:
+    """Pool worker. Returns (variant_id, exception) so failures don't crash the pool."""
 
-    log.info("%s: implementer started for hypothesis %s", job.id, job.hypothesis_file)
+    variant_id = job.variant_id
+    log.info("%s: implementer started for hypothesis %s", variant_id, job.hypothesis_file)
     try:
         implement_variant(
             job.hypothesis_file,
@@ -102,11 +108,14 @@ def _run_implementer_job(job: ImplementerJob) -> tuple[VariantId, Exception | No
             layout=job.layout,
             adapter=job.adapter,
         )
-    except Exception as exception:
-        log.warning("%s: implementer failed: %s", job.id, exception)
-        return job.id, exception
-    log.info("%s: implementer completed successfully", job.id)
-    return job.id, None
+    except BaseException as exception:
+        # Catch BaseException (not Exception) so one variant's SystemExit or
+        # KeyboardInterrupt surfaces as a regular pool failure instead of
+        # tearing down sibling workers mid-flight.
+        log.warning("%s: implementer failed: %s", variant_id, exception)
+        return variant_id, exception
+    log.info("%s: implementer completed successfully", variant_id)
+    return variant_id, None
 
 
 def implement_variants(
@@ -121,24 +130,21 @@ def implement_variants(
     log.info("running %d implementers in parallel", cohort_size)
     jobs: list[ImplementerJob] = []
     for i in range(1, cohort_size + 1):
-        variant_id = VariantId(i)
-        variant_layout = cycle_layout.variant(variant_id)
         jobs.append(
             ImplementerJob(
-                id=variant_id,
                 hypothesis_file=cycle_layout.hypothesis_file(HypothesisId(i)),
-                variant_layout=variant_layout,
+                variant_layout=cycle_layout.variant(VariantId(i)),
                 layout=layout,
                 adapter=adapter,
             )
         )
 
-    failed = False
+    failures: list[VariantId] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=cohort_size) as pool:
         for variant_id, exception in pool.map(_run_implementer_job, jobs):
             if exception is not None:
                 log.error("implementer %s failed", variant_id, exc_info=exception)
-                failed = True
-    if failed:
-        sys.exit(1)
+                failures.append(variant_id)
+    if failures:
+        raise RuntimeError(f"variant-implementer failed for {[str(v) for v in failures]}")
     log.info("all %d implementers succeeded", cohort_size)

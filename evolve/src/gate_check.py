@@ -71,8 +71,8 @@ def _check_g2(work_dir: Path, cycle_id: CycleId, variant_id: VariantId, rejectio
 
 def _check_g3(
     work_dir: Path,
-    cycle_id: str,
-    variant_id: str,
+    cycle_id: CycleId,
+    variant_id: VariantId,
     rejection_log: Path,
     fingerprint: str,
 ) -> bool:
@@ -109,8 +109,8 @@ def _check_g3(
 
 def run_gates(
     impl_dir: Path,
-    cycle_id: str,
-    variant_id: str,
+    cycle_id: CycleId,
+    variant_id: VariantId,
     *,
     repo_root: Path,
     rejection_log: Path,

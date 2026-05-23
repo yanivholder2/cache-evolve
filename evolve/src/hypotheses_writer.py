@@ -8,7 +8,7 @@ from pathlib import Path
 
 from src.adapters import LLMAdapter
 from src.identifiers import HYPOTHESIS_ID_WIDTH, CycleId
-from src.paths import Layout, VariantLayout
+from src.paths import Layout
 
 AGENT_NAME = "hypotheses-writer"
 HYPOTHESIS_FILE_RE = re.compile(rf"H\d{{{HYPOTHESIS_ID_WIDTH}}}\.md")
@@ -59,7 +59,7 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: 
             f"cycle {cycle_id} expects previous cycle at {prev_cycle_layout.root}, "
             f"but {prev_cycle_layout.variants_dir} is missing"
         )
-    prev_cycle_variant_layout = VariantLayout(root=prev_cycle_layout.variants_dir / "v<NNN>")
+    prev_variant_template = prev_cycle_layout.variant_template
     body = _task_md_header(
         cycle_id, hypotheses_num, cycle_layout.hypotheses_dir,
     ) + (
@@ -72,10 +72,10 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: 
         f"## Read for context\n\n"
         f"### Previous cycle ({prev_cycle_id})\n\n"
         f"- {prev_cycle_layout.variants_dir} — every variant directory `v<NNN>/` under this path. For each variant read:\n"
-        f"  - {prev_cycle_variant_layout.segment_rs} — the Rust source the variant tried.\n"
-        f"  - {prev_cycle_variant_layout.manifest_toml} — the variant's declared eviction policy.\n"
-        f"  - {prev_cycle_variant_layout.fitness_vector_json} — its measured fitness vector.\n"
-        f"  - {prev_cycle_variant_layout.insight_md} — one-line fitness summary.\n"
+        f"  - {prev_variant_template.segment_rs} — the Rust source the variant tried.\n"
+        f"  - {prev_variant_template.manifest_toml} — the variant's declared eviction policy.\n"
+        f"  - {prev_variant_template.fitness_vector_json} — its measured fitness vector.\n"
+        f"  - {prev_variant_template.insight_md} — one-line fitness summary.\n"
         f"- {prev_cycle_layout.winners_json} — Pareto front + per-variant fitness vectors for the cycle.\n"
         f"- {prev_cycle_layout.cycle_insight_md} — cycle-level summary.\n\n"
         f"### Cross-cycle history\n\n"

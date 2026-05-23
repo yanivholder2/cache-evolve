@@ -90,7 +90,7 @@ def parse(path: Path) -> Hypothesis:
     try:
         parent_variant = _parse_parent_variant(parent_line)
     except ValueError as e:
-        raise ValueError(f"{path}: {e}") from None
+        raise ValueError(f"{path}: {e}") from e
     log.debug("parent variant for %s: %s", path, parent_variant)
 
     changes_body = sections.get("Changes")

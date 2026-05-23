@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -12,11 +13,14 @@ from typing import Any, TextIO
 
 from .base_llm_adapter import LLMAdapter, Usage, write_timeline
 
+log = logging.getLogger("llm-adapter.antigravity-sdk")
+
 
 def _format_args(args: Any) -> str:
     try:
         return "```json\n" + json.dumps(args, indent=2, ensure_ascii=False) + "\n```"
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as exception:
+        log.warning("tool args not json serialisable, falling back to repr: %s", exception)
         return f"`{args!r}`"
 
 

@@ -9,14 +9,13 @@ from src.identifiers import CycleId, HypothesisId, VariantId
 
 
 @dataclass(frozen=True)
-class VariantLayout:
-    """Paths under one variant directory (cycles/<id>/variants/v<NNN>)."""
+class VariantPaths:
+    """Paths under any variant-shaped directory. `root.name` need not be a
+    valid `VariantId` — `baseline/` and prose templates carrying the literal
+    `v<NNN>` placeholder share this layout. Use `VariantLayout` when the id
+    matters."""
 
     root: Path
-
-    @property
-    def variant_id(self) -> VariantId:
-        return VariantId.from_str(self.root.name)
 
     @property
     def impl_dir(self) -> Path:
@@ -49,6 +48,16 @@ class VariantLayout:
     @property
     def insight_md(self) -> Path:
         return self.root / "insight.md"
+
+
+@dataclass(frozen=True)
+class VariantLayout(VariantPaths):
+    """A concrete cycle variant (cycles/<id>/variants/v<NNN>); `root.name`
+    must parse as a `VariantId`."""
+
+    @property
+    def variant_id(self) -> VariantId:
+        return VariantId.from_str(self.root.name)
 
 
 @dataclass(frozen=True)
@@ -91,6 +100,13 @@ class CycleLayout:
     def variant(self, variant_id: VariantId) -> VariantLayout:
         return VariantLayout(root=self.variants_dir / str(variant_id))
 
+    @property
+    def variant_template(self) -> VariantPaths:
+        """Prose-only variant layout whose `root` ends in the literal
+        placeholder `v<NNN>`. Use to document where variant artefacts will
+        live without binding to a concrete variant id."""
+        return VariantPaths(root=self.variants_dir / "v<NNN>")
+
 
 @dataclass(frozen=True)
 class SourcesLayout:
@@ -107,10 +123,11 @@ class SourcesLayout:
         return self.subject_dir / "extension-points.md"
 
     @property
-    def baseline(self) -> VariantLayout:
-        # Mirrors VariantLayout shape so the baseline reads with the same file
-        # conventions as any cycle variant.
-        return VariantLayout(root=self.subject_dir / "baseline")
+    def baseline(self) -> VariantPaths:
+        # Mirrors the variant layout so the baseline reads with the same file
+        # conventions as any cycle variant. Returns `VariantPaths` (not
+        # `VariantLayout`) because `"baseline"` isn't a valid `VariantId`.
+        return VariantPaths(root=self.subject_dir / "baseline")
 
     @property
     def bench_dir(self) -> Path:
@@ -226,7 +243,7 @@ class Layout:
         return self.sources.extension_points_md
 
     @property
-    def baseline(self) -> VariantLayout:
+    def baseline(self) -> VariantPaths:
         return self.sources.baseline
 
     @property

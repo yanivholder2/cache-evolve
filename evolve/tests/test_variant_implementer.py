@@ -62,7 +62,7 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
     evolve = _setup_evolve(tmp_path)
     layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
 
-    # Materialize a past variant cycle/0001/v001 so resolve_parent_dir finds it.
+    # Materialize a past variant cycle/0001/v001 so the parser can resolve it.
     past_variant_dir = layout.cycle(CycleId(1)).variant(VariantId(1)).root
     past_variant_dir.mkdir(parents=True)
 
@@ -83,6 +83,34 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
     assert str(past_variant_dir) in body
     readable_line = body.split("readable-roots:")[1].split("\n")[0]
     assert str(past_variant_dir) in readable_line
+
+
+class _SilentNoOpAdapter:
+    """Adapter that returns without writing any files — regression vector for silent agents."""
+
+    def identity(self) -> str:
+        return "SilentNoOpAdapter"
+
+    def run(self, agent_name, workspace, *, readable_roots, allow_edits) -> None:
+        return None
+
+
+def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
+    evolve = _setup_evolve(tmp_path)
+    layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
+    cycle_layout = layout.cycle(CycleId(1))
+    variant_layout = cycle_layout.variant(VariantId(1))
+
+    hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
+    _write_hypothesis(hypothesis, parent_variant="baseline")
+
+    with pytest.raises(FileNotFoundError, match="adapter did not produce"):
+        implement_variant(
+            hypothesis,
+            variant_layout,
+            layout=layout,
+            adapter=_SilentNoOpAdapter(),
+        )
 
 
 def test_malformed_hypothesis_aborts_before_adapter(tmp_path):

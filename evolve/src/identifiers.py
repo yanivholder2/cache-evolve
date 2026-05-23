@@ -41,6 +41,8 @@ class CycleId:
         return CycleId(self.value + 1)
 
     def prev(self) -> CycleId:
+        if self.value == 1:
+            raise ValueError(f"no cycle precedes {self} (cold-start cycle has no predecessor)")
         return CycleId(self.value - 1)
 
     def __str__(self) -> str:

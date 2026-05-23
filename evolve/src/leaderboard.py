@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Optional
 
 from src.identifiers import CycleId
 from src.paths import OutputsLayout
+
+log = logging.getLogger("leaderboard")
 
 
 class LeaderboardError(Exception):
@@ -90,7 +93,12 @@ def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
     ledger_rows = _load_cycles(layout)
     cycles_data = []
     for row in ledger_rows:
-        cycle_id = CycleId.from_str(row["cycle"])
+        raw = row["cycle"]
+        try:
+            cycle_id = CycleId(int(raw))
+        except (TypeError, ValueError) as e:
+            log.warning("skipping ledger row with malformed cycle %r: %s", raw, e)
+            continue
         winners = _load_winners(layout, cycle_id)
         fvs = winners.get("fitness_vectors", []) if winners else []
         pareto_front = winners.get("pareto_front", []) if winners else []

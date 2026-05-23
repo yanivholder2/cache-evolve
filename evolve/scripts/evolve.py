@@ -43,13 +43,15 @@ def die(msg: str) -> NoReturn:
 def _phase(name: str):
     """Log a header for `name`, then a matching footer on exit.
 
-    `finally` ensures a failing phase still records its end before the
-    exception propagates.
+    Footer reads "done" on clean exit, "failed" when an exception propagates.
     """
     log.info("--- %s ---", name)
     try:
         yield
-    finally:
+    except BaseException:
+        log.info("--- %s failed ---", name)
+        raise
+    else:
         log.info("--- %s done ---", name)
 
 
@@ -98,12 +100,16 @@ def run_cycle(
             )
 
         with _phase("implement variants"):
-            implement_variants(
-                cycle_layout,
-                cohort_size,
-                layout=layout,
-                adapter=adapter,
-            )
+            try:
+                implement_variants(
+                    cycle_layout,
+                    cohort_size,
+                    layout=layout,
+                    adapter=adapter,
+                )
+            except RuntimeError as exception:
+                log.error("implement variants failed", exc_info=exception)
+                die(str(exception))
 
         with _phase("gates + fitness (sequential, cargo serializes target/)"):
             variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]

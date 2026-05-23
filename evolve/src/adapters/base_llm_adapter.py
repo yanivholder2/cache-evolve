@@ -112,10 +112,7 @@ class LLMAdapter:
         backend-side output (chat, thoughts, tool calls, diagnostics) into
         `log_io`; do not close it.
 
-        Returns a usage dict appended to the log footer. Recommended keys
-        (omit what the backend doesn't expose): `input_tokens`,
-        `output_tokens`, `cache_read_tokens`, `cache_write_tokens`,
-        `thinking_tokens`, `total_tokens`, `cost_usd`.
+        Returns a usage dict appended to the log footer.
         """
         raise NotImplementedError
 
