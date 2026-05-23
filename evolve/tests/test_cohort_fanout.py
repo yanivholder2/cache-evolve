@@ -1,7 +1,7 @@
 """Cohort fan-out tests for evolve.run_cycle.
 
 Covers:
-- cohort.md + hypotheses/HNN.md per Hypothesis
+- hypotheses/HNN.md per Hypothesis
 - N variants produced, each with impl/ and eval/
 - variant-implementer invoked in parallel (P1 parallelism — in-process threads)
 - hypothesis lines from the adapter land in HNN.md and spawn matching variants
@@ -115,20 +115,13 @@ def test_cohort_produces_n_variants(shared_cohort_run):
 
 
 @pytest.mark.slow
-def test_cohort_writes_cohort_md_and_per_hypothesis_docs(shared_cohort_run):
-    """Orchestrator writes cohort.md and hypotheses/HNN.md per Hypothesis."""
-
-    cohort_md = shared_cohort_run.cycle_layout.cohort_md
-    assert cohort_md.is_file()
+def test_cohort_writes_per_hypothesis_docs(shared_cohort_run):
+    """Orchestrator writes hypotheses/HNN.md per Hypothesis."""
 
     hypotheses = shared_cohort_run.cycle_layout.hypotheses_dir
     assert hypotheses.is_dir()
     files = sorted(p.name for p in hypotheses.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name))
     assert files == ["H01.md", "H02.md", "H03.md"]
-
-    body = cohort_md.read_text()
-    for hid in ("H01", "H02", "H03"):
-        assert hid in body, f"cohort.md must reference {hid}"
 
 
 @pytest.mark.slow
