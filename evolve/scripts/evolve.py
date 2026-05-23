@@ -34,7 +34,7 @@ from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
 from src.ledger_append import append_row  # noqa: E402
 from src.paths import CYCLE_ID_WIDTH, Layout  # noqa: E402
 from src.seal import seal_cycle  # noqa: E402
-from src.variant_implementer import Implementer, fan_out  # noqa: E402
+from src.variant_implementer import Implementer, implement_variants  # noqa: E402
 
 log = logging.getLogger("evolve")
 
@@ -66,7 +66,7 @@ def run_cycle(
     implementer: Implementer | None = None,
     log_level: str = "DEBUG",
 ) -> None:
-    """Run a single evolve cycle end-to-end (allocate → fan-out →
+    """Run a single evolve cycle end-to-end (allocate → implement variants →
     gates → aggregate → seal → ledger).
 
     `layout` owns the evolve+outputs paths; `repo_root` is the git repo root
@@ -92,10 +92,9 @@ def run_cycle(
             cycle_num=cycle_num,
             adapter=adapter,
         )
-        variant_layouts = [cycle_layout.variant(i) for i in range(1, cohort_size + 1)]
 
-        log.info("--- fan out implementers ---")
-        fan_out(
+        log.info("--- implement variants ---")
+        implement_variants(
             cycle_layout,
             cohort_size,
             layout=layout,
@@ -103,6 +102,7 @@ def run_cycle(
             implementer=implementer,
         )
         log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
+        variant_layouts = [cycle_layout.variant(i) for i in range(1, cohort_size + 1)]
         try:
             run_gates_and_fitness(
                 variant_layouts,

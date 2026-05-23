@@ -1,11 +1,11 @@
-"""Variant-implementer step — single-variant driver + cohort fan-out.
+"""Variant-implementer step — single-variant driver + cohort driver.
 
 Owns everything related to materializing Variant impls in a cycle:
 
 - `implement_variant`: invokes the LLMAdapter for one Hypothesis, verifies
   the agent produced `segment.rs` and `manifest.toml`.
-- `fan_out`: spawns N `implement_variant` calls in parallel (one per
-  Hypothesis), aborts the cycle on any failure.
+- `implement_variants`: runs `implement_variant` once per Hypothesis in
+  parallel, aborts the cycle on any failure.
 - `Implementer`: callable protocol so tests can inject stubs.
 
 The agent-side contract (what the LLM must write, constraints, failure
@@ -118,7 +118,7 @@ def _run_one(
     return vid, None
 
 
-def fan_out(
+def implement_variants(
     cycle_layout: CycleLayout,
     cohort_size: int,
     *,
@@ -136,7 +136,7 @@ def fan_out(
     if implementer is None:
         implementer = functools.partial(implement_variant, adapter=adapter)
 
-    log.info("fan-out: %d implementer(s) in parallel", cohort_size)
+    log.info("running %d implementers in parallel", cohort_size)
     jobs = []
     for i in range(1, cohort_size + 1):
         variant_layout = cycle_layout.variant(i)
@@ -154,4 +154,4 @@ def fan_out(
                 failed = True
     if failed:
         sys.exit(1)
-    log.info("fan-out: all %d implementers succeeded", cohort_size)
+    log.info("all %d implementers succeeded", cohort_size)

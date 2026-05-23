@@ -1,4 +1,4 @@
-"""Cohort fan-out tests for evolve.run_cycle.
+"""implement_variants tests for evolve.run_cycle.
 
 Covers:
 - hypotheses/HNN.md per Hypothesis
