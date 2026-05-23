@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from src._io import write_utf8
 from src.variant.build import build_cdylib
 from src.identifiers import CycleId, VariantId
 from src.paths import CycleVariant, Layout
@@ -15,9 +16,18 @@ EVOLVE_ROOT = Path(__file__).parent.parent.parent
 REPO_ROOT = EVOLVE_ROOT.parent
 
 VARIANT = CycleVariant(CycleId(1), VariantId(1))
-EXPECTED_SYMBOL = (
+VARIANT_SYMBOL_PREFIX = (
     "Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_"
-    "DashVariantRustPolicy_initCache"
+    "DashVariantRustPolicy_"
+)
+# Method set the main dash cdylib exposes per RustPolicy class — the variant
+# cdylib must expose the same five so Caffeine can swap it in.
+EXPECTED_METHODS = (
+    "initCache",
+    "initDefaultCache",
+    "getFromCacheIfPresent",
+    "putToCache",
+    "dropCache",
 )
 
 
@@ -30,6 +40,20 @@ def _stage_baseline(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     return layout, VARIANT
 
 
+def _exported_jni_methods(cdylib_path: Path) -> set[str]:
+    nm = subprocess.run(
+        ["nm", "-D", "--defined-only", str(cdylib_path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return {
+        line.split()[-1].removeprefix(VARIANT_SYMBOL_PREFIX)
+        for line in nm.stdout.splitlines()
+        if VARIANT_SYMBOL_PREFIX in line
+    }
+
+
 @pytest.mark.slow
 def test_build_cdylib_good_baseline(tmp_path):
     layout, variant = _stage_baseline(tmp_path)
@@ -40,14 +64,34 @@ def test_build_cdylib_good_baseline(tmp_path):
         assert cdylib_path.stat().st_size > 0
 
         if sys.platform == "linux":
-            nm = subprocess.run(
-                ["nm", "-D", str(cdylib_path)],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            assert EXPECTED_SYMBOL in nm.stdout, (
-                f"missing symbol {EXPECTED_SYMBOL} in nm output:\n{nm.stdout}"
+            methods = _exported_jni_methods(cdylib_path)
+            assert set(EXPECTED_METHODS).issubset(methods), (
+                f"variant cdylib missing methods: "
+                f"{set(EXPECTED_METHODS) - methods}; exported: {sorted(methods)}"
             )
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
+
+
+@pytest.mark.slow
+def test_build_cdylib_broken_variant_raises_and_produces_no_artifact(tmp_path, monkeypatch):
+    layout, variant = _stage_baseline(tmp_path)
+    # Corrupt segment.rs so cargo build fails.
+    write_utf8(variant.resolve(layout).segment_rs, "this is not valid rust;\n")
+
+    # Pin the cdylib workspace under tmp_path so we can prove it was cleaned up.
+    workspaces_root = tmp_path / "cdylib-workspaces"
+    workspaces_root.mkdir()
+    import tempfile as _tempfile
+
+    real_mkdtemp = _tempfile.mkdtemp
+    monkeypatch.setattr(
+        "src.variant.build.tempfile.mkdtemp",
+        lambda prefix="tmp": real_mkdtemp(prefix=prefix, dir=workspaces_root),
+    )
+
+    with pytest.raises(subprocess.CalledProcessError):
+        build_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
+
+    # Workspace removed → no stray artifact left behind.
+    assert list(workspaces_root.iterdir()) == []
