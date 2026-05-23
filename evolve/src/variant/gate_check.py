@@ -12,7 +12,7 @@ from pathlib import Path
 
 from src._io import append_utf8
 from src.variant.build import build_variant_for_gates
-from src.paths import CargoWorkspaceDir, Layout, Variant
+from src.paths import GatesWorkspace, Layout, Variant
 
 log = logging.getLogger("gate-check")
 
@@ -42,7 +42,7 @@ def _append_entry(rejection_log: Path, body: str) -> None:
     append_utf8(rejection_log, body)
 
 
-def _run_cargo_test(workspace: CargoWorkspaceDir, test_name: str) -> subprocess.CompletedProcess:
+def _run_cargo_test(workspace: GatesWorkspace, test_name: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["cargo", "test", "--manifest-path", str(workspace.cargo_toml), "--test", test_name],
         capture_output=True,
@@ -50,7 +50,7 @@ def _run_cargo_test(workspace: CargoWorkspaceDir, test_name: str) -> subprocess.
     )
 
 
-def _check_g2(workspace: CargoWorkspaceDir, variant: Variant, rejection_log: Path) -> bool:
+def _check_g2(workspace: GatesWorkspace, variant: Variant, rejection_log: Path) -> bool:
     proc = _run_cargo_test(workspace, "g2_contract")
     if proc.returncode == 0:
         log.info("G2: passed")
@@ -70,7 +70,7 @@ def _check_g2(workspace: CargoWorkspaceDir, variant: Variant, rejection_log: Pat
 
 
 def _check_g3(
-    workspace: CargoWorkspaceDir,
+    workspace: GatesWorkspace,
     variant: Variant,
     rejection_log: Path,
     fingerprint: str,

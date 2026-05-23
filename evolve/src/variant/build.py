@@ -1,61 +1,71 @@
-"""Variant cargo builds: G1 gate's test artifact (`build_variant_for_gates`) and the
-Caffeine-loadable cdylib (`build_cdylib`)."""
+"""Variant cargo builds: the G1 gate's test artifact and the
+Caffeine-loadable cdylib for one variant."""
 
 from __future__ import annotations
 
 import logging
 import shutil
 import subprocess
-import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 from src._io import append_utf8, write_utf8
-from src.paths import CargoWorkspaceDir, Layout, Variant, VariantDir
+from src.paths import (
+    CargoWorkspaceDir,
+    CdylibWorkspace,
+    GatesWorkspace,
+    Layout,
+    Variant,
+    VariantDir,
+    cargo_workspace_tempdir,
+)
 
 log = logging.getLogger("build")
 
 LIB_RS_GATES = "pub mod variant;\npub use variant::VariantSegment;\n"
 LIB_RS_CDYLIB = "pub mod variant;\npub mod jni;\npub use variant::VariantSegment;\n"
 
-_CDYLIB_FILENAMES = {
-    "linux": "libdash_variant.so",
-    "win32": "dash_variant.dll",
-    "darwin": "libdash_variant.dylib",
-}
+_JNI_CRATE_VERSION = "0.20.0"
+_LOG_CRATE_VERSION = "0.4"
 
 
-def _cargo_toml(repo_root: Path, *, with_cdylib: bool = False) -> str:
-    base = (
+def _cargo_toml_gates(repo_root: Path) -> str:
+    repo_root_str = repo_root.as_posix()
+    return (
         "[package]\n"
         'name = "variant-check"\n'
         'version = "0.1.0"\n'
         'edition = "2021"\n'
         "\n"
-    )
-    if with_cdylib:
-        base += (
-            "[lib]\n"
-            'name = "dash_variant"\n'
-            'crate-type = ["cdylib", "rlib"]\n'
-            "\n"
-        )
-    base += (
         "[dependencies]\n"
-        f'dash = {{ package = "dash-cache-rs", path = "{repo_root}", features = ["test-utils"] }}\n'
+        f'dash = {{ package = "dash-cache-rs", path = "{repo_root_str}", '
+        'features = ["test-utils"] }\n'
     )
-    if with_cdylib:
-        base += 'jni = "0.20.0"\n'
-        base += 'log = "0.4"\n'
-    return base
+
+
+def _cargo_toml_cdylib(repo_root: Path) -> str:
+    # Production cdylib must not pull `test-utils` (proptest, test helpers).
+    repo_root_str = repo_root.as_posix()
+    return (
+        "[package]\n"
+        'name = "variant-check"\n'
+        'version = "0.1.0"\n'
+        'edition = "2021"\n'
+        "\n"
+        "[lib]\n"
+        'name = "dash_variant"\n'
+        'crate-type = ["cdylib", "rlib"]\n'
+        "\n"
+        "[dependencies]\n"
+        f'dash = {{ package = "dash-cache-rs", path = "{repo_root_str}" }}\n'
+        f'jni = "{_JNI_CRATE_VERSION}"\n'
+        f'log = "{_LOG_CRATE_VERSION}"\n'
+    )
 
 
 def _scaffold_variant_workspace(
     workspace: CargoWorkspaceDir, variant_dir: VariantDir, *, cargo_toml: str, lib_rs: str
 ) -> None:
-    """Lay out the shared skeleton every variant cargo crate needs: src/lib.rs, src/variant.rs, Cargo.toml, manifest.toml."""
-
     workspace.src_dir.mkdir(parents=True, exist_ok=True)
     write_utf8(workspace.cargo_toml, cargo_toml)
     write_utf8(workspace.lib_rs, lib_rs)
@@ -63,24 +73,20 @@ def _scaffold_variant_workspace(
     shutil.copy(variant_dir.manifest_toml, workspace.manifest_toml)
 
 
-def _scaffold_gates_workspace(workspace: CargoWorkspaceDir, variant_dir: VariantDir, layout: Layout, repo_root: Path) -> None:
-    """Lay out a cargo crate around the variant's segment.rs so the G2/G3 harness tests can link against it."""
-
-    _scaffold_variant_workspace(workspace, variant_dir, cargo_toml=_cargo_toml(repo_root), lib_rs=LIB_RS_GATES)
+def _scaffold_gates_workspace(workspace: GatesWorkspace, variant_dir: VariantDir, layout: Layout, repo_root: Path) -> None:
+    _scaffold_variant_workspace(workspace, variant_dir, cargo_toml=_cargo_toml_gates(repo_root), lib_rs=LIB_RS_GATES)
     workspace.tests_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy(layout.g2_contract_rs, workspace.g2_contract_rs)
-    shutil.copy(layout.g3_invariant_rs, workspace.g3_invariant_rs)
+    shutil.copy(layout.sources.g2_contract_rs, workspace.g2_contract_rs)
+    shutil.copy(layout.sources.g3_invariant_rs, workspace.g3_invariant_rs)
 
 
 def _scaffold_cdylib_workspace(
-    workspace: CargoWorkspaceDir, variant_dir: VariantDir, layout: Layout, repo_root: Path
+    workspace: CdylibWorkspace, variant_dir: VariantDir, layout: Layout, repo_root: Path
 ) -> None:
-    """Lay out a cargo crate around the variant's segment.rs plus the Caffeine JNI shim, ready to be built as a cdylib."""
-
     _scaffold_variant_workspace(
-        workspace, variant_dir, cargo_toml=_cargo_toml(repo_root, with_cdylib=True), lib_rs=LIB_RS_CDYLIB
+        workspace, variant_dir, cargo_toml=_cargo_toml_cdylib(repo_root), lib_rs=LIB_RS_CDYLIB
     )
-    shutil.copy(layout.variant_jni_rs, workspace.jni_rs)
+    shutil.copy(layout.sources.variant_jni_rs, workspace.jni_rs)
 
 
 def _append_rejection(rejection_log: Path, variant: Variant, cargo_output: str) -> None:
@@ -102,7 +108,7 @@ def build_variant_for_gates(
     layout: Layout,
     repo_root: Path,
     rejection_log: Path,
-) -> CargoWorkspaceDir:
+) -> GatesWorkspace:
     """Compile a variant impl into a temp workspace. Returns the workspace.
 
     Raises:
@@ -111,57 +117,56 @@ def build_variant_for_gates(
     """
 
     variant_dir = variant.resolve(layout)
-    workspace = CargoWorkspaceDir(root=Path(tempfile.mkdtemp(prefix="dash-variant-")))
-    log.debug("workspace=%s impl=%s repo_root=%s", workspace.root, variant_dir.impl_dir, repo_root)
-    _scaffold_gates_workspace(workspace, variant_dir, layout, repo_root)
+    with cargo_workspace_tempdir("dash-variant-", GatesWorkspace) as workspace:
+        log.debug("workspace=%s impl=%s repo_root=%s", workspace.root, variant_dir.impl_dir, repo_root)
+        _scaffold_gates_workspace(workspace, variant_dir, layout, repo_root)
 
-    log.info("G1: compiling variant %s ...", variant)
-    proc = subprocess.run(
-        ["cargo", "build", "--tests", "--manifest-path", str(workspace.cargo_toml)],
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0:
-        log.info("G1: FAILED")
-        _append_rejection(rejection_log, variant, proc.stdout + proc.stderr)
-        log.info("rejection logged to %s", rejection_log)
-        shutil.rmtree(
-            workspace.root,
-            onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
+        log.info("G1: compiling variant %s ...", variant)
+        proc = subprocess.run(
+            ["cargo", "build", "--tests", "--manifest-path", str(workspace.cargo_toml)],
+            capture_output=True,
+            text=True,
         )
-        raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
+        if proc.returncode != 0:
+            log.info("G1: FAILED")
+            _append_rejection(rejection_log, variant, proc.stdout + proc.stderr)
+            log.info("rejection logged to %s", rejection_log)
+            raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
-    log.info("G1: passed")
-    return workspace
+        log.info("G1: passed")
+        # Caller owns workspace from here; the CM only cleans up on exception.
+        return workspace
 
 
-def build_cdylib(variant: Variant, *, layout: Layout, repo_root: Path) -> Path:
-    """Compile a variant into a Caffeine-loadable cdylib. Returns the absolute path to the artifact.
+def build_cdylib(
+    variant: Variant, *, layout: Layout, repo_root: Path
+) -> tuple[CdylibWorkspace, Path]:
+    """Compile a variant into a Caffeine-loadable cdylib.
+
+    Returns a `(workspace, cdylib_path)` tuple. The caller owns the workspace's
+    lifecycle and is responsible for cleaning it up (e.g. `shutil.rmtree(workspace.root)`)
+    once the artifact is no longer needed.
 
     Raises:
+        RuntimeError: platform is unsupported.
         subprocess.CalledProcessError: cargo build failed (workspace removed).
     """
 
-    filename = _CDYLIB_FILENAMES[sys.platform]
     variant_dir = variant.resolve(layout)
-    workspace = CargoWorkspaceDir(root=Path(tempfile.mkdtemp(prefix="dash-variant-cdylib-")))
-    log.debug("cdylib workspace=%s impl=%s repo_root=%s", workspace.root, variant_dir.impl_dir, repo_root)
-    _scaffold_cdylib_workspace(workspace, variant_dir, layout, repo_root)
+    with cargo_workspace_tempdir("dash-variant-cdylib-", CdylibWorkspace) as workspace:
+        log.debug("cdylib workspace=%s impl=%s repo_root=%s", workspace.root, variant_dir.impl_dir, repo_root)
+        _scaffold_cdylib_workspace(workspace, variant_dir, layout, repo_root)
 
-    log.info("building cdylib for variant %s ...", variant)
-    proc = subprocess.run(
-        ["cargo", "build", "--release", "--manifest-path", str(workspace.cargo_toml)],
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0:
-        log.info("cdylib build FAILED for %s", variant)
-        shutil.rmtree(
-            workspace.root,
-            onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
+        log.info("building cdylib for variant %s ...", variant)
+        proc = subprocess.run(
+            ["cargo", "build", "--release", "--manifest-path", str(workspace.cargo_toml)],
+            capture_output=True,
+            text=True,
         )
-        raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
+        if proc.returncode != 0:
+            log.error("cdylib build FAILED for %s\n%s", variant, proc.stdout + proc.stderr)
+            raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
-    cdylib_path = workspace.cdylib(filename)
-    log.info("cdylib built at %s", cdylib_path)
-    return cdylib_path
+        cdylib_path = workspace.cdylib
+        log.info("cdylib built at %s", cdylib_path)
+        return workspace, cdylib_path

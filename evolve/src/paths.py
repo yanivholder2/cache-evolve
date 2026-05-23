@@ -2,13 +2,35 @@
 
 from __future__ import annotations
 
+import logging
+import shutil
+import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from tempfile import mkdtemp
+from typing import Iterator, Type, TypeVar, Union
 
 from src.identifiers import CycleId, HypothesisId, VariantId
 
 BASELINE_STR = "baseline"
+
+log = logging.getLogger("paths")
+
+_CDYLIB_FILENAMES = {
+    "linux": "libdash_variant.so",
+    "win32": "dash_variant.dll",
+    "darwin": "libdash_variant.dylib",
+}
+
+
+def cdylib_filename(platform: str) -> str:
+    try:
+        return _CDYLIB_FILENAMES[platform]
+    except KeyError:
+        raise RuntimeError(
+            f"unsupported platform {platform!r}; supported: {sorted(_CDYLIB_FILENAMES)}"
+        ) from None
 
 
 @dataclass(frozen=True)
@@ -55,7 +77,10 @@ class VariantDir:
 
 @dataclass(frozen=True)
 class CargoWorkspaceDir:
-    """A scaffolded cargo crate laid out under a tempdir for compiling one variant."""
+    """Path layout of a cargo crate built for one variant.
+
+    Does not own its root directory; callers manage cleanup.
+    """
 
     root: Path
 
@@ -79,9 +104,10 @@ class CargoWorkspaceDir:
     def variant_rs(self) -> Path:
         return self.src_dir / "variant.rs"
 
-    @property
-    def jni_rs(self) -> Path:
-        return self.src_dir / "jni.rs"
+
+@dataclass(frozen=True)
+class GatesWorkspace(CargoWorkspaceDir):
+    """Cargo crate scaffolded to run the G2/G3 harness tests."""
 
     @property
     def tests_dir(self) -> Path:
@@ -95,8 +121,41 @@ class CargoWorkspaceDir:
     def g3_invariant_rs(self) -> Path:
         return self.tests_dir / "g3_invariant.rs"
 
-    def cdylib(self, filename: str) -> Path:
-        return self.root / "target" / "release" / filename
+
+@dataclass(frozen=True)
+class CdylibWorkspace(CargoWorkspaceDir):
+    """Cargo crate scaffolded to build a Caffeine-loadable cdylib."""
+
+    @property
+    def jni_rs(self) -> Path:
+        return self.src_dir / "jni.rs"
+
+    @property
+    def cdylib(self) -> Path:
+        return self.root / "target" / "release" / cdylib_filename(sys.platform)
+
+
+# Preserves the concrete subclass through `cargo_workspace_tempdir` so callers
+# keep access to subclass-only paths (e.g. `GatesWorkspace.g2_contract_rs`).
+_W = TypeVar("_W", bound=CargoWorkspaceDir)
+
+@contextmanager
+def cargo_workspace_tempdir(prefix: str, cls: Type[_W]) -> Iterator[_W]:
+    """Create a tempdir-rooted workspace of `cls`. Removes the dir on exception
+    only; on clean exit the caller owns the workspace lifetime."""
+
+    root = Path(mkdtemp(prefix=prefix))
+    workspace = cls(root=root)
+    try:
+        yield workspace
+    except BaseException:
+        shutil.rmtree(
+            root,
+            onexc=lambda fn, path, exception: log.warning(
+                "workspace cleanup failed for %s: %s", path, exception
+            ),
+        )
+        raise
 
 
 @dataclass(frozen=True)
@@ -324,22 +383,6 @@ class Layout:
         return self.sources.harness_dir
 
     @property
-    def g2_contract_rs(self) -> Path:
-        return self.sources.g2_contract_rs
-
-    @property
-    def g3_invariant_rs(self) -> Path:
-        return self.sources.g3_invariant_rs
-
-    @property
-    def caffeine_jni_dir(self) -> Path:
-        return self.sources.caffeine_jni_dir
-
-    @property
-    def variant_jni_rs(self) -> Path:
-        return self.sources.variant_jni_rs
-
-    @property
     def dash_src(self) -> Path:
         return self.sources.dash_src
 
@@ -391,10 +434,7 @@ class CycleVariant:
     variant_id: VariantId
 
     def resolve(self, layout: Layout) -> CycleVariantDir:
-        variant_dir = layout.cycle(self.cycle_id).variant(self.variant_id)
-        if not variant_dir.root.is_dir():
-            raise FileNotFoundError(f"variant dir not found: {variant_dir.root}")
-        return variant_dir
+        return layout.cycle(self.cycle_id).variant(self.variant_id)
 
     @property
     def label(self) -> str:
