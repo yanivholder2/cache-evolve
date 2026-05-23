@@ -2,6 +2,25 @@
 
 Index of reference docs. Paths are relative to the repo root. Read on demand; don't preload.
 
+## READMEs
+
+### [evolve/README.md](../evolve/README.md)
+
+* Environment setup
+* Usage (flags, examples)
+* Baseline and per-cycle grounding
+* Measuring the baseline
+* Configuration
+* Testing
+
+**Read when** running the evolve framework, configuring a cycle, or running its test suite.
+
+### [evolve/src/agents/README.md](../evolve/src/agents/README.md)
+
+* Agent prompt convention (markdown body = system prompt)
+
+**Read when** adding a new LLM-driven agent call site.
+
 ## Domain
 
 ### [CONTEXT.md](../CONTEXT.md)

@@ -12,6 +12,9 @@ GOOD_IMPL = Path(__file__).parent / "fixtures" / "good" / "impl"
 class StubLLMAdapter:
     """Deterministic in-process adapter that writes canned files."""
 
+    def identity(self) -> str:
+        return "StubLLMAdapter"
+
     def __init__(
         self,
         *,
