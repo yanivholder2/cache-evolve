@@ -19,7 +19,6 @@ import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 import pytest
 
@@ -58,7 +57,6 @@ def _run_cycle(
     *,
     cohort_size: int = 2,
     hypothesis_lines: list[str] | None = None,
-    implementer: Callable[..., None] | None = None,
 ) -> str:
     """Run one cycle in-process. Returns the captured log messages."""
 
@@ -67,13 +65,11 @@ def _run_cycle(
     logging.getLogger().addHandler(handler)
     try:
         adapter = StubLLMAdapter(hypothesis_lines=hypothesis_lines) if hypothesis_lines else StubLLMAdapter(n_lines=cohort_size)
-        kwargs = {"implementer": implementer} if implementer is not None else {}
         run_cycle(
             layout=_layout(evolve_root),
             repo_root=REAL_REPO_ROOT,
             cohort_size=cohort_size,
             adapter=adapter,
-            **kwargs,
         )
         return handler.stream.getvalue()
     finally:
@@ -125,12 +121,12 @@ def test_cohort_writes_per_hypothesis_docs(shared_cohort_run):
 
 
 @pytest.mark.slow
-def test_variant_implementer_invoked_in_parallel(tmp_path):
+def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
     """Orchestrator fans out N variant-implementer invocations in parallel (P1).
 
-    Use an overridable implementer that sleeps (releasing the GIL) and
-    stamps start+end times; assert total wall time is well below the serial
-    lower bound.
+    Patch in an implementer that sleeps (releasing the GIL) and stamps
+    start+end times; assert total wall time is well below the serial lower
+    bound.
     """
 
     evolve_root = _setup_repo(tmp_path)
@@ -139,7 +135,7 @@ def test_variant_implementer_invoked_in_parallel(tmp_path):
 
     good_impl = Path(__file__).parent / "fixtures" / "good" / "impl"
 
-    def sleep_implementer(hyp_file, variant_layout, *, layout):
+    def sleep_implementer(hyp_file, variant_layout, **_):
         vid = variant_layout.id
         (stamp_dir / f"{vid}.start").write_text(f"{time.time()}")
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
@@ -148,7 +144,8 @@ def test_variant_implementer_invoked_in_parallel(tmp_path):
         shutil.copy(good_impl / "manifest.toml", variant_layout.impl_dir / "manifest.toml")
         (stamp_dir / f"{vid}.end").write_text(f"{time.time()}")
 
-    _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE, implementer=sleep_implementer)
+    monkeypatch.setattr("src.variant_implementer.implement_variant", sleep_implementer)
+    _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE)
 
     starts = sorted(float(p.read_text()) for p in stamp_dir.glob("*.start"))
     ends = sorted(float(p.read_text()) for p in stamp_dir.glob("*.end"))
@@ -200,16 +197,17 @@ def test_variant_implementer_agent_markdown_exists():
     assert "task.md" in body.lower()
 
 
-def test_failing_variant_implementer_aborts_cycle(tmp_path, capsys):
+def test_failing_variant_implementer_aborts_cycle(tmp_path, capsys, monkeypatch):
     """A failing variant-implementer aborts the cycle with every failure logged."""
 
     evolve_root = _setup_repo(tmp_path)
 
-    def failing(hyp_file, variant_layout, *, layout):
+    def failing(hyp_file, variant_layout, **_):
         raise RuntimeError(f"boom on {hyp_file.name}")
 
+    monkeypatch.setattr("src.variant_implementer.implement_variant", failing)
     with pytest.raises(SystemExit):
-        _run_cycle(evolve_root, cohort_size=2, implementer=failing)
+        _run_cycle(evolve_root, cohort_size=2)
 
     captured = capsys.readouterr()
     assert "variant-implementer for v001 failed" in captured.err

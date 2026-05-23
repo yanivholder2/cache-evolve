@@ -6,7 +6,6 @@ Owns everything related to materializing Variant impls in a cycle:
   the agent produced `segment.rs` and `manifest.toml`.
 - `implement_variants`: runs `implement_variant` once per Hypothesis in
   parallel, aborts the cycle on any failure.
-- `Implementer`: callable protocol so tests can inject stubs.
 
 The agent-side contract (what the LLM must write, constraints, failure
 modes) lives in `evolve/src/agents/variant-implementer.md`.
@@ -15,12 +14,10 @@ modes) lives in `evolve/src/agents/variant-implementer.md`.
 from __future__ import annotations
 
 import concurrent.futures
-import functools
 import logging
 import sys
 import traceback
 from pathlib import Path
-from typing import Callable
 
 from src import hypothesis_parser
 from src.adapters import LLMAdapter
@@ -28,8 +25,6 @@ from src.paths import CycleLayout, Layout, VariantLayout
 
 AGENT_NAME = "variant-implementer"
 REQUIRED_OUTPUTS = ("segment.rs", "manifest.toml")
-
-Implementer = Callable[..., None]
 
 log = logging.getLogger("variant-implementer")
 
@@ -101,15 +96,16 @@ def implement_variant(
 
 
 def _run_one(
-    job: tuple[str, Implementer, Path, VariantLayout, Layout],
+    job: tuple[str, Path, VariantLayout, Layout, LLMAdapter],
 ) -> tuple[str, BaseException | None]:
-    vid, implementer, hyp_file, variant_layout, layout = job
+    vid, hyp_file, variant_layout, layout, adapter = job
     log.debug("%s: implementer %s", vid, hyp_file)
     try:
-        implementer(
+        implement_variant(
             hyp_file,
             variant_layout,
             layout=layout,
+            adapter=adapter,
         )
     except BaseException as exc:  # noqa: BLE001 — surface every failure to the orchestrator
         log.debug("%s: implementer failed: %s", vid, exc)
@@ -124,17 +120,8 @@ def implement_variants(
     *,
     layout: Layout,
     adapter: LLMAdapter,
-    implementer: Implementer | None = None,
 ) -> None:
-    """Invoke the variant-implementer once per Variant in parallel. Aborts on any failure.
-
-    When `implementer` is None (production path), `implement_variant` is
-    bound with the adapter via `functools.partial`. Tests can pass a stub
-    `implementer=` that ignores the adapter.
-    """
-
-    if implementer is None:
-        implementer = functools.partial(implement_variant, adapter=adapter)
+    """Invoke the variant-implementer once per Variant in parallel. Aborts on any failure."""
 
     log.info("running %d implementers in parallel", cohort_size)
     jobs = []
@@ -142,7 +129,7 @@ def implement_variants(
         variant_layout = cycle_layout.variant(i)
         variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
         variant_layout.fitness_dir.mkdir(parents=True, exist_ok=True)
-        jobs.append((variant_layout.id, implementer, cycle_layout.hypothesis_file(i), variant_layout, layout))
+        jobs.append((variant_layout.id, cycle_layout.hypothesis_file(i), variant_layout, layout, adapter))
 
     failed = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=cohort_size) as pool:

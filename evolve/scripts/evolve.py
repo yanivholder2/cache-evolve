@@ -34,7 +34,7 @@ from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
 from src.ledger_append import append_row  # noqa: E402
 from src.paths import CYCLE_ID_WIDTH, Layout  # noqa: E402
 from src.seal import seal_cycle  # noqa: E402
-from src.variant_implementer import Implementer, implement_variants  # noqa: E402
+from src.variant_implementer import implement_variants  # noqa: E402
 
 log = logging.getLogger("evolve")
 
@@ -63,7 +63,6 @@ def run_cycle(
     repo_root: Path,
     cohort_size: int,
     adapter: LLMAdapter,
-    implementer: Implementer | None = None,
     log_level: str = "DEBUG",
 ) -> None:
     """Run a single evolve cycle end-to-end (allocate → implement variants →
@@ -99,7 +98,6 @@ def run_cycle(
             cohort_size,
             layout=layout,
             adapter=adapter,
-            implementer=implementer,
         )
         log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
         variant_layouts = [cycle_layout.variant(i) for i in range(1, cohort_size + 1)]
