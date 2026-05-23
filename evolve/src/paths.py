@@ -54,6 +54,52 @@ class VariantDir:
 
 
 @dataclass(frozen=True)
+class CargoWorkspaceDir:
+    """A scaffolded cargo crate laid out under a tempdir for compiling one variant."""
+
+    root: Path
+
+    @property
+    def cargo_toml(self) -> Path:
+        return self.root / "Cargo.toml"
+
+    @property
+    def manifest_toml(self) -> Path:
+        return self.root / "manifest.toml"
+
+    @property
+    def src_dir(self) -> Path:
+        return self.root / "src"
+
+    @property
+    def lib_rs(self) -> Path:
+        return self.src_dir / "lib.rs"
+
+    @property
+    def variant_rs(self) -> Path:
+        return self.src_dir / "variant.rs"
+
+    @property
+    def jni_rs(self) -> Path:
+        return self.src_dir / "jni.rs"
+
+    @property
+    def tests_dir(self) -> Path:
+        return self.root / "tests"
+
+    @property
+    def g2_contract_rs(self) -> Path:
+        return self.tests_dir / "g2_contract.rs"
+
+    @property
+    def g3_invariant_rs(self) -> Path:
+        return self.tests_dir / "g3_invariant.rs"
+
+    def cdylib(self, filename: str) -> Path:
+        return self.root / "target" / "release" / filename
+
+
+@dataclass(frozen=True)
 class CycleVariantDir(VariantDir):
     """A concrete cycle variant (cycles/<id>/variants/v<NNN>); `root.name`
     must parse as a `VariantId`."""
@@ -139,6 +185,22 @@ class SourcesLayout:
     @property
     def harness_dir(self) -> Path:
         return self.root / "harness"
+
+    @property
+    def g2_contract_rs(self) -> Path:
+        return self.harness_dir / "g2_contract.rs"
+
+    @property
+    def g3_invariant_rs(self) -> Path:
+        return self.harness_dir / "g3_invariant.rs"
+
+    @property
+    def caffeine_jni_dir(self) -> Path:
+        return self.root / "caffeine_jni"
+
+    @property
+    def variant_jni_rs(self) -> Path:
+        return self.caffeine_jni_dir / "variant_jni.rs"
 
     @property
     def dash_src(self) -> Path:
@@ -260,6 +322,22 @@ class Layout:
     @property
     def harness_dir(self) -> Path:
         return self.sources.harness_dir
+
+    @property
+    def g2_contract_rs(self) -> Path:
+        return self.sources.g2_contract_rs
+
+    @property
+    def g3_invariant_rs(self) -> Path:
+        return self.sources.g3_invariant_rs
+
+    @property
+    def caffeine_jni_dir(self) -> Path:
+        return self.sources.caffeine_jni_dir
+
+    @property
+    def variant_jni_rs(self) -> Path:
+        return self.sources.variant_jni_rs
 
     @property
     def dash_src(self) -> Path:

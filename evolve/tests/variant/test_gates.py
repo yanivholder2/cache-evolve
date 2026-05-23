@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from src._io import read_utf8, write_utf8
-from src.variant.build import build_variant
+from src.variant.build import build_variant_for_gates
 from src.variant.gate_check import run_gates
 from src.identifiers import CycleId, VariantId
 from src.paths import CycleVariant, Layout
@@ -43,21 +43,21 @@ def _stage(tmp_path: Path, fixture_name: str) -> tuple[Layout, CycleVariant]:
 
 def test_build_good_fixture_returns_workspace(tmp_path):
     layout, variant = _stage(tmp_path, "good")
-    work = build_variant(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    assert work.is_dir()
-    shutil.rmtree(work, ignore_errors=True)
+    workspace = build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+    assert workspace.root.is_dir()
+    shutil.rmtree(workspace.root, ignore_errors=True)
 
 
 def test_build_broken_fixture_raises(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
 
 
 def test_build_broken_fixture_logs_structured_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
+        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
     content = read_utf8(layout.rejection_log)
     assert "G1 (build)" in content
     assert EXPECTED_VARIANT_TAG in content
