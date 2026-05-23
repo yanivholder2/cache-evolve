@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from src import hypothesis_parser
+from src.hypothesis import parser
 from src.adapters import LLMAdapter
 from src.identifiers import HypothesisId, VariantId
 from src.paths import CycleLayout, Layout, Variant, VariantLayout
@@ -72,7 +72,7 @@ def implement_variant(
     if not hypothesis_file.is_file():
         raise FileNotFoundError(f"hypothesis file not found: {hypothesis_file}")
 
-    hypothesis = hypothesis_parser.parse(hypothesis_file)
+    hypothesis = parser.parse(hypothesis_file)
     parent_variant_dir = hypothesis.parent_variant.resolve(layout)
 
     impl_dir = variant_layout.impl_dir

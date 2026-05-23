@@ -5,7 +5,7 @@ import threading
 
 import pytest
 
-from src.ledger_append import append_row
+from src.cycle.ledger_append import append_row
 
 
 def test_single_append_writes_one_row(tmp_path):

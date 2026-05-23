@@ -1,4 +1,4 @@
-"""Tests for src/build.py and src/gate_check.py.
+"""Tests for src/variant/build.py and src/variant/gate_check.py.
 
 Cargo is mocked via tests/_mocks/cargo — the shim short-circuits build/test
 calls based on markers in the variant source so gate logic runs end-to-end
@@ -13,13 +13,13 @@ from pathlib import Path
 
 import pytest
 
-from src.build import build_variant
-from src.gate_check import run_gates
+from src.variant.build import build_variant
+from src.variant.gate_check import run_gates
 from src.identifiers import CycleId, VariantId
 from src.paths import CycleVariant
 
-EVOLVE_ROOT = Path(__file__).parent.parent
-FIXTURES_DIR = Path(__file__).parent / "fixtures"
+EVOLVE_ROOT = Path(__file__).parent.parent.parent
+FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 REPO_ROOT = EVOLVE_ROOT.parent
 
 GOOD_FIXTURE = FIXTURES_DIR / "good" / "impl"

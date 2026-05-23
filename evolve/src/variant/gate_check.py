@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.build import build_variant
+from src.variant.build import build_variant
 from src.paths import Variant
 
 log = logging.getLogger("gate-check")

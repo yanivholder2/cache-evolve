@@ -13,7 +13,7 @@ from src.paths import Variant
 
 log = logging.getLogger("build")
 
-HARNESS_DIR = Path(__file__).resolve().parent.parent / "harness"
+HARNESS_DIR = Path(__file__).resolve().parent.parent.parent / "harness"
 
 LIB_RS = "pub mod variant;\npub use variant::VariantSegment;\n"
 

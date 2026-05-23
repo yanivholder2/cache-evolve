@@ -5,7 +5,7 @@ import json
 import pytest
 
 from src.identifiers import CycleId
-from src.leaderboard import LeaderboardError, regenerate
+from src.cycle.leaderboard import LeaderboardError, regenerate
 from src.paths import OutputsLayout
 
 

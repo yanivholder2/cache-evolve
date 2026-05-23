@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.fitness.runner import compute_fitness  # noqa: E402
-from src.gate_check import run_gates  # noqa: E402
+from src.variant.gate_check import run_gates  # noqa: E402
 from src.paths import Baseline, Layout  # noqa: E402
 
 

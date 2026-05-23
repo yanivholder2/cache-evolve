@@ -20,16 +20,16 @@ if __name__ == "__main__":
 from src import _log  # noqa: E402
 from src._log import LEVELS as LOG_LEVELS  # noqa: E402
 from src.adapters import REGISTRY, LLMAdapter  # noqa: E402
-from src.aggregate import aggregate_cohort  # noqa: E402
+from src.aggregate.cohort import aggregate_cohort  # noqa: E402
+from src.cycle.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
+from src.cycle.ledger_append import append_row  # noqa: E402
+from src.cycle.seal import seal_cycle  # noqa: E402
 from src.fitness.runner import compute_fitness  # noqa: E402
-from src.gate_check import run_gates  # noqa: E402
-from src.hypotheses_writer import write_hypotheses  # noqa: E402
-from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
-from src.ledger_append import append_row  # noqa: E402
+from src.hypothesis.writer import write_hypotheses  # noqa: E402
 from src.identifiers import CYCLE_ID_WIDTH, CycleId, VariantId  # noqa: E402
 from src.paths import CycleVariant, Layout  # noqa: E402
-from src.seal import seal_cycle  # noqa: E402
-from src.variant_implementer import implement_variants  # noqa: E402
+from src.variant.gate_check import run_gates  # noqa: E402
+from src.variant.implementer import implement_variants  # noqa: E402
 
 log = logging.getLogger("evolve")
 

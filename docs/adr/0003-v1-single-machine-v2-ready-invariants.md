@@ -11,7 +11,7 @@ than a refactor:
 
 1. **Repo-relative paths only** — no absolute paths in any artifact.
 2. **Atomic ledger append** — filelock + atomic-rename in
-   `src/ledger_append.py`, works locally and across NFS / shared blob in v2.
+   `src/cycle/ledger_append.py`, works locally and across NFS / shared blob in v2.
 3. **Stable Variant fingerprint** — hash of `impl/` contents for cross-worker
    dedup and cross-cycle re-proposal detection.
 4. **Insight ledger is the only synchronization point** — all other state is

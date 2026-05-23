@@ -4,8 +4,8 @@ from pathlib import Path
 
 from src.fitness.plugins import hit_rate, metadata_size, per_op_time
 
-REPO_ROOT = Path(__file__).parent.parent.parent
-EVOLVE_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent.parent.parent
+EVOLVE_ROOT = Path(__file__).parent.parent.parent
 
 
 def _assert_shape(data, expected_dim):

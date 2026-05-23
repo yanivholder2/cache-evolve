@@ -9,11 +9,11 @@ import pytest
 
 from src.identifiers import CycleId, HypothesisId, VariantId
 from src.paths import Layout
-from src.variant_implementer import implement_variant
+from src.variant.implementer import implement_variant
 
 from _stubs import StubLLMAdapter
 
-EVOLVE_SRC = Path(__file__).parent.parent
+EVOLVE_SRC = Path(__file__).parent.parent.parent
 
 
 def _setup_evolve(tmp_path: Path) -> Path:

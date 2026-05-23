@@ -17,7 +17,7 @@ from src.paths import CycleLayout, Layout
 
 from _stubs import StubLLMAdapter
 
-EVOLVE_SRC = Path(__file__).parent.parent
+EVOLVE_SRC = Path(__file__).parent.parent.parent
 REAL_REPO_ROOT = EVOLVE_SRC.parent
 
 PARALLEL_COHORT_SIZE = 4
@@ -109,7 +109,7 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
     stamp_dir = tmp_path / "stamps"
     stamp_dir.mkdir()
 
-    good_impl = Path(__file__).parent / "fixtures" / "good" / "impl"
+    good_impl = Path(__file__).parent.parent / "fixtures" / "good" / "impl"
 
     def sleep_implementer(hyp_file, variant_layout, **_):
         (stamp_dir / f"{variant_layout.variant_id}.start").write_text(f"{time.time()}")
@@ -119,7 +119,7 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
         shutil.copy(good_impl / "manifest.toml", variant_layout.impl_dir / "manifest.toml")
         (stamp_dir / f"{variant_layout.variant_id}.end").write_text(f"{time.time()}")
 
-    monkeypatch.setattr("src.variant_implementer.implement_variant", sleep_implementer)
+    monkeypatch.setattr("src.variant.implementer.implement_variant", sleep_implementer)
     _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE)
 
     starts = sorted(float(p.read_text()) for p in stamp_dir.glob("*.start"))
@@ -181,7 +181,7 @@ def test_failing_variant_implementer_aborts_cycle(tmp_path, monkeypatch):
         invoked.append(hyp_file.name)
         raise RuntimeError(f"boom on {hyp_file.name}")
 
-    monkeypatch.setattr("src.variant_implementer.implement_variant", failing)
+    monkeypatch.setattr("src.variant.implementer.implement_variant", failing)
     with pytest.raises(SystemExit):
         _run_cycle(evolve_root, cohort_size=2)
 

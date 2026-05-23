@@ -1,8 +1,8 @@
-"""Tests for the Pareto front computer (src/pareto.py)."""
+"""Tests for the Pareto front computer (src/aggregate/pareto.py)."""
 
 import pytest
 
-from src.pareto import compute_pareto_front
+from src.aggregate.pareto import compute_pareto_front
 
 
 def _vec(variant, **dims):

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
-from src.hypotheses_writer import write_hypotheses
+from src.hypothesis.writer import write_hypotheses
 from src.identifiers import CycleId, HypothesisId
 from src.paths import Layout
 
@@ -20,7 +20,7 @@ from _stubs import StubLLMAdapter
 def _layout(evolve: Path) -> Layout:
     return Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
 
-EVOLVE_SRC = Path(__file__).parent.parent
+EVOLVE_SRC = Path(__file__).parent.parent.parent
 REPO_ROOT = EVOLVE_SRC.parent
 
 

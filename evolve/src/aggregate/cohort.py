@@ -5,10 +5,9 @@ from __future__ import annotations
 import json
 import logging
 
-from src.dim_summary import format_dimensions
 from src.identifiers import CycleId
 from src.paths import CycleLayout, VariantLayout
-from src.pareto import compute_pareto_front
+from src.aggregate.pareto import compute_pareto_front
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ def _collect_fitness_vectors(variant_layouts: list[VariantLayout]) -> list[dict]
 
 def _write_per_variant_insights(variant_layouts: list[VariantLayout], fitness_vectors: list[dict]) -> None:
     for variant_layout, fv in zip(variant_layouts, fitness_vectors):
-        summary = format_dimensions(fv)
+        summary = ", ".join(f"{d['dim']}={d['summary']:.4g}" for d in fv.get("dimensions", []))
         variant_id = variant_layout.variant_id
         log.debug("[%s] insight: %s", variant_id, summary)
         variant_layout.insight_md.write_text(
