@@ -11,8 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src._io import append_utf8
-from src.variant.build import build_variant
-from src.paths import Layout, Variant
+from src.variant.build import build_variant_for_gates
+from src.paths import CargoWorkspaceDir, Layout, Variant
 
 log = logging.getLogger("gate-check")
 
@@ -42,16 +42,16 @@ def _append_entry(rejection_log: Path, body: str) -> None:
     append_utf8(rejection_log, body)
 
 
-def _run_cargo_test(work_dir: Path, test_name: str) -> subprocess.CompletedProcess:
+def _run_cargo_test(workspace: CargoWorkspaceDir, test_name: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["cargo", "test", "--manifest-path", str(work_dir / "Cargo.toml"), "--test", test_name],
+        ["cargo", "test", "--manifest-path", str(workspace.cargo_toml), "--test", test_name],
         capture_output=True,
         text=True,
     )
 
 
-def _check_g2(work_dir: Path, variant: Variant, rejection_log: Path) -> bool:
-    proc = _run_cargo_test(work_dir, "g2_contract")
+def _check_g2(workspace: CargoWorkspaceDir, variant: Variant, rejection_log: Path) -> bool:
+    proc = _run_cargo_test(workspace, "g2_contract")
     if proc.returncode == 0:
         log.info("G2: passed")
         return True
@@ -70,12 +70,12 @@ def _check_g2(work_dir: Path, variant: Variant, rejection_log: Path) -> bool:
 
 
 def _check_g3(
-    work_dir: Path,
+    workspace: CargoWorkspaceDir,
     variant: Variant,
     rejection_log: Path,
     fingerprint: str,
 ) -> bool:
-    proc = _run_cargo_test(work_dir, "g3_invariant")
+    proc = _run_cargo_test(workspace, "g3_invariant")
     if proc.returncode == 0:
         log.info("G3: passed")
         return True
@@ -117,7 +117,7 @@ def run_gates(
     """Run G1+G2+G3 against the variant's impl/. Result is truthy iff all pass."""
 
     try:
-        work_dir = build_variant(
+        workspace = build_variant_for_gates(
             variant,
             layout=layout,
             repo_root=repo_root,
@@ -130,13 +130,13 @@ def run_gates(
         return GatesResult(g1_passed=False)
 
     try:
-        g2_passed = _check_g2(work_dir, variant, rejection_log)
+        g2_passed = _check_g2(workspace, variant, rejection_log)
         if not g2_passed:
             return GatesResult(g1_passed=True, g2_passed=False)
-        g3_passed = _check_g3(work_dir, variant, rejection_log, fingerprint)
+        g3_passed = _check_g3(workspace, variant, rejection_log, fingerprint)
     finally:
         shutil.rmtree(
-            work_dir,
+            workspace.root,
             onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
         )
 
