@@ -7,24 +7,25 @@ the cohort, not peer Variants, not the ledger.
 
 ## Workflow
 
-1. Read `$OUTPUT_DIR/task.md` for your assignment — it states the cycle
-   number, variant id, hypothesis-file path, the parent-variant
-   identifier, and the parent variant's directory.
+1. Read `$OUTPUT_DIR/task.md` for your assignment — it states your
+   variant id, the parent-variant identifier and directory, the
+   hypothesis-file path, and the paths to context files.
 2. Read the files listed in `task.md`:
    - **Hypothesis file** — the `## Changes` section is your concrete
      assignment. Apply only those changes against the parent variant's
-     `segment.rs`. The claim line states the testable assertion.
+     `segment.rs`. The first non-empty line of the preamble is the
+     testable claim.
    - **Parent variant's `segment.rs`** — the Rust source you are modifying.
    - **Parent variant's `manifest.toml`** — eviction policy + ordinal of
-     the parent variant. Your variant's manifest typically inherits these
-     unless the `## Changes` section says otherwise.
+     the parent variant. Inherit these unless your changes require
+     otherwise.
    - **Parent variant's `fitness-vector.json`** and **`insight.md`** when
      present — context on what the parent variant achieves, so your
      changes are deliberate refinements rather than blind rewrites.
    - **`extension-points.md`** — authoritative list of stable plug-in
      seams. The Segment trait is the only realised one.
-   - **`subject/baseline/impl/segment.rs`** — canonical shape and
-     signatures for `VariantSegment` (the permanent research baseline).
+   - **Baseline `segment.rs`** — canonical shape and signatures for
+     `VariantSegment` (the permanent research baseline).
 3. Write **exactly two files** into `$OUTPUT_DIR/`:
    - `segment.rs`
    - `manifest.toml`
@@ -67,14 +68,11 @@ the cohort, not peer Variants, not the ledger.
 
 ## Failure modes
 
-- Output dir empty → G1 fails with "segment.rs not found".
-- Compiler error → G1 logs the error, your Variant is rejected.
-- Trait method missing / wrong signature → G2 fails.
-- Manifest ordinal not a valid `EvictionPolicy` variant → G2 fails.
-- Semantic invariant violation (duplicate keys, lost insert, capacity
-  overflow) → G3 fails. Rejection logs the failing `P[1-5] <invariant>`
-  marker.
+- G1 (build): missing `segment.rs`, or compile error.
+- G2 (contract): trait method missing or wrong signature, or manifest
+  ordinal is not a valid `EvictionPolicy`.
+- G3 (invariants): duplicate keys, lost insert, capacity overflow.
 
-Rejection is logged with the failing gate and compiler output. Treat it
-as evidence the AI can learn from — do not retry inside this invocation;
-the framework decides whether to spawn a repair attempt.
+Rejection is logged with the failing gate and compiler output. Do not
+retry inside this invocation; the framework decides whether to spawn a
+repair attempt.

@@ -42,19 +42,16 @@ def _write_task_md(
     parent_layout = VariantLayout(root=parent_dir)
     body = (
         f"# Task: variant-implementer\n\n"
-        f"Hypothesis: {hypothesis_file}\n"
+        f"Variant: {variant_layout.variant_id}\n"
         f"Parent variant: {parent_variant} ({parent_dir})\n"
-        f"Output dir: {variant_layout.impl_dir}\n\n"
-        f"## Read for context\n\n"
-        f"- {hypothesis_file} — your hypothesis. The `## Changes` section is your assignment.\n"
-        f"- {parent_layout.segment_rs} — the parent variant's Rust source. Apply the changes against this.\n"
-        f"- {parent_layout.manifest_toml} — the parent variant's manifest (eviction policy, ordinal).\n"
-        f"- {parent_layout.fitness_vector_json} — the parent variant's measured fitness vector (if present).\n"
-        f"- {parent_layout.insight_md} — short prose describing what the parent variant does (if present).\n"
-        f"- {layout.extension_points_md} — extension-point reference.\n"
-        f"- {layout.baseline.segment_rs} — canonical shape/signatures for VariantSegment.\n\n"
-        f"## Write\n\n"
-        f"Exactly two files under the output dir: `segment.rs` and `manifest.toml`.\n"
+        f"Hypothesis: {hypothesis_file}\n\n"
+        f"## Paths\n\n"
+        f"- Parent segment.rs:     {parent_layout.segment_rs}\n"
+        f"- Parent manifest.toml:  {parent_layout.manifest_toml}\n"
+        f"- Parent fitness-vector: {parent_layout.fitness_vector_json}\n"
+        f"- Parent insight.md:     {parent_layout.insight_md}\n"
+        f"- Extension points:      {layout.extension_points_md}\n"
+        f"- Baseline segment.rs:   {layout.baseline.segment_rs}\n"
     )
     variant_layout.impl_task_md.write_text(body, encoding="utf-8")
 
@@ -126,7 +123,6 @@ def implement_variants(
     for i in range(1, cohort_size + 1):
         variant_id = VariantId(i)
         variant_layout = cycle_layout.variant(variant_id)
-        variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
         jobs.append(
             ImplementerJob(
                 id=variant_id,
