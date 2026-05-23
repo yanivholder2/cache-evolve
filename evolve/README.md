@@ -9,7 +9,7 @@ Subagents handle judgment work (hypothesize, implement) via in-process SDK adapt
 The scripts rely on Python; dependencies live in a local venv.
 
 ```bash
-./setup-evolve.sh
+./scripts/setup-evolve.sh
 ```
 
 Creates `evolve/.venv` if missing and installs `requirements.txt`.

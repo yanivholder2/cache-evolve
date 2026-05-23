@@ -2,11 +2,11 @@
 # Set up the evolve Python environment.
 # Creates a venv at evolve/.venv and installs requirements.txt into it.
 #
-# Usage: bash evolve/setup-evolve.sh
+# Usage: bash evolve/scripts/setup-evolve.sh
 # Run once before using pytest or any evolve scripts that need Python deps.
 set -euo pipefail
 
-EVOLVE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EVOLVE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV="$EVOLVE_DIR/.venv"
 
 if [ ! -d "$VENV" ]; then

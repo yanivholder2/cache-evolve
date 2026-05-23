@@ -13,7 +13,7 @@ After completing a logical unit of work (feature, fix, refactor, etc.), propose 
 Research framework under `evolve/` that drives the cache-policy evolution loop (cycles, cohorts, gates, fitness, ledger). See `evolve/README.md` for details.
 
 - Always use the venv python: `evolve/.venv/bin/python` (never system `python`/`python3`).
-- Run `evolve/setup-evolve.sh` to create the venv and install `requirements.txt` if missing.
+- Run `evolve/scripts/setup-evolve.sh` to create the venv and install `requirements.txt` if missing.
 
 # Caffeine Simulator Integration
 Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI.

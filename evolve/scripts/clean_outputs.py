@@ -17,7 +17,12 @@ def main() -> int:
 
     # Delegate to git so ignore rules aren't re-implemented here.
     cmd = ["git", "clean", "-fdx", "--", str(outputs)]
-    return subprocess.run(cmd, cwd=evolve_root.parent).returncode
+    result = subprocess.run(cmd, cwd=evolve_root.parent, capture_output=True, text=True)
+    sys.stdout.write(result.stdout)
+    sys.stderr.write(result.stderr)
+    if result.returncode == 0 and not result.stdout.strip():
+        print("Already in a clean state")
+    return result.returncode
 
 
 if __name__ == "__main__":
