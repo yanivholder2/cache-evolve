@@ -111,10 +111,10 @@ def run_cycle(
                 log.error("implement variants failed", exc_info=exception)
                 die(str(exception))
 
-        with _phase("gates + fitness (sequential, cargo serializes target/)"):
-            variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
+        with _phase("gates + fitness"):
             try:
-                run_gates_and_fitness(
+                variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
+                survivors = run_gates_and_fitness(
                     variant_layouts,
                     cycle_id,
                     layout=layout,
@@ -124,7 +124,7 @@ def run_cycle(
                 die(str(e))
 
         with _phase("aggregate cohort"):
-            pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_id)
+            pareto_front = aggregate_cohort(cycle_layout, survivors, cycle_id)
 
         with _phase("seal cycle dir"):
             seal_cycle(cycle_dir)

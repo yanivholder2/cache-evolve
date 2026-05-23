@@ -26,21 +26,25 @@ def run_gates_and_fitness(
     *,
     layout: Layout,
     repo_root: Path,
-) -> None:
+) -> list[VariantLayout]:
     """Run gates + fitness plugins for every variant.
 
+    Returns the variants that passed all gates. A failed variant is logged
+    and skipped — one bad variant must not sink the cohort.
+
     Raises:
-        RuntimeError: first variant whose gate-check failed.
+        RuntimeError: no variant in the cohort passed gate-check.
     """
 
-    rejection_log = layout.rejection_log
     target_dir = layout.target_dir
+    survivors: list[VariantLayout] = []
     for variant_layout in variant_layouts:
         variant_id = variant_layout.variant_id
-        log.info("[%s] gate-check + fitness (cycle %s)", variant_id, cycle_id)
+        log.info("[variant %s] gate-check + fitness (cycle %s)", variant_id, cycle_id)
 
-        if not run_gates(variant_layout.impl_dir, cycle_id, variant_id, repo_root=repo_root, rejection_log=rejection_log):
-            raise RuntimeError(f"gate-check failed for {variant_id} in cycle {cycle_id}")
+        if not run_gates(variant_layout.impl_dir, cycle_id, variant_id, repo_root=repo_root, rejection_log=layout.rejection_log):
+            log.warning("[variant %s] gate-check failed, skipping fitness", variant_id)
+            continue
 
         fitness_dir = variant_layout.fitness_dir
         fitness_dir.mkdir(parents=True, exist_ok=True)
@@ -57,3 +61,8 @@ def run_gates_and_fitness(
         log.debug("[%s] aggregate fitness-vector", variant_id)
         fv = aggregate(str(variant_id), fitness_dir)
         variant_layout.fitness_vector_json.write_text(json.dumps(fv, indent=2) + "\n", encoding="utf-8")
+        survivors.append(variant_layout)
+
+    if not survivors:
+        raise RuntimeError(f"no variants survived gate-check in cycle {cycle_id}")
+    return survivors

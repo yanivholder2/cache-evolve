@@ -7,4 +7,4 @@ agent-skills convention (markdown body = role + contract + constraints).
 
 Today `hypotheses-writer.md` and `variant-implementer.md` are wired. Add a
 new prompt here when you add a new framework call site that needs LLM
-judgment (e.g. `smoke-reviewer`, `insight-writer`).
+judgment.
