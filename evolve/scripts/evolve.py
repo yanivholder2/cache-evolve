@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Evolve framework entry. Runs one or more research cycles. Each cycle fans
-out a cohort of N Variants, runs real G1+G2+G3 gates and fitness plugins per
-variant, aggregates a Pareto front, seals the cycle, and appends one ledger
-row.
-
-CLI:
-  evolve.py [--cycles N] [--cohort-size N] [--ai-agent-tool <name>]
-            [--outputs-root <path>]
-"""
+"""Evolve framework entry point. Runs one or more research cycles."""
 
 from __future__ import annotations
 
@@ -16,11 +8,12 @@ import logging
 import re
 import sys
 import tomllib
+from contextlib import contextmanager
 from pathlib import Path
 from typing import NoReturn
 
-# Script mode: put `evolve/` on sys.path so `from src import …` resolves.
-# Import mode: caller sets up the path; skip to avoid leaking sibling dirs.
+# Script mode adds `evolve/` to sys.path; import mode trusts the caller's path
+# to avoid leaking sibling dirs.
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -32,9 +25,10 @@ from src.gates_and_fitness import run_gates_and_fitness  # noqa: E402
 from src.hypotheses_writer import write_hypotheses  # noqa: E402
 from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
 from src.ledger_append import append_row  # noqa: E402
-from src.paths import CYCLE_ID_WIDTH, Layout  # noqa: E402
+from src.identifiers import CYCLE_ID_WIDTH, CycleId, VariantId  # noqa: E402
+from src.paths import Layout  # noqa: E402
 from src.seal import seal_cycle  # noqa: E402
-from src.variant_implementer import Implementer, fan_out  # noqa: E402
+from src.variant_implementer import implement_variants  # noqa: E402
 
 log = logging.getLogger("evolve")
 
@@ -45,16 +39,33 @@ def die(msg: str) -> NoReturn:
     sys.exit(1)
 
 
-def _next_cycle_num(cycles_dir: Path) -> str:
-    """Return the next zero-padded cycle ID by scanning `cycles_dir` for
-    existing `NNNN` subdirs. Not atomic — caller must guard against
-    concurrent allocation collisions."""
+@contextmanager
+def _phase(name: str):
+    """Log a header for `name`, then a matching footer on exit.
+
+    Footer reads "done" on clean exit, "failed" when an exception propagates.
+    """
+    log.info("--- %s ---", name)
+    try:
+        yield
+    except BaseException:
+        log.info("--- %s failed ---", name)
+        raise
+    else:
+        log.info("--- %s done ---", name)
+
+
+def _next_cycle_id(cycles_dir: Path) -> CycleId:
+    """Return the next CycleId by scanning `cycles_dir` for existing NNNN subdirs.
+
+    Not atomic — concurrent allocators may collide.
+    """
 
     cycles_dir.mkdir(parents=True, exist_ok=True)
     cycle_re = re.compile(rf"\d{{{CYCLE_ID_WIDTH}}}")
     existing = [p.name for p in cycles_dir.iterdir() if cycle_re.fullmatch(p.name)]
     last = max((int(n) for n in existing), default=0)
-    return f"{last + 1:0{CYCLE_ID_WIDTH}d}"
+    return CycleId(last + 1)
 
 
 def run_cycle(
@@ -63,85 +74,86 @@ def run_cycle(
     repo_root: Path,
     cohort_size: int,
     adapter: LLMAdapter,
-    implementer: Implementer | None = None,
     log_level: str = "DEBUG",
 ) -> None:
-    """Run a single evolve cycle end-to-end (allocate → fan-out →
-    gates → aggregate → seal → ledger).
-
-    `layout` owns the evolve+outputs paths; `repo_root` is the git repo root
-    (a sibling concern — used by gate-check and fitness binaries).
-    """
+    """Run a single evolve cycle end-to-end."""
 
     try:
-        cycle_num = _next_cycle_num(layout.cycles_dir)
-        cycle_layout = layout.cycle(cycle_num)
+        cycle_id = _next_cycle_id(layout.cycles_dir)
+        cycle_layout = layout.cycle(cycle_id)
         cycle_dir = cycle_layout.root
 
         if cycle_dir.is_dir():
-            die(f"cycle {cycle_num} already exists at {cycle_dir}")
+            die(f"cycle {cycle_id} already exists at {cycle_dir}")
 
-        # File handler under outputs_root/logs/ — outside cycle_dir so writes survive the seal step.
-        _log.setup(layout.cycle_log(cycle_num), level=log_level)
-        log.info("=== cycle %s allocated at %s ===", cycle_num, cycle_dir)
+        # Log file lives outside cycle_dir so writes survive the seal step.
+        _log.setup(layout.cycle_log(cycle_id), level=log_level)
+        log.info("=== cycle %s allocated at %s ===", cycle_id, cycle_dir)
+        log.info("cohort_size=%d adapter=%s", cohort_size, adapter.identity())
 
-        log.info("--- write hypotheses ---")
-        write_hypotheses(
-            cohort_size,
-            layout=layout,
-            cycle_num=cycle_num,
-            adapter=adapter,
-        )
-        variant_layouts = [cycle_layout.variant(i) for i in range(1, cohort_size + 1)]
-
-        log.info("--- fan out implementers ---")
-        fan_out(
-            cycle_layout,
-            cohort_size,
-            layout=layout,
-            adapter=adapter,
-            implementer=implementer,
-        )
-        log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
-        try:
-            run_gates_and_fitness(
-                variant_layouts,
-                cycle_num,
+        with _phase("write hypotheses"):
+            write_hypotheses(
+                cohort_size,
                 layout=layout,
-                repo_root=repo_root,
+                cycle_id=cycle_id,
+                adapter=adapter,
             )
-        except RuntimeError as e:
-            die(str(e))
 
-        log.info("--- aggregate cohort ---")
-        pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_num)
+        with _phase("implement variants"):
+            try:
+                implement_variants(
+                    cycle_layout,
+                    cohort_size,
+                    layout=layout,
+                    adapter=adapter,
+                )
+            except RuntimeError as exception:
+                log.error("implement variants failed", exc_info=exception)
+                die(str(exception))
 
-        log.info("--- seal cycle dir ---")
-        seal_cycle(cycle_dir)
+        with _phase("gates + fitness (sequential, cargo serializes target/)"):
+            variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
+            try:
+                run_gates_and_fitness(
+                    variant_layouts,
+                    cycle_id,
+                    layout=layout,
+                    repo_root=repo_root,
+                )
+            except RuntimeError as e:
+                die(str(e))
 
-        log.info("--- append ledger row ---")
-        row = {
-            "cycle": cycle_num,
-            "cycle_dir": layout.cycle_ledger_path(cycle_num),
-            "cohort_size": cohort_size,
-            "pareto_front": pareto_front,
-        }
-        log.debug("ledger row: %s", row)
-        append_row(layout.ledger, row)
+        with _phase("aggregate cohort"):
+            pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_id)
 
-        log.info("--- regenerate leaderboard ---")
-        regenerate_leaderboard(layout=layout.outputs, output=layout.leaderboard_md)
+        with _phase("seal cycle dir"):
+            seal_cycle(cycle_dir)
 
-        log.info("=== cycle %s complete (cohort=%d) ===", cycle_num, cohort_size)
-        print(f"cycle {cycle_num} complete — sealed at {cycle_dir} (cohort={cohort_size})")
+        with _phase("append ledger row"):
+            row = {
+                "cycle": str(cycle_id),
+                "cycle_dir": layout.cycle_ledger_path(cycle_id),
+                "cohort_size": cohort_size,
+                "pareto_front": pareto_front,
+            }
+            log.debug("ledger row: %s", row)
+            append_row(layout.ledger, row)
+
+        with _phase("regenerate leaderboard"):
+            regenerate_leaderboard(layout=layout.outputs, output=layout.leaderboard_md)
+
+        log.info("=== cycle %s complete (cohort=%d) ===", cycle_id, cohort_size)
+        print(f"cycle {cycle_id} complete — sealed at {cycle_dir} (cohort={cohort_size})")
     except Exception:
         log.exception("run_cycle failed")
         raise
 
 
 def _check_no_leftovers(layout: Layout) -> None:
-    """Die if outputs_root has artifacts from previous runs. Ignores target/
-    (cargo cache, intended to persist)."""
+    """Die if outputs_root has artifacts from previous runs.
+
+    Ignores target/ — cargo cache is intended to persist.
+    """
 
     def has_non_gitkeep(d: Path) -> bool:
         return d.is_dir() and any(p.name != ".gitkeep" for p in d.iterdir())
@@ -189,7 +201,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 def _resolve(flag_value, defaults: dict, *, key: str, flag: str):
-    """Pick the effective value: flag > config.toml > die."""
+    """Return flag value if set, else config.toml default, else die."""
     if flag_value is not None:
         return flag_value
     if key in defaults:

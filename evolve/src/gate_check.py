@@ -1,9 +1,4 @@
-"""G1 + G2 + G3 gates for a variant impl/.
-
-Library: `run_gates(impl_dir, cycle_id, variant_id, *, repo_root, rejection_log,
-fingerprint="pending") -> bool`. Returns True iff all gates pass. On failure,
-appends a structured entry to rejection_log and returns False.
-"""
+"""G1 + G2 + G3 gates for a variant impl/."""
 
 from __future__ import annotations
 
@@ -11,14 +6,34 @@ import logging
 import re
 import shutil
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 from src.build import build_variant
+from src.identifiers import CycleId, VariantId
 
 log = logging.getLogger("gate-check")
 
 G3_MARKER_RE = re.compile(r"G3 invariant violated: P[1-5] [a-z_]+")
+
+
+@dataclass(frozen=True)
+class GatesResult:
+    """Per-gate outcome of a `run_gates()` call. Gates execute in order
+    G1 → G2 → G3; a gate that didn't run (because an earlier one failed)
+    is recorded as False."""
+
+    g1_passed: bool = False
+    g2_passed: bool = False
+    g3_passed: bool = False
+
+    @property
+    def all_passed(self) -> bool:
+        return self.g1_passed and self.g2_passed and self.g3_passed
+
+    def __bool__(self) -> bool:
+        return self.all_passed
 
 
 def _append_entry(rejection_log: Path, body: str) -> None:
@@ -35,7 +50,7 @@ def _run_cargo_test(work_dir: Path, test_name: str) -> subprocess.CompletedProce
     )
 
 
-def _check_g2(work_dir: Path, cycle_id: str, variant_id: str, rejection_log: Path) -> bool:
+def _check_g2(work_dir: Path, cycle_id: CycleId, variant_id: VariantId, rejection_log: Path) -> bool:
     proc = _run_cargo_test(work_dir, "g2_contract")
     if proc.returncode == 0:
         log.info("G2: passed")
@@ -56,8 +71,8 @@ def _check_g2(work_dir: Path, cycle_id: str, variant_id: str, rejection_log: Pat
 
 def _check_g3(
     work_dir: Path,
-    cycle_id: str,
-    variant_id: str,
+    cycle_id: CycleId,
+    variant_id: VariantId,
     rejection_log: Path,
     fingerprint: str,
 ) -> bool:
@@ -94,14 +109,14 @@ def _check_g3(
 
 def run_gates(
     impl_dir: Path,
-    cycle_id: str,
-    variant_id: str,
+    cycle_id: CycleId,
+    variant_id: VariantId,
     *,
     repo_root: Path,
     rejection_log: Path,
     fingerprint: str = "pending",
-) -> bool:
-    """Run G1+G2+G3 against impl_dir. Returns True iff all pass."""
+) -> GatesResult:
+    """Run G1+G2+G3 against impl_dir. Result is truthy iff all pass."""
 
     try:
         work_dir = build_variant(
@@ -113,20 +128,22 @@ def run_gates(
         )
     except FileNotFoundError as e:
         log.error("%s", e)
-        return False
+        return GatesResult(g1_passed=False)
     except subprocess.CalledProcessError:
-        return False
+        return GatesResult(g1_passed=False)
 
     try:
-        if not _check_g2(work_dir, cycle_id, variant_id, rejection_log):
-            return False
-        if not _check_g3(work_dir, cycle_id, variant_id, rejection_log, fingerprint):
-            return False
+        g2_passed = _check_g2(work_dir, cycle_id, variant_id, rejection_log)
+        if not g2_passed:
+            return GatesResult(g1_passed=True, g2_passed=False)
+        g3_passed = _check_g3(work_dir, cycle_id, variant_id, rejection_log, fingerprint)
     finally:
         shutil.rmtree(
             work_dir,
-            onexc=lambda fn, path, exc: log.warning("workspace cleanup failed for %s: %s", path, exc),
+            onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
         )
 
-    log.info("gate-check: all gates passed for %s", variant_id)
-    return True
+    result = GatesResult(g1_passed=True, g2_passed=True, g3_passed=g3_passed)
+    if result.all_passed:
+        log.info("gate-check: all gates passed for %s", variant_id)
+    return result

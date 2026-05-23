@@ -1,8 +1,4 @@
-"""Metadata-size fitness plugin.
-
-Runs the evolve-metadata-size binary, validates its output against the plugin
-contract, and returns the parsed record.
-"""
+"""Metadata-size fitness plugin."""
 
 from __future__ import annotations
 
@@ -15,7 +11,7 @@ RUN_TIMEOUT_S = 60
 
 
 def compute(*, repo_root: Path, target_dir: Path | None = None) -> dict:
-    """Build + run the metadata-size plugin; return the validated record."""
+    """Runs the metadata-size plugin and returns the validated record."""
 
     cargo_build(repo_root, ["--bin", "evolve-metadata-size"], label="evolve-metadata-size", target_dir=target_dir)
     binary = (target_dir or repo_root / "target") / "debug" / "evolve-metadata-size"

@@ -1,7 +1,4 @@
-"""Pareto front computer.
-
-`compute_pareto_front(fitness_vectors)` returns the dominant variant names.
-"""
+"""Computes the Pareto front of variants from their fitness vectors."""
 
 from __future__ import annotations
 

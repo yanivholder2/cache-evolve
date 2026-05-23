@@ -1,9 +1,4 @@
-"""G1 gate: compile a variant impl/ into a test artifact.
-
-Library only — `build_variant(...)` returns the temp workspace path on success
-and raises `subprocess.CalledProcessError` on cargo failure (after logging a
-rejection entry).
-"""
+"""G1 gate: compile a variant impl/ into a test artifact."""
 
 from __future__ import annotations
 
@@ -13,6 +8,8 @@ import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+
+from src.identifiers import CycleId, VariantId
 
 log = logging.getLogger("build")
 
@@ -34,8 +31,6 @@ def _cargo_toml(repo_root: Path) -> str:
 
 
 def _scaffold_workspace(work_dir: Path, impl_dir: Path, repo_root: Path) -> None:
-    """Lay out Cargo.toml + src/ + tests/ in work_dir from the variant impl."""
-
     (work_dir / "src").mkdir(parents=True, exist_ok=True)
     (work_dir / "tests").mkdir(parents=True, exist_ok=True)
     (work_dir / "Cargo.toml").write_text(_cargo_toml(repo_root), encoding="utf-8")
@@ -48,7 +43,7 @@ def _scaffold_workspace(work_dir: Path, impl_dir: Path, repo_root: Path) -> None
     shutil.copy(HARNESS_DIR / "g3_invariant.rs", work_dir / "tests" / "g3_invariant.rs")
 
 
-def _append_rejection(rejection_log: Path, cycle_id: str, variant_id: str, cargo_output: str) -> None:
+def _append_rejection(rejection_log: Path, cycle_id: CycleId, variant_id: VariantId, cargo_output: str) -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     entry = (
         f"\n## {ts} — cycle={cycle_id} variant={variant_id}\n\n"
@@ -64,15 +59,19 @@ def _append_rejection(rejection_log: Path, cycle_id: str, variant_id: str, cargo
 
 def build_variant(
     impl_dir: Path,
-    cycle_id: str,
-    variant_id: str,
+    cycle_id: CycleId,
+    variant_id: VariantId,
     *,
     repo_root: Path,
     rejection_log: Path,
 ) -> Path:
-    """Compile a variant impl into a temp workspace. Returns the workspace path on
-    success. On failure, appends to rejection_log, cleans up the workspace, and
-    raises subprocess.CalledProcessError so the caller propagates exit status."""
+    """Compile a variant impl into a temp workspace. Returns the workspace path.
+
+    Raises:
+        FileNotFoundError: impl_dir is missing segment.rs.
+        subprocess.CalledProcessError: cargo build failed (rejection appended
+            to rejection_log, workspace removed).
+    """
 
     impl_dir = impl_dir.resolve()
     segment_rs = impl_dir / "segment.rs"
@@ -95,7 +94,7 @@ def build_variant(
         log.info("rejection logged to %s", rejection_log)
         shutil.rmtree(
             work_dir,
-            onexc=lambda fn, path, exc: log.warning("workspace cleanup failed for %s: %s", path, exc),
+            onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
         )
         raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 

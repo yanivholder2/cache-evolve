@@ -1,8 +1,4 @@
-"""In-process LLM adapter stub for tests.
-
-Replaces the old `_mocks/llm-stub.py` subprocess adapter. Tests inject a
-`StubLLMAdapter` instance into `run_cycle`/`write_hypotheses` directly.
-"""
+"""In-process LLM adapter stub for tests."""
 
 from __future__ import annotations
 
@@ -14,31 +10,24 @@ GOOD_IMPL = Path(__file__).parent / "fixtures" / "good" / "impl"
 
 
 class StubLLMAdapter:
-    """Deterministic in-process adapter. Dispatches by agent_name; writes
-    canned files into workspace.
+    """Deterministic in-process adapter that writes canned files."""
 
-    Knobs:
-      hypothesis_lines  explicit per-file canonical lines (one entry → H01.md, etc.)
-      n_lines           shorthand: write N stub files "stub hypothesis K"
-      parents           per-hypothesis parent identifier (defaults to "baseline" for each)
-      changes           per-hypothesis '## Changes' prose (defaults to "stub changes")
-      exit_code         raise CalledProcessError(exit_code) before writing
-      capture_file      log each invocation + task.md into this file
-    """
+    def identity(self) -> str:
+        return "StubLLMAdapter"
 
     def __init__(
         self,
         *,
         hypothesis_lines: list[str] | None = None,
         n_lines: int | None = None,
-        parents: list[str] | None = None,
+        parent_variants: list[str] | None = None,
         changes: list[str] | None = None,
         exit_code: int = 0,
         capture_file: Path | None = None,
     ) -> None:
         self.hypothesis_lines = hypothesis_lines
         self.n_lines = n_lines
-        self.parents = parents
+        self.parent_variants = parent_variants
         self.changes = changes
         self.exit_code = exit_code
         self.capture_file = capture_file
@@ -49,10 +38,10 @@ class StubLLMAdapter:
         workspace: Path,
         *,
         readable_roots: list[Path],
-        read_only: bool,
+        allow_edits: bool,
     ) -> None:
         if self.capture_file is not None:
-            self._capture(agent_name, workspace, readable_roots, read_only)
+            self._capture(agent_name, workspace, readable_roots, allow_edits)
         if self.exit_code != 0:
             raise subprocess.CalledProcessError(self.exit_code, "stub-adapter")
 
@@ -69,13 +58,14 @@ class StubLLMAdapter:
         elif self.n_lines is not None:
             lines = [f"stub hypothesis {i}" for i in range(1, self.n_lines + 1)]
         else:
-            return  # write nothing — wrapper should fail with wrong count
+            # Empty output exercises the wrapper's wrong-count failure path.
+            return
 
         for i, line in enumerate(lines, start=1):
-            parent = self.parents[i - 1] if self.parents and i - 1 < len(self.parents) else "baseline"
+            parent_variant = self.parent_variants[i - 1] if self.parent_variants and i - 1 < len(self.parent_variants) else "baseline"
             change = self.changes[i - 1] if self.changes and i - 1 < len(self.changes) else "stub changes"
             (workspace / f"H{i:02d}.md").write_text(
-                f"# Hypothesis H{i:02d}\n\n{line}\n\n## Parent\n\n{parent}\n\n## Changes\n\n{change}\n",
+                f"# Hypothesis H{i:02d}\n\n{line}\n\n## Parent\n\n{parent_variant}\n\n## Changes\n\n{change}\n",
                 encoding="utf-8",
             )
 
@@ -83,7 +73,7 @@ class StubLLMAdapter:
         for name in ("segment.rs", "manifest.toml"):
             shutil.copy(GOOD_IMPL / name, workspace / name)
 
-    def _capture(self, agent_name, workspace, readable_roots, read_only):
+    def _capture(self, agent_name, workspace, readable_roots, allow_edits):
         task_md = ""
         task_path = workspace / "task.md"
         if task_path.is_file():
@@ -93,6 +83,6 @@ class StubLLMAdapter:
             f.write(f"agent: {agent_name}\n")
             f.write(f"workspace: {workspace}\n")
             f.write(f"readable-roots: {readable_roots}\n")
-            f.write(f"read-only: {read_only}\n")
+            f.write(f"allow-edits: {allow_edits}\n")
             f.write("----- task.md -----\n")
             f.write(task_md if task_md.endswith("\n") else task_md + "\n")

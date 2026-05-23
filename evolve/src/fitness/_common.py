@@ -9,7 +9,7 @@ BUILD_TIMEOUT_S = 300
 
 
 def cargo_env(target_dir: Path | None) -> dict[str, str] | None:
-    """Build the env dict for cargo invocations. None → inherit; otherwise overlay CARGO_TARGET_DIR."""
+    """Returns an env overlay setting CARGO_TARGET_DIR, or None to inherit."""
 
     if target_dir is None:
         return None
@@ -24,10 +24,9 @@ def cargo_build(
     timeout: int = BUILD_TIMEOUT_S,
     target_dir: Path | None = None,
 ) -> None:
-    """Run `cargo build <args>` in `cwd`; exit 1 with a contextual error on failure.
+    """Runs cargo build; exits 1 with a contextual error on failure.
 
-    If `target_dir` is set, `CARGO_TARGET_DIR` is overridden so parallel evolve
-    runs with distinct outputs roots don't contend on the same cargo lock.
+    Overriding CARGO_TARGET_DIR keeps parallel evolve runs off the same cargo lock.
     """
 
     result = subprocess.run(
@@ -44,7 +43,7 @@ def cargo_build(
 
 
 def run_binary(cmd: list[str], *, label: str, timeout: int) -> subprocess.CompletedProcess:
-    """Run `cmd`; exit 1 with a contextual error on non-zero return or timeout."""
+    """Runs a subprocess; exits 1 with a contextual error on non-zero return or timeout."""
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)

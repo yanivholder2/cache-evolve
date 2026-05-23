@@ -1,17 +1,16 @@
-"""Render leaderboard.md from the cycle ledger and per-cycle winners.json files.
-
-Library: `regenerate(*, layout, output=None) -> str`. Reads
-outputs/ledger/cycles.jsonl and each cycle's winners.json, writes markdown to
-`output` (if given) and returns the rendered content.
-"""
+"""Renders leaderboard.md from the cycle ledger and per-cycle winners.json files."""
 
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Optional
 
+from src.identifiers import CycleId
 from src.paths import OutputsLayout
+
+log = logging.getLogger("leaderboard")
 
 
 class LeaderboardError(Exception):
@@ -34,7 +33,7 @@ def _load_cycles(layout: OutputsLayout) -> list:
     return cycles
 
 
-def _load_winners(layout: OutputsLayout, cycle_id: str) -> Optional[dict]:
+def _load_winners(layout: OutputsLayout, cycle_id: CycleId) -> Optional[dict]:
     path = layout.cycle(cycle_id).winners_json
     if not path.exists():
         return None
@@ -89,18 +88,22 @@ def _render(cycles_data: list) -> str:
 
 
 def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
-    """Build the markdown leaderboard from ledger + winners; optionally write
-    to `output`. Returns the rendered string either way."""
+    """Returns the rendered leaderboard markdown; writes it to `output` if given."""
 
     ledger_rows = _load_cycles(layout)
     cycles_data = []
     for row in ledger_rows:
-        cycle_id = row["cycle"]
+        raw = row["cycle"]
+        try:
+            cycle_id = CycleId(int(raw))
+        except (TypeError, ValueError) as e:
+            log.warning("skipping ledger row with malformed cycle %r: %s", raw, e)
+            continue
         winners = _load_winners(layout, cycle_id)
         fvs = winners.get("fitness_vectors", []) if winners else []
         pareto_front = winners.get("pareto_front", []) if winners else []
         cycles_data.append({
-            "cycle": cycle_id,
+            "cycle": str(cycle_id),
             "pareto_front": pareto_front,
             "fitness_vectors": fvs,
         })

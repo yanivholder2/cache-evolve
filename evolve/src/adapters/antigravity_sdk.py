@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -12,11 +13,14 @@ from typing import Any, TextIO
 
 from .base_llm_adapter import LLMAdapter, Usage, write_timeline
 
+log = logging.getLogger("llm-adapter.antigravity-sdk")
+
 
 def _format_args(args: Any) -> str:
     try:
         return "```json\n" + json.dumps(args, indent=2, ensure_ascii=False) + "\n```"
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as exception:
+        log.warning("tool args not json serialisable, falling back to repr: %s", exception)
         return f"`{args!r}`"
 
 
@@ -56,6 +60,9 @@ MODEL = Model.GEMINI_3_1_FLASH_LITE
 
 
 class AntigravitySdkAdapter(LLMAdapter):
+    def identity(self) -> str:
+        return f"{type(self).__name__}(model={MODEL.value})"
+
     async def call_llm_and_log(
         self,
         system_prompt: str,
@@ -63,7 +70,7 @@ class AntigravitySdkAdapter(LLMAdapter):
         *,
         workspace: Path,
         readable_roots: list[Path],
-        read_only: bool,
+        allow_edits: bool,
         log_io: TextIO,
     ) -> Usage | None:
         from google.antigravity import CapabilitiesConfig, LocalAgentConfig
@@ -72,7 +79,7 @@ class AntigravitySdkAdapter(LLMAdapter):
         from google.antigravity.types import BuiltinTools
 
         enabled = BuiltinTools.read_only()
-        if not read_only:
+        if allow_edits:
             enabled = enabled + [BuiltinTools.CREATE_FILE, BuiltinTools.EDIT_FILE]
 
         readable_resolved = [r.resolve() for r in readable_roots]

@@ -1,35 +1,35 @@
-"""Variant-implementer step — single-variant driver + cohort fan-out.
+"""Materializes Variant impls from Hypotheses via the variant-implementer agent.
 
-Owns everything related to materializing Variant impls in a cycle:
-
-- `implement_variant`: invokes the LLMAdapter for one Hypothesis, verifies
-  the agent produced `segment.rs` and `manifest.toml`.
-- `fan_out`: spawns N `implement_variant` calls in parallel (one per
-  Hypothesis), aborts the cycle on any failure.
-- `Implementer`: callable protocol so tests can inject stubs.
-
-The agent-side contract (what the LLM must write, constraints, failure
-modes) lives in `evolve/src/agents/variant-implementer.md`.
+The agent-side contract lives in `evolve/src/agents/variant-implementer.md`.
 """
 
 from __future__ import annotations
 
 import concurrent.futures
-import functools
 import logging
-import sys
-import traceback
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from src import hypothesis_parser
 from src.adapters import LLMAdapter
+from src.hypothesis_parser import ParentVariant
+from src.identifiers import HypothesisId, VariantId
 from src.paths import CycleLayout, Layout, VariantLayout
+
+
+@dataclass(frozen=True)
+class ImplementerJob:
+    hypothesis_file: Path
+    variant_layout: VariantLayout
+    layout: Layout
+    adapter: LLMAdapter
+
+    @property
+    def variant_id(self) -> VariantId:
+        return self.variant_layout.variant_id
 
 AGENT_NAME = "variant-implementer"
 REQUIRED_OUTPUTS = ("segment.rs", "manifest.toml")
-
-Implementer = Callable[..., None]
 
 log = logging.getLogger("variant-implementer")
 
@@ -38,23 +38,23 @@ def _write_task_md(
     variant_layout: VariantLayout,
     hypothesis_file: Path,
     parent_dir: Path,
-    parent_id: str,
+    parent_variant: ParentVariant,
     layout: Layout,
 ) -> None:
-    parent = VariantLayout(root=parent_dir)
+    parent_layout = VariantLayout(root=parent_dir)
     body = (
         f"# Task: variant-implementer\n\n"
+        f"Variant: {variant_layout.variant_id}\n"
+        f"Parent variant: {parent_variant} ({parent_dir})\n"
         f"Hypothesis: {hypothesis_file}\n"
-        f"Parent: {parent_id} ({parent_dir})\n"
         f"Output dir: {variant_layout.impl_dir}\n\n"
-        f"## Read for context\n\n"
-        f"- {hypothesis_file} — your hypothesis. The `## Changes` section is your assignment.\n"
-        f"- {parent.segment_rs} — the parent's Rust source. Apply the changes against this.\n"
-        f"- {parent.manifest_toml} — the parent's manifest (eviction policy, ordinal).\n"
-        f"- {parent.fitness_vector_json} — the parent's measured fitness vector (if present).\n"
-        f"- {parent.insight_md} — short prose describing what the parent does (if present).\n"
-        f"- {layout.extension_points_md} — extension-point reference.\n"
-        f"- {layout.baseline.segment_rs} — canonical shape/signatures for VariantSegment.\n\n"
+        f"## Paths\n\n"
+        f"- Parent segment.rs:     {parent_layout.segment_rs}\n"
+        f"- Parent manifest.toml:  {parent_layout.manifest_toml}\n"
+        f"- Parent fitness-vector: {parent_layout.fitness_vector_json}\n"
+        f"- Parent insight.md:     {parent_layout.insight_md}\n"
+        f"- Extension points:      {layout.extension_points_md}\n"
+        f"- Baseline segment.rs:   {layout.baseline.segment_rs}\n\n"
         f"## Write\n\n"
         f"Exactly two files under the output dir: `segment.rs` and `manifest.toml`.\n"
     )
@@ -68,28 +68,24 @@ def implement_variant(
     layout: Layout,
     adapter: LLMAdapter,
 ) -> None:
-    """Materialize one Variant's impl/ from a single Hypothesis.
-
-    Raises on failure; the orchestrator catches and surfaces the exception
-    per-variant.
-    """
+    """Materialize one Variant's impl/ from a single Hypothesis. Raises on failure."""
 
     if not hypothesis_file.is_file():
         raise FileNotFoundError(f"hypothesis file not found: {hypothesis_file}")
 
     hypothesis = hypothesis_parser.parse(hypothesis_file)
-    parent_dir = hypothesis_parser.resolve_parent_dir(hypothesis.parent, layout)
+    parent_variant_dir = hypothesis.parent_variant.resolve(layout)
 
     impl_dir = variant_layout.impl_dir
     impl_dir.mkdir(parents=True, exist_ok=True)
-    _write_task_md(variant_layout, hypothesis_file, parent_dir, hypothesis.parent, layout)
-    log.debug("wrote %s", variant_layout.impl_task_md)
+    _write_task_md(variant_layout, hypothesis_file, parent_variant_dir, hypothesis.parent_variant, layout)
+    log.debug("wrote implementer task.md at %s", variant_layout.impl_task_md)
 
     adapter.run(
         agent_name=AGENT_NAME,
         workspace=impl_dir,
-        readable_roots=[hypothesis_file, parent_dir, layout.dash_src, layout.subject_dir],
-        read_only=False,
+        readable_roots=[hypothesis_file, parent_variant_dir, layout.dash_src, layout.subject_dir],
+        allow_edits=True,
     )
 
     missing = [n for n in REQUIRED_OUTPUTS if not (impl_dir / n).is_file()]
@@ -100,58 +96,55 @@ def implement_variant(
     log.info("variant materialized at %s", impl_dir)
 
 
-def _run_one(
-    job: tuple[str, Implementer, Path, VariantLayout, Layout],
-) -> tuple[str, BaseException | None]:
-    vid, implementer, hyp_file, variant_layout, layout = job
-    log.debug("%s: implementer %s", vid, hyp_file)
+def _run_implementer_job(job: ImplementerJob) -> tuple[VariantId, BaseException | None]:
+    """Pool worker. Returns (variant_id, exception) so failures don't crash the pool."""
+
+    variant_id = job.variant_id
+    log.info("%s: implementer started for hypothesis %s", variant_id, job.hypothesis_file)
     try:
-        implementer(
-            hyp_file,
-            variant_layout,
-            layout=layout,
+        implement_variant(
+            job.hypothesis_file,
+            job.variant_layout,
+            layout=job.layout,
+            adapter=job.adapter,
         )
-    except BaseException as exc:  # noqa: BLE001 — surface every failure to the orchestrator
-        log.debug("%s: implementer failed: %s", vid, exc)
-        return vid, exc
-    log.debug("%s: implementer ok", vid)
-    return vid, None
+    except BaseException as exception:
+        # Catch BaseException (not Exception) so one variant's SystemExit or
+        # KeyboardInterrupt surfaces as a regular pool failure instead of
+        # tearing down sibling workers mid-flight.
+        log.warning("%s: implementer failed: %s", variant_id, exception)
+        return variant_id, exception
+    log.info("%s: implementer completed successfully", variant_id)
+    return variant_id, None
 
 
-def fan_out(
+def implement_variants(
     cycle_layout: CycleLayout,
     cohort_size: int,
     *,
     layout: Layout,
     adapter: LLMAdapter,
-    implementer: Implementer | None = None,
 ) -> None:
-    """Invoke the variant-implementer once per Variant in parallel. Aborts on any failure.
+    """Invoke the variant-implementer once per Variant in parallel. Aborts on any failure."""
 
-    When `implementer` is None (production path), `implement_variant` is
-    bound with the adapter via `functools.partial`. Tests can pass a stub
-    `implementer=` that ignores the adapter.
-    """
-
-    if implementer is None:
-        implementer = functools.partial(implement_variant, adapter=adapter)
-
-    log.info("fan-out: %d implementer(s) in parallel", cohort_size)
-    jobs = []
+    log.info("running %d implementers in parallel", cohort_size)
+    jobs: list[ImplementerJob] = []
     for i in range(1, cohort_size + 1):
-        variant_layout = cycle_layout.variant(i)
-        variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
-        variant_layout.fitness_dir.mkdir(parents=True, exist_ok=True)
-        jobs.append((variant_layout.id, implementer, cycle_layout.hypothesis_file(i), variant_layout, layout))
+        jobs.append(
+            ImplementerJob(
+                hypothesis_file=cycle_layout.hypothesis_file(HypothesisId(i)),
+                variant_layout=cycle_layout.variant(VariantId(i)),
+                layout=layout,
+                adapter=adapter,
+            )
+        )
 
-    failed = False
+    failures: list[VariantId] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=cohort_size) as pool:
-        for vid, exc in pool.map(_run_one, jobs):
-            if exc is not None:
-                print(f"error: variant-implementer for {vid} failed: {exc}", file=sys.stderr)
-                sys.stderr.write("".join(traceback.format_exception(exc)))
-                log.error("implementer %s failed: %s", vid, exc)
-                failed = True
-    if failed:
-        sys.exit(1)
-    log.info("fan-out: all %d implementers succeeded", cohort_size)
+        for variant_id, exception in pool.map(_run_implementer_job, jobs):
+            if exception is not None:
+                log.error("implementer %s failed", variant_id, exc_info=exception)
+                failures.append(variant_id)
+    if failures:
+        raise RuntimeError(f"variant-implementer failed for {[str(v) for v in failures]}")
+    log.info("all %d implementers succeeded", cohort_size)

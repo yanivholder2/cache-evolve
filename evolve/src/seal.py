@@ -20,8 +20,6 @@ WRITE_BITS = 0o222
 
 
 def _strip_write_bits(root: Path) -> None:
-    """Recursively clear write bits (a-w) on root and everything under it."""
-
     for dirpath, dirnames, filenames in os.walk(root):
         for name in filenames + dirnames:
             p = Path(dirpath) / name

@@ -9,7 +9,7 @@ Subagents handle judgment work (hypothesize, implement) via in-process SDK adapt
 The scripts rely on Python; dependencies live in a local venv.
 
 ```bash
-./setup-evolve.sh
+./scripts/setup-evolve.sh
 ```
 
 Creates `evolve/.venv` if missing and installs `requirements.txt`.
@@ -75,3 +75,17 @@ The hypotheses-writer reads it differently on cycle 1 vs cycle 2+:
 ### Configuration
 
 Defaults for every flag live in [`config.toml`](config.toml) under `[framework]`. Edit the file to change defaults persistently; pass the corresponding flag to override on a single run. Precedence: **flag > `config.toml`** — if neither is set, the run aborts.
+
+## Testing
+
+Tests live in `tests/`. Run through the project venv (from `evolve/`):
+
+```bash
+# Fast suite — stubs the LLM adapter and shells out to a mock cargo
+.venv/bin/python -m pytest
+
+# Include end-to-end tests that drive real cargo builds (~2 min slower)
+.venv/bin/python -m pytest --slow
+```
+
+The `--slow` flag is defined in `tests/conftest.py`; tests marked `@pytest.mark.slow` are skipped by default. A session-scoped fixture puts `tests/_mocks/` first on `PATH` so the fast suite never invokes a real `cargo`.

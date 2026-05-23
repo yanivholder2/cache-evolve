@@ -4,17 +4,16 @@ import json
 
 import pytest
 
+from src.identifiers import CycleId
 from src.leaderboard import LeaderboardError, regenerate
 from src.paths import OutputsLayout
 
 
-def _setup_cycle(layout: OutputsLayout, cycle_id, variants):
-    """Create a minimal cycle directory with winners.json."""
-
+def _setup_cycle(layout: OutputsLayout, cycle_id: CycleId, variants):
     cycle_layout = layout.cycle(cycle_id)
     cycle_layout.root.mkdir(parents=True)
     winners = {
-        "cycle": cycle_id,
+        "cycle": str(cycle_id),
         "pareto_front": [v["variant"] for v in variants],
         "fitness_vectors": variants,
     }
@@ -27,9 +26,10 @@ def _make_evolve_root(tmp_path, cycles_data):
     layout = OutputsLayout(root=evolve)
     layout.cycles_dir.mkdir(parents=True)
     layout.ledger.parent.mkdir()
-    for cycle_id, variants in cycles_data.items():
+    for cycle_str, variants in cycles_data.items():
+        cycle_id = CycleId.from_str(cycle_str)
         _setup_cycle(layout, cycle_id, variants)
-        layout.ledger.open("a").write(json.dumps({"cycle": cycle_id, "cycle_dir": f"evolve/cycles/{cycle_id}"}) + "\n")
+        layout.ledger.open("a").write(json.dumps({"cycle": str(cycle_id), "cycle_dir": f"evolve/cycles/{cycle_id}"}) + "\n")
     return evolve
 
 
@@ -84,16 +84,13 @@ def test_multi_variant_rendering(tmp_path):
     content = out.read_text()
     assert "v001" in content
     assert "v002" in content
-    # Both summaries should appear comma-joined in the same row
     assert "0.65" in content and "0.7" in content
 
 
 def test_pareto_front_fallback_renders(tmp_path):
-    """winners.json with empty fitness_vectors falls back to pareto_front for variant names."""
-
     evolve = tmp_path / "evolve"
     layout = OutputsLayout(root=evolve)
-    cycle_layout = layout.cycle("0001")
+    cycle_layout = layout.cycle(CycleId(1))
     cycle_layout.root.mkdir(parents=True)
     layout.ledger.parent.mkdir()
     layout.ledger.write_text(
@@ -122,7 +119,7 @@ def test_malformed_ledger_errors(tmp_path):
 def test_malformed_winners_errors(tmp_path):
     evolve = tmp_path / "evolve"
     layout = OutputsLayout(root=evolve)
-    cycle_layout = layout.cycle("0001")
+    cycle_layout = layout.cycle(CycleId(1))
     cycle_layout.root.mkdir(parents=True)
     layout.ledger.parent.mkdir()
     layout.ledger.write_text(
