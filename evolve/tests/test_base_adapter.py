@@ -28,7 +28,7 @@ def test_run_rejects_empty_readable_roots(tmp_path):
             agent_name="hypotheses-writer",
             workspace=workspace,
             readable_roots=[],
-            read_only=True,
+            allow_edits=False,
         )
 
 
@@ -40,7 +40,7 @@ def test_run_rejects_nonexistent_readable_root(tmp_path):
             agent_name="hypotheses-writer",
             workspace=workspace,
             readable_roots=[ghost],
-            read_only=True,
+            allow_edits=False,
         )
 
 
@@ -61,7 +61,7 @@ def test_run_resolves_relative_readable_roots(tmp_path, monkeypatch):
         agent_name="hypotheses-writer",
         workspace=workspace,
         readable_roots=[Path("ro")],
-        read_only=True,
+        allow_edits=False,
     )
     assert captured["readable_roots"] == [relative_root.resolve()]
 
@@ -74,7 +74,7 @@ def test_run_requires_task_md_in_workspace(tmp_path):
             agent_name="hypotheses-writer",
             workspace=workspace,
             readable_roots=[tmp_path],
-            read_only=True,
+            allow_edits=False,
         )
 
 
@@ -84,7 +84,7 @@ def test_run_creates_log_file_in_workspace(tmp_path):
         agent_name="hypotheses-writer",
         workspace=workspace,
         readable_roots=[tmp_path],
-        read_only=True,
+        allow_edits=False,
     )
     assert (workspace / "hypotheses-writer.log.md").is_file()
 
@@ -95,14 +95,14 @@ def test_run_writes_header_fields_to_log(tmp_path):
         agent_name="hypotheses-writer",
         workspace=workspace,
         readable_roots=[tmp_path],
-        read_only=False,
+        allow_edits=True,
     )
     text = (workspace / "hypotheses-writer.log.md").read_text(encoding="utf-8")
     header, _, _ = text.partition("\n---\n")
     assert "# Agent log: hypotheses-writer" in header
     assert "- adapter: _NoopAdapter" in header
     assert f"- workspace: {workspace}" in header
-    assert "- read_only: False" in header
+    assert "- allow_edits: True" in header
     assert "- started: " in header
 
 
@@ -117,7 +117,7 @@ def test_run_writes_footer_with_status_ok_and_usage(tmp_path):
         agent_name="hypotheses-writer",
         workspace=workspace,
         readable_roots=[tmp_path],
-        read_only=True,
+        allow_edits=False,
     )
     text = (workspace / "hypotheses-writer.log.md").read_text(encoding="utf-8")
     _, sep, footer = text.partition("\n---\n")
@@ -141,7 +141,7 @@ def test_run_records_error_status_and_reraises(tmp_path):
             agent_name="hypotheses-writer",
             workspace=workspace,
             readable_roots=[tmp_path],
-            read_only=True,
+            allow_edits=False,
         )
     text = (workspace / "hypotheses-writer.log.md").read_text(encoding="utf-8")
     _, sep, footer = text.partition("\n---\n")
@@ -156,5 +156,5 @@ def test_run_requires_agent_prompt_file(tmp_path):
             agent_name="not-a-real-agent",
             workspace=workspace,
             readable_roots=[tmp_path],
-            read_only=True,
+            allow_edits=False,
         )

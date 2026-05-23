@@ -63,7 +63,7 @@ class AntigravitySdkAdapter(LLMAdapter):
         *,
         workspace: Path,
         readable_roots: list[Path],
-        read_only: bool,
+        allow_edits: bool,
         log_io: TextIO,
     ) -> Usage | None:
         from google.antigravity import CapabilitiesConfig, LocalAgentConfig
@@ -72,7 +72,7 @@ class AntigravitySdkAdapter(LLMAdapter):
         from google.antigravity.types import BuiltinTools
 
         enabled = BuiltinTools.read_only()
-        if not read_only:
+        if allow_edits:
             enabled = enabled + [BuiltinTools.CREATE_FILE, BuiltinTools.EDIT_FILE]
 
         readable_resolved = [r.resolve() for r in readable_roots]

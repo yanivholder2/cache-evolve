@@ -120,7 +120,7 @@ def write_hypotheses(
         agent_name=AGENT_NAME,
         workspace=hypotheses_dir,
         readable_roots=[layout.outputs_root, layout.dash_src, layout.subject_dir],
-        read_only=False,
+        allow_edits=True,
     )
 
     entries = sorted(p for p in hypotheses_dir.iterdir() if p.is_file())

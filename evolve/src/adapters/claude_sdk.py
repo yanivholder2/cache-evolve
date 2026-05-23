@@ -71,7 +71,7 @@ class ClaudeSdkAdapter(LLMAdapter):
         *,
         workspace: Path,
         readable_roots: list[Path],
-        read_only: bool,
+        allow_edits: bool,
         log_io: TextIO,
     ) -> Usage | None:
         from claude_agent_sdk import (
@@ -89,7 +89,7 @@ class ClaudeSdkAdapter(LLMAdapter):
             ToolUseBlock,
         )
 
-        allowed_set = set(READ_ONLY_TOOLS if read_only else READ_ONLY_TOOLS + WRITE_TOOLS)
+        allowed_set = set(READ_ONLY_TOOLS + WRITE_TOOLS if allow_edits else READ_ONLY_TOOLS)
         workspace_root = workspace.resolve()
         write_tools = set(WRITE_TOOLS)
 
@@ -109,7 +109,7 @@ class ClaudeSdkAdapter(LLMAdapter):
                     behavior="deny",
                     message=(
                         f"tool {tool_name!r} is not available "
-                        f"(read_only={read_only}). "
+                        f"(allow_edits={allow_edits}). "
                         f"allowed tools: {sorted(allowed_set)}"
                     ),
                 )

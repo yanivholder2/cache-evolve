@@ -35,10 +35,10 @@ class StubLLMAdapter:
         workspace: Path,
         *,
         readable_roots: list[Path],
-        read_only: bool,
+        allow_edits: bool,
     ) -> None:
         if self.capture_file is not None:
-            self._capture(agent_name, workspace, readable_roots, read_only)
+            self._capture(agent_name, workspace, readable_roots, allow_edits)
         if self.exit_code != 0:
             raise subprocess.CalledProcessError(self.exit_code, "stub-adapter")
 
@@ -70,7 +70,7 @@ class StubLLMAdapter:
         for name in ("segment.rs", "manifest.toml"):
             shutil.copy(GOOD_IMPL / name, workspace / name)
 
-    def _capture(self, agent_name, workspace, readable_roots, read_only):
+    def _capture(self, agent_name, workspace, readable_roots, allow_edits):
         task_md = ""
         task_path = workspace / "task.md"
         if task_path.is_file():
@@ -80,6 +80,6 @@ class StubLLMAdapter:
             f.write(f"agent: {agent_name}\n")
             f.write(f"workspace: {workspace}\n")
             f.write(f"readable-roots: {readable_roots}\n")
-            f.write(f"read-only: {read_only}\n")
+            f.write(f"allow-edits: {allow_edits}\n")
             f.write("----- task.md -----\n")
             f.write(task_md if task_md.endswith("\n") else task_md + "\n")

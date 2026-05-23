@@ -72,18 +72,18 @@ def implement_variant(
         raise FileNotFoundError(f"hypothesis file not found: {hypothesis_file}")
 
     hypothesis = hypothesis_parser.parse(hypothesis_file)
-    parent_dir = hypothesis.parent_variant.resolve(layout)
+    parent_variant_dir = hypothesis.parent_variant.resolve(layout)
 
     impl_dir = variant_layout.impl_dir
     impl_dir.mkdir(parents=True, exist_ok=True)
-    _write_task_md(variant_layout, hypothesis_file, parent_dir, hypothesis.parent_variant, layout)
-    log.debug("wrote %s", variant_layout.impl_task_md)
+    _write_task_md(variant_layout, hypothesis_file, parent_variant_dir, hypothesis.parent_variant, layout)
+    log.debug("wrote implementer task.md at %s", variant_layout.impl_task_md)
 
     adapter.run(
         agent_name=AGENT_NAME,
         workspace=impl_dir,
-        readable_roots=[hypothesis_file, parent_dir, layout.dash_src, layout.subject_dir],
-        read_only=False,
+        readable_roots=[hypothesis_file, parent_variant_dir, layout.dash_src, layout.subject_dir],
+        allow_edits=True,
     )
 
     missing = [n for n in REQUIRED_OUTPUTS if not (impl_dir / n).is_file()]

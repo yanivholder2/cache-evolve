@@ -20,10 +20,10 @@ G3_MARKER_RE = re.compile(r"G3 invariant violated: P[1-5] [a-z_]+")
 
 @dataclass(frozen=True)
 class GatesResult:
-    """Per-gate outcome of a `run_gates()` call."""
+    """Per-gate outcome of a `run_gates()` call. Gates execute in order
+    G1 → G2 → G3; a gate that didn't run (because an earlier one failed)
+    is recorded as False."""
 
-    # Gates execute G1 -> G2 -> G3; a gate that didn't run (earlier failure)
-    # stays False.
     g1_passed: bool = False
     g2_passed: bool = False
     g3_passed: bool = False

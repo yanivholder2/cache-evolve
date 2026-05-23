@@ -25,12 +25,12 @@ class LLMAdapter:
         workspace: Path,
         *,
         readable_roots: list[Path],
-        read_only: bool,
+        allow_edits: bool,
     ) -> None:
         """Invoke `agent_name` with prompts sourced from `evolve/src/agents/<agent_name>.md` and `<workspace>/task.md`.
 
         `workspace` is the only directory the agent may write into when
-        `read_only` is False. `readable_roots` lists additional read-only
+        `allow_edits` is True. `readable_roots` lists additional read-only
         scope (dirs or single files). Writes a markdown log to
         `<workspace>/<agent_name>.log.md`.
         """
@@ -46,11 +46,11 @@ class LLMAdapter:
         system_prompt = agent_file.read_text(encoding="utf-8")
         user_prompt = task_file.read_text(encoding="utf-8")
         log.debug(
-            "dispatch %s into %s (adapter=%s, read_only=%s, readable_roots=%s)",
+            "dispatch %s into %s (adapter=%s, allow_edits=%s, readable_roots=%s)",
             agent_name,
             type(self).__name__,
             workspace,
-            read_only,
+            allow_edits,
             resolved_roots,
         )
 
@@ -61,7 +61,7 @@ class LLMAdapter:
         usage: Usage | None = None
         try:
             with log_path.open("w", encoding="utf-8") as log_io:
-                _write_header(log_io, agent_name, workspace, read_only, started_wall, type(self).__name__)
+                _write_header(log_io, agent_name, workspace, allow_edits, started_wall, type(self).__name__)
                 try:
                     usage = asyncio.run(
                         self.call_llm_and_log(
@@ -69,7 +69,7 @@ class LLMAdapter:
                             user_prompt,
                             workspace=workspace,
                             readable_roots=resolved_roots,
-                            read_only=read_only,
+                            allow_edits=allow_edits,
                             log_io=log_io,
                         )
                     )
@@ -88,7 +88,7 @@ class LLMAdapter:
         *,
         workspace: Path,
         readable_roots: list[Path],
-        read_only: bool,
+        allow_edits: bool,
         log_io: TextIO,
     ) -> Usage | None:
         """Subclass extension point: drive one agent invocation against a specific backend.
@@ -121,14 +121,14 @@ def _write_header(
     log_io: TextIO,
     agent_name: str,
     workspace: Path,
-    read_only: bool,
+    allow_edits: bool,
     started: datetime,
     adapter_class: str,
 ) -> None:
     log_io.write(f"# Agent log: {agent_name}\n\n")
     log_io.write(f"- adapter: {adapter_class}\n")
     log_io.write(f"- workspace: {workspace}\n")
-    log_io.write(f"- read_only: {read_only}\n")
+    log_io.write(f"- allow_edits: {allow_edits}\n")
     log_io.write(f"- started: {started.isoformat(timespec='seconds')}\n\n")
     log_io.flush()
 
