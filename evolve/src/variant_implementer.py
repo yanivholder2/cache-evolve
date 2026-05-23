@@ -128,7 +128,6 @@ def implement_variants(
     for i in range(1, cohort_size + 1):
         variant_layout = cycle_layout.variant(i)
         variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
-        variant_layout.fitness_dir.mkdir(parents=True, exist_ok=True)
         jobs.append((variant_layout.id, cycle_layout.hypothesis_file(i), variant_layout, layout, adapter))
 
     failed = False

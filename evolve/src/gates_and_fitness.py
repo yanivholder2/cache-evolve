@@ -38,6 +38,7 @@ def run_gates_and_fitness(
             raise RuntimeError(f"gate-check failed for {variant_layout.id} in cycle {cycle_num}")
 
         fitness_dir = variant_layout.fitness_dir
+        fitness_dir.mkdir(parents=True, exist_ok=True)
         plugins = {
             "hit-rate": lambda: hit_rate.compute(repo_root=repo_root, target_dir=target_dir),
             "per-op-time": lambda: per_op_time.compute(evolve_root=layout.evolve_root, target_dir=target_dir),
