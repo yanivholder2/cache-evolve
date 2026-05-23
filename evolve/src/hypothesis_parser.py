@@ -4,7 +4,7 @@ Expected format (see `agents/hypotheses-writer.md`):
 
     # H<NN>                   (optional)
 
-    <canonical line>          # first non-empty non-header line
+    <claim>                   # first non-empty non-header line
 
     ## Parent
 
@@ -34,18 +34,25 @@ _SECTION_HEADER_RE = re.compile(r"^##\s+(.+?)\s*$")
 
 @dataclass(frozen=True)
 class Hypothesis:
-    canonical_line: str
+    """Parsed contents of an H<NN>.md file."""
+
+    claim: str
+    """The testable claim — one-line summary (first non-empty, non-header line of the preamble)."""
+
     parent: str
+    """Parent citation — either ``"baseline"`` or ``"cycle/<NNNN>/v<NNN>"``. Resolve to a directory with `resolve_parent_dir`."""
+
     changes: str
+    """Free-form prose body of the ``## Changes`` section, describing the modifications the implementer must apply."""
 
 
 def parse(path: Path) -> Hypothesis:
     text = path.read_text(encoding="utf-8")
     sections = _split_sections(text)
 
-    canonical = _extract_canonical(sections.get("", ""))
-    if canonical is None:
-        raise ValueError(f"{path}: missing canonical line")
+    claim = _extract_claim(sections.get("", ""))
+    if claim is None:
+        raise ValueError(f"{path}: missing claim")
 
     parent_body = sections.get("Parent")
     if parent_body is None:
@@ -66,7 +73,7 @@ def parse(path: Path) -> Hypothesis:
     if not changes:
         raise ValueError(f"{path}: '## Changes' section is empty")
 
-    return Hypothesis(canonical_line=canonical, parent=parent, changes=changes)
+    return Hypothesis(claim=claim, parent=parent, changes=changes)
 
 
 def resolve_parent_dir(parent: str, layout: Layout) -> Path:
@@ -101,7 +108,7 @@ def _split_sections(text: str) -> dict[str, str]:
     return {name: "\n".join(lines) for name, lines in buckets.items()}
 
 
-def _extract_canonical(preamble: str) -> str | None:
+def _extract_claim(preamble: str) -> str | None:
     """First non-empty, non-`#`-header, non-list-marker line."""
 
     for line in preamble.splitlines():

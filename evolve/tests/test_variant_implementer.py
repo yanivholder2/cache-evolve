@@ -97,7 +97,7 @@ def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
 
     hypothesis = cycle_layout.hypothesis_file(1)
     hypothesis.parent.mkdir(parents=True, exist_ok=True)
-    hypothesis.write_text("just a canonical line\n\n## Changes\n\nstuff\n", encoding="utf-8")
+    hypothesis.write_text("just a claim line\n\n## Changes\n\nstuff\n", encoding="utf-8")
 
     capture = tmp_path / "capture.txt"
     adapter = StubLLMAdapter(capture_file=capture)

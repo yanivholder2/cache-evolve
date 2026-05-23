@@ -13,7 +13,7 @@ cohort, not peer Variants, not the ledger.
 2. Read the files listed in `task.md`:
    - **Hypothesis file** — the `## Changes` section is your concrete
      assignment. Apply only those changes against the parent's
-     `segment.rs`. The canonical line states the testable claim.
+     `segment.rs`. The claim line states the testable assertion.
    - **Parent's `segment.rs`** — the Rust source you are modifying.
    - **Parent's `manifest.toml`** — eviction policy + ordinal of the
      parent. Your variant's manifest typically inherits these unless the

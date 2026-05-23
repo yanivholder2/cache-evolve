@@ -18,7 +18,7 @@ class StubLLMAdapter:
     canned files into workspace.
 
     Knobs:
-      hypothesis_lines  explicit per-file canonical lines (one entry → H01.md, etc.)
+      hypothesis_lines  explicit per-file claim lines (one entry → H01.md, etc.)
       n_lines           shorthand: write N stub files "stub hypothesis K"
       parents           per-hypothesis parent identifier (defaults to "baseline" for each)
       changes           per-hypothesis '## Changes' prose (defaults to "stub changes")

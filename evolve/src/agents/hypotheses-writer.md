@@ -25,11 +25,11 @@ and you will not see implementation code or simulator results.
 
 Each `H<NN>.md` has three required parts in this order:
 
-1. **Canonical line** — the first non-empty non-header line. One
-   sentence stating a concrete change plus the fitness dimension it
-   targets. Must not start with a list marker (`-`, `*`), numbering
-   (`H01:`, `1.`), nor sit inside a code fence. An optional `#` markdown
-   header may precede it (downstream parsers skip it).
+1. **Claim** — the first non-empty non-header line. One sentence
+   stating a concrete change plus the fitness dimension it targets.
+   Must not start with a list marker (`-`, `*`), numbering (`H01:`,
+   `1.`), nor sit inside a code fence. An optional `#` markdown header
+   may precede it (downstream parsers skip it).
 2. **`## Parent`** — the variant your hypothesis derives from. The body
    is a single line containing exactly one identifier:
    - `baseline` — the permanent research baseline. Always valid.
@@ -42,7 +42,7 @@ Each `H<NN>.md` has three required parts in this order:
    function or branch to modify, what the new behaviour is, what
    invariants to preserve). Required and non-empty.
 
-The canonical line, `## Parent`, and `## Changes` are all parsed by the
+The claim, `## Parent`, and `## Changes` are all parsed by the
 framework — missing or malformed sections cause the cycle to fail fast.
 
 ## Quality bar
@@ -54,7 +54,7 @@ framework — missing or malformed sections cause the cycle to fail fast.
   would confirm or refute the claim.
 - **Grounded.** Every Hypothesis derives from exactly one parent
   (baseline or a past variant). The `## Changes` section names the
-  concrete modification; the canonical line states the testable claim.
+  concrete modification; the claim states the testable assertion.
 - **Specific.** The `## Changes` section must be concrete enough that
   the implementer can write Rust against it without inventing the
   experiment. Reference functions, branches, thresholds — not vague
@@ -83,9 +83,9 @@ v003 showed the eviction path dominates per-op time; this change targets
 hit rate specifically while preserving v003's eviction cost profile.
 ```
 
-## Bad canonical lines
+## Bad claims
 
-Do not emit any of these as the canonical line:
+Do not emit any of these as the claim:
 
 ```
 H01: bias eviction toward stash buckets...      # leading numbering

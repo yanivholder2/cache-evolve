@@ -24,7 +24,7 @@ def test_parse_baseline_parent(tmp_path):
         "## Changes\n\nReplace evict_one() victim selection.\n",
     )
     h = hypothesis_parser.parse(p)
-    assert h.canonical_line == "Bias eviction toward stash to raise hit rate."
+    assert h.claim == "Bias eviction toward stash to raise hit rate."
     assert h.parent == "baseline"
     assert h.changes == "Replace evict_one() victim selection."
 
@@ -43,33 +43,33 @@ def test_parse_cycle_variant_parent(tmp_path):
 def test_parse_skips_header_and_blank_lines(tmp_path):
     p = _write(
         tmp_path,
-        "\n\n# H01 header\n\nCanonical sentence here.\n\n"
+        "\n\n# H01 header\n\nClaim sentence here.\n\n"
         "## Parent\n\nbaseline\n\n## Changes\n\nstuff\n",
     )
     h = hypothesis_parser.parse(p)
-    assert h.canonical_line == "Canonical sentence here."
+    assert h.claim == "Claim sentence here."
 
 
 def test_parse_missing_parent_raises(tmp_path):
-    p = _write(tmp_path, "Canonical line.\n\n## Changes\n\nstuff\n")
+    p = _write(tmp_path, "Claim line.\n\n## Changes\n\nstuff\n")
     with pytest.raises(ValueError, match="missing '## Parent'"):
         hypothesis_parser.parse(p)
 
 
 def test_parse_missing_changes_raises(tmp_path):
-    p = _write(tmp_path, "Canonical line.\n\n## Parent\n\nbaseline\n")
+    p = _write(tmp_path, "Claim line.\n\n## Parent\n\nbaseline\n")
     with pytest.raises(ValueError, match="missing '## Changes'"):
         hypothesis_parser.parse(p)
 
 
 def test_parse_empty_parent_section_raises(tmp_path):
-    p = _write(tmp_path, "Canonical.\n\n## Parent\n\n\n## Changes\n\nstuff\n")
+    p = _write(tmp_path, "Claim.\n\n## Parent\n\n\n## Changes\n\nstuff\n")
     with pytest.raises(ValueError, match="'## Parent' section is empty"):
         hypothesis_parser.parse(p)
 
 
 def test_parse_empty_changes_section_raises(tmp_path):
-    p = _write(tmp_path, "Canonical.\n\n## Parent\n\nbaseline\n\n## Changes\n\n\n")
+    p = _write(tmp_path, "Claim.\n\n## Parent\n\nbaseline\n\n## Changes\n\n\n")
     with pytest.raises(ValueError, match="'## Changes' section is empty"):
         hypothesis_parser.parse(p)
 
@@ -77,15 +77,15 @@ def test_parse_empty_changes_section_raises(tmp_path):
 def test_parse_malformed_parent_raises(tmp_path):
     p = _write(
         tmp_path,
-        "Canonical.\n\n## Parent\n\ncycle/2/v3\n\n## Changes\n\nstuff\n",
+        "Claim.\n\n## Parent\n\ncycle/2/v3\n\n## Changes\n\nstuff\n",
     )
     with pytest.raises(ValueError, match="malformed parent identifier"):
         hypothesis_parser.parse(p)
 
 
-def test_parse_no_canonical_raises(tmp_path):
+def test_parse_no_claim_raises(tmp_path):
     p = _write(tmp_path, "# H01\n\n## Parent\n\nbaseline\n\n## Changes\n\nstuff\n")
-    with pytest.raises(ValueError, match="missing canonical line"):
+    with pytest.raises(ValueError, match="missing claim"):
         hypothesis_parser.parse(p)
 
 

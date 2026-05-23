@@ -16,7 +16,6 @@ from __future__ import annotations
 import concurrent.futures
 import logging
 import sys
-import traceback
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -105,8 +104,10 @@ def implement_variant(
     log.info("variant materialized at %s", impl_dir)
 
 
-def _run_one(job: ImplementerJob) -> tuple[str, BaseException | None]:
-    log.debug("%s: implementer %s", job.id, job.hypothesis_file)
+def _run_implementer_job(job: ImplementerJob) -> tuple[str, Exception | None]:
+    """Pool worker: run `implement_variant` and return any failure paired with the job id."""
+
+    log.debug("%s: implementer started for hypothesis %s", job.id, job.hypothesis_file)
     try:
         implement_variant(
             job.hypothesis_file,
@@ -114,10 +115,10 @@ def _run_one(job: ImplementerJob) -> tuple[str, BaseException | None]:
             layout=job.layout,
             adapter=job.adapter,
         )
-    except BaseException as exception:  # noqa: BLE001 — surface every failure to the orchestrator
+    except Exception as exception:
         log.debug("%s: implementer failed: %s", job.id, exception)
         return job.id, exception
-    log.debug("%s: implementer ok", job.id)
+    log.debug("%s: implementer completed successfully", job.id)
     return job.id, None
 
 
@@ -147,11 +148,9 @@ def implement_variants(
 
     failed = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=cohort_size) as pool:
-        for variant_id, exception in pool.map(_run_one, jobs):
+        for variant_id, exception in pool.map(_run_implementer_job, jobs):
             if exception is not None:
-                print(f"error: variant-implementer for {variant_id} failed: {exception}", file=sys.stderr)
-                sys.stderr.write("".join(traceback.format_exception(exception)))
-                log.error("implementer %s failed: %s", variant_id, exception)
+                log.error("implementer %s failed", variant_id, exc_info=exception)
                 failed = True
     if failed:
         sys.exit(1)
