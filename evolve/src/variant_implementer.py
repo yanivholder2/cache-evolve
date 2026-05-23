@@ -12,9 +12,8 @@ from pathlib import Path
 
 from src import hypothesis_parser
 from src.adapters import LLMAdapter
-from src.hypothesis_parser import ParentVariant
 from src.identifiers import HypothesisId, VariantId
-from src.paths import CycleLayout, Layout, VariantLayout
+from src.paths import CycleLayout, Layout, Variant, VariantLayout
 
 
 @dataclass(frozen=True)
@@ -38,14 +37,14 @@ def _write_task_md(
     variant_layout: VariantLayout,
     hypothesis_file: Path,
     parent_dir: Path,
-    parent_variant: ParentVariant,
+    variant: Variant,
     layout: Layout,
 ) -> None:
     parent_layout = VariantLayout(root=parent_dir)
     body = (
         f"# Task: variant-implementer\n\n"
         f"Variant: {variant_layout.variant_id}\n"
-        f"Parent variant: {parent_variant} ({parent_dir})\n"
+        f"Parent variant: {variant} ({parent_dir})\n"
         f"Hypothesis: {hypothesis_file}\n"
         f"Output dir: {variant_layout.impl_dir}\n\n"
         f"## Paths\n\n"

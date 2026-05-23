@@ -137,9 +137,9 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
 
 @pytest.mark.slow
 def test_each_variant_flows_through_real_gates(shared_cohort_run):
-    # fitness_vector.json is only written when G1+G2+G3 all pass
-    # (see gates_and_fitness.run_gates_and_fitness), so a complete vector
-    # per variant is the structural proof that every variant cleared the gates.
+    # fitness_vector.json is only written when G1+G2+G3 all pass, so a
+    # complete vector per variant is the structural proof that every variant
+    # cleared the gates.
     expected_dims = {"hit-rate", "per-op-time", "metadata-size"}
     for i in (1, 2, 3):
         variant_layout = shared_cohort_run.cycle_layout.variant(VariantId(i))

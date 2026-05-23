@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
 
 from src.identifiers import CycleId, HypothesisId, VariantId
+
+BASELINE_STR = "baseline"
 
 
 @dataclass(frozen=True)
@@ -271,3 +274,49 @@ class Layout:
                 "outputs_root must live inside the repo (ADR-0003: repo-relative paths only)"
             ) from e
         return str(rel)
+
+
+# Addressable variant references — either the permanent baseline or a
+# past/current cycle variant. Used as the parent in hypotheses and as the
+# identifier passed through the build, gate, and fitness layers.
+
+
+@dataclass(frozen=True)
+class Baseline:
+    """The permanent research baseline."""
+
+    def resolve(self, layout: Layout) -> Path:
+        return layout.baseline.root
+
+    @property
+    def label(self) -> str:
+        """Short form used as the fitness-vector key (cycle implied by path)."""
+        return BASELINE_STR
+
+    def __str__(self) -> str:
+        return BASELINE_STR
+
+
+@dataclass(frozen=True)
+class CycleVariant:
+    """A variant from a specific cycle."""
+
+    cycle_id: CycleId
+    variant_id: VariantId
+
+    def resolve(self, layout: Layout) -> Path:
+        path = layout.cycle(self.cycle_id).variant(self.variant_id).root
+        if not path.is_dir():
+            raise FileNotFoundError(f"variant dir not found: {path}")
+        return path
+
+    @property
+    def label(self) -> str:
+        """Short form used as the fitness-vector key (cycle implied by path)."""
+        return str(self.variant_id)
+
+    def __str__(self) -> str:
+        return f"cycle/{self.cycle_id}/{self.variant_id}"
+
+
+Variant = Union[Baseline, CycleVariant]

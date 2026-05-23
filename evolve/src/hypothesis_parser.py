@@ -6,54 +6,16 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
 
-from src.identifiers import (
-    CYCLE_ID_WIDTH,
-    VARIANT_ID_WIDTH,
-    CycleId,
-    VariantId,
-)
-from src.paths import Layout
+from src.identifiers import CYCLE_ID_WIDTH, VARIANT_ID_WIDTH, CycleId, VariantId
+from src.paths import BASELINE_STR, Baseline, CycleVariant, Variant
 
 log = logging.getLogger("hypothesis-parser")
 
-BASELINE_STR = "baseline"
 _PARENT_CYCLE_RE = re.compile(
     rf"^cycle/(\d{{{CYCLE_ID_WIDTH}}})/v(\d{{{VARIANT_ID_WIDTH}}})$"
 )
 _SECTION_HEADER_RE = re.compile(r"^##\s+(.+?)\s*$")
-
-
-@dataclass(frozen=True)
-class Baseline:
-    """The permanent research baseline. Always a valid parent variant."""
-
-    def resolve(self, layout: Layout) -> Path:
-        return layout.baseline.root
-
-    def __str__(self) -> str:
-        return BASELINE_STR
-
-
-@dataclass(frozen=True)
-class CycleVariant:
-    """A past variant from a prior cycle."""
-
-    cycle_id: CycleId
-    variant_id: VariantId
-
-    def resolve(self, layout: Layout) -> Path:
-        path = layout.cycle(self.cycle_id).variant(self.variant_id).root
-        if not path.is_dir():
-            raise FileNotFoundError(f"parent variant dir not found: {path}")
-        return path
-
-    def __str__(self) -> str:
-        return f"cycle/{self.cycle_id}/{self.variant_id}"
-
-
-ParentVariant = Union[Baseline, CycleVariant]
 
 
 @dataclass(frozen=True)
@@ -63,7 +25,7 @@ class Hypothesis:
     claim: str
     """The testable claim — one-line summary (first non-empty, non-header line of the preamble)."""
 
-    parent_variant: ParentVariant
+    parent_variant: Variant
     """Parent variant — either `Baseline()` or `CycleVariant(...)`. Resolve to a directory with `.resolve(layout)`."""
 
     changes: str
@@ -105,7 +67,7 @@ def parse(path: Path) -> Hypothesis:
     return Hypothesis(claim=claim, parent_variant=parent_variant, changes=changes)
 
 
-def _parse_parent_variant(line: str) -> ParentVariant:
+def _parse_parent_variant(line: str) -> Variant:
     if line == BASELINE_STR:
         return Baseline()
     m = _PARENT_CYCLE_RE.match(line)

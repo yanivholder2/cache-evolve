@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.fitness._common import cargo_build, run_binary
 from src.fitness._contract import parse_plugin_stdout
+from src.fitness.plugins._common import cargo_build, run_binary
 
 CONFIGS = [
     {"cache": "assoc", "size": 16},

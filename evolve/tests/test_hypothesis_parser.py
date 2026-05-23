@@ -7,9 +7,8 @@ from pathlib import Path
 import pytest
 
 from src import hypothesis_parser
-from src.hypothesis_parser import Baseline, CycleVariant
 from src.identifiers import CycleId, VariantId
-from src.paths import Layout
+from src.paths import Baseline, CycleVariant, Layout
 
 
 def _write(tmp_path: Path, body: str) -> Path:
@@ -108,10 +107,10 @@ def test_cycle_variant_resolves_to_variant_dir(tmp_path):
 
 def test_cycle_variant_missing_dir_raises(tmp_path):
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "outputs")
-    with pytest.raises(FileNotFoundError, match="parent variant dir not found"):
+    with pytest.raises(FileNotFoundError, match="variant dir not found"):
         CycleVariant(cycle_id=CycleId(1), variant_id=VariantId(1)).resolve(layout)
 
 
-def test_parent_variant_str_round_trips(tmp_path):
+def test_variant_str_round_trips(tmp_path):
     assert str(Baseline()) == "baseline"
     assert str(CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3))) == "cycle/0002/v003"

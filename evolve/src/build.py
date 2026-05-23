@@ -9,7 +9,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.identifiers import CycleId, VariantId
+from src.paths import Variant
 
 log = logging.getLogger("build")
 
@@ -43,10 +43,10 @@ def _scaffold_workspace(work_dir: Path, impl_dir: Path, repo_root: Path) -> None
     shutil.copy(HARNESS_DIR / "g3_invariant.rs", work_dir / "tests" / "g3_invariant.rs")
 
 
-def _append_rejection(rejection_log: Path, cycle_id: CycleId, variant_id: VariantId, cargo_output: str) -> None:
+def _append_rejection(rejection_log: Path, variant: Variant, cargo_output: str) -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     entry = (
-        f"\n## {ts} — cycle={cycle_id} variant={variant_id}\n\n"
+        f"\n## {ts} — variant={variant}\n\n"
         f"**Gate**: G1 (build)\n"
         f"**Error**:\n"
         f"```\n{cargo_output}\n```\n"
@@ -59,8 +59,7 @@ def _append_rejection(rejection_log: Path, cycle_id: CycleId, variant_id: Varian
 
 def build_variant(
     impl_dir: Path,
-    cycle_id: CycleId,
-    variant_id: VariantId,
+    variant: Variant,
     *,
     repo_root: Path,
     rejection_log: Path,
@@ -82,7 +81,7 @@ def build_variant(
     log.debug("workspace=%s impl=%s repo_root=%s", work_dir, impl_dir, repo_root)
     _scaffold_workspace(work_dir, impl_dir, repo_root)
 
-    log.info("G1: compiling variant %s ...", variant_id)
+    log.info("G1: compiling variant %s ...", variant)
     proc = subprocess.run(
         ["cargo", "build", "--tests", "--manifest-path", str(work_dir / "Cargo.toml")],
         capture_output=True,
@@ -90,7 +89,7 @@ def build_variant(
     )
     if proc.returncode != 0:
         log.info("G1: FAILED")
-        _append_rejection(rejection_log, cycle_id, variant_id, proc.stdout + proc.stderr)
+        _append_rejection(rejection_log, variant, proc.stdout + proc.stderr)
         log.info("rejection logged to %s", rejection_log)
         shutil.rmtree(
             work_dir,

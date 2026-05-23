@@ -7,8 +7,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from src.fitness._common import cargo_build, cargo_env
 from src.fitness._contract import validate_plugin_dict
+from src.fitness.plugins._common import cargo_build, cargo_env
 from src.paths import SourcesLayout
 
 RUN_TIMEOUT_S = 120

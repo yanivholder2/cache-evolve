@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.build import build_variant
-from src.identifiers import CycleId, VariantId
+from src.paths import Variant
 
 log = logging.getLogger("gate-check")
 
@@ -50,7 +50,7 @@ def _run_cargo_test(work_dir: Path, test_name: str) -> subprocess.CompletedProce
     )
 
 
-def _check_g2(work_dir: Path, cycle_id: CycleId, variant_id: VariantId, rejection_log: Path) -> bool:
+def _check_g2(work_dir: Path, variant: Variant, rejection_log: Path) -> bool:
     proc = _run_cargo_test(work_dir, "g2_contract")
     if proc.returncode == 0:
         log.info("G2: passed")
@@ -59,7 +59,7 @@ def _check_g2(work_dir: Path, cycle_id: CycleId, variant_id: VariantId, rejectio
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _append_entry(
         rejection_log,
-        f"\n## {ts} — cycle={cycle_id} variant={variant_id}\n\n"
+        f"\n## {ts} — variant={variant}\n\n"
         f"**Gate**: G2 (trait contract)\n"
         f"**Error**:\n"
         f"```\n{proc.stdout + proc.stderr}\n```\n"
@@ -71,8 +71,7 @@ def _check_g2(work_dir: Path, cycle_id: CycleId, variant_id: VariantId, rejectio
 
 def _check_g3(
     work_dir: Path,
-    cycle_id: CycleId,
-    variant_id: VariantId,
+    variant: Variant,
     rejection_log: Path,
     fingerprint: str,
 ) -> bool:
@@ -95,7 +94,7 @@ def _check_g3(
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _append_entry(
         rejection_log,
-        f"\n## {ts} — cycle={cycle_id} variant={variant_id}\n\n"
+        f"\n## {ts} — variant={variant}\n\n"
         f"**Fingerprint**: {fingerprint}\n"
         f"**Gate**: {gate_label}\n"
         f"**Failing invariant**: {invariant}\n"
@@ -109,8 +108,7 @@ def _check_g3(
 
 def run_gates(
     impl_dir: Path,
-    cycle_id: CycleId,
-    variant_id: VariantId,
+    variant: Variant,
     *,
     repo_root: Path,
     rejection_log: Path,
@@ -121,8 +119,7 @@ def run_gates(
     try:
         work_dir = build_variant(
             impl_dir,
-            cycle_id,
-            variant_id,
+            variant,
             repo_root=repo_root,
             rejection_log=rejection_log,
         )
@@ -133,10 +130,10 @@ def run_gates(
         return GatesResult(g1_passed=False)
 
     try:
-        g2_passed = _check_g2(work_dir, cycle_id, variant_id, rejection_log)
+        g2_passed = _check_g2(work_dir, variant, rejection_log)
         if not g2_passed:
             return GatesResult(g1_passed=True, g2_passed=False)
-        g3_passed = _check_g3(work_dir, cycle_id, variant_id, rejection_log, fingerprint)
+        g3_passed = _check_g3(work_dir, variant, rejection_log, fingerprint)
     finally:
         shutil.rmtree(
             work_dir,
@@ -145,5 +142,5 @@ def run_gates(
 
     result = GatesResult(g1_passed=True, g2_passed=True, g3_passed=g3_passed)
     if result.all_passed:
-        log.info("gate-check: all gates passed for %s", variant_id)
+        log.info("gate-check: all gates passed for %s", variant)
     return result
