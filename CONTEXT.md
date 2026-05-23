@@ -175,16 +175,13 @@ _Avoid_: Bottom, front
 
 ## Framework vocabulary (evolve)
 
-Vocabulary for the **evolve** framework — the agentic research loop that studies
-Subject caches. Distinct from the Dash domain above. Framework is not yet
-implemented; this section exists ahead of code so the upcoming work speaks a
-consistent language. When `evolve/` is scaffolded, this section should migrate
-to `evolve/CONTEXT.md` and the root will become `CONTEXT-MAP.md`.
+Vocabulary for the **evolve** framework — the agentic research loop that
+studies Subject caches. Distinct from the Dash domain above.
 
 ### Roles and subjects
 
 **Subject cache**:
-The cache under study by the framework. v1: the Dash crate.
+The cache under study by the framework.
 _Avoid_: Target cache, test cache, system under study.
 
 **Framework / Evolve**:
@@ -195,12 +192,11 @@ _Avoid_: Tool, agent, pipeline.
 ### Cycle and cohort
 
 **Cycle**:
-One full iteration: read ledger digest, propose Cohort, implement Variants,
-gate, evaluate, synthesize, append. Numbered, immutable after sealing.
+One full iteration of the evolve loop. Numbered, immutable after sealing.
 _Avoid_: Iteration, generation, round.
 
 **Cohort**:
-The set of Hypotheses proposed in one Cycle. v1 default size: 6.
+The set of Hypotheses proposed in one Cycle.
 _Avoid_: Batch, group.
 
 **Hypothesis**:
@@ -210,13 +206,13 @@ _Avoid_: Idea, conjecture.
 
 **Variant**:
 A proposed alternative implementation of the Subject cache, embodying one
-Hypothesis. Variants are the unit of evaluation; the leaderboard is defined
-over Variants, not Hypotheses.
+Hypothesis. The unit of evaluation; the leaderboard is defined over Variants,
+not Hypotheses.
 _Avoid_: Mutation, fork, candidate.
 
 **Variant attempt**:
-One numbered iteration within a Variant's self-repair sub-loop (G5). Up to 3
-attempts per Variant; only the final attempt's state enters the leaderboard.
+One numbered iteration within a Variant's self-repair sub-loop. Only the
+final attempt's state enters the leaderboard.
 _Avoid_: Revision, retry.
 
 **Seal**:
@@ -226,50 +222,45 @@ _Avoid_: Lock, close.
 ### Action space and extension points
 
 **Action space**:
-The set of changes a Variant is allowed to make. Configurable: Level 3
-(bounded code mutation through stable Extension points) or Level 4 (open-ended
-code rewriting). Levels 1–2 (hyperparameter sweep) are explicitly out of scope.
+The set of changes a Variant is allowed to make.
 _Avoid_: Search space, mutation space.
 
 **Extension point**:
-A stable interface in the Subject cache where Variants plug in. Initial set
-for Dash: EvictionPolicy trait, Segment trait, probing function,
-cascade/demotion-chain order.
+A stable interface in the Subject cache where Variants plug in.
 _Avoid_: Hook, plugin slot.
 
 ### Correctness gates
 
 **Gate**:
-A check a Variant must pass (G1 build, G2 trait contract, G3 invariant suite)
-or pass-with-judgment (G5 smoke-log review) before its fitness is admitted to
-the leaderboard. Hard gates are deterministic; soft gates are AI-judged.
+A check a Variant must pass before its fitness is admitted to the leaderboard.
+Hard gates (G1 build, G2 trait contract, G3 invariant suite) are
+deterministic; soft gates (G5 smoke-log review) are AI-judged.
 _Avoid_: Check, validator.
 
 **Invariant suite**:
-The codified correctness contract for the Subject cache (G3). Encodes
-the set of properties a Segment implementation must satisfy to be admitted
-to the leaderboard.
+The codified correctness contract for the Subject cache (G3); a Variant must
+satisfy it to be admitted to the leaderboard.
 _Avoid_: Property tests, test suite.
 
 **Smoke trace**:
-A small, canonical, framework-owned trace used by G5 to produce a manageable
-log for AI behavioral review. Distinct from dev/held-out evaluation traces.
+A small canonical trace used by G5 to produce a log for AI behavioral review.
+Distinct from evaluation traces.
 _Avoid_: Test trace, mini trace.
 
 **Variant verdict**:
-Qualitative AI judgment from G5 smoke-log review. Non-blocking — a "looks
-buggy" verdict triggers the self-repair sub-loop but does not suppress fitness
+Qualitative AI judgment from G5 smoke-log review. Non-blocking — a negative
+verdict triggers the self-repair sub-loop but does not suppress fitness
 numbers.
 _Avoid_: Review, opinion.
 
 **Self-repair sub-loop**:
-Bounded retry loop inside G5; the AI re-implements a Variant up to 3 times
-when the smoke-log review flags a likely bug. Same Variant ID across attempts.
+Bounded retry loop inside G5; the AI re-implements a Variant when the
+smoke-log review flags a likely bug. Same Variant ID across attempts.
 _Avoid_: Fix loop, retry chain.
 
 **Rejection log**:
-Durable record of Variants that failed a hard gate (G1, G2, G3). Failed
-Variants are evidence the AI can learn from, not silent drops.
+Durable record of Variants that failed a hard gate. Failed Variants are
+evidence the AI can learn from, not silent drops.
 _Avoid_: Failures, error log.
 
 ### Insights and ledger
@@ -283,38 +274,34 @@ Per-Cycle AI-written synthesis across the Cohort's Variant insights. The
 canonical record of what the framework learned in one Cycle.
 
 **Insight ledger**:
-Append-only JSONL of Cycle insights. Single cross-cycle source of truth.
-Atomic-append enforced; never rewritten.
+Append-only record of Cycle insights, and the single cross-cycle source of
+truth. See [ADR-0001](docs/adr/0001-append-only-insight-ledger.md).
 _Avoid_: Log, history, archive.
 
 **Synthesis**:
-Recomputable cross-cycle narrative; rewritten freely by the cross-cycle
-synthesizer subagent. Derived from the Insight ledger; never the source of
-truth.
+Recomputable cross-cycle narrative derived from the Insight ledger. Rewritten
+freely; never the source of truth.
 _Avoid_: Summary, distillation.
 
 ### Evaluation
 
 **Trace profile**:
-Per-trace human-and-AI-authored Markdown description of workload
-characteristics (skew, working-set size, scan/hot-set behavior). Created once
-per Trace, signed off by the maintainer, then immutable for the run.
+Description of a Trace's workload characteristics (skew, working-set size,
+scan/hot-set behavior).
 _Avoid_: Trace doc, workload description.
 
 **Development suite**:
-Traces visible to the AI during evaluation. v1: ~4–6 traces, 3 cache sizes
-each.
+Traces visible to the AI during evaluation.
 _Avoid_: Training set, dev set.
 
 **Held-out suite**:
-Additional traces hidden from the AI. Run only on Pareto-front Variants.
-Catches AI overfitting to the development suite.
+Additional traces hidden from the AI; run only on Pareto-front Variants to
+catch overfitting to the Development suite.
 _Avoid_: Test set, validation set.
 
 **Fitness vector**:
-Multi-dimensional measurement of a Variant's quality. v1: hit rate (per
-trace × size), per-op time (p50/p99 from microbench), metadata size (static
-via `mem::size_of`).
+Multi-dimensional measurement of a Variant's quality. Plural by design —
+fitness is never a single scalar.
 _Avoid_: Score, fitness value (singular implies scalar).
 
 **Pareto front**:
@@ -323,25 +310,21 @@ winners — typically several, not one.
 _Avoid_: Leaderboard, top-K.
 
 **Fingerprint**:
-Stable hash of a Variant's `impl/` directory. Used for cross-cycle dedup
-(catches the AI re-proposing the same Variant) and for v2 multi-machine
-worker assignment.
+Stable hash of a Variant's implementation, used to detect when the AI
+re-proposes the same Variant.
 _Avoid_: Hash, signature.
 
 ### Architectural principles
 
 **Token-frugal principle**:
-Anything that doesn't require LLM judgment is a script. The LLM is for
-hypothesizing, code-writing, smoke-log judgment, and insight synthesis;
-everything else (ledger reads, leaderboard computation, log filtering, context
-bundling) is mechanical and lives in `evolve/src/`.
+Anything that doesn't require LLM judgment is a script, not an LLM call. See
+[ADR-0002](docs/adr/0002-token-frugal-principle.md).
 _Avoid_: Token budget (means a numeric cap; the principle is architectural).
 
 **v2-ready invariants**:
-Architectural commitments that make v2 multi-machine execution a
-storage-layer swap rather than a refactor: repo-relative paths only, atomic
-ledger append, stable Variant fingerprint, ledger as the only synchronization
-point.
+Architectural commitments that keep v2 multi-machine execution a storage-layer
+swap rather than a refactor. See
+[ADR-0003](docs/adr/0003-v1-single-machine-v2-ready-invariants.md).
 _Avoid_: Distributed prerequisites, cluster invariants.
 
 ## Flagged ambiguities
