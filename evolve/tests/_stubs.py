@@ -6,6 +6,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from src._io import append_utf8, read_utf8, write_utf8
+
 GOOD_IMPL = Path(__file__).parent / "fixtures" / "good" / "impl"
 
 
@@ -64,9 +66,9 @@ class StubLLMAdapter:
         for i, line in enumerate(lines, start=1):
             parent_variant = self.parent_variants[i - 1] if self.parent_variants and i - 1 < len(self.parent_variants) else "baseline"
             change = self.changes[i - 1] if self.changes and i - 1 < len(self.changes) else "stub changes"
-            (workspace / f"H{i:02d}.md").write_text(
+            write_utf8(
+                workspace / f"H{i:02d}.md",
                 f"# Hypothesis H{i:02d}\n\n{line}\n\n## Parent\n\n{parent_variant}\n\n## Changes\n\n{change}\n",
-                encoding="utf-8",
             )
 
     def _write_variant(self, workspace: Path) -> None:
@@ -77,12 +79,16 @@ class StubLLMAdapter:
         task_md = ""
         task_path = workspace / "task.md"
         if task_path.is_file():
-            task_md = task_path.read_text(encoding="utf-8")
-        with open(self.capture_file, "a", encoding="utf-8") as f:
-            f.write("----- invocation -----\n")
-            f.write(f"agent: {agent_name}\n")
-            f.write(f"workspace: {workspace}\n")
-            f.write(f"readable-roots: {readable_roots}\n")
-            f.write(f"allow-edits: {allow_edits}\n")
-            f.write("----- task.md -----\n")
-            f.write(task_md if task_md.endswith("\n") else task_md + "\n")
+            task_md = read_utf8(task_path)
+        if not task_md.endswith("\n"):
+            task_md += "\n"
+        append_utf8(
+            self.capture_file,
+            "----- invocation -----\n"
+            f"agent: {agent_name}\n"
+            f"workspace: {workspace}\n"
+            f"readable-roots: {readable_roots}\n"
+            f"allow-edits: {allow_edits}\n"
+            "----- task.md -----\n"
+            f"{task_md}",
+        )

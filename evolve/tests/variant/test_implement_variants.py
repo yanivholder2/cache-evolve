@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
+from src._io import read_utf8, write_utf8
 from src.identifiers import CycleId, HypothesisId, VariantId
 from src.paths import CycleLayout, Layout
 
@@ -112,18 +113,18 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
     good_impl = Path(__file__).parent.parent / "fixtures" / "good" / "impl"
 
     def sleep_implementer(hyp_file, variant_dir, **_):
-        (stamp_dir / f"{variant_dir.variant_id}.start").write_text(f"{time.time()}")
+        write_utf8(stamp_dir / f"{variant_dir.variant_id}.start", f"{time.time()}")
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
         variant_dir.impl_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy(good_impl / "segment.rs", variant_dir.impl_dir / "segment.rs")
         shutil.copy(good_impl / "manifest.toml", variant_dir.impl_dir / "manifest.toml")
-        (stamp_dir / f"{variant_dir.variant_id}.end").write_text(f"{time.time()}")
+        write_utf8(stamp_dir / f"{variant_dir.variant_id}.end", f"{time.time()}")
 
     monkeypatch.setattr("src.variant.implementer.implement_variant", sleep_implementer)
     _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE)
 
-    starts = sorted(float(p.read_text()) for p in stamp_dir.glob("*.start"))
-    ends = sorted(float(p.read_text()) for p in stamp_dir.glob("*.end"))
+    starts = sorted(float(read_utf8(p)) for p in stamp_dir.glob("*.start"))
+    ends = sorted(float(read_utf8(p)) for p in stamp_dir.glob("*.end"))
     assert len(starts) == PARALLEL_COHORT_SIZE
     assert len(ends) == PARALLEL_COHORT_SIZE
     total_wall = ends[-1] - starts[0]
@@ -143,18 +144,18 @@ def test_each_variant_flows_through_real_gates(shared_cohort_run):
     expected_dims = {"hit-rate", "per-op-time", "metadata-size"}
     for i in (1, 2, 3):
         variant_dir = shared_cohort_run.cycle_layout.variant(VariantId(i))
-        fv = json.loads(variant_dir.fitness_vector_json.read_text())
+        fv = json.loads(read_utf8(variant_dir.fitness_vector_json))
         assert fv["variant"] == f"v{i:03d}"
         dims = {d["dim"] for d in fv["dimensions"]}
         assert dims == expected_dims, f"v{i:03d} dimensions {dims} != {expected_dims}"
 
-    winners = json.loads(shared_cohort_run.cycle_layout.winners_json.read_text())
+    winners = json.loads(read_utf8(shared_cohort_run.cycle_layout.winners_json))
     assert {fv["variant"] for fv in winners["fitness_vectors"]} == {"v001", "v002", "v003"}
 
 
 @pytest.mark.slow
 def test_winners_pareto_front_spans_cohort(shared_cohort_run):
-    winners = json.loads(shared_cohort_run.cycle_layout.winners_json.read_text())
+    winners = json.loads(read_utf8(shared_cohort_run.cycle_layout.winners_json))
     assert len(winners["fitness_vectors"]) == 3
     fv_ids = sorted(fv["variant"] for fv in winners["fitness_vectors"])
     assert fv_ids == ["v001", "v002", "v003"]
@@ -166,7 +167,7 @@ def test_winners_pareto_front_spans_cohort(shared_cohort_run):
 def test_variant_implementer_agent_markdown_exists():
     agent_md = EVOLVE_SRC / "src" / "agents" / "variant-implementer.md"
     assert agent_md.is_file(), f"missing {agent_md}"
-    body = agent_md.read_text()
+    body = read_utf8(agent_md)
     assert "hypothesis" in body.lower()
     assert "segment.rs" in body
     assert "manifest.toml" in body
@@ -206,9 +207,9 @@ def test_hypothesis_lines_map_to_variants(tmp_path):
         p.name for p in cycle_layout.hypotheses_dir.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name)
     )
     assert files == ["H01.md", "H02.md", "H03.md"]
-    assert "first hypothesis text" in cycle_layout.hypothesis_file(HypothesisId(1)).read_text()
-    assert "second hypothesis text" in cycle_layout.hypothesis_file(HypothesisId(2)).read_text()
-    assert "third hypothesis text" in cycle_layout.hypothesis_file(HypothesisId(3)).read_text()
+    assert "first hypothesis text" in read_utf8(cycle_layout.hypothesis_file(HypothesisId(1)))
+    assert "second hypothesis text" in read_utf8(cycle_layout.hypothesis_file(HypothesisId(2)))
+    assert "third hypothesis text" in read_utf8(cycle_layout.hypothesis_file(HypothesisId(3)))
     variants = sorted(p.name for p in cycle_layout.variants_dir.iterdir() if p.is_dir())
     assert variants == ["v001", "v002", "v003"]
 

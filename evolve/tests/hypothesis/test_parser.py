@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from src._io import write_utf8
 from src.hypothesis import parser
 from src.identifiers import CycleId, VariantId
 from src.paths import Baseline, CycleVariant, Layout
@@ -13,7 +14,7 @@ from src.paths import Baseline, CycleVariant, Layout
 
 def _write(tmp_path: Path, body: str) -> Path:
     p = tmp_path / "H01.md"
-    p.write_text(body, encoding="utf-8")
+    write_utf8(p, body)
     return p
 
 

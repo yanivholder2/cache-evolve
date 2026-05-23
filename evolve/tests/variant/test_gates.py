@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from src._io import read_utf8, write_utf8
 from src.variant.build import build_variant
 from src.variant.gate_check import run_gates
 from src.identifiers import CycleId, VariantId
@@ -57,7 +58,7 @@ def test_build_broken_fixture_logs_structured_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
         build_variant(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = layout.rejection_log.read_text()
+    content = read_utf8(layout.rejection_log)
     assert "G1 (build)" in content
     assert EXPECTED_VARIANT_TAG in content
 
@@ -71,7 +72,7 @@ def test_gate_check_good_fixture_produces_no_rejection_entry(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
     log = layout.rejection_log
-    assert not log.is_file() or log.read_text().strip() == ""
+    assert not log.is_file() or read_utf8(log).strip() == ""
 
 
 def test_gate_check_broken_fixture_fails(tmp_path):
@@ -82,18 +83,19 @@ def test_gate_check_broken_fixture_fails(tmp_path):
 def test_gate_check_broken_fixture_logs_structured_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = layout.rejection_log.read_text()
+    content = read_utf8(layout.rejection_log)
     assert "G1 (build)" in content
     assert EXPECTED_VARIANT_TAG in content
 
 
 def test_gate_check_invalid_ordinal_fails_g2(tmp_path):
     layout, variant = _stage(tmp_path, "good")
-    variant.resolve(layout).manifest_toml.write_text(
-        "[variant]\neviction_policy_ordinal = 99\n"
+    write_utf8(
+        variant.resolve(layout).manifest_toml,
+        "[variant]\neviction_policy_ordinal = 99\n",
     )
     assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = layout.rejection_log.read_text()
+    content = read_utf8(layout.rejection_log)
     assert "G2 (trait contract)" in content
     assert "99" in content
 
@@ -110,7 +112,7 @@ def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path):
 def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT, rejection_log=layout.rejection_log)
-    content = layout.rejection_log.read_text()
+    content = read_utf8(layout.rejection_log)
     assert "G3 (invariant suite)" in content
     assert EXPECTED_VARIANT_TAG in content
     assert "Fingerprint" in content
@@ -126,4 +128,4 @@ def test_gate_check_good_fixture_passes_g3(tmp_path):
     assert result.g2_passed is True
     assert result.g3_passed is True
     assert result.all_passed
-    assert not layout.rejection_log.is_file() or layout.rejection_log.read_text().strip() == ""
+    assert not layout.rejection_log.is_file() or read_utf8(layout.rejection_log).strip() == ""

@@ -5,6 +5,7 @@ import threading
 
 import pytest
 
+from src._io import read_utf8
 from src.cycle.ledger_append import append_row
 
 
@@ -12,7 +13,7 @@ def test_single_append_writes_one_row(tmp_path):
     ledger = tmp_path / "cycles.jsonl"
     row = {"cycle": "0001", "cycle_dir": "evolve/cycles/0001"}
     append_row(ledger, row)
-    lines = ledger.read_text().splitlines()
+    lines = read_utf8(ledger).splitlines()
     assert len(lines) == 1
     assert json.loads(lines[0]) == row
 
@@ -44,7 +45,7 @@ def test_concurrent_appends_produce_no_torn_rows(tmp_path):
 
     assert not errors, errors
 
-    lines = ledger.read_text().splitlines()
+    lines = read_utf8(ledger).splitlines()
     assert len(lines) == n_writers, f"expected {n_writers} rows, got {len(lines)}"
     for line in lines:
         json.loads(line)  # must not raise — no torn rows

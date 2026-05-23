@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TextIO
 
+from src._io import read_utf8
+
 Usage = dict[str, Any]
 
 AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
@@ -47,8 +49,8 @@ class LLMAdapter:
 
         resolved_roots = _validate_readable_roots(readable_roots)
 
-        system_prompt = agent_file.read_text(encoding="utf-8")
-        user_prompt = task_file.read_text(encoding="utf-8")
+        system_prompt = read_utf8(agent_file)
+        user_prompt = read_utf8(task_file)
         log.info(
             "dispatch agent=%s adapter=%s workspace=%s allow_edits=%s",
             agent_name,

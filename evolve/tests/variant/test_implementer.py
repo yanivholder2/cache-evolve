@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from src._io import read_utf8, write_utf8
 from src.identifiers import CycleId, HypothesisId, VariantId
 from src.paths import Layout
 from src.variant.implementer import implement_variant
@@ -29,9 +30,9 @@ def _setup_evolve(tmp_path: Path) -> Path:
 
 def _write_hypothesis(path: Path, *, parent_variant: str, body: str = "test claim") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    write_utf8(
+        path,
         f"# H01\n\n{body}\n\n## Parent\n\n{parent_variant}\n\n## Changes\n\nstuff\n",
-        encoding="utf-8",
     )
 
 
@@ -52,7 +53,7 @@ def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
         adapter=StubLLMAdapter(capture_file=capture),
     )
 
-    body = capture.read_text()
+    body = read_utf8(capture)
     baseline_root = layout.baseline.root
     assert str(baseline_root) in body, "task.md should embed baseline parent dir"
     assert str(baseline_root) in body.split("readable-roots:")[1].split("\n")[0]
@@ -79,7 +80,7 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
         adapter=StubLLMAdapter(capture_file=capture),
     )
 
-    body = capture.read_text()
+    body = read_utf8(capture)
     assert str(past_variant_dir) in body
     readable_line = body.split("readable-roots:")[1].split("\n")[0]
     assert str(past_variant_dir) in readable_line
@@ -121,7 +122,7 @@ def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
 
     hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
     hypothesis.parent.mkdir(parents=True, exist_ok=True)
-    hypothesis.write_text("just a claim line\n\n## Changes\n\nstuff\n", encoding="utf-8")
+    write_utf8(hypothesis, "just a claim line\n\n## Changes\n\nstuff\n")
 
     capture = tmp_path / "capture.txt"
     adapter = StubLLMAdapter(capture_file=capture)

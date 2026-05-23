@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
+from src._io import read_utf8, write_utf8
 from src.hypothesis.writer import write_hypotheses
 from src.identifiers import CycleId, HypothesisId
 from src.paths import Layout
@@ -33,17 +34,17 @@ def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard
     layout = _layout(dst)
     layout.ledger.parent.mkdir(parents=True, exist_ok=True)
     if with_ledger:
-        layout.ledger.write_text(
+        write_utf8(
+            layout.ledger,
             '{"cycle":"0001","cohort_size":2,"pareto_front":["v001"]}\n'
             '{"cycle":"0002","cohort_size":2,"pareto_front":["v001","v002"]}\n',
-            encoding="utf-8",
         )
     else:
-        layout.ledger.write_text("", encoding="utf-8")
+        write_utf8(layout.ledger, "")
     if with_leaderboard:
-        layout.leaderboard_md.write_text(
+        write_utf8(
+            layout.leaderboard_md,
             "# Leaderboard\n\n| variant | hit_rate |\n|---|---|\n| v001 | 0.42 |\n",
-            encoding="utf-8",
         )
     return dst
 
@@ -59,7 +60,7 @@ def _copy_real_evolve(tmp_path: Path) -> Path:
     )
     layout = _layout(dst)
     layout.ledger.parent.mkdir(parents=True, exist_ok=True)
-    layout.ledger.write_text("", encoding="utf-8")
+    write_utf8(layout.ledger, "")
     return dst
 
 
@@ -76,7 +77,7 @@ def test_emits_n_distinct_files(tmp_path):
     evolve = _setup_evolve(tmp_path, with_ledger=True, with_leaderboard=True)
     files = write_hypotheses(3, layout=_layout(evolve), cycle_id=CycleId(1), adapter=StubLLMAdapter(n_lines=3))
     assert [p.name for p in files] == ["H01.md", "H02.md", "H03.md"]
-    bodies = {p.read_text() for p in files}
+    bodies = {read_utf8(p) for p in files}
     assert len(bodies) == 3, "files must be distinct"
 
 
@@ -124,7 +125,7 @@ def test_adapter_invoked_with_expected_argv(tmp_path):
         cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    body = capture.read_text()
+    body = read_utf8(capture)
     assert "agent: hypotheses-writer" in body
     workspace = _layout(evolve).cycle(CycleId(1)).hypotheses_dir
     assert f"workspace: {workspace}" in body
@@ -139,7 +140,7 @@ def test_hypotheses_writer_passes_outputs_and_subject_as_readable_roots(tmp_path
         cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    body = capture.read_text()
+    body = read_utf8(capture)
     layout = _layout(evolve)
     assert str(layout.outputs_root) in body
     assert str(layout.dash_src) in body
@@ -156,7 +157,7 @@ def test_task_md_written_to_output_dir(tmp_path):
         cycle_id=CycleId(7),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    body = capture.read_text()
+    body = read_utf8(capture)
     assert "----- task.md -----" in body
     assert "0007" in body
     assert "Number of hypotheses: 2" in body
@@ -184,8 +185,8 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
     )
 
     cycle_layout = _layout(evolve_root).cycle(CycleId(1))
-    h01 = cycle_layout.hypothesis_file(HypothesisId(1)).read_text()
-    h02 = cycle_layout.hypothesis_file(HypothesisId(2)).read_text()
+    h01 = read_utf8(cycle_layout.hypothesis_file(HypothesisId(1)))
+    h02 = read_utf8(cycle_layout.hypothesis_file(HypothesisId(2)))
     assert "Stash-bias eviction" in h01
     assert "Lazy promotion" in h02
     assert "walking-skeleton stub" not in h01
@@ -202,7 +203,7 @@ def test_cold_start_task_md_grounds_in_baseline(tmp_path):
         cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    task_md = capture.read_text()
+    task_md = read_utf8(capture)
     baseline = _layout(evolve).baseline
     # Anchor on "baseline" so a stray "segment.rs" elsewhere doesn't satisfy
     # the check.
@@ -220,7 +221,7 @@ def test_cold_start_task_md_omits_cross_cycle_stubs(tmp_path):
         cycle_id=CycleId(1),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    task_md = capture.read_text()
+    task_md = read_utf8(capture)
     layout = _layout(evolve)
     assert str(layout.leaderboard_md) not in task_md
     assert str(layout.ledger) not in task_md
@@ -237,7 +238,7 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
         cycle_id=CycleId(2),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    task_md = capture.read_text()
+    task_md = read_utf8(capture)
     prev = _layout(evolve).cycle(CycleId(1))
     # Anchor on "0001" so a leaked path from a different cycle wouldn't
     # satisfy the filename checks alone.
@@ -256,7 +257,7 @@ def test_continuation_task_md_lists_baseline_as_valid_parent_variant(tmp_path):
         cycle_id=CycleId(2),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    task_md = capture.read_text()
+    task_md = read_utf8(capture)
     assert "baseline" in task_md
 
 
@@ -270,7 +271,7 @@ def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
         cycle_id=CycleId(2),
         adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
     )
-    task_md = capture.read_text()
+    task_md = read_utf8(capture)
     layout = _layout(evolve)
     assert layout.leaderboard_md.name in task_md
     assert layout.ledger.name in task_md
@@ -292,7 +293,7 @@ def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):
 def test_subagent_markdown_states_contract():
     agent_md = EVOLVE_SRC / "src" / "agents" / "hypotheses-writer.md"
     assert agent_md.is_file(), f"missing {agent_md}"
-    body = agent_md.read_text()
+    body = read_utf8(agent_md)
     assert "hypothesis" in body.lower()
     assert "H<NN>.md" in body
     assert "N distinct" in body or "N Hypotheses" in body

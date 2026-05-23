@@ -12,6 +12,8 @@ import json
 import os
 from pathlib import Path
 
+from src._io import read_utf8, write_utf8
+
 
 def _validate(row: dict) -> None:
     for key, value in row.items():
@@ -31,10 +33,10 @@ def append_row(ledger: Path, row: dict) -> None:
     with open(lock, "w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         try:
-            existing = ledger.read_text() if ledger.exists() else ""
+            existing = read_utf8(ledger) if ledger.exists() else ""
             new_content = existing + line + "\n"
             tmp = ledger.parent / f".tmp-{os.getpid()}"
-            tmp.write_text(new_content)
+            write_utf8(tmp, new_content)
             tmp.rename(ledger)
         finally:
             fcntl.flock(lf, fcntl.LOCK_UN)

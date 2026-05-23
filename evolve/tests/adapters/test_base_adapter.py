@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from src._io import read_utf8, write_utf8
 from src.adapters.base_llm_adapter import LLMAdapter
 
 
@@ -17,7 +18,7 @@ class _NoopAdapter(LLMAdapter):
 def _prep_workspace(tmp_path: Path) -> Path:
     workspace = tmp_path / "ws"
     workspace.mkdir()
-    (workspace / "task.md").write_text("stub", encoding="utf-8")
+    write_utf8(workspace / "task.md", "stub")
     return workspace
 
 
@@ -97,7 +98,7 @@ def test_run_writes_header_fields_to_log(tmp_path):
         readable_roots=[tmp_path],
         allow_edits=True,
     )
-    text = (workspace / "hypotheses-writer.log.md").read_text(encoding="utf-8")
+    text = read_utf8(workspace / "hypotheses-writer.log.md")
     header, _, _ = text.partition("\n---\n")
     assert "# Agent log: hypotheses-writer" in header
     assert "- adapter: _NoopAdapter" in header
@@ -119,7 +120,7 @@ def test_run_writes_footer_with_status_ok_and_usage(tmp_path):
         readable_roots=[tmp_path],
         allow_edits=False,
     )
-    text = (workspace / "hypotheses-writer.log.md").read_text(encoding="utf-8")
+    text = read_utf8(workspace / "hypotheses-writer.log.md")
     _, sep, footer = text.partition("\n---\n")
     assert sep, "footer separator missing"
     assert "- status: ok" in footer
@@ -143,7 +144,7 @@ def test_run_records_error_status_and_reraises(tmp_path):
             readable_roots=[tmp_path],
             allow_edits=False,
         )
-    text = (workspace / "hypotheses-writer.log.md").read_text(encoding="utf-8")
+    text = read_utf8(workspace / "hypotheses-writer.log.md")
     _, sep, footer = text.partition("\n---\n")
     assert sep, "footer separator missing"
     assert "- status: error: RuntimeError: backend exploded" in footer

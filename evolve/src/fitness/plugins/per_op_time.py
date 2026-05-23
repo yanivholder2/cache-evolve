@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from src._io import read_utf8
 from src.fitness._contract import validate_plugin_dict
 from src.fitness.plugins._common import cargo_build, cargo_env
 from src.paths import SourcesLayout
@@ -50,7 +51,7 @@ def compute(*, evolve_root: Path, target_dir: Path | None = None) -> dict:
             timeout=RUN_TIMEOUT_S,
             check=True,
         )
-        data = json.loads(tmp_out.read_text())
+        data = json.loads(read_utf8(tmp_out))
         validate_plugin_dict(data, source="dash-bench")
     finally:
         tmp_out.unlink(missing_ok=True)

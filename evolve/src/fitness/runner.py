@@ -7,6 +7,7 @@ import json
 import logging
 from pathlib import Path
 
+from src._io import read_utf8, write_utf8
 from src.fitness._contract import ContractError, validate_plugin_dict
 from src.fitness.plugins import hit_rate, metadata_size, per_op_time
 from src.paths import Layout, Variant
@@ -40,11 +41,11 @@ def compute_fitness(
     for name, fn in plugins.items():
         log.debug("[%s] plugin %s", variant, name)
         record = fn()
-        (fitness_dir / f"{name}.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+        write_utf8(fitness_dir / f"{name}.json", json.dumps(record, indent=2) + "\n")
 
     log.debug("[%s] aggregate fitness-vector", variant)
     fv = _aggregate(variant.label, fitness_dir)
-    variant_dir.fitness_vector_json.write_text(json.dumps(fv, indent=2) + "\n", encoding="utf-8")
+    write_utf8(variant_dir.fitness_vector_json, json.dumps(fv, indent=2) + "\n")
 
 
 def _aggregate(variant: str, plugin_dir: Path) -> dict:
@@ -54,7 +55,7 @@ def _aggregate(variant: str, plugin_dir: Path) -> dict:
     dimensions = []
     for path in sorted(plugin_dir.glob("*.json")):
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(read_utf8(path))
         except json.JSONDecodeError as e:
             raise FitnessError(f"malformed JSON in {path.name}: {e}") from e
         try:

@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from src._io import read_utf8, write_utf8
 from src.fitness.runner import FitnessError, _aggregate, compute_fitness
 from src.identifiers import CycleId, VariantId
 from src.paths import CycleVariant, Layout
@@ -49,13 +50,13 @@ def test_writes_per_plugin_json_and_fitness_vector(tmp_path, monkeypatch):
     assert (variant_dir.fitness_dir / "hit-rate.json").is_file()
     assert (variant_dir.fitness_dir / "per-op-time.json").is_file()
     assert (variant_dir.fitness_dir / "metadata-size.json").is_file()
-    fv = json.loads(variant_dir.fitness_vector_json.read_text())
+    fv = json.loads(read_utf8(variant_dir.fitness_vector_json))
     assert fv["variant"] == variant.label
     assert {d["dim"] for d in fv["dimensions"]} == {"hit-rate", "per-op-time", "metadata-size"}
 
 
 def _write_plugin(plugin_dir, name, data):
-    (plugin_dir / f"{name}.json").write_text(json.dumps(data))
+    write_utf8(plugin_dir / f"{name}.json", json.dumps(data))
 
 
 def test_aggregate_composes_fitness_vector(tmp_path):
@@ -70,7 +71,7 @@ def test_aggregate_composes_fitness_vector(tmp_path):
 
 
 def test_aggregate_rejects_malformed_json(tmp_path):
-    (tmp_path / "hit-rate.json").write_text("not valid json {{{")
+    write_utf8(tmp_path / "hit-rate.json", "not valid json {{{")
     with pytest.raises(FitnessError, match="malformed JSON"):
         _aggregate("v001", tmp_path)
 

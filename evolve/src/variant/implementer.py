@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+from src._io import write_utf8
 from src.hypothesis import parser
 from src.adapters import LLMAdapter
 from src.identifiers import HypothesisId, VariantId
@@ -56,7 +57,7 @@ def _write_task_md(
         f"## Write\n\n"
         f"Exactly two files under the output dir: `segment.rs` and `manifest.toml`.\n"
     )
-    variant_dir.impl_task_md.write_text(body, encoding="utf-8")
+    write_utf8(variant_dir.impl_task_md, body)
 
 
 def implement_variant(

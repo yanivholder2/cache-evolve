@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from src._io import read_utf8
 from src.identifiers import CYCLE_ID_WIDTH, VARIANT_ID_WIDTH, CycleId, VariantId
 from src.paths import BASELINE_STR, Baseline, CycleVariant, Variant
 
@@ -34,7 +35,7 @@ class Hypothesis:
 
 def parse(path: Path) -> Hypothesis:
     log.debug("parsing hypothesis file %s", path)
-    text = path.read_text(encoding="utf-8")
+    text = read_utf8(path)
     sections = _split_sections(text)
     log.debug("found %d sections in %s: %s", len(sections), path, sorted(sections))
 

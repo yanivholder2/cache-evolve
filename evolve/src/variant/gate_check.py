@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src._io import append_utf8
 from src.variant.build import build_variant
 from src.paths import Layout, Variant
 
@@ -38,8 +39,7 @@ class GatesResult:
 
 def _append_entry(rejection_log: Path, body: str) -> None:
     rejection_log.parent.mkdir(parents=True, exist_ok=True)
-    with open(rejection_log, "a", encoding="utf-8") as f:
-        f.write(body)
+    append_utf8(rejection_log, body)
 
 
 def _run_cargo_test(work_dir: Path, test_name: str) -> subprocess.CompletedProcess:

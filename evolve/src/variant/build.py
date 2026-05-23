@@ -9,6 +9,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src._io import append_utf8, write_utf8
 from src.paths import Layout, Variant, VariantDir
 
 log = logging.getLogger("build")
@@ -33,11 +34,10 @@ def _scaffold_workspace(work_dir: Path, variant_dir: VariantDir, repo_root: Path
 
     (work_dir / "src").mkdir(parents=True, exist_ok=True)
     (work_dir / "tests").mkdir(parents=True, exist_ok=True)
-    (work_dir / "Cargo.toml").write_text(_cargo_toml(repo_root), encoding="utf-8")
-    (work_dir / "src" / "lib.rs").write_text(LIB_RS, encoding="utf-8")
+    write_utf8(work_dir / "Cargo.toml", _cargo_toml(repo_root))
+    write_utf8(work_dir / "src" / "lib.rs", LIB_RS)
     shutil.copy(variant_dir.segment_rs, work_dir / "src" / "variant.rs")
-    if variant_dir.manifest_toml.is_file():
-        shutil.copy(variant_dir.manifest_toml, work_dir / "manifest.toml")
+    shutil.copy(variant_dir.manifest_toml, work_dir / "manifest.toml")
     shutil.copy(harness_dir / "g2_contract.rs", work_dir / "tests" / "g2_contract.rs")
     shutil.copy(harness_dir / "g3_invariant.rs", work_dir / "tests" / "g3_invariant.rs")
 
@@ -52,8 +52,7 @@ def _append_rejection(rejection_log: Path, variant: Variant, cargo_output: str) 
         f"---\n"
     )
     rejection_log.parent.mkdir(parents=True, exist_ok=True)
-    with open(rejection_log, "a", encoding="utf-8") as f:
-        f.write(entry)
+    append_utf8(rejection_log, entry)
 
 
 def build_variant(
@@ -66,15 +65,11 @@ def build_variant(
     """Compile a variant impl into a temp workspace. Returns the workspace path.
 
     Raises:
-        FileNotFoundError: impl/ is missing segment.rs.
         subprocess.CalledProcessError: cargo build failed (rejection appended
             to rejection_log, workspace removed).
     """
 
     variant_dir = variant.resolve(layout)
-    if not variant_dir.segment_rs.is_file():
-        raise FileNotFoundError(f"{variant_dir.segment_rs} not found — impl/ must contain segment.rs")
-
     work_dir = Path(tempfile.mkdtemp(prefix="dash-variant-"))
     log.debug("workspace=%s impl=%s repo_root=%s", work_dir, variant_dir.impl_dir, repo_root)
     _scaffold_workspace(work_dir, variant_dir, repo_root, layout.harness_dir)

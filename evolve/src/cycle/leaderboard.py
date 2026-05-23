@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from src._io import read_utf8, write_utf8
 from src.identifiers import CycleId
 from src.paths import OutputsLayout
 
@@ -22,7 +23,7 @@ def _load_cycles(layout: OutputsLayout) -> list:
     if not ledger.exists():
         return []
     cycles = []
-    for n, line in enumerate(ledger.read_text().splitlines(), start=1):
+    for n, line in enumerate(read_utf8(ledger).splitlines(), start=1):
         line = line.strip()
         if not line:
             continue
@@ -38,7 +39,7 @@ def _load_winners(layout: OutputsLayout, cycle_id: CycleId) -> Optional[dict]:
     if not path.exists():
         return None
     try:
-        return json.loads(path.read_text())
+        return json.loads(read_utf8(path))
     except json.JSONDecodeError as e:
         raise LeaderboardError(f"malformed winners.json for cycle {cycle_id}: {e}") from e
 
@@ -110,5 +111,5 @@ def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
 
     content = _render(cycles_data)
     if output is not None:
-        output.write_text(content)
+        write_utf8(output, content)
     return content

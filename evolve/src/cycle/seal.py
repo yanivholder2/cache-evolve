@@ -11,6 +11,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src._io import write_utf8
 from src.paths import CycleLayout
 
 log = logging.getLogger("seal")
@@ -40,6 +41,6 @@ def seal_cycle(cycle_dir: Path) -> None:
         return
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    marker.write_text(f"{ts}\n", encoding="utf-8")
+    write_utf8(marker, f"{ts}\n")
     _strip_write_bits(cycle_dir)
     log.info("sealed: %s", cycle_dir)

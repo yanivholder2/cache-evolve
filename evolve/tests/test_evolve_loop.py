@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
+from src._io import read_utf8
 from src.identifiers import CycleId
 from src.paths import Layout
 
@@ -51,7 +52,7 @@ def test_two_cycles_both_sealed(tmp_path):
         assert cycle_layout.root.is_dir(), f"missing cycle {n}"
         assert cycle_layout.sealed_marker.is_file(), f"cycle {n} not sealed"
 
-    rows = layout.ledger.read_text().splitlines()
+    rows = read_utf8(layout.ledger).splitlines()
     assert len(rows) == 2
 
 

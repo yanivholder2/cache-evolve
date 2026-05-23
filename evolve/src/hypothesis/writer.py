@@ -6,6 +6,7 @@ import logging
 import re
 from pathlib import Path
 
+from src._io import write_utf8
 from src.adapters import LLMAdapter
 from src.identifiers import HYPOTHESIS_ID_WIDTH, CycleId
 from src.paths import Layout
@@ -47,7 +48,7 @@ def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
         f"- {baseline_layout.fitness_vector_json} — baseline's measured fitness vector. Numeric anchor your hypotheses target dimensions of.\n"
         f"- {baseline_layout.insight_md} — short prose describing what the baseline does.\n"
     )
-    cycle_layout.hypotheses_task_md.write_text(body, encoding="utf-8")
+    write_utf8(cycle_layout.hypotheses_task_md, body)
 
 
 def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: Layout) -> None:
@@ -86,7 +87,7 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: 
         f"- {layout.baseline.root} — the permanent baseline (always a valid parent variant).\n"
         f"- {layout.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
     )
-    cycle_layout.hypotheses_task_md.write_text(body, encoding="utf-8")
+    write_utf8(cycle_layout.hypotheses_task_md, body)
 
 
 def write_hypotheses(
