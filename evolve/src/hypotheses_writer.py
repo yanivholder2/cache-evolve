@@ -1,12 +1,4 @@
-"""Hypotheses-writer driver — invokes an LLMAdapter and verifies it wrote
-exactly `hypotheses_num` H<NN>.md files.
-
-Cycle 1 (cold start) and cycle 2+ get different task.md texts: cycle 1
-grounds in the permanent baseline at `evolve/subject/baseline/`; cycle 2+
-grounds in the previous cycle's variants plus cross-cycle artefacts. The
-agent prompt itself (`agents/hypotheses-writer.md`) is cycle-agnostic —
-all per-cycle framing lives in task.md.
-"""
+"""Drives the hypotheses-writer agent and verifies its output."""
 
 from __future__ import annotations
 
@@ -104,10 +96,10 @@ def write_hypotheses(
     cycle_id: CycleId,
     adapter: LLMAdapter,
 ) -> list[Path]:
-    """Drive the adapter to produce `hypotheses_num` H<NN>.md files; return their paths.
+    """Produce `hypotheses_num` H<NN>.md files; return their paths.
 
-    Raises ValueError on bad `hypotheses_num` or wrong file count, and
-    propagates any exception raised by the adapter.
+    Raises:
+        ValueError: `hypotheses_num` < 1, or adapter wrote the wrong file count.
     """
 
     if hypotheses_num < 1:

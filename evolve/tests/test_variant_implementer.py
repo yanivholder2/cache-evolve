@@ -1,9 +1,4 @@
-"""Integration tests for evolve/src/variant_implementer.implement_variant.
-
-Drives the public API with the StubLLMAdapter to assert:
-- the resolved parent dir appears in task.md and readable_roots
-- a malformed hypothesis aborts before any adapter invocation
-"""
+"""Integration tests for evolve/src/variant_implementer.implement_variant."""
 
 from __future__ import annotations
 

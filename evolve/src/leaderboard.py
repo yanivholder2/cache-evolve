@@ -1,9 +1,4 @@
-"""Render leaderboard.md from the cycle ledger and per-cycle winners.json files.
-
-Library: `regenerate(*, layout, output=None) -> str`. Reads
-outputs/ledger/cycles.jsonl and each cycle's winners.json, writes markdown to
-`output` (if given) and returns the rendered content.
-"""
+"""Renders leaderboard.md from the cycle ledger and per-cycle winners.json files."""
 
 from __future__ import annotations
 
@@ -90,8 +85,7 @@ def _render(cycles_data: list) -> str:
 
 
 def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
-    """Build the markdown leaderboard from ledger + winners; optionally write
-    to `output`. Returns the rendered string either way."""
+    """Returns the rendered leaderboard markdown; writes it to `output` if given."""
 
     ledger_rows = _load_cycles(layout)
     cycles_data = []

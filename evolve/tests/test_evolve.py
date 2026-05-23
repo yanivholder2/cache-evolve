@@ -1,14 +1,4 @@
-"""End-to-end test for evolve.run_cycle.
-
-Runs run_cycle against a temp copy of evolve/ and asserts:
-- cycles/0001/ exists with required files
-- ledger gains exactly one row
-- row has no absolute paths
-- cycle is sealed (read-only marker present)
-
-Gate cargo is mocked (conftest.py); fitness-plugin cargo runs for real.
-A small cohort_size keeps the per-variant plugin work bounded.
-"""
+"""End-to-end tests for evolve.run_cycle."""
 
 import json
 import shutil
@@ -27,8 +17,7 @@ REAL_REPO_ROOT = EVOLVE_SRC.parent
 
 
 def _setup_repo(tmp_path: Path) -> Path:
-    """Copy evolve/ into tmp_path so tests don't mutate the real tree."""
-
+    # Copy evolve/ into tmp_path so tests don't mutate the real tree.
     evolve_dst = tmp_path / "evolve"
     shutil.copytree(
         EVOLVE_SRC,

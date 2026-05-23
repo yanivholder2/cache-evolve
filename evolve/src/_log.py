@@ -1,9 +1,5 @@
 """Shared logger setup for evolve framework scripts.
 
-Single format, single log file per cycle. The `[name:funcName]` prefix
-(e.g. `[evolve:run_cycle]`, `[seal:main]`) disambiguates lines when multiple
-scripts append to the same `evolve/logs/cycle-NNNN.log`.
-
 Handlers are attached to the root logger so every `logging.getLogger(name)`
 in the process inherits them — important when one script imports another.
 """
@@ -23,10 +19,9 @@ LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 def setup(log_file: Path | None, level: str = "DEBUG") -> None:
     """Attach stderr handler (once) + file handler to the root logger.
 
-    When called repeatedly with different `log_file` values, the previous
-    FileHandler is swapped — used by evolve.py's N-cycle loop so each cycle
-    gets its own file. `level` (re)applies to the root logger and every
-    attached handler.
+    Repeated calls with a different `log_file` swap the FileHandler so each
+    cycle can own its own file. `level` (re)applies to the root logger and
+    every attached handler.
     """
 
     lvl = logging.getLevelNamesMapping()[level.upper()]

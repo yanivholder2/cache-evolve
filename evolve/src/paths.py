@@ -1,12 +1,4 @@
-"""Single source of truth for the evolve on-disk layout.
-
-Every path string that names a file or directory under `evolve_root` (read-only
-sources: config, subject, traces, bench) or `outputs_root` (read-write working
-dir: cycles, ledger, logs, leaderboard, cargo target) lives here. Callers
-build a `Layout` and ask it for paths instead of concatenating strings.
-
-The dataclasses are frozen — a Layout is a value, not a registry.
-"""
+"""Single source of truth for the evolve on-disk layout."""
 
 from __future__ import annotations
 
@@ -102,11 +94,7 @@ class CycleLayout:
 
 @dataclass(frozen=True)
 class SourcesLayout:
-    """Paths in the read-only evolve sources subtree (subject, bench, dash src).
-
-    Use this when a caller only needs source-side paths and has no
-    outputs_root to pass. When both halves are available, prefer Layout.
-    """
+    """Paths in the read-only evolve sources subtree."""
 
     root: Path
 
@@ -120,13 +108,8 @@ class SourcesLayout:
 
     @property
     def baseline(self) -> VariantLayout:
-        """Permanent research baseline at evolve/subject/baseline/.
-
-        Mirrors VariantLayout shape so cycle 1 reads the baseline
-        with the same file conventions cycle 2+ uses for the previous cycle's
-        variants.
-        """
-
+        # Mirrors VariantLayout shape so the baseline reads with the same file
+        # conventions as any cycle variant.
         return VariantLayout(root=self.subject_dir / "baseline")
 
     @property
@@ -140,11 +123,7 @@ class SourcesLayout:
 
 @dataclass(frozen=True)
 class OutputsLayout:
-    """Paths in the read-write outputs subtree (cycles, ledger, logs, leaderboard).
-
-    Use this when a caller only needs outputs-side paths. When both halves are
-    available, prefer Layout.
-    """
+    """Paths in the read-write outputs subtree."""
 
     root: Path
 
@@ -187,10 +166,8 @@ class OutputsLayout:
 class Layout:
     """Filesystem layout for one evolve invocation.
 
-    `evolve_root` is the read-only source root (config, traces, subject,
-    harness, bench). `outputs_root` is the read-write working dir (cycles,
-    ledger, logs, leaderboard, cargo target). Both are required; callers
-    that need only one half should use SourcesLayout or OutputsLayout.
+    `evolve_root` is the read-only source root; `outputs_root` is the
+    read-write working dir.
     """
 
     evolve_root: Path
@@ -262,11 +239,9 @@ class Layout:
 
     # repo-relative ledger formatting
     def cycle_ledger_path(self, cycle_id: CycleId) -> str:
-        """Repo-relative path string for a cycle dir, suitable for ledger rows.
+        """Repo-relative path string for a cycle dir (ADR-0003).
 
-        ADR-0003 requires repo-relative paths in artifacts. Anchored to
-        `evolve_root.parent` — the conventional repo root in real runs, and
-        the test workspace root under pytest's tmp_path.
+        Anchored to `evolve_root.parent`.
         """
 
         anchor = self.evolve_root.parent

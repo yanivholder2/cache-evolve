@@ -1,9 +1,4 @@
-"""Tests for LLMAdapter.run public-API contract.
-
-Focuses on the framework-side validation that happens before
-`call_llm_and_log` is invoked. Backend-specific behavior (claude_sdk,
-antigravity_sdk gates) needs the real SDKs and is not covered here.
-"""
+"""Validation tests for the LLMAdapter base class."""
 
 from __future__ import annotations
 
@@ -15,12 +10,6 @@ from src.adapters.base_llm_adapter import LLMAdapter
 
 
 class _NoopAdapter(LLMAdapter):
-    """Concrete adapter whose call_llm_and_log is a no-op.
-
-    Lets us drive the base `run()` validation path without pulling in any
-    real backend.
-    """
-
     async def call_llm_and_log(self, *args, **kwargs):  # noqa: ANN001
         return None
 
@@ -56,8 +45,6 @@ def test_run_rejects_nonexistent_readable_root(tmp_path):
 
 
 def test_run_resolves_relative_readable_roots(tmp_path, monkeypatch):
-    """Relative paths in readable_roots are resolved against cwd."""
-
     workspace = _prep_workspace(tmp_path)
     relative_root = tmp_path / "ro"
     relative_root.mkdir()
@@ -80,8 +67,6 @@ def test_run_resolves_relative_readable_roots(tmp_path, monkeypatch):
 
 
 def test_run_requires_task_md_in_workspace(tmp_path):
-    """Pre-existing contract: task.md must be written before run() is called."""
-
     workspace = tmp_path / "ws"
     workspace.mkdir()
     with pytest.raises(FileNotFoundError, match="task.md not found"):
@@ -165,8 +150,6 @@ def test_run_records_error_status_and_reraises(tmp_path):
 
 
 def test_run_requires_agent_prompt_file(tmp_path):
-    """Agent name must resolve to an existing prompt file under agents/."""
-
     workspace = _prep_workspace(tmp_path)
     with pytest.raises(FileNotFoundError, match="agent prompt not found"):
         _NoopAdapter().run(

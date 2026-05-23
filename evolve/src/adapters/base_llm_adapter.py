@@ -1,33 +1,4 @@
-"""LLMAdapter base class
-
-The base reads two prompt sources:
-
-- `evolve/src/agents/<agent_name>.md` — system prompt (the agent's role,
-  contract, and constraints).
-- `<workspace>/task.md` — user prompt (this invocation's assignment;
-  written by the framework before calling `run`).
-
-Subclasses implement only `call_llm_and_log(...)` — an async coroutine that talks
-to whatever backend they need (SDK, HTTP, subprocess). The base drives the
-event loop via `asyncio.run`, so subclasses never call it themselves.
-
-The adapter exposes two filesystem scopes to the agent:
-
-- `workspace` — the single directory the agent is allowed to *write* into
-  when `read_only=False`. Also where `task.md` lives.
-- `readable_roots` — additional directories or files the agent may *read*
-  but never write. Callers list whatever surfaces the agent needs (e.g.
-  outputs_root, dash_src, evolve/subject, a specific past variant dir).
-  Adapters that can enforce containment must do so; adapters that can't
-  should at least steer the agent via prompt or accept the looser scope.
-
-The base also owns the per-invocation log file at
-`<workspace>/<agent_name>.log.md`. It writes a header before the call
-and a footer after, and hands the open file to the adapter as `log_io`
-so the adapter can stream its own content (chat tokens, thoughts, tool
-calls, subprocess stdout, etc.) into the same file. Nothing is written
-to the parent process's stdout/stderr from this layer.
-"""
+"""Base adapter contract that decouples the framework from any particular LLM backend."""
 
 from __future__ import annotations
 
@@ -46,12 +17,7 @@ log = logging.getLogger("llm-adapter")
 
 
 class LLMAdapter:
-    """Decouples the framework from any particular LLM backend.
-
-    Lets the framework call out to an LLM without knowing which one, and
-    keeps backend-specific concerns (auth, flags, permissions) out of the
-    call sites.
-    """
+    """Backend-agnostic interface for invoking an LLM agent."""
 
     def run(
         self,
@@ -61,12 +27,12 @@ class LLMAdapter:
         readable_roots: list[Path],
         read_only: bool,
     ) -> None:
-        """Single entry point the framework uses to invoke an agent.
+        """Invoke `agent_name` with prompts sourced from `evolve/src/agents/<agent_name>.md` and `<workspace>/task.md`.
 
-        Centralises prompt sourcing, scope validation, and log-file
-        lifecycle so call sites and adapters both stay simpler. `read_only`
-        expresses the caller's intent about whether the agent is allowed
-        to mutate the workspace.
+        `workspace` is the only directory the agent may write into when
+        `read_only` is False. `readable_roots` lists additional read-only
+        scope (dirs or single files). Writes a markdown log to
+        `<workspace>/<agent_name>.log.md`.
         """
         agent_file = AGENTS_DIR / f"{agent_name}.md"
         if not agent_file.is_file():
@@ -125,35 +91,17 @@ class LLMAdapter:
         read_only: bool,
         log_io: TextIO,
     ) -> Usage | None:
-        """Subclass extension point for talking to a specific backend.
+        """Subclass extension point: drive one agent invocation against a specific backend.
 
-        Implemented as an async coroutine; the base wraps it in
-        `asyncio.run`, so subclasses don't manage the event loop.
+        Adapters must enforce that writes stay inside `workspace` and reads
+        stay inside `workspace` or `readable_roots`. Stream all
+        backend-side output (chat, thoughts, tool calls, diagnostics) into
+        `log_io`; do not close it.
 
-        `workspace` is the only directory the backend should let the agent
-        write to (and only when `read_only=False`). Adapters that can
-        enforce this must do so.
-
-        `readable_roots` is the additional read-only scope: dirs or single
-        files the agent may browse but never write. The base has already
-        validated existence and resolved relative paths; adapters should
-        translate this list into whatever containment check their backend
-        supports.
-
-        `log_io` is an open, writable text file dedicated to this
-        invocation. Adapters should write everything they would otherwise
-        send to stdout (chat tokens, tool calls, subprocess output,
-        diagnostics) into this handle. Do not close it — the base owns
-        its lifecycle.
-
-        Receives the caller's `read_only` intent and is responsible for
-        translating it into whatever permission model the backend exposes.
-
-        Returns an optional token-usage dict the base appends to the
-        footer. Recommended keys (all optional, omit what the backend
-        doesn't expose): `input_tokens`, `output_tokens`,
-        `cache_read_tokens`, `cache_write_tokens`, `thinking_tokens`,
-        `total_tokens`, `cost_usd`.
+        Returns a usage dict appended to the log footer. Recommended keys
+        (omit what the backend doesn't expose): `input_tokens`,
+        `output_tokens`, `cache_read_tokens`, `cache_write_tokens`,
+        `thinking_tokens`, `total_tokens`, `cost_usd`.
         """
         raise NotImplementedError
 
@@ -197,12 +145,7 @@ def _write_footer(log_io: TextIO, status: str, duration_s: float, usage: Usage |
 
 
 def write_timeline(log_io: TextIO, events: list[tuple[str, str, str]]) -> None:
-    """Render `(ts, kind, body)` events into the adapter log under `## timeline`.
-
-    Adapters collect events from their backend's streaming primitives and
-    hand the normalised list off here so the on-disk format stays uniform.
-    Trailing newlines on bodies are stripped to keep entries flush.
-    """
+    """Render `(ts, kind, body)` events into `log_io` under a `## timeline` section."""
     log_io.write("## timeline\n\n")
     if not events:
         log_io.write("_(no events)_\n")

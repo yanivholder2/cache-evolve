@@ -1,9 +1,8 @@
 """Tests for src/build.py and src/gate_check.py.
 
-Cargo is mocked via tests/_mocks/cargo (autouse-wired in conftest.py). The
-shim short-circuits build/test calls based on markers embedded in the
-variant source, so the gate logic is exercised end-to-end without the cost
-of real Rust compilation.
+Cargo is mocked via tests/_mocks/cargo — the shim short-circuits build/test
+calls based on markers in the variant source so gate logic runs end-to-end
+without paying for real Rust compilation.
 """
 
 import re
@@ -78,8 +77,6 @@ def test_gate_check_broken_fixture_logs_structured_entry(tmp_path):
 
 
 def test_gate_check_invalid_ordinal_fails_g2(tmp_path):
-    """A manifest with eviction_policy_ordinal outside 0–5 fails G2."""
-
     impl_dir = tmp_path / "bad-ordinal" / "impl"
     impl_dir.mkdir(parents=True)
     shutil.copy(GOOD_FIXTURE / "segment.rs", impl_dir / "segment.rs")
@@ -94,8 +91,6 @@ def test_gate_check_invalid_ordinal_fails_g2(tmp_path):
 
 
 def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path):
-    """The bad-invariant fixture compiles, passes G2, then fails G3 cleanly."""
-
     log = _rejection_log(tmp_path)
     result = run_gates(BAD_INVARIANT_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     assert result.g1_passed is True
@@ -105,8 +100,6 @@ def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path):
 
 
 def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
-    """The G3 rejection entry names the violated invariant + carries an error excerpt."""
-
     log = _rejection_log(tmp_path)
     run_gates(BAD_INVARIANT_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     content = log.read_text()
@@ -114,14 +107,12 @@ def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     assert "cycle=0001" in content
     assert "variant=v001" in content
     assert "Fingerprint" in content
-    # The extracted **Failing invariant** field must name a P[1-5] property —
-    # not just appear somewhere in the embedded panic block.
+    # **Failing invariant** must name a P[1-5] property, not just appear in
+    # the embedded panic block.
     assert re.search(r"\*\*Failing invariant\*\*: P[1-5] [a-z_]+", content)
 
 
 def test_gate_check_good_fixture_passes_g3(tmp_path):
-    """The good fixture clears G1, G2, and G3 — no rejection entry."""
-
     log = _rejection_log(tmp_path)
     result = run_gates(GOOD_FIXTURE, CycleId(1), VariantId(1), repo_root=REPO_ROOT, rejection_log=log)
     assert result.g1_passed is True

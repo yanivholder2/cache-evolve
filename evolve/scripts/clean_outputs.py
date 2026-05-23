@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Reset evolve/outputs/ to its pristine, just-cloned state by deleting every
-untracked file and directory under it (both gitignored and merely untracked).
-Tracked files (the per-subdir .gitkeep markers) are preserved.
-
-Wraps `git clean -fdx evolve/outputs` so the ignore rules are sourced from
-git itself rather than re-implemented here.
-"""
+"""Reset evolve/outputs/ to its pristine, just-cloned state."""
 
 from __future__ import annotations
 
@@ -21,6 +15,7 @@ def main() -> int:
         print(f"error: {outputs} does not exist", file=sys.stderr)
         return 1
 
+    # Delegate to git so ignore rules aren't re-implemented here.
     cmd = ["git", "clean", "-fdx", "--", str(outputs)]
     return subprocess.run(cmd, cwd=evolve_root.parent).returncode
 

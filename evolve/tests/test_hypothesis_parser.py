@@ -113,7 +113,5 @@ def test_cycle_variant_missing_dir_raises(tmp_path):
 
 
 def test_parent_variant_str_round_trips(tmp_path):
-    """`str(parent_variant)` returns the on-disk citation form."""
-
     assert str(Baseline()) == "baseline"
     assert str(CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3))) == "cycle/0002/v003"

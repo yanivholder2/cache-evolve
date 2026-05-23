@@ -1,7 +1,4 @@
-"""Verify each fitness plugin is invokable in-process and emits the documented JSON shape.
-
-Shape: { "dim": str, "values": list, "summary": float, "higher_is_better": bool }
-"""
+"""Tests for fitness plugin output shape."""
 
 from pathlib import Path
 

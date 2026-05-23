@@ -1,8 +1,4 @@
-"""In-process LLM adapter stub for tests.
-
-Replaces the old `_mocks/llm-stub.py` subprocess adapter. Tests inject a
-`StubLLMAdapter` instance into `run_cycle`/`write_hypotheses` directly.
-"""
+"""In-process LLM adapter stub for tests."""
 
 from __future__ import annotations
 
@@ -14,17 +10,7 @@ GOOD_IMPL = Path(__file__).parent / "fixtures" / "good" / "impl"
 
 
 class StubLLMAdapter:
-    """Deterministic in-process adapter. Dispatches by agent_name; writes
-    canned files into workspace.
-
-    Knobs:
-      hypothesis_lines  explicit per-file claim lines (one entry → H01.md, etc.)
-      n_lines           shorthand: write N stub files "stub hypothesis K"
-      parent_variants   per-hypothesis parent-variant identifier (defaults to "baseline" for each)
-      changes           per-hypothesis '## Changes' prose (defaults to "stub changes")
-      exit_code         raise CalledProcessError(exit_code) before writing
-      capture_file      log each invocation + task.md into this file
-    """
+    """Deterministic in-process adapter that writes canned files."""
 
     def __init__(
         self,
@@ -69,7 +55,8 @@ class StubLLMAdapter:
         elif self.n_lines is not None:
             lines = [f"stub hypothesis {i}" for i in range(1, self.n_lines + 1)]
         else:
-            return  # write nothing — wrapper should fail with wrong count
+            # Empty output exercises the wrapper's wrong-count failure path.
+            return
 
         for i, line in enumerate(lines, start=1):
             parent_variant = self.parent_variants[i - 1] if self.parent_variants and i - 1 < len(self.parent_variants) else "baseline"

@@ -1,4 +1,4 @@
-"""Gates + fitness stage: run G1+G2+G3 and three fitness plugins per variant.
+"""Gates + fitness stage of the evolve loop.
 
 Sequential is intentional: cargo serializes on the shared `<outputs_root>/target`
 dir, so concurrent variants would block each other anyway. Parallel evolve
@@ -27,8 +27,11 @@ def run_gates_and_fitness(
     layout: Layout,
     repo_root: Path,
 ) -> None:
-    """Run gates + fitness plugins for every variant. Raises RuntimeError on
-    the first gate failure (orchestrator decides how to surface it)."""
+    """Run gates + fitness plugins for every variant.
+
+    Raises:
+        RuntimeError: first variant whose gate-check failed.
+    """
 
     rejection_log = layout.rejection_log
     target_dir = layout.target_dir

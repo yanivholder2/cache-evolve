@@ -1,9 +1,4 @@
-"""G1 gate: compile a variant impl/ into a test artifact.
-
-Library only — `build_variant(...)` returns the temp workspace path on success
-and raises `subprocess.CalledProcessError` on cargo failure (after logging a
-rejection entry).
-"""
+"""G1 gate: compile a variant impl/ into a test artifact."""
 
 from __future__ import annotations
 
@@ -36,8 +31,6 @@ def _cargo_toml(repo_root: Path) -> str:
 
 
 def _scaffold_workspace(work_dir: Path, impl_dir: Path, repo_root: Path) -> None:
-    """Lay out Cargo.toml + src/ + tests/ in work_dir from the variant impl."""
-
     (work_dir / "src").mkdir(parents=True, exist_ok=True)
     (work_dir / "tests").mkdir(parents=True, exist_ok=True)
     (work_dir / "Cargo.toml").write_text(_cargo_toml(repo_root), encoding="utf-8")
@@ -72,9 +65,13 @@ def build_variant(
     repo_root: Path,
     rejection_log: Path,
 ) -> Path:
-    """Compile a variant impl into a temp workspace. Returns the workspace path on
-    success. On failure, appends to rejection_log, cleans up the workspace, and
-    raises subprocess.CalledProcessError so the caller propagates exit status."""
+    """Compile a variant impl into a temp workspace. Returns the workspace path.
+
+    Raises:
+        FileNotFoundError: impl_dir is missing segment.rs.
+        subprocess.CalledProcessError: cargo build failed (rejection appended
+            to rejection_log, workspace removed).
+    """
 
     impl_dir = impl_dir.resolve()
     segment_rs = impl_dir / "segment.rs"

@@ -1,4 +1,4 @@
-"""LLM adapters. `REGISTRY` maps `--ai-agent-tool` choice → adapter class."""
+"""LLM adapters: backend-specific implementations of the framework's agent-invocation contract."""
 
 from .base_llm_adapter import LLMAdapter
 from .antigravity_sdk import AntigravitySdkAdapter

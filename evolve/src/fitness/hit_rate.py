@@ -1,9 +1,4 @@
-"""Hit-rate fitness plugin.
-
-Invokes the evolve-hit-rate binary once per configuration, then merges the
-per-invocation plugin records into a single output:
-  { "dim": "hit-rate", "values": [...], "summary": float, "higher_is_better": true }
-"""
+"""Hit-rate fitness plugin."""
 
 from __future__ import annotations
 
@@ -24,8 +19,7 @@ RUN_TIMEOUT_S = 60
 
 
 def compute(*, repo_root: Path, target_dir: Path | None = None) -> dict:
-    """Build + run the hit-rate plugin against every configuration; return the
-    aggregated plugin record."""
+    """Runs the hit-rate plugin across CONFIGS and returns the aggregated plugin record."""
 
     cargo_build(repo_root, ["--bin", "evolve-hit-rate"], label="evolve-hit-rate", target_dir=target_dir)
     binary = (target_dir or repo_root / "target") / "debug" / "evolve-hit-rate"
@@ -43,8 +37,7 @@ def compute(*, repo_root: Path, target_dir: Path | None = None) -> dict:
         for entry in record["values"]:
             values.append({"cache": cfg["cache"], "size": cfg["size"], "hit_rate": entry["hit_rate"]})
 
-    # Summary excludes baseline (assoc) entries so the Pareto scalar reflects
-    # the cache under test (Dash), not an arithmetic mix with an unrelated baseline.
+    # Exclude baseline (assoc) so the Pareto scalar reflects Dash alone, not a mix with the baseline.
     dash_rates = [v["hit_rate"] for v in values if v["cache"] == "dash"]
     if not dash_rates:
         raise RuntimeError("no dash configurations produced a hit_rate")

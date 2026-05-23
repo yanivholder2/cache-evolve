@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""Measure the permanent baseline at evolve/subject/baseline/ and write its
-fitness vector.
+"""Measure the permanent baseline and write its fitness vector.
 
-Runs G1+G2+G3 + fitness plugins against `evolve/subject/baseline/impl/` and
-writes `evolve/subject/baseline/eval/fitness-vector.json`. The output is a
-checked-in artefact; rerun this script (and commit the diff) whenever the
-bench config or fitness plugins change, so cycle-1 hypotheses ground in
-numbers comparable to live cohorts.
+The output is a checked-in artefact; rerun and commit whenever the bench
+config or fitness plugins change so cycle-1 hypotheses ground in numbers
+comparable to live cohorts.
 """
 
 import logging

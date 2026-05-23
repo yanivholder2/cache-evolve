@@ -1,7 +1,4 @@
-"""Plugin JSON contract validator.
-
-Required shape: { dim, values, summary, higher_is_better }.
-"""
+"""Plugin JSON contract validator."""
 
 import json
 import math
@@ -14,7 +11,7 @@ class ContractError(ValueError):
 
 
 def validate_plugin_dict(data: dict, *, source: str) -> dict:
-    """Validate a parsed plugin record. Returns it unchanged on success."""
+    """Validates a parsed plugin record and returns it. Required fields: dim, values, summary, higher_is_better."""
 
     if not isinstance(data, dict):
         raise ContractError(f"{source}: expected JSON object, got {type(data).__name__}")
@@ -36,7 +33,7 @@ def validate_plugin_dict(data: dict, *, source: str) -> dict:
 
 
 def parse_plugin_stdout(stdout: str, *, source: str) -> dict:
-    """Parse stdout as JSON and validate against the plugin contract."""
+    """Parses stdout as JSON and validates against the plugin contract."""
 
     try:
         data = json.loads(stdout)

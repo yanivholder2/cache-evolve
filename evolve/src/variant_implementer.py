@@ -1,14 +1,6 @@
-"""Variant-implementer step — single-variant driver + cohort driver.
+"""Materializes Variant impls from Hypotheses via the variant-implementer agent.
 
-Owns everything related to materializing Variant impls in a cycle:
-
-- `implement_variant`: invokes the LLMAdapter for one Hypothesis, verifies
-  the agent produced `segment.rs` and `manifest.toml`.
-- `implement_variants`: runs `implement_variant` once per Hypothesis in
-  parallel, aborts the cycle on any failure.
-
-The agent-side contract (what the LLM must write, constraints, failure
-modes) lives in `evolve/src/agents/variant-implementer.md`.
+The agent-side contract lives in `evolve/src/agents/variant-implementer.md`.
 """
 
 from __future__ import annotations
@@ -74,11 +66,7 @@ def implement_variant(
     layout: Layout,
     adapter: LLMAdapter,
 ) -> None:
-    """Materialize one Variant's impl/ from a single Hypothesis.
-
-    Raises on failure; the orchestrator catches and surfaces the exception
-    per-variant.
-    """
+    """Materialize one Variant's impl/ from a single Hypothesis. Raises on failure."""
 
     if not hypothesis_file.is_file():
         raise FileNotFoundError(f"hypothesis file not found: {hypothesis_file}")
@@ -107,7 +95,7 @@ def implement_variant(
 
 
 def _run_implementer_job(job: ImplementerJob) -> tuple[str, Exception | None]:
-    """Pool worker: run `implement_variant` and return any failure paired with the job id."""
+    """Pool worker. Returns (job_id, exception) so failures don't crash the pool."""
 
     log.debug("%s: implementer started for hypothesis %s", job.id, job.hypothesis_file)
     try:

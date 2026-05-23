@@ -14,15 +14,13 @@ from pathlib import Path
 
 
 def _validate(row: dict) -> None:
-    """Validate row for repo-relative paths."""
-
     for key, value in row.items():
         if isinstance(value, str) and value.startswith("/"):
             raise ValueError(f"field '{key}' must be repo-relative, got absolute path: {value!r}")
 
 
 def append_row(ledger: Path, row: dict) -> None:
-    """Validate row, then atomically append it as one JSONL line."""
+    """Atomically appends `row` to `ledger` as one JSONL line."""
 
     _validate(row)
     line = json.dumps(row, separators=(",", ":"))

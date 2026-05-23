@@ -1,26 +1,8 @@
-"""Parse H<NN>.md hypothesis files.
-
-Expected format (see `agents/hypotheses-writer.md`):
-
-    # H<NN>                   (optional)
-
-    <claim>                   # first non-empty non-header line
-
-    ## Parent
-
-    baseline                  # or: cycle/<NNNN>/v<NNN>
-
-    ## Changes
-
-    <free-form prose>
-
-The variant-implementer driver calls `parse()` to extract a
-`ParentVariant`, then calls `.resolve(layout)` on it to compute the dir
-that must be included in the agent's readable_roots.
-"""
+"""Parses H<NN>.md hypothesis files into typed values."""
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +15,8 @@ from src.identifiers import (
     VariantId,
 )
 from src.paths import Layout
+
+log = logging.getLogger("hypothesis-parser")
 
 BASELINE_STR = "baseline"
 _PARENT_CYCLE_RE = re.compile(
@@ -87,12 +71,15 @@ class Hypothesis:
 
 
 def parse(path: Path) -> Hypothesis:
+    log.debug("parsing hypothesis file %s", path)
     text = path.read_text(encoding="utf-8")
     sections = _split_sections(text)
+    log.debug("found %d sections in %s: %s", len(sections), path, sorted(sections))
 
     claim = _extract_claim(sections.get("", ""))
     if claim is None:
         raise ValueError(f"{path}: missing claim")
+    log.debug("claim for %s: %r", path, claim)
 
     parent_body = sections.get("Parent")
     if parent_body is None:
@@ -104,6 +91,7 @@ def parse(path: Path) -> Hypothesis:
         parent_variant = _parse_parent_variant(parent_line)
     except ValueError as e:
         raise ValueError(f"{path}: {e}") from None
+    log.debug("parent variant for %s: %s", path, parent_variant)
 
     changes_body = sections.get("Changes")
     if changes_body is None:
@@ -112,6 +100,8 @@ def parse(path: Path) -> Hypothesis:
     if not changes:
         raise ValueError(f"{path}: '## Changes' section is empty")
 
+    log.info("parsed hypothesis %s claim=%r parent=%s changes=%d chars",
+             path.name, claim, parent_variant, len(changes))
     return Hypothesis(claim=claim, parent_variant=parent_variant, changes=changes)
 
 

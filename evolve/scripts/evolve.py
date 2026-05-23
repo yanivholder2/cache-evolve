@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Evolve framework entry. Runs one or more research cycles. Each cycle fans
-out a cohort of N Variants, runs real G1+G2+G3 gates and fitness plugins per
-variant, aggregates a Pareto front, seals the cycle, and appends one ledger
-row.
-
-CLI:
-  evolve.py [--cycles N] [--cohort-size N] [--ai-agent-tool <name>]
-            [--outputs-root <path>]
-"""
+"""Evolve framework entry point. Runs one or more research cycles."""
 
 from __future__ import annotations
 
@@ -19,8 +11,8 @@ import tomllib
 from pathlib import Path
 from typing import NoReturn
 
-# Script mode: put `evolve/` on sys.path so `from src import …` resolves.
-# Import mode: caller sets up the path; skip to avoid leaking sibling dirs.
+# Script mode adds `evolve/` to sys.path; import mode trusts the caller's path
+# to avoid leaking sibling dirs.
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -47,9 +39,10 @@ def die(msg: str) -> NoReturn:
 
 
 def _next_cycle_id(cycles_dir: Path) -> CycleId:
-    """Return the next CycleId by scanning `cycles_dir` for existing `NNNN`
-    subdirs. Not atomic — caller must guard against concurrent allocation
-    collisions."""
+    """Return the next CycleId by scanning `cycles_dir` for existing NNNN subdirs.
+
+    Not atomic — concurrent allocators may collide.
+    """
 
     cycles_dir.mkdir(parents=True, exist_ok=True)
     cycle_re = re.compile(rf"\d{{{CYCLE_ID_WIDTH}}}")
@@ -66,12 +59,7 @@ def run_cycle(
     adapter: LLMAdapter,
     log_level: str = "DEBUG",
 ) -> None:
-    """Run a single evolve cycle end-to-end (allocate → implement variants →
-    gates → aggregate → seal → ledger).
-
-    `layout` owns the evolve+outputs paths; `repo_root` is the git repo root
-    (a sibling concern — used by gate-check and fitness binaries).
-    """
+    """Run a single evolve cycle end-to-end."""
 
     try:
         cycle_id = _next_cycle_id(layout.cycles_dir)
@@ -81,7 +69,7 @@ def run_cycle(
         if cycle_dir.is_dir():
             die(f"cycle {cycle_id} already exists at {cycle_dir}")
 
-        # File handler under outputs_root/logs/ — outside cycle_dir so writes survive the seal step.
+        # Log file lives outside cycle_dir so writes survive the seal step.
         _log.setup(layout.cycle_log(cycle_id), level=log_level)
         log.info("=== cycle %s allocated at %s ===", cycle_id, cycle_dir)
 
@@ -139,8 +127,10 @@ def run_cycle(
 
 
 def _check_no_leftovers(layout: Layout) -> None:
-    """Die if outputs_root has artifacts from previous runs. Ignores target/
-    (cargo cache, intended to persist)."""
+    """Die if outputs_root has artifacts from previous runs.
+
+    Ignores target/ — cargo cache is intended to persist.
+    """
 
     def has_non_gitkeep(d: Path) -> bool:
         return d.is_dir() and any(p.name != ".gitkeep" for p in d.iterdir())
@@ -188,7 +178,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 def _resolve(flag_value, defaults: dict, *, key: str, flag: str):
-    """Pick the effective value: flag > config.toml > die."""
+    """Return flag value if set, else config.toml default, else die."""
     if flag_value is not None:
         return flag_value
     if key in defaults:

@@ -1,7 +1,4 @@
-"""Tests for the N-cycle loop in evolve.
-
-Tests call run_cycle directly in a loop (parity with evolve.main's outer loop).
-"""
+"""Tests for the N-cycle loop in evolve."""
 
 import shutil
 from pathlib import Path
@@ -60,8 +57,6 @@ def test_two_cycles_both_sealed(tmp_path):
 
 @pytest.mark.slow
 def test_single_cycle_default(tmp_path):
-    """One cycle → exactly one sealed directory."""
-
     evolve_root = _setup_repo(tmp_path)
     _run_cycles(evolve_root, 1)
     cycles_root = _layout(evolve_root).cycles_dir
@@ -70,8 +65,6 @@ def test_single_cycle_default(tmp_path):
 
 
 def test_loop_aborts_on_cycle_failure(tmp_path, monkeypatch):
-    """A failing cycle aborts the loop; no later cycle directory appears."""
-
     evolve_root = _setup_repo(tmp_path)
 
     def failing(*_args, **_kwargs):

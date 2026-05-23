@@ -10,8 +10,6 @@ from src.paths import OutputsLayout
 
 
 def _setup_cycle(layout: OutputsLayout, cycle_id: CycleId, variants):
-    """Create a minimal cycle directory with winners.json."""
-
     cycle_layout = layout.cycle(cycle_id)
     cycle_layout.root.mkdir(parents=True)
     winners = {
@@ -86,13 +84,10 @@ def test_multi_variant_rendering(tmp_path):
     content = out.read_text()
     assert "v001" in content
     assert "v002" in content
-    # Both summaries should appear comma-joined in the same row
     assert "0.65" in content and "0.7" in content
 
 
 def test_pareto_front_fallback_renders(tmp_path):
-    """winners.json with empty fitness_vectors falls back to pareto_front for variant names."""
-
     evolve = tmp_path / "evolve"
     layout = OutputsLayout(root=evolve)
     cycle_layout = layout.cycle(CycleId(1))

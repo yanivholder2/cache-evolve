@@ -1,5 +1,4 @@
-"""Cohort aggregation stage: collect fitness vectors, compute Pareto front,
-write per-variant insights, winners.json, and cycle-insight.md."""
+"""Cohort aggregation stage of the evolve loop."""
 
 from __future__ import annotations
 
@@ -19,8 +18,8 @@ def aggregate_cohort(
     variant_layouts: list[VariantLayout],
     cycle_id: CycleId,
 ) -> list[str]:
-    """Run the aggregation stage end-to-end. Returns the Pareto front
-    (variant IDs) for the ledger row."""
+    """Run the aggregation stage end-to-end. Returns the Pareto front as
+    variant IDs."""
 
     fitness_vectors = _collect_fitness_vectors(variant_layouts)
     pareto_front = compute_pareto_front(fitness_vectors)
