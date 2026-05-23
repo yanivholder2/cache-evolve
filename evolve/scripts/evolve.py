@@ -20,15 +20,16 @@ if __name__ == "__main__":
 from src import _log  # noqa: E402
 from src._log import LEVELS as LOG_LEVELS  # noqa: E402
 from src.adapters import REGISTRY, LLMAdapter  # noqa: E402
-from src.aggregate import aggregate_cohort  # noqa: E402
-from src.gates_and_fitness import run_gates_and_fitness  # noqa: E402
-from src.hypotheses_writer import write_hypotheses  # noqa: E402
-from src.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
-from src.ledger_append import append_row  # noqa: E402
+from src.aggregate.cohort import aggregate_cohort  # noqa: E402
+from src.cycle.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
+from src.cycle.ledger_append import append_row  # noqa: E402
+from src.cycle.seal import seal_cycle  # noqa: E402
+from src.fitness.runner import compute_fitness  # noqa: E402
+from src.hypothesis.writer import write_hypotheses  # noqa: E402
 from src.identifiers import CYCLE_ID_WIDTH, CycleId, VariantId  # noqa: E402
-from src.paths import Layout  # noqa: E402
-from src.seal import seal_cycle  # noqa: E402
-from src.variant_implementer import implement_variants  # noqa: E402
+from src.paths import CycleVariant, Layout  # noqa: E402
+from src.variant.gate_check import run_gates  # noqa: E402
+from src.variant.implementer import implement_variants  # noqa: E402
 
 log = logging.getLogger("evolve")
 
@@ -111,20 +112,24 @@ def run_cycle(
                 log.error("implement variants failed", exc_info=exception)
                 die(str(exception))
 
-        with _phase("gates + fitness (sequential, cargo serializes target/)"):
-            variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
-            try:
-                run_gates_and_fitness(
-                    variant_layouts,
-                    cycle_id,
-                    layout=layout,
-                    repo_root=repo_root,
-                )
-            except RuntimeError as e:
-                die(str(e))
+        with _phase("gates + fitness"):
+            variants = [CycleVariant(cycle_id, VariantId(i)) for i in range(1, cohort_size + 1)]
+            survivors = []
+            for variant in variants:
+                log.info("[%s] gate-check + fitness", variant)
+                if not run_gates(
+                    variant,
+                    layout=layout, repo_root=repo_root, rejection_log=layout.rejection_log,
+                ):
+                    log.warning("[%s] gate-check failed, skipping fitness", variant)
+                    continue
+                compute_fitness(variant, layout=layout, repo_root=repo_root)
+                survivors.append(variant.resolve(layout))
+            if not survivors:
+                die(f"no variants survived gate-check in cycle {cycle_id}")
 
         with _phase("aggregate cohort"):
-            pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_id)
+            pareto_front = aggregate_cohort(cycle_layout, survivors, cycle_id)
 
         with _phase("seal cycle dir"):
             seal_cycle(cycle_dir)

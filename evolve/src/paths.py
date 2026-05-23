@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
 
 from src.identifiers import CycleId, HypothesisId, VariantId
 
+BASELINE_STR = "baseline"
+
 
 @dataclass(frozen=True)
-class VariantPaths:
-    """Paths under any variant-shaped directory. `root.name` need not be a
-    valid `VariantId` — `baseline/` and prose templates carrying the literal
-    `v<NNN>` placeholder share this layout. Use `VariantLayout` when the id
+class VariantDir:
+    """A variant-shaped on-disk directory. `root.name` need not be a valid
+    `VariantId` — `baseline/` and prose templates carrying the literal
+    `v<NNN>` placeholder share this layout. Use `CycleVariantDir` when the id
     matters."""
 
     root: Path
@@ -51,7 +54,7 @@ class VariantPaths:
 
 
 @dataclass(frozen=True)
-class VariantLayout(VariantPaths):
+class CycleVariantDir(VariantDir):
     """A concrete cycle variant (cycles/<id>/variants/v<NNN>); `root.name`
     must parse as a `VariantId`."""
 
@@ -97,15 +100,15 @@ class CycleLayout:
     def hypothesis_file(self, hypothesis_id: HypothesisId) -> Path:
         return self.hypotheses_dir / f"{hypothesis_id}.md"
 
-    def variant(self, variant_id: VariantId) -> VariantLayout:
-        return VariantLayout(root=self.variants_dir / str(variant_id))
+    def variant(self, variant_id: VariantId) -> CycleVariantDir:
+        return CycleVariantDir(root=self.variants_dir / str(variant_id))
 
     @property
-    def variant_template(self) -> VariantPaths:
-        """Prose-only variant layout whose `root` ends in the literal
+    def variant_template(self) -> VariantDir:
+        """Prose-only variant directory whose `root` ends in the literal
         placeholder `v<NNN>`. Use to document where variant artefacts will
         live without binding to a concrete variant id."""
-        return VariantPaths(root=self.variants_dir / "v<NNN>")
+        return VariantDir(root=self.variants_dir / "v<NNN>")
 
 
 @dataclass(frozen=True)
@@ -123,15 +126,19 @@ class SourcesLayout:
         return self.subject_dir / "extension-points.md"
 
     @property
-    def baseline(self) -> VariantPaths:
+    def baseline(self) -> VariantDir:
         # Mirrors the variant layout so the baseline reads with the same file
-        # conventions as any cycle variant. Returns `VariantPaths` (not
-        # `VariantLayout`) because `"baseline"` isn't a valid `VariantId`.
-        return VariantPaths(root=self.subject_dir / "baseline")
+        # conventions as any cycle variant. Returns `VariantDir` (not
+        # `CycleVariantDir`) because `"baseline"` isn't a valid `VariantId`.
+        return VariantDir(root=self.subject_dir / "baseline")
 
     @property
     def bench_dir(self) -> Path:
         return self.root / "bench"
+
+    @property
+    def harness_dir(self) -> Path:
+        return self.root / "harness"
 
     @property
     def dash_src(self) -> Path:
@@ -243,12 +250,16 @@ class Layout:
         return self.sources.extension_points_md
 
     @property
-    def baseline(self) -> VariantPaths:
+    def baseline(self) -> VariantDir:
         return self.sources.baseline
 
     @property
     def bench_dir(self) -> Path:
         return self.sources.bench_dir
+
+    @property
+    def harness_dir(self) -> Path:
+        return self.sources.harness_dir
 
     @property
     def dash_src(self) -> Path:
@@ -271,3 +282,49 @@ class Layout:
                 "outputs_root must live inside the repo (ADR-0003: repo-relative paths only)"
             ) from e
         return str(rel)
+
+
+# Addressable variant references — either the permanent baseline or a
+# past/current cycle variant. Used as the parent in hypotheses and as the
+# identifier passed through the build, gate, and fitness layers.
+
+
+@dataclass(frozen=True)
+class Baseline:
+    """The permanent research baseline."""
+
+    def resolve(self, layout: Layout) -> VariantDir:
+        return layout.baseline
+
+    @property
+    def label(self) -> str:
+        """Short form used as the fitness-vector key (cycle implied by path)."""
+        return BASELINE_STR
+
+    def __str__(self) -> str:
+        return BASELINE_STR
+
+
+@dataclass(frozen=True)
+class CycleVariant:
+    """A variant from a specific cycle."""
+
+    cycle_id: CycleId
+    variant_id: VariantId
+
+    def resolve(self, layout: Layout) -> CycleVariantDir:
+        variant_dir = layout.cycle(self.cycle_id).variant(self.variant_id)
+        if not variant_dir.root.is_dir():
+            raise FileNotFoundError(f"variant dir not found: {variant_dir.root}")
+        return variant_dir
+
+    @property
+    def label(self) -> str:
+        """Short form used as the fitness-vector key (cycle implied by path)."""
+        return str(self.variant_id)
+
+    def __str__(self) -> str:
+        return f"cycle/{self.cycle_id}/{self.variant_id}"
+
+
+Variant = Union[Baseline, CycleVariant]

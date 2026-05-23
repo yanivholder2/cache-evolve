@@ -12,8 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.gates_and_fitness import run_gates_and_fitness  # noqa: E402
-from src.paths import Layout  # noqa: E402
+from src.fitness.runner import compute_fitness  # noqa: E402
+from src.variant.gate_check import run_gates  # noqa: E402
+from src.paths import Baseline, Layout  # noqa: E402
 
 
 def main() -> None:
@@ -32,9 +33,12 @@ def main() -> None:
         raise FileNotFoundError(f"{baseline.manifest_toml} not found - seed the baseline before measuring")
 
     baseline.fitness_dir.mkdir(parents=True, exist_ok=True)
+    variant = Baseline()
 
     logging.info("measuring baseline at %s", baseline.root)
-    run_gates_and_fitness([baseline], cycle_num="baseline", layout=layout, repo_root=repo_root)
+    if not run_gates(variant, layout=layout, repo_root=repo_root, rejection_log=layout.rejection_log):
+        raise RuntimeError("baseline failed gate-check")
+    compute_fitness(variant, layout=layout, repo_root=repo_root)
     logging.info("baseline fitness measured - %s", baseline.fitness_vector_json)
 
 

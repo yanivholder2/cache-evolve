@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from evolve import run_cycle
+from src._io import read_utf8
 from src.identifiers import CycleId
 from src.paths import Layout
 
@@ -51,7 +52,7 @@ def test_two_cycles_both_sealed(tmp_path):
         assert cycle_layout.root.is_dir(), f"missing cycle {n}"
         assert cycle_layout.sealed_marker.is_file(), f"cycle {n} not sealed"
 
-    rows = layout.ledger.read_text().splitlines()
+    rows = read_utf8(layout.ledger).splitlines()
     assert len(rows) == 2
 
 
@@ -70,7 +71,7 @@ def test_loop_aborts_on_cycle_failure(tmp_path, monkeypatch):
     def failing(*_args, **_kwargs):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("src.variant_implementer.implement_variant", failing)
+    monkeypatch.setattr("src.variant.implementer.implement_variant", failing)
     with pytest.raises(SystemExit):
         _run_cycles(evolve_root, 2)
 

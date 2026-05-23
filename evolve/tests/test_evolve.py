@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from evolve import _next_cycle_id, run_cycle
+from src._io import read_utf8, write_utf8
 from src.identifiers import CycleId, VariantId
 from src.paths import Layout
 
@@ -50,11 +51,11 @@ def test_evolve_produces_sealed_cycle(tmp_path):
     assert cycle_layout.cycle_insight_md.is_file()
     assert cycle_layout.winners_json.is_file()
 
-    variant_layout = cycle_layout.variant(VariantId(1))
-    assert variant_layout.root.is_dir()
-    assert variant_layout.impl_dir.is_dir()
-    assert variant_layout.eval_dir.is_dir()
-    assert variant_layout.insight_md.is_file()
+    variant_dir = cycle_layout.variant(VariantId(1))
+    assert variant_dir.root.is_dir()
+    assert variant_dir.impl_dir.is_dir()
+    assert variant_dir.eval_dir.is_dir()
+    assert variant_dir.insight_md.is_file()
 
     assert cycle_layout.sealed_marker.is_file()
 
@@ -66,7 +67,7 @@ def test_evolve_appends_exactly_one_ledger_row(tmp_path):
 
     ledger = _layout(evolve_root).ledger
     assert ledger.is_file()
-    lines = ledger.read_text().splitlines()
+    lines = read_utf8(ledger).splitlines()
     assert len(lines) == 1
 
 
@@ -86,7 +87,7 @@ def test_next_cycle_id_ignores_non_numeric_entries(tmp_path):
     cycles.mkdir()
     (cycles / "0003").mkdir()
     (cycles / "logs").mkdir()
-    (cycles / "README.md").write_text("x")
+    write_utf8(cycles / "README.md", "x")
     (cycles / "12345").mkdir()
     assert _next_cycle_id(cycles) == CycleId(4)
 
@@ -97,7 +98,7 @@ def test_ledger_row_has_relative_paths(tmp_path):
     _run(evolve_root)
 
     ledger = _layout(evolve_root).ledger
-    row = json.loads(ledger.read_text().splitlines()[0])
+    row = json.loads(read_utf8(ledger).splitlines()[0])
 
     for key, value in row.items():
         if isinstance(value, str):
