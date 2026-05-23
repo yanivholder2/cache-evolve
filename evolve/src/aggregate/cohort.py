@@ -6,7 +6,7 @@ import json
 import logging
 
 from src.identifiers import CycleId
-from src.paths import CycleLayout, VariantLayout
+from src.paths import CycleLayout, CycleVariantDir
 from src.aggregate.pareto import compute_pareto_front
 
 log = logging.getLogger(__name__)
@@ -14,18 +14,18 @@ log = logging.getLogger(__name__)
 
 def aggregate_cohort(
     cycle_layout: CycleLayout,
-    variant_layouts: list[VariantLayout],
+    variant_dirs: list[CycleVariantDir],
     cycle_id: CycleId,
 ) -> list[str]:
     """Run the aggregation stage end-to-end. Returns the Pareto front as
     variant IDs."""
 
-    fitness_vectors = _collect_fitness_vectors(variant_layouts)
+    fitness_vectors = _collect_fitness_vectors(variant_dirs)
     pareto_front = compute_pareto_front(fitness_vectors)
     log.info("pareto front: %s", pareto_front)
-    _write_per_variant_insights(variant_layouts, fitness_vectors)
+    _write_per_variant_insights(variant_dirs, fitness_vectors)
 
-    cohort_size = len(variant_layouts)
+    cohort_size = len(variant_dirs)
     cycle_layout.winners_json.write_text(
         json.dumps({
             "cycle": str(cycle_id),
@@ -45,19 +45,19 @@ def aggregate_cohort(
     return pareto_front
 
 
-def _collect_fitness_vectors(variant_layouts: list[VariantLayout]) -> list[dict]:
+def _collect_fitness_vectors(variant_dirs: list[CycleVariantDir]) -> list[dict]:
     return [
         json.loads(v.fitness_vector_json.read_text(encoding="utf-8"))
-        for v in variant_layouts
+        for v in variant_dirs
     ]
 
 
-def _write_per_variant_insights(variant_layouts: list[VariantLayout], fitness_vectors: list[dict]) -> None:
-    for variant_layout, fv in zip(variant_layouts, fitness_vectors):
+def _write_per_variant_insights(variant_dirs: list[CycleVariantDir], fitness_vectors: list[dict]) -> None:
+    for variant_dir, fv in zip(variant_dirs, fitness_vectors):
         summary = ", ".join(f"{d['dim']}={d['summary']:.4g}" for d in fv.get("dimensions", []))
-        variant_id = variant_layout.variant_id
+        variant_id = variant_dir.variant_id
         log.debug("[%s] insight: %s", variant_id, summary)
-        variant_layout.insight_md.write_text(
+        variant_dir.insight_md.write_text(
             f"# Variant {variant_id} Insight\n\nFitness: {summary}\n",
             encoding="utf-8",
         )

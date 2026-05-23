@@ -94,7 +94,7 @@ def test_baseline_resolves_to_baseline_root(tmp_path):
     evolve_root = tmp_path / "evolve"
     (evolve_root / "subject" / "baseline").mkdir(parents=True)
     layout = Layout(evolve_root=evolve_root, outputs_root=tmp_path / "outputs")
-    assert Baseline().resolve(layout) == evolve_root / "subject" / "baseline"
+    assert Baseline().resolve(layout).root == evolve_root / "subject" / "baseline"
 
 
 def test_cycle_variant_resolves_to_variant_dir(tmp_path):
@@ -102,7 +102,7 @@ def test_cycle_variant_resolves_to_variant_dir(tmp_path):
     variant_dir = outputs_root / "cycles" / "0002" / "variants" / "v003"
     variant_dir.mkdir(parents=True)
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=outputs_root)
-    assert CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3)).resolve(layout) == variant_dir
+    assert CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3)).resolve(layout).root == variant_dir
 
 
 def test_cycle_variant_missing_dir_raises(tmp_path):

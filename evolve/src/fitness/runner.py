@@ -9,7 +9,7 @@ from pathlib import Path
 
 from src.fitness._contract import ContractError, validate_plugin_dict
 from src.fitness.plugins import hit_rate, metadata_size, per_op_time
-from src.paths import Layout, Variant, VariantPaths
+from src.paths import Layout, Variant
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +19,6 @@ class FitnessError(Exception):
 
 
 def compute_fitness(
-    paths: VariantPaths,
     variant: Variant,
     *,
     layout: Layout,
@@ -28,8 +27,9 @@ def compute_fitness(
     """Run every fitness plugin for one variant, write per-plugin JSONs,
     and write the aggregated fitness vector."""
 
+    variant_dir = variant.resolve(layout)
     target_dir = layout.target_dir
-    fitness_dir = paths.fitness_dir
+    fitness_dir = variant_dir.fitness_dir
     fitness_dir.mkdir(parents=True, exist_ok=True)
 
     plugins = {
@@ -44,7 +44,7 @@ def compute_fitness(
 
     log.debug("[%s] aggregate fitness-vector", variant)
     fv = _aggregate(variant.label, fitness_dir)
-    paths.fitness_vector_json.write_text(json.dumps(fv, indent=2) + "\n", encoding="utf-8")
+    variant_dir.fitness_vector_json.write_text(json.dumps(fv, indent=2) + "\n", encoding="utf-8")
 
 
 def _aggregate(variant: str, plugin_dir: Path) -> dict:

@@ -13,19 +13,19 @@ import pytest
 
 from src.fitness.runner import FitnessError, _aggregate, compute_fitness
 from src.identifiers import CycleId, VariantId
-from src.paths import CycleVariant, Layout, VariantLayout
+from src.paths import CycleVariant, Layout
 
 
-def _layout(tmp_path: Path) -> Layout:
+def _stage(tmp_path: Path) -> tuple[Layout, CycleVariant]:
+    """Build a Layout pointing at tmp_path and a CycleVariant whose dir
+    exists under it."""
+
     evolve_root = tmp_path / "evolve"
     evolve_root.mkdir()
-    return Layout(evolve_root=evolve_root, outputs_root=tmp_path / "out")
-
-
-def _variant_layout(tmp_path: Path, i: int = 1) -> VariantLayout:
-    root = tmp_path / "variants" / str(VariantId(i))
-    (root / "impl").mkdir(parents=True)
-    return VariantLayout(root=root)
+    layout = Layout(evolve_root=evolve_root, outputs_root=tmp_path / "out")
+    variant = CycleVariant(CycleId(1), VariantId(1))
+    layout.cycle(variant.cycle_id).variant(variant.variant_id).impl_dir.mkdir(parents=True)
+    return layout, variant
 
 
 def _stub_plugins(monkeypatch) -> None:
@@ -40,17 +40,16 @@ def _stub_plugins(monkeypatch) -> None:
 
 
 def test_writes_per_plugin_json_and_fitness_vector(tmp_path, monkeypatch):
-    layout = _layout(tmp_path)
-    variant_layout = _variant_layout(tmp_path)
-    variant = CycleVariant(CycleId(1), variant_layout.variant_id)
+    layout, variant = _stage(tmp_path)
     _stub_plugins(monkeypatch)
 
-    compute_fitness(variant_layout, variant, layout=layout, repo_root=tmp_path)
+    compute_fitness(variant, layout=layout, repo_root=tmp_path)
 
-    assert (variant_layout.fitness_dir / "hit-rate.json").is_file()
-    assert (variant_layout.fitness_dir / "per-op-time.json").is_file()
-    assert (variant_layout.fitness_dir / "metadata-size.json").is_file()
-    fv = json.loads(variant_layout.fitness_vector_json.read_text())
+    variant_dir = variant.resolve(layout)
+    assert (variant_dir.fitness_dir / "hit-rate.json").is_file()
+    assert (variant_dir.fitness_dir / "per-op-time.json").is_file()
+    assert (variant_dir.fitness_dir / "metadata-size.json").is_file()
+    fv = json.loads(variant_dir.fitness_vector_json.read_text())
     assert fv["variant"] == variant.label
     assert {d["dim"] for d in fv["dimensions"]} == {"hit-rate", "per-op-time", "metadata-size"}
 

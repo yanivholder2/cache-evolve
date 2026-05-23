@@ -50,11 +50,11 @@ def test_evolve_produces_sealed_cycle(tmp_path):
     assert cycle_layout.cycle_insight_md.is_file()
     assert cycle_layout.winners_json.is_file()
 
-    variant_layout = cycle_layout.variant(VariantId(1))
-    assert variant_layout.root.is_dir()
-    assert variant_layout.impl_dir.is_dir()
-    assert variant_layout.eval_dir.is_dir()
-    assert variant_layout.insight_md.is_file()
+    variant_dir = cycle_layout.variant(VariantId(1))
+    assert variant_dir.root.is_dir()
+    assert variant_dir.impl_dir.is_dir()
+    assert variant_dir.eval_dir.is_dir()
+    assert variant_dir.insight_md.is_file()
 
     assert cycle_layout.sealed_marker.is_file()
 

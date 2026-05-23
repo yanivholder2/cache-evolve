@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.variant.build import build_variant
-from src.paths import Variant
+from src.paths import Layout, Variant
 
 log = logging.getLogger("gate-check")
 
@@ -107,19 +107,19 @@ def _check_g3(
 
 
 def run_gates(
-    impl_dir: Path,
     variant: Variant,
     *,
+    layout: Layout,
     repo_root: Path,
     rejection_log: Path,
     fingerprint: str = "pending",
 ) -> GatesResult:
-    """Run G1+G2+G3 against impl_dir. Result is truthy iff all pass."""
+    """Run G1+G2+G3 against the variant's impl/. Result is truthy iff all pass."""
 
     try:
         work_dir = build_variant(
-            impl_dir,
             variant,
+            layout=layout,
             repo_root=repo_root,
             rejection_log=rejection_log,
         )

@@ -36,9 +36,9 @@ def main() -> None:
     variant = Baseline()
 
     logging.info("measuring baseline at %s", baseline.root)
-    if not run_gates(baseline.impl_dir, variant, repo_root=repo_root, rejection_log=layout.rejection_log):
+    if not run_gates(variant, layout=layout, repo_root=repo_root, rejection_log=layout.rejection_log):
         raise RuntimeError("baseline failed gate-check")
-    compute_fitness(baseline, variant, layout=layout, repo_root=repo_root)
+    compute_fitness(variant, layout=layout, repo_root=repo_root)
     logging.info("baseline fitness measured - %s", baseline.fitness_vector_json)
 
 

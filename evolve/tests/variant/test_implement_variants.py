@@ -86,11 +86,11 @@ def test_cohort_produces_n_variants(shared_cohort_run):
     variants = sorted(p.name for p in variants_dir.iterdir() if p.is_dir())
     assert variants == ["v001", "v002", "v003"]
     for i in (1, 2, 3):
-        variant_layout = shared_cohort_run.cycle_layout.variant(VariantId(i))
-        assert (variant_layout.impl_dir / "segment.rs").is_file()
-        assert (variant_layout.impl_dir / "manifest.toml").is_file()
-        assert variant_layout.fitness_vector_json.is_file()
-        assert variant_layout.insight_md.is_file()
+        variant_dir = shared_cohort_run.cycle_layout.variant(VariantId(i))
+        assert (variant_dir.impl_dir / "segment.rs").is_file()
+        assert (variant_dir.impl_dir / "manifest.toml").is_file()
+        assert variant_dir.fitness_vector_json.is_file()
+        assert variant_dir.insight_md.is_file()
 
 
 @pytest.mark.slow
@@ -111,13 +111,13 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
 
     good_impl = Path(__file__).parent.parent / "fixtures" / "good" / "impl"
 
-    def sleep_implementer(hyp_file, variant_layout, **_):
-        (stamp_dir / f"{variant_layout.variant_id}.start").write_text(f"{time.time()}")
+    def sleep_implementer(hyp_file, variant_dir, **_):
+        (stamp_dir / f"{variant_dir.variant_id}.start").write_text(f"{time.time()}")
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
-        variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy(good_impl / "segment.rs", variant_layout.impl_dir / "segment.rs")
-        shutil.copy(good_impl / "manifest.toml", variant_layout.impl_dir / "manifest.toml")
-        (stamp_dir / f"{variant_layout.variant_id}.end").write_text(f"{time.time()}")
+        variant_dir.impl_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy(good_impl / "segment.rs", variant_dir.impl_dir / "segment.rs")
+        shutil.copy(good_impl / "manifest.toml", variant_dir.impl_dir / "manifest.toml")
+        (stamp_dir / f"{variant_dir.variant_id}.end").write_text(f"{time.time()}")
 
     monkeypatch.setattr("src.variant.implementer.implement_variant", sleep_implementer)
     _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE)
@@ -142,8 +142,8 @@ def test_each_variant_flows_through_real_gates(shared_cohort_run):
     # cleared the gates.
     expected_dims = {"hit-rate", "per-op-time", "metadata-size"}
     for i in (1, 2, 3):
-        variant_layout = shared_cohort_run.cycle_layout.variant(VariantId(i))
-        fv = json.loads(variant_layout.fitness_vector_json.read_text())
+        variant_dir = shared_cohort_run.cycle_layout.variant(VariantId(i))
+        fv = json.loads(variant_dir.fitness_vector_json.read_text())
         assert fv["variant"] == f"v{i:03d}"
         dims = {d["dim"] for d in fv["dimensions"]}
         assert dims == expected_dims, f"v{i:03d} dimensions {dims} != {expected_dims}"
@@ -177,7 +177,7 @@ def test_failing_variant_implementer_aborts_cycle(tmp_path, monkeypatch):
     evolve_root = _setup_repo(tmp_path)
     invoked: list[str] = []
 
-    def failing(hyp_file, variant_layout, **_):
+    def failing(hyp_file, variant_dir, **_):
         invoked.append(hyp_file.name)
         raise RuntimeError(f"boom on {hyp_file.name}")
 

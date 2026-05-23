@@ -113,19 +113,18 @@ def run_cycle(
                 die(str(exception))
 
         with _phase("gates + fitness"):
-            variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
+            variants = [CycleVariant(cycle_id, VariantId(i)) for i in range(1, cohort_size + 1)]
             survivors = []
-            for variant_layout in variant_layouts:
-                variant = CycleVariant(cycle_id, variant_layout.variant_id)
+            for variant in variants:
                 log.info("[%s] gate-check + fitness", variant)
                 if not run_gates(
-                    variant_layout.impl_dir, variant,
-                    repo_root=repo_root, rejection_log=layout.rejection_log,
+                    variant,
+                    layout=layout, repo_root=repo_root, rejection_log=layout.rejection_log,
                 ):
                     log.warning("[%s] gate-check failed, skipping fitness", variant)
                     continue
-                compute_fitness(variant_layout, variant, layout=layout, repo_root=repo_root)
-                survivors.append(variant_layout)
+                compute_fitness(variant, layout=layout, repo_root=repo_root)
+                survivors.append(variant.resolve(layout))
             if not survivors:
                 die(f"no variants survived gate-check in cycle {cycle_id}")
 

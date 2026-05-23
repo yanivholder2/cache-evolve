@@ -13,19 +13,19 @@ from pathlib import Path
 from src.hypothesis import parser
 from src.adapters import LLMAdapter
 from src.identifiers import HypothesisId, VariantId
-from src.paths import CycleLayout, Layout, Variant, VariantLayout
+from src.paths import CycleLayout, CycleVariantDir, Layout, Variant, VariantDir
 
 
 @dataclass(frozen=True)
 class ImplementerJob:
     hypothesis_file: Path
-    variant_layout: VariantLayout
+    variant_dir: CycleVariantDir
     layout: Layout
     adapter: LLMAdapter
 
     @property
     def variant_id(self) -> VariantId:
-        return self.variant_layout.variant_id
+        return self.variant_dir.variant_id
 
 AGENT_NAME = "variant-implementer"
 REQUIRED_OUTPUTS = ("segment.rs", "manifest.toml")
@@ -34,35 +34,34 @@ log = logging.getLogger("variant-implementer")
 
 
 def _write_task_md(
-    variant_layout: VariantLayout,
+    variant_dir: CycleVariantDir,
     hypothesis_file: Path,
-    parent_dir: Path,
+    parent_dir: VariantDir,
     variant: Variant,
     layout: Layout,
 ) -> None:
-    parent_layout = VariantLayout(root=parent_dir)
     body = (
         f"# Task: variant-implementer\n\n"
-        f"Variant: {variant_layout.variant_id}\n"
-        f"Parent variant: {variant} ({parent_dir})\n"
+        f"Variant: {variant_dir.variant_id}\n"
+        f"Parent variant: {variant} ({parent_dir.root})\n"
         f"Hypothesis: {hypothesis_file}\n"
-        f"Output dir: {variant_layout.impl_dir}\n\n"
+        f"Output dir: {variant_dir.impl_dir}\n\n"
         f"## Paths\n\n"
-        f"- Parent segment.rs:     {parent_layout.segment_rs}\n"
-        f"- Parent manifest.toml:  {parent_layout.manifest_toml}\n"
-        f"- Parent fitness-vector: {parent_layout.fitness_vector_json}\n"
-        f"- Parent insight.md:     {parent_layout.insight_md}\n"
+        f"- Parent segment.rs:     {parent_dir.segment_rs}\n"
+        f"- Parent manifest.toml:  {parent_dir.manifest_toml}\n"
+        f"- Parent fitness-vector: {parent_dir.fitness_vector_json}\n"
+        f"- Parent insight.md:     {parent_dir.insight_md}\n"
         f"- Extension points:      {layout.extension_points_md}\n"
         f"- Baseline segment.rs:   {layout.baseline.segment_rs}\n\n"
         f"## Write\n\n"
         f"Exactly two files under the output dir: `segment.rs` and `manifest.toml`.\n"
     )
-    variant_layout.impl_task_md.write_text(body, encoding="utf-8")
+    variant_dir.impl_task_md.write_text(body, encoding="utf-8")
 
 
 def implement_variant(
     hypothesis_file: Path,
-    variant_layout: VariantLayout,
+    variant_dir: CycleVariantDir,
     *,
     layout: Layout,
     adapter: LLMAdapter,
@@ -73,17 +72,17 @@ def implement_variant(
         raise FileNotFoundError(f"hypothesis file not found: {hypothesis_file}")
 
     hypothesis = parser.parse(hypothesis_file)
-    parent_variant_dir = hypothesis.parent_variant.resolve(layout)
+    parent_dir = hypothesis.parent_variant.resolve(layout)
 
-    impl_dir = variant_layout.impl_dir
+    impl_dir = variant_dir.impl_dir
     impl_dir.mkdir(parents=True, exist_ok=True)
-    _write_task_md(variant_layout, hypothesis_file, parent_variant_dir, hypothesis.parent_variant, layout)
-    log.debug("wrote implementer task.md at %s", variant_layout.impl_task_md)
+    _write_task_md(variant_dir, hypothesis_file, parent_dir, hypothesis.parent_variant, layout)
+    log.debug("wrote implementer task.md at %s", variant_dir.impl_task_md)
 
     adapter.run(
         agent_name=AGENT_NAME,
         workspace=impl_dir,
-        readable_roots=[hypothesis_file, parent_variant_dir, layout.dash_src, layout.subject_dir],
+        readable_roots=[hypothesis_file, parent_dir.root, layout.dash_src, layout.subject_dir],
         allow_edits=True,
     )
 
@@ -103,7 +102,7 @@ def _run_implementer_job(job: ImplementerJob) -> tuple[VariantId, BaseException 
     try:
         implement_variant(
             job.hypothesis_file,
-            job.variant_layout,
+            job.variant_dir,
             layout=job.layout,
             adapter=job.adapter,
         )
@@ -132,7 +131,7 @@ def implement_variants(
         jobs.append(
             ImplementerJob(
                 hypothesis_file=cycle_layout.hypothesis_file(HypothesisId(i)),
-                variant_layout=cycle_layout.variant(VariantId(i)),
+                variant_dir=cycle_layout.variant(VariantId(i)),
                 layout=layout,
                 adapter=adapter,
             )

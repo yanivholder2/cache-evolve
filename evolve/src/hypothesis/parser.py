@@ -26,7 +26,7 @@ class Hypothesis:
     """The testable claim — one-line summary (first non-empty, non-header line of the preamble)."""
 
     parent_variant: Variant
-    """Parent variant — either `Baseline()` or `CycleVariant(...)`. Resolve to a directory with `.resolve(layout)`."""
+    """Parent variant — either `Baseline()` or `CycleVariant(...)`. Resolve to a `VariantDir` with `.resolve(layout)`."""
 
     changes: str
     """Free-form prose body of the ``## Changes`` section, describing the modifications the implementer must apply."""
