@@ -136,13 +136,12 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
     good_impl = Path(__file__).parent / "fixtures" / "good" / "impl"
 
     def sleep_implementer(hyp_file, variant_layout, **_):
-        vid = variant_layout.id
-        (stamp_dir / f"{vid}.start").write_text(f"{time.time()}")
+        (stamp_dir / f"{variant_layout.id}.start").write_text(f"{time.time()}")
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
         variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy(good_impl / "segment.rs", variant_layout.impl_dir / "segment.rs")
         shutil.copy(good_impl / "manifest.toml", variant_layout.impl_dir / "manifest.toml")
-        (stamp_dir / f"{vid}.end").write_text(f"{time.time()}")
+        (stamp_dir / f"{variant_layout.id}.end").write_text(f"{time.time()}")
 
     monkeypatch.setattr("src.variant_implementer.implement_variant", sleep_implementer)
     _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE)

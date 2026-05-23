@@ -107,8 +107,8 @@ class LLMAdapter:
                             log_io=log_io,
                         )
                     )
-                except BaseException as exc:
-                    status = f"error: {type(exc).__name__}: {exc}"
+                except BaseException as exception:
+                    status = f"error: {type(exception).__name__}: {exception}"
                     raise
                 finally:
                     _write_footer(log_io, status, time.monotonic() - started_mono, usage)

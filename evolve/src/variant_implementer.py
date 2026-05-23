@@ -17,11 +17,21 @@ import concurrent.futures
 import logging
 import sys
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 
 from src import hypothesis_parser
 from src.adapters import LLMAdapter
 from src.paths import CycleLayout, Layout, VariantLayout
+
+
+@dataclass(frozen=True)
+class ImplementerJob:
+    id: str
+    hypothesis_file: Path
+    variant_layout: VariantLayout
+    layout: Layout
+    adapter: LLMAdapter
 
 AGENT_NAME = "variant-implementer"
 REQUIRED_OUTPUTS = ("segment.rs", "manifest.toml")
@@ -95,23 +105,20 @@ def implement_variant(
     log.info("variant materialized at %s", impl_dir)
 
 
-def _run_one(
-    job: tuple[str, Path, VariantLayout, Layout, LLMAdapter],
-) -> tuple[str, BaseException | None]:
-    vid, hyp_file, variant_layout, layout, adapter = job
-    log.debug("%s: implementer %s", vid, hyp_file)
+def _run_one(job: ImplementerJob) -> tuple[str, BaseException | None]:
+    log.debug("%s: implementer %s", job.id, job.hypothesis_file)
     try:
         implement_variant(
-            hyp_file,
-            variant_layout,
-            layout=layout,
-            adapter=adapter,
+            job.hypothesis_file,
+            job.variant_layout,
+            layout=job.layout,
+            adapter=job.adapter,
         )
-    except BaseException as exc:  # noqa: BLE001 — surface every failure to the orchestrator
-        log.debug("%s: implementer failed: %s", vid, exc)
-        return vid, exc
-    log.debug("%s: implementer ok", vid)
-    return vid, None
+    except BaseException as exception:  # noqa: BLE001 — surface every failure to the orchestrator
+        log.debug("%s: implementer failed: %s", job.id, exception)
+        return job.id, exception
+    log.debug("%s: implementer ok", job.id)
+    return job.id, None
 
 
 def implement_variants(
@@ -124,19 +131,27 @@ def implement_variants(
     """Invoke the variant-implementer once per Variant in parallel. Aborts on any failure."""
 
     log.info("running %d implementers in parallel", cohort_size)
-    jobs = []
+    jobs: list[ImplementerJob] = []
     for i in range(1, cohort_size + 1):
         variant_layout = cycle_layout.variant(i)
         variant_layout.impl_dir.mkdir(parents=True, exist_ok=True)
-        jobs.append((variant_layout.id, cycle_layout.hypothesis_file(i), variant_layout, layout, adapter))
+        jobs.append(
+            ImplementerJob(
+                id=variant_layout.id,
+                hypothesis_file=cycle_layout.hypothesis_file(i),
+                variant_layout=variant_layout,
+                layout=layout,
+                adapter=adapter,
+            )
+        )
 
     failed = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=cohort_size) as pool:
-        for vid, exc in pool.map(_run_one, jobs):
-            if exc is not None:
-                print(f"error: variant-implementer for {vid} failed: {exc}", file=sys.stderr)
-                sys.stderr.write("".join(traceback.format_exception(exc)))
-                log.error("implementer %s failed: %s", vid, exc)
+        for variant_id, exception in pool.map(_run_one, jobs):
+            if exception is not None:
+                print(f"error: variant-implementer for {variant_id} failed: {exception}", file=sys.stderr)
+                sys.stderr.write("".join(traceback.format_exception(exception)))
+                log.error("implementer %s failed: %s", variant_id, exception)
                 failed = True
     if failed:
         sys.exit(1)

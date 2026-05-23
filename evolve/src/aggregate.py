@@ -55,10 +55,9 @@ def _collect_fitness_vectors(variant_layouts: list[VariantLayout]) -> list[dict]
 
 def _write_per_variant_insights(variant_layouts: list[VariantLayout], fitness_vectors: list[dict]) -> None:
     for variant_layout, fv in zip(variant_layouts, fitness_vectors):
-        vid = variant_layout.id
         summary = format_dimensions(fv)
-        log.debug("[%s] insight: %s", vid, summary)
+        log.debug("[%s] insight: %s", variant_layout.id, summary)
         variant_layout.insight_md.write_text(
-            f"# Variant {vid} Insight\n\nFitness: {summary}\n",
+            f"# Variant {variant_layout.id} Insight\n\nFitness: {summary}\n",
             encoding="utf-8",
         )

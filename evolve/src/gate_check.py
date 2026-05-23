@@ -125,7 +125,7 @@ def run_gates(
     finally:
         shutil.rmtree(
             work_dir,
-            onexc=lambda fn, path, exc: log.warning("workspace cleanup failed for %s: %s", path, exc),
+            onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
         )
 
     log.info("gate-check: all gates passed for %s", variant_id)

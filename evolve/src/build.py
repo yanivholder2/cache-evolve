@@ -95,7 +95,7 @@ def build_variant(
         log.info("rejection logged to %s", rejection_log)
         shutil.rmtree(
             work_dir,
-            onexc=lambda fn, path, exc: log.warning("workspace cleanup failed for %s: %s", path, exc),
+            onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
         )
         raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
