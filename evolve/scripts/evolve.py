@@ -8,6 +8,7 @@ import logging
 import re
 import sys
 import tomllib
+from contextlib import contextmanager
 from pathlib import Path
 from typing import NoReturn
 
@@ -36,6 +37,20 @@ def die(msg: str) -> NoReturn:
     log.error(msg)
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+@contextmanager
+def _phase(name: str):
+    """Log a header for `name`, then a matching footer on exit.
+
+    `finally` ensures a failing phase still records its end before the
+    exception propagates.
+    """
+    log.info("--- %s ---", name)
+    try:
+        yield
+    finally:
+        log.info("--- %s done ---", name)
 
 
 def _next_cycle_id(cycles_dir: Path) -> CycleId:
@@ -72,52 +87,54 @@ def run_cycle(
         # Log file lives outside cycle_dir so writes survive the seal step.
         _log.setup(layout.cycle_log(cycle_id), level=log_level)
         log.info("=== cycle %s allocated at %s ===", cycle_id, cycle_dir)
+        log.info("cohort_size=%d adapter=%s", cohort_size, adapter.identity())
 
-        log.info("--- write hypotheses ---")
-        write_hypotheses(
-            cohort_size,
-            layout=layout,
-            cycle_id=cycle_id,
-            adapter=adapter,
-        )
-
-        log.info("--- implement variants ---")
-        implement_variants(
-            cycle_layout,
-            cohort_size,
-            layout=layout,
-            adapter=adapter,
-        )
-        log.info("--- gates + fitness (sequential, cargo serializes target/) ---")
-        variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
-        try:
-            run_gates_and_fitness(
-                variant_layouts,
-                cycle_id,
+        with _phase("write hypotheses"):
+            write_hypotheses(
+                cohort_size,
                 layout=layout,
-                repo_root=repo_root,
+                cycle_id=cycle_id,
+                adapter=adapter,
             )
-        except RuntimeError as e:
-            die(str(e))
 
-        log.info("--- aggregate cohort ---")
-        pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_id)
+        with _phase("implement variants"):
+            implement_variants(
+                cycle_layout,
+                cohort_size,
+                layout=layout,
+                adapter=adapter,
+            )
 
-        log.info("--- seal cycle dir ---")
-        seal_cycle(cycle_dir)
+        with _phase("gates + fitness (sequential, cargo serializes target/)"):
+            variant_layouts = [cycle_layout.variant(VariantId(i)) for i in range(1, cohort_size + 1)]
+            try:
+                run_gates_and_fitness(
+                    variant_layouts,
+                    cycle_id,
+                    layout=layout,
+                    repo_root=repo_root,
+                )
+            except RuntimeError as e:
+                die(str(e))
 
-        log.info("--- append ledger row ---")
-        row = {
-            "cycle": str(cycle_id),
-            "cycle_dir": layout.cycle_ledger_path(cycle_id),
-            "cohort_size": cohort_size,
-            "pareto_front": pareto_front,
-        }
-        log.debug("ledger row: %s", row)
-        append_row(layout.ledger, row)
+        with _phase("aggregate cohort"):
+            pareto_front = aggregate_cohort(cycle_layout, variant_layouts, cycle_id)
 
-        log.info("--- regenerate leaderboard ---")
-        regenerate_leaderboard(layout=layout.outputs, output=layout.leaderboard_md)
+        with _phase("seal cycle dir"):
+            seal_cycle(cycle_dir)
+
+        with _phase("append ledger row"):
+            row = {
+                "cycle": str(cycle_id),
+                "cycle_dir": layout.cycle_ledger_path(cycle_id),
+                "cohort_size": cohort_size,
+                "pareto_front": pareto_front,
+            }
+            log.debug("ledger row: %s", row)
+            append_row(layout.ledger, row)
+
+        with _phase("regenerate leaderboard"):
+            regenerate_leaderboard(layout=layout.outputs, output=layout.leaderboard_md)
 
         log.info("=== cycle %s complete (cohort=%d) ===", cycle_id, cohort_size)
         print(f"cycle {cycle_id} complete — sealed at {cycle_dir} (cohort={cohort_size})")

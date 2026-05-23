@@ -64,6 +64,9 @@ PATH_INPUT_KEYS = {
 
 
 class ClaudeSdkAdapter(LLMAdapter):
+    def identity(self) -> str:
+        return f"{type(self).__name__}(model={MODEL.value})"
+
     async def call_llm_and_log(
         self,
         system_prompt: str,

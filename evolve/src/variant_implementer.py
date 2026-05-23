@@ -91,10 +91,10 @@ def implement_variant(
     log.info("variant materialized at %s", impl_dir)
 
 
-def _run_implementer_job(job: ImplementerJob) -> tuple[str, Exception | None]:
+def _run_implementer_job(job: ImplementerJob) -> tuple[VariantId, Exception | None]:
     """Pool worker. Returns (job_id, exception) so failures don't crash the pool."""
 
-    log.debug("%s: implementer started for hypothesis %s", job.id, job.hypothesis_file)
+    log.info("%s: implementer started for hypothesis %s", job.id, job.hypothesis_file)
     try:
         implement_variant(
             job.hypothesis_file,
@@ -103,9 +103,9 @@ def _run_implementer_job(job: ImplementerJob) -> tuple[str, Exception | None]:
             adapter=job.adapter,
         )
     except Exception as exception:
-        log.debug("%s: implementer failed: %s", job.id, exception)
+        log.warning("%s: implementer failed: %s", job.id, exception)
         return job.id, exception
-    log.debug("%s: implementer completed successfully", job.id)
+    log.info("%s: implementer completed successfully", job.id)
     return job.id, None
 
 

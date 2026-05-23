@@ -19,6 +19,10 @@ log = logging.getLogger("llm-adapter")
 class LLMAdapter:
     """Backend-agnostic interface for invoking an LLM agent."""
 
+    def identity(self) -> str:
+        """Short string identifying adapter + model. Subclasses override to include model id."""
+        return type(self).__name__
+
     def run(
         self,
         agent_name: str,
@@ -45,12 +49,16 @@ class LLMAdapter:
 
         system_prompt = agent_file.read_text(encoding="utf-8")
         user_prompt = task_file.read_text(encoding="utf-8")
-        log.debug(
-            "dispatch %s into %s (adapter=%s, allow_edits=%s, readable_roots=%s)",
+        log.info(
+            "dispatch agent=%s adapter=%s workspace=%s allow_edits=%s",
             agent_name,
-            type(self).__name__,
+            self.identity(),
             workspace,
             allow_edits,
+        )
+        log.debug(
+            "dispatch agent=%s readable_roots=%s",
+            agent_name,
             resolved_roots,
         )
 
@@ -61,7 +69,7 @@ class LLMAdapter:
         usage: Usage | None = None
         try:
             with log_path.open("w", encoding="utf-8") as log_io:
-                _write_header(log_io, agent_name, workspace, allow_edits, started_wall, type(self).__name__)
+                _write_header(log_io, agent_name, workspace, allow_edits, started_wall, self.identity())
                 try:
                     usage = asyncio.run(
                         self.call_llm_and_log(
@@ -79,7 +87,13 @@ class LLMAdapter:
                 finally:
                     _write_footer(log_io, status, time.monotonic() - started_mono, usage)
         finally:
-            log.debug("agent log written into %s", log_path)
+            log.info(
+                "agent %s finished status=%s usage=%s log=%s",
+                agent_name,
+                status,
+                _format_usage(usage),
+                log_path,
+            )
 
     async def call_llm_and_log(
         self,
@@ -104,6 +118,12 @@ class LLMAdapter:
         `thinking_tokens`, `total_tokens`, `cost_usd`.
         """
         raise NotImplementedError
+
+
+def _format_usage(usage: Usage | None) -> str:
+    if not usage:
+        return "none"
+    return ", ".join(f"{key}={value}" for key, value in usage.items())
 
 
 def _validate_readable_roots(roots: list[Path]) -> list[Path]:

@@ -56,6 +56,9 @@ MODEL = Model.GEMINI_3_1_FLASH_LITE
 
 
 class AntigravitySdkAdapter(LLMAdapter):
+    def identity(self) -> str:
+        return f"{type(self).__name__}(model={MODEL.value})"
+
     async def call_llm_and_log(
         self,
         system_prompt: str,
