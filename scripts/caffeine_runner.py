@@ -82,7 +82,6 @@ class Invocation:
     num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS
     bucket_size: int = DEFAULT_BUCKET_SIZE
     debug_mode: int = 0
-    output_dir: Path | None = None
     log_path: Path | None = None
     title: str | None = None
     caffeine_dir: Path = field(default_factory=lambda: DEFAULT_CAFFEINE_DIR)
@@ -116,8 +115,6 @@ class Invocation:
         ]
         for i, policy in enumerate(self.policies):
             cmd.append(f"-D{prefix}.{self.target.policy_key}.{i}={policy}")
-        if self.output_dir is not None:
-            cmd.append(f"--outputDir={self.output_dir}")
         if self.log_path is not None and self.target.name == "dashvariant":
             cmd.append(f"-D{prefix}.logPath={self.log_path}")
         return cmd
@@ -155,8 +152,11 @@ def _invoke(invocation: Invocation, *, timeout_s: int) -> RunResult:
             f"caffeine simulator failed (exit {proc.returncode}, trace={invocation.trace}):\n"
             f"{stderr_tail}"
         )
-    resolved_output = invocation.output_dir or _reports_dir(invocation.caffeine_dir)
-    return RunResult(output_dir=resolved_output, stdout=proc.stdout, stderr=proc.stderr)
+    return RunResult(
+        output_dir=_reports_dir(invocation.caffeine_dir),
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
 
 
 def run(
@@ -171,7 +171,6 @@ def run(
     num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS,
     bucket_size: int = DEFAULT_BUCKET_SIZE,
     debug_mode: int = 0,
-    output_dir: Path | None = None,
     log_path: Path | None = None,
     caffeine_dir: Path = DEFAULT_CAFFEINE_DIR,
 ) -> RunResult:
@@ -188,7 +187,6 @@ def run(
         num_of_stash_buckets=num_of_stash_buckets,
         bucket_size=bucket_size,
         debug_mode=debug_mode,
-        output_dir=output_dir,
         log_path=log_path,
         caffeine_dir=caffeine_dir,
     )
@@ -206,7 +204,6 @@ def simulate(
     num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS,
     bucket_size: int = DEFAULT_BUCKET_SIZE,
     debug_mode: int = 0,
-    output_dir: Path | None = None,
     log_path: Path | None = None,
     caffeine_dir: Path = DEFAULT_CAFFEINE_DIR,
 ) -> RunResult:
@@ -232,7 +229,6 @@ def simulate(
         num_of_stash_buckets=num_of_stash_buckets,
         bucket_size=bucket_size,
         debug_mode=debug_mode,
-        output_dir=output_dir,
         log_path=log_path,
         caffeine_dir=caffeine_dir,
     )
@@ -274,7 +270,6 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         p.add_argument("--stash-buckets", type=int, default=DEFAULT_NUM_OF_STASH_BUCKETS)
         p.add_argument("--bucket-size", type=int, default=DEFAULT_BUCKET_SIZE)
         p.add_argument("--debug-mode", type=int, default=0)
-        p.add_argument("--output-dir", type=Path, default=None)
         p.add_argument("--log-path", type=Path, default=None,
                        help="Override the cdylib's rust-logs dir (dashvariant only).")
         p.add_argument("--caffeine-dir", type=Path, default=DEFAULT_CAFFEINE_DIR)
@@ -305,7 +300,6 @@ def _main(argv: list[str] | None = None) -> int:
         num_of_stash_buckets=args.stash_buckets,
         bucket_size=args.bucket_size,
         debug_mode=args.debug_mode,
-        output_dir=args.output_dir,
         log_path=args.log_path,
         caffeine_dir=args.caffeine_dir,
     )

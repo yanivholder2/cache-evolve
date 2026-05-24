@@ -11,6 +11,7 @@ from __future__ import annotations
 import csv
 import logging
 import shutil
+import subprocess
 import sys
 import tomllib
 from dataclasses import dataclass
@@ -153,6 +154,13 @@ def _parse_csv(csv_path: Path, *, trace: str, size: int) -> list[CaffeineResult]
             field_name, caster = mapping
             cell = cell.strip()
             if cell == "":
+                # Caffeine emits "" for zero-valued rates/counts (see
+                # simulator Metrics.java). Treat as the caster's zero for
+                # numeric fields; leave string fields (e.g. policy) missing
+                # so the required-fields check below still catches them.
+                if caster is str:
+                    continue
+                kwargs[field_name] = caster("0")
                 continue
             try:
                 kwargs[field_name] = caster(cell)
@@ -196,7 +204,7 @@ def simulate_variant(
 
     try:
         workspace, cdylib_path = build_cdylib(variant, layout=layout, repo_root=repo_root)
-    except Exception as exception:
+    except (RuntimeError, subprocess.CalledProcessError) as exception:
         raise CaffeineSimulatorError(f"cdylib build failed for {variant}: {exception}") from exception
 
     try:

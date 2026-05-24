@@ -32,14 +32,19 @@ def cargo_build(
     Overriding CARGO_TARGET_DIR keeps parallel evolve runs off the same cargo lock.
     """
 
-    result = subprocess.run(
-        ["cargo", "build", *args],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        env=cargo_env(target_dir),
-    )
+    try:
+        result = subprocess.run(
+            ["cargo", "build", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=cargo_env(target_dir),
+        )
+    except subprocess.TimeoutExpired as exception:
+        raise PluginError(
+            f"cargo build ({label}) timed out after {exception.timeout}s"
+        ) from exception
     if result.returncode != 0:
         raise PluginError(f"cargo build ({label}) failed:\n{result.stderr}")
 
