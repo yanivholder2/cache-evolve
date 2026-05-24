@@ -88,3 +88,22 @@ def mock_cargo_on_path():
     os.environ["PATH"] = original
 
 
+@pytest.fixture(autouse=True)
+def stub_caffeine_simulator(request, monkeypatch):
+    """Mock the caffeine simulator by default — pipeline tests don't need
+    a real JVM/gradle. Tests marked `caffeine_needed` opt out and exercise
+    the real simulator."""
+    if "caffeine_needed" in request.keywords:
+        return
+    from src.fitness.caffeine_simulator import CaffeineResult, CaffeineResults
+    stub = CaffeineResults(results=[CaffeineResult(
+        trace="lirs:multi1.trace.gz", size=512, policy="ClassicLRU",
+        hit_rate=0.5, miss_rate=0.5, hits=500, misses=500,
+        requests=1000, evictions=0,
+    )])
+    monkeypatch.setattr(
+        "src.fitness.runner.simulate_variant",
+        lambda *_a, **_kw: stub,
+    )
+
+
