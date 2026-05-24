@@ -88,12 +88,15 @@ def mock_cargo_on_path():
     os.environ["PATH"] = original
 
 
-@pytest.fixture(autouse=True)
-def stub_caffeine_simulator(request, monkeypatch):
-    """Mock the caffeine simulator by default — pipeline tests don't need
-    a real JVM/gradle. Tests marked `caffeine_needed` opt out and exercise
-    the real simulator."""
-    if "caffeine_needed" in request.keywords:
+@pytest.fixture(autouse=True, scope="session")
+def stub_caffeine_simulator(request):
+    """Mock the caffeine simulator session-wide — pipeline tests don't need
+    a real JVM/gradle. Session scope so the stub is live when module-scoped
+    fixtures (e.g. `shared_cohort_run`) build their setup. With
+    `--caffeine-needed`, tests marked `caffeine_needed` are collected and
+    everything runs against real caffeine."""
+    if request.config.getoption("--caffeine-needed"):
+        yield
         return
     from src.fitness.caffeine_simulator import CaffeineResult, CaffeineResults
     stub = CaffeineResults(results=[CaffeineResult(
@@ -101,9 +104,9 @@ def stub_caffeine_simulator(request, monkeypatch):
         hit_rate=0.5, miss_rate=0.5, hits=500, misses=500,
         requests=1000, evictions=0,
     )])
-    monkeypatch.setattr(
-        "src.fitness.runner.simulate_variant",
-        lambda *_a, **_kw: stub,
-    )
+    mp = pytest.MonkeyPatch()
+    mp.setattr("src.fitness.runner.simulate_variant", lambda *_a, **_kw: stub)
+    yield
+    mp.undo()
 
 
