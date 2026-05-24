@@ -67,7 +67,7 @@ def test_evolve_appends_exactly_one_ledger_row(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run(evolve_root)
 
-    ledger = _layout(evolve_root).ledger
+    ledger = _layout(evolve_root).outputs.ledger
     assert ledger.is_file()
     lines = read_utf8(ledger).splitlines()
     assert len(lines) == 1
@@ -99,7 +99,7 @@ def test_ledger_row_has_relative_paths(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run(evolve_root)
 
-    ledger = _layout(evolve_root).ledger
+    ledger = _layout(evolve_root).outputs.ledger
     row = json.loads(read_utf8(ledger).splitlines()[0])
 
     for key, value in row.items():

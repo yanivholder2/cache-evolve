@@ -98,7 +98,13 @@ class CaffeineSimulatorError(RuntimeError):
 
 # Python log levels -> rust debug_mode (see src/shared/logging.rs::debug_mode_to_level).
 # Rust has no Error-only filter; WARNING/ERROR/CRITICAL all map to Warn (0).
-_LOG_LEVEL_TO_DEBUG_MODE = {"DEBUG": 2, "INFO": 1}
+_LOG_LEVEL_TO_DEBUG_MODE = {
+    "DEBUG": 2,
+    "INFO": 1,
+    "WARNING": 0,
+    "ERROR": 0,
+    "CRITICAL": 0,
+}
 
 
 def _read_eviction_policy(manifest_toml: Path) -> str:
