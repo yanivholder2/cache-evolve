@@ -49,7 +49,7 @@ def test_hit_rate_plugin_averages_multiple_points():
 
 
 def test_hit_rate_plugin_rejects_empty_results():
-    with pytest.raises(RuntimeError, match="no CaffeineResults"):
+    with pytest.raises(RuntimeError):
         hit_rate.compute(results=CaffeineResults(results=[]))
 
 

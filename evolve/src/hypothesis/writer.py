@@ -44,7 +44,7 @@ def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
         f"## Read for context\n\n"
         f"- {layout.sources.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"
         f"- {baseline_layout.segment_rs} — baseline Segment implementation. The code your hypotheses propose to improve.\n"
-        f"- {baseline_layout.manifest_toml} — baseline manifest (eviction policy, ordinal).\n"
+        f"- {baseline_layout.manifest_toml} — baseline manifest (eviction policy).\n"
         f"- {baseline_layout.fitness_vector_json} — baseline's measured fitness vector. Numeric anchor your hypotheses target dimensions of.\n"
         f"- {baseline_layout.insight_md} — short prose describing what the baseline does.\n"
     )

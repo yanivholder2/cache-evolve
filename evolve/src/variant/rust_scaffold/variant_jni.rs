@@ -67,7 +67,9 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 
 fn create_cache(settings: DashSettings) -> jlong {
 	// Safety net: if a path reaches create_cache without prior init (e.g. initDefaultCache),
-	// fall back to the default rust-logs dir. Once-guarded; no-op if the JNI entry already inited.
+	// fall back to the default rust-logs dir. The file logger uses a shared `Once`, so this
+	// is a no-op when the JNI entry (initCache) already initialised the logger at the
+	// caller-supplied path.
 	logging::init_file_logger("dash_variant", settings.debug_mode);
 
 	if !matches!(

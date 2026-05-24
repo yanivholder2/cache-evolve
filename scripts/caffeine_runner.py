@@ -26,6 +26,9 @@ DEFAULT_NUM_OF_NORMAL_BUCKETS = 2
 DEFAULT_NUM_OF_STASH_BUCKETS = 6
 DEFAULT_BUCKET_SIZE = 64
 
+STDERR_TAIL_LINES = 40
+DEFAULT_TIMEOUT_S = 600
+
 
 class CaffeineError(RuntimeError):
     """Raised when a Caffeine invocation fails (non-zero exit or timeout)."""
@@ -147,7 +150,7 @@ def _invoke(invocation: Invocation, *, timeout_s: int) -> RunResult:
             f"sizes={invocation.sizes}, policies={invocation.policies})"
         ) from e
     if proc.returncode != 0:
-        stderr_tail = "\n".join(proc.stderr.splitlines()[-40:])
+        stderr_tail = "\n".join(proc.stderr.splitlines()[-STDERR_TAIL_LINES:])
         raise CaffeineError(
             f"caffeine simulator failed (exit {proc.returncode}, trace={invocation.trace}):\n"
             f"{stderr_tail}"
@@ -273,7 +276,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         p.add_argument("--log-path", type=Path, default=None,
                        help="Override the cdylib's rust-logs dir (dashvariant only).")
         p.add_argument("--caffeine-dir", type=Path, default=DEFAULT_CAFFEINE_DIR)
-        p.add_argument("--timeout-s", type=int, default=600)
+        p.add_argument("--timeout-s", type=int, default=DEFAULT_TIMEOUT_S)
 
     run_p = sub.add_parser("run", help="Single trace × single size.")
     add_common(run_p)

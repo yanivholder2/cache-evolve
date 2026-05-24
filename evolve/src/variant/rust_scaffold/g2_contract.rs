@@ -42,7 +42,7 @@ fn g2_valid_eviction_policy_name() {
     let mut found = false;
     for line in manifest.lines() {
         let trimmed = line.trim();
-        if trimmed.starts_with("eviction_policy") && !trimmed.starts_with("eviction_policy_ordinal") {
+        if trimmed.starts_with("eviction_policy") {
             let parts: Vec<&str> = line.splitn(2, '=').collect();
             if parts.len() == 2 {
                 let raw = parts[1].trim();
@@ -58,6 +58,6 @@ fn g2_valid_eviction_policy_name() {
     }
     assert!(
         found,
-        "manifest.toml has no eviction_policy = ... line (only legacy eviction_policy_ordinal?)"
+        "manifest.toml has no eviction_policy = ... line"
     );
 }

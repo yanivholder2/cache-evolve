@@ -54,7 +54,6 @@ def compute_fitness(
         try:
             record = fn()
         except PluginError as exception:
-            log.error("[%s] plugin %s failed: %s", variant, name, exception)
             raise FitnessError(f"plugin {name} failed for {variant}: {exception}") from exception
         write_utf8(fitness_dir / f"{name}.json", json.dumps(record, indent=2) + "\n")
 

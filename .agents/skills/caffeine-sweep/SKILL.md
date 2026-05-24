@@ -34,7 +34,6 @@ Read `docs/caffeine-simulator.md` for the per-invocation reference (JVM args, ou
            --trace "$trace" \
            --sizes "$SIZES" \
            --policies "$POLICIES" \
-           --normal-buckets 28 --stash-buckets 4 --bucket-size 12 \
            --output-dir "$trace_dir"
    done
    ```

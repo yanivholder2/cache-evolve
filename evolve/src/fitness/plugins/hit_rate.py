@@ -1,8 +1,7 @@
 """Hit-rate fitness plugin.
 
 Receives a pre-computed `CaffeineResults` (one entry per (trace, size)
-point) and emits the plugin JSON contract. Issue #85 produces exactly
-one entry; #83 will extend to a real trace suite.
+point) and emits the plugin JSON contract.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ def compute(*, results: CaffeineResults) -> dict:
         {"trace": r.trace, "size": r.size, "hit_rate": r.hit_rate}
         for r in results.results
     ]
-    summary = sum(v["hit_rate"] for v in values) / len(values)
+    summary = sum(r.hit_rate for r in results.results) / len(results.results)
     return {
         "dim": "hit-rate",
         "values": values,

@@ -1,9 +1,6 @@
 """Evolve-only Caffeine wrapper: build the variant cdylib, invoke the
 Caffeine simulator once per variant, parse the per-size CSV, and aggregate
 into `CaffeineResults` for plugin consumption.
-
-Issue #85 hardcodes a single (trace, size) point against the `dashvariant`
-target. Trace/size selection and multi-point sweeps are deferred to #83.
 """
 
 from __future__ import annotations
@@ -37,8 +34,6 @@ HARDCODED_TRACE = "lirs:multi1.trace.gz"
 HARDCODED_SIZE = 512
 TARGET = "dashvariant"
 
-# Caffeine emits one row per declared policy at each size. We pass exactly
-# one policy (the variant's), so the CSV has exactly one data row.
 # Caffeine emits Hit Rate / Miss Rate / Admit rate as percentages (0–100).
 # Normalise to fractions (0–1) at parse time so plugin output stays consistent
 # with the historical hit-rate contract and with the baseline fixture.
@@ -103,13 +98,7 @@ class CaffeineSimulatorError(RuntimeError):
 
 # Python log levels -> rust debug_mode (see src/shared/logging.rs::debug_mode_to_level).
 # Rust has no Error-only filter; WARNING/ERROR/CRITICAL all map to Warn (0).
-_LOG_LEVEL_TO_DEBUG_MODE = {
-    "DEBUG": 2,
-    "INFO": 1,
-    "WARNING": 0,
-    "ERROR": 0,
-    "CRITICAL": 0,
-}
+_LOG_LEVEL_TO_DEBUG_MODE = {"DEBUG": 2, "INFO": 1}
 
 
 def _read_eviction_policy(manifest_toml: Path) -> str:
@@ -135,6 +124,8 @@ def _per_size_csv(reports_dir: Path, size: int) -> Path:
     return candidate
 
 
+# Caffeine emits one row per declared policy at each size. We pass exactly
+# one policy (the variant's), so the CSV has exactly one data row.
 def _parse_csv(csv_path: Path, *, trace: str, size: int) -> list[CaffeineResult]:
     text = read_utf8(csv_path)
     reader = csv.reader(text.splitlines())
@@ -195,7 +186,7 @@ def simulate_variant(
 
     variant_dir = variant.resolve(layout)
     policy_name = _read_eviction_policy(variant_dir.manifest_toml)
-    debug_mode = _LOG_LEVEL_TO_DEBUG_MODE[cfg.framework.log_level]
+    debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
 
     caffeine_out = variant_dir.root / "caffeine"
     rust_logs_dir = caffeine_out / "rust-logs"
@@ -230,7 +221,12 @@ def simulate_variant(
         results = _parse_csv(csv_path, trace=HARDCODED_TRACE, size=HARDCODED_SIZE)
         return CaffeineResults(results=results)
     finally:
-        shutil.rmtree(workspace.root, ignore_errors=True)
+        shutil.rmtree(
+            workspace.root,
+            onexc=lambda fn, path, exception: log.warning(
+                "cdylib workspace cleanup failed for %s: %s", path, exception
+            ),
+        )
 
 
 def _write_gradle_logs(dest: Path, *, stdout: str, stderr: str) -> None:
