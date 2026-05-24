@@ -72,14 +72,6 @@ fn create_cache(settings: DashSettings) -> jlong {
 	// caller-supplied path.
 	logging::init_file_logger("dash_variant", settings.debug_mode);
 
-	if !matches!(
-		settings.eviction_policy,
-		dash::shared::eviction_policy::EvictionPolicy::ClassicLRU
-	) {
-		error!("dash_variant requires ClassicLRU, got {:?}", settings.eviction_policy);
-		return NULL_CACHE_PTR;
-	}
-
 	let Some(cache) = CacheTy::try_new(settings.num_of_segments, || Some(VariantSegment::new(&settings))) else {
 		error!(
 			"dash_variant_jni.create_cache: initialization failed. segments={}, buckets={}, stash={}, policy={:?}",

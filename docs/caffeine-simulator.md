@@ -68,8 +68,6 @@ Per-target keys to set:
 -Dcaffeine.simulator.dashvariant.debugMode=<0|1|2>
 ```
 
-Note: the `dashvariant` cdylib today only accepts `classiclru` end-to-end (`variant_jni.rs::create_cache` rejects others; Caffeine's `DashVariantEvictionPolicy` Java enum only declares `classiclru`). Unlocking the rest is tracked in issue #102.
-
 ## Output files
 
 All paths relative to Caffeine's reports dir (`simulator/build/reports/simulate/` unless overridden via `--outputDir`). Files are **overwritten** between runs — copy them out before re-invoking on a different trace.

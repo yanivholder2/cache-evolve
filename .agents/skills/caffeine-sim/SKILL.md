@@ -31,5 +31,4 @@ Read `docs/caffeine-simulator.md` for the full invocation reference (JVM args, c
 ## Gotchas
 
 - In a git worktree, `target/release/` is inside the worktree root. Always use `git rev-parse --show-toplevel`.
-- The `dashvariant` cdylib currently only accepts `classiclru` end-to-end (issue #102).
 - JNI logs land in `rust-logs/` under the JVM cwd (typically `~/projects/caffeine/simulator/rust-logs/`).
