@@ -7,8 +7,8 @@
 #   // MOCK_CARGO: g1_fail              -> `cargo build --tests` fails
 #   // MOCK_CARGO: g3_fail P<n> <name>  -> `cargo test --test g3_invariant` fails
 #                                          with the matching panic format
-# `cargo test --test g2_contract` fails when the manifest declares
-# eviction_policy_ordinal > 5 (mirrors the real harness check).
+# `cargo test --test g2_contract` fails when the manifest declares an
+# eviction_policy name not in the known set (mirrors the real harness check).
 #
 # Any other cargo invocation (fitness plugins building real binaries, etc.)
 # is forwarded to the real cargo found on PATH after stripping this shim's dir.
@@ -81,11 +81,19 @@ fi
 case "$IS_GATE_TEST" in
     g2_contract)
         if [ -f "$MANIFEST_TOML" ]; then
-            ORD=$(grep -oE 'eviction_policy_ordinal[[:space:]]*=[[:space:]]*[0-9]+' "$MANIFEST_TOML" \
-                | grep -oE '[0-9]+$' || true)
-            if [ -n "$ORD" ] && [ "$ORD" -gt 5 ]; then
-                echo "thread 'main' panicked: G2 trait contract failed: eviction_policy_ordinal $ORD out of range 0..=5" >&2
-                exit 101
+            NAME=$(grep -E '^[[:space:]]*eviction_policy[[:space:]]*=' "$MANIFEST_TOML" \
+                | grep -v 'eviction_policy_ordinal' \
+                | head -n1 \
+                | sed -E 's/.*=[[:space:]]*"?([^"#]*)"?.*/\1/' \
+                | sed -E 's/[[:space:]]+$//' || true)
+            if [ -n "$NAME" ]; then
+                case "$NAME" in
+                    ClassicLRU|TimestampLRU|Lifo|Lfu|Fifo|Swap) ;;
+                    *)
+                        echo "thread 'main' panicked: G2 trait contract failed: eviction_policy=\"$NAME\" is not a valid EvictionPolicy name" >&2
+                        exit 101
+                        ;;
+                esac
             fi
         fi
         exit 0

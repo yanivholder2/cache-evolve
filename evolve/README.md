@@ -24,13 +24,14 @@ Framework entry point is `evolve/scripts/evolve.py`. Run it through the project 
 
 Flags (defaults sourced from [`config.toml`](config.toml); flags override per-run):
 
-| Flag                     | Config key                 | Purpose                                                                                |
-| ------------------------ | -------------------------- | -------------------------------------------------------------------------------------- |
-| `--cycles N`             | `framework.cycles`         | Number of cycles to run sequentially. Aborts on first failure.                         |
-| `--cohort-size N`        | `framework.cohort_size`    | Number of variants per cycle.                                                          |
-| `--ai-agent-tool <name>` | `framework.ai_agent_tool`  | AI agent backend to drive subagents. Choices: `antigravity-sdk`, `claude-sdk`.         |
-| `--outputs-root <path>`  | —                          | Read-write dir for cycles/ledger/logs (default: `outputs/`).                           |
-| `--log-level <level>`    | `framework.log_level`      | Log verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                 |
+| Flag                        | Config key                 | Purpose                                                                                |
+| --------------------------- | -------------------------- | -------------------------------------------------------------------------------------- |
+| `--cycles N`                | `framework.cycles`         | Number of cycles to run sequentially. Aborts on first failure.                         |
+| `--cohort-size N`           | `framework.cohort_size`    | Number of variants per cycle.                                                          |
+| `--ai-agent-tool <name>`    | `framework.ai_agent_tool`  | AI agent backend to drive subagents. Choices: `antigravity-sdk`, `claude-sdk`.         |
+| `--outputs-root <path>`     | —                          | Read-write dir for cycles/ledger/logs (default: `outputs/`).                           |
+| `--log-level <level>`       | `framework.log_level`      | Log verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                 |
+| `--simulator-timeout-s N`   | `simulator.timeout_s`      | Per-variant simulator invocation timeout (seconds). Surfaces as `FitnessError`.        |
 
 Examples:
 
@@ -81,11 +82,15 @@ Defaults for every flag live in [`config.toml`](config.toml) under `[framework]`
 Tests live in `tests/`. Run through the project venv (from `evolve/`):
 
 ```bash
-# Fast suite — stubs the LLM adapter and shells out to a mock cargo
+# Fast suite
 .venv/bin/python -m pytest
-
-# Include end-to-end tests that drive real cargo builds (~2 min slower)
-.venv/bin/python -m pytest --slow
 ```
 
-The `--slow` flag is defined in `tests/conftest.py`; tests marked `@pytest.mark.slow` are skipped by default. A session-scoped fixture puts `tests/_mocks/` first on `PATH` so the fast suite never invokes a real `cargo`.
+Markers (defined in `tests/conftest.py`):
+
+| Marker            | Skipped by default unless     | Use for                                                            |
+|-------------------|-------------------------------|--------------------------------------------------------------------|
+| `slow`            | `--slow` passed               | End-to-end tests that drive a real `cargo` build.                  |
+| `caffeine_needed` | `--caffeine-needed` passed    | Tests requiring ~/projects/caffeine and a JDK. Never run in CI.    |
+
+A session-scoped fixture puts `tests/_mocks/` first on `PATH` so the fast suite never invokes a real `cargo`.

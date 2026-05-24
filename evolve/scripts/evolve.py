@@ -7,7 +7,6 @@ import argparse
 import logging
 import re
 import sys
-import tomllib
 from contextlib import contextmanager
 from pathlib import Path
 from typing import NoReturn
@@ -18,9 +17,10 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src import _log  # noqa: E402
-from src._log import LEVELS as LOG_LEVELS  # noqa: E402
-from src.adapters import REGISTRY, LLMAdapter  # noqa: E402
+from src._log import LOG_LEVELS  # noqa: E402
+from src.adapters import ADAPTER_REGISTRY, LLMAdapter  # noqa: E402
 from src.aggregate.cohort import aggregate_cohort  # noqa: E402
+from src.config import Configs, ConfigError, load_configs  # noqa: E402
 from src.cycle.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
 from src.cycle.ledger_append import append_row  # noqa: E402
 from src.cycle.seal import seal_cycle  # noqa: E402
@@ -73,12 +73,12 @@ def run_cycle(
     *,
     layout: Layout,
     repo_root: Path,
-    cohort_size: int,
     adapter: LLMAdapter,
-    log_level: str = "DEBUG",
+    cfg: Configs,
 ) -> None:
     """Run a single evolve cycle end-to-end."""
 
+    cohort_size = cfg.framework.cohort_size
     try:
         cycle_id = _next_cycle_id(layout.outputs.cycles_dir)
         cycle_layout = layout.outputs.cycle(cycle_id)
@@ -88,7 +88,7 @@ def run_cycle(
             die(f"cycle {cycle_id} already exists at {cycle_dir}")
 
         # Log file lives outside cycle_dir so writes survive the seal step.
-        _log.setup(layout.outputs.cycle_log(cycle_id), level=log_level)
+        _log.setup(layout.outputs.cycle_log(cycle_id), level=cfg.framework.log_level)
         log.info("=== cycle %s allocated at %s ===", cycle_id, cycle_dir)
         log.info("cohort_size=%d adapter=%s", cohort_size, adapter.identity())
 
@@ -119,11 +119,11 @@ def run_cycle(
                 log.info("[%s] gate-check + fitness", variant)
                 if not run_gates(
                     variant,
-                    layout=layout, repo_root=repo_root, rejection_log=layout.outputs.rejection_log,
+                    layout=layout, repo_root=repo_root,
                 ):
                     log.warning("[%s] gate-check failed, skipping fitness", variant)
                     continue
-                compute_fitness(variant, layout=layout, repo_root=repo_root)
+                compute_fitness(variant, layout=layout, repo_root=repo_root, cfg=cfg)
                 survivors.append(variant.resolve(layout))
             if not survivors:
                 die(f"no variants survived gate-check in cycle {cycle_id}")
@@ -174,58 +174,29 @@ def _check_no_leftovers(layout: Layout) -> None:
         leftovers.append(str(layout.outputs.leaderboard_md))
     if layout.outputs.synthesis_md.exists():
         leftovers.append(str(layout.outputs.synthesis_md))
-    if layout.outputs.rejection_log.exists():
-        leftovers.append(str(layout.outputs.rejection_log))
     if leftovers:
         die(f"outputs_root has leftovers from previous runs: {', '.join(leftovers)}")
 
 
-def _load_framework_config(evolve_root: Path) -> dict:
-    cfg_path = evolve_root / "config.toml"
-    if not cfg_path.is_file():
-        log.debug("config.toml not found at %s; using built-in defaults", cfg_path)
-        return {}
-    with open(cfg_path, "rb") as f:
-        return tomllib.load(f).get("framework", {})
-
-
 def _build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="evolve.py", description="Run one or more evolve research cycles.")
+    parser = argparse.ArgumentParser(
+        prog="evolve.py",
+        description="Run one or more evolve research cycles. Flags override config.toml.",
+    )
     parser.add_argument("--cycles", type=int, default=None,
-                        help="Number of cycles to run sequentially (overrides config.toml).")
+                        help="Number of cycles to run sequentially.")
     parser.add_argument("--cohort-size", type=int, default=None,
-                        help="Variants per cycle (overrides config.toml).")
-    parser.add_argument("--ai-agent-tool", choices=sorted(REGISTRY), default=None,
+                        help="Variants per cycle.")
+    parser.add_argument("--ai-agent-tool", choices=sorted(ADAPTER_REGISTRY), default=None,
                         help="AI agent CLI to drive subagents.")
     parser.add_argument("--outputs-root", type=Path, default=None,
                         help="Read-write working dir for cycles/ledger/logs.")
     parser.add_argument("--log-level", choices=LOG_LEVELS, default=None,
                         type=str.upper,
-                        help="Log level for stderr + cycle log file (overrides config.toml).")
+                        help="Log level for stderr + cycle log file.")
+    parser.add_argument("--simulator-timeout-s", type=int, default=None,
+                        help="Per-variant simulator invocation timeout (seconds).")
     return parser
-
-
-def _resolve(flag_value, defaults: dict, *, key: str, flag: str):
-    """Return flag value if set, else config.toml default, else die."""
-    if flag_value is not None:
-        return flag_value
-    if key in defaults:
-        return defaults[key]
-    die(f"{key} not set (pass {flag} or set framework.{key} in config.toml)")
-
-
-def _resolve_positive_int(flag_value: int | None, defaults: dict, *, key: str, flag: str) -> int:
-    value = int(_resolve(flag_value, defaults, key=key, flag=flag))
-    if value < 1:
-        die(f"{flag} must be a positive integer, got: {value}")
-    return value
-
-
-def _resolve_outputs_root(flag_value: Path | None, defaults: dict, *, evolve_root: Path) -> Path:
-    path = Path(_resolve(flag_value, defaults, key="outputs_root", flag="--outputs-root"))
-    if not path.is_absolute():
-        path = evolve_root / path
-    return path.resolve()
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -235,38 +206,34 @@ def main(argv: list[str] | None = None) -> None:
     evolve_root = script_dir.parent.resolve()
     repo_root = evolve_root.parent.resolve()
 
-    defaults = _load_framework_config(evolve_root)
-    n_cycles = _resolve_positive_int(args.cycles, defaults, key="cycles", flag="--cycles")
-    cohort_size = _resolve_positive_int(args.cohort_size, defaults, key="cohort_size", flag="--cohort-size")
+    try:
+        cfg = load_configs(
+            evolve_root,
+            cycles=args.cycles,
+            cohort_size=args.cohort_size,
+            ai_agent_tool=args.ai_agent_tool,
+            outputs_root=args.outputs_root,
+            log_level=args.log_level,
+            simulator_timeout_s=args.simulator_timeout_s,
+        )
+    except ConfigError as exception:
+        die(str(exception))
 
-    adapter_name = _resolve(args.ai_agent_tool, defaults, key="ai_agent_tool", flag="--ai-agent-tool")
-    if adapter_name not in REGISTRY:
-        die(f"--ai-agent-tool must be one of {sorted(REGISTRY)}, got: {adapter_name!r}")
-    adapter = REGISTRY[adapter_name]()
-    outputs_root = _resolve_outputs_root(args.outputs_root, defaults, evolve_root=evolve_root)
-    log_level = str(_resolve(
-        args.log_level, defaults,
-        key="log_level", flag="--log-level",
-    )).upper()
-    if log_level not in LOG_LEVELS:
-        die(f"--log-level must be one of {LOG_LEVELS}, got: {log_level!r}")
-    layout = Layout(evolve_root=evolve_root, outputs_root=outputs_root)
+    adapter = ADAPTER_REGISTRY[cfg.framework.ai_agent_tool]()
+    layout = Layout(evolve_root=evolve_root, outputs_root=cfg.framework.outputs_root)
 
-    _log.setup(None, level=log_level)
+    _log.setup(None, level=cfg.framework.log_level)
     _check_no_leftovers(layout)
     log.debug("evolve_root=%s repo_root=%s", evolve_root, repo_root)
-    log.debug("adapter=%s outputs_root=%s log_level=%s", type(adapter).__name__, outputs_root, log_level)
-    log.info("cycles=%d cohort_size=%d", n_cycles, cohort_size)
+    log.debug(
+        "adapter=%s outputs_root=%s log_level=%s",
+        type(adapter).__name__, cfg.framework.outputs_root, cfg.framework.log_level,
+    )
+    log.info("cycles=%d cohort_size=%d", cfg.framework.cycles, cfg.framework.cohort_size)
 
-    for i in range(1, n_cycles + 1):
-        log.info("--- evolve loop: cycle %d/%d ---", i, n_cycles)
-        run_cycle(
-            layout=layout,
-            repo_root=repo_root,
-            cohort_size=cohort_size,
-            adapter=adapter,
-            log_level=log_level,
-        )
+    for i in range(1, cfg.framework.cycles + 1):
+        log.info("--- evolve loop: cycle %d/%d ---", i, cfg.framework.cycles)
+        run_cycle(layout=layout, repo_root=repo_root, adapter=adapter, cfg=cfg)
 
 
 if __name__ == "__main__":

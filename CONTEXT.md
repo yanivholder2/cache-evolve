@@ -259,8 +259,8 @@ smoke-log review flags a likely bug. Same Variant ID across attempts.
 _Avoid_: Fix loop, retry chain.
 
 **Rejection log**:
-Durable record of Variants that failed a hard gate. Failed Variants are
-evidence the AI can learn from, not silent drops.
+Per-Variant durable record of hard-gate failures.
+Failed Variants are evidence the AI can learn from, not silent drops.
 _Avoid_: Failures, error log.
 
 ### Insights and ledger

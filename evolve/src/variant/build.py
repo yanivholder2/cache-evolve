@@ -89,7 +89,7 @@ def _scaffold_cdylib_workspace(
     shutil.copy(layout.sources.variant_jni_rs, workspace.jni_rs)
 
 
-def _append_rejection(rejection_log: Path, variant: Variant, cargo_output: str) -> None:
+def _append_rejection(rejection_md: Path, variant: Variant, cargo_output: str) -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     entry = (
         f"\n## {ts} — variant={variant}\n\n"
@@ -98,8 +98,8 @@ def _append_rejection(rejection_log: Path, variant: Variant, cargo_output: str) 
         f"```\n{cargo_output}\n```\n"
         f"---\n"
     )
-    rejection_log.parent.mkdir(parents=True, exist_ok=True)
-    append_utf8(rejection_log, entry)
+    rejection_md.parent.mkdir(parents=True, exist_ok=True)
+    append_utf8(rejection_md, entry)
 
 
 def build_variant_for_gates(
@@ -107,16 +107,16 @@ def build_variant_for_gates(
     *,
     layout: Layout,
     repo_root: Path,
-    rejection_log: Path,
 ) -> GatesWorkspace:
     """Compile a variant impl into a temp workspace. Returns the workspace.
 
     Raises:
         subprocess.CalledProcessError: cargo build failed (rejection appended
-            to rejection_log, workspace removed).
+            to the variant's rejection.md, workspace removed).
     """
 
     variant_dir = variant.resolve(layout)
+    rejection_md = variant_dir.rejection_md
     with cargo_workspace_tempdir("dash-variant-", GatesWorkspace) as workspace:
         log.debug("workspace=%s impl=%s repo_root=%s", workspace.root, variant_dir.impl_dir, repo_root)
         _scaffold_gates_workspace(workspace, variant_dir, layout, repo_root)
@@ -129,8 +129,8 @@ def build_variant_for_gates(
         )
         if proc.returncode != 0:
             log.info("G1: FAILED")
-            _append_rejection(rejection_log, variant, proc.stdout + proc.stderr)
-            log.info("rejection logged to %s", rejection_log)
+            _append_rejection(rejection_md, variant, proc.stdout + proc.stderr)
+            log.info("rejection logged to %s", rejection_md)
             raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
         log.info("G1: passed")

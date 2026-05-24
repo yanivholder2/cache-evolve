@@ -13,6 +13,7 @@ import pytest
 
 from evolve import run_cycle
 from src._io import read_utf8, write_utf8
+from src.config import load_configs
 from src.identifiers import CycleId, HypothesisId, VariantId
 from src.paths import CycleLayout, Layout
 
@@ -55,11 +56,12 @@ def _run_cycle(
     logging.getLogger().addHandler(handler)
     try:
         adapter = StubLLMAdapter(hypothesis_lines=hypothesis_lines) if hypothesis_lines else StubLLMAdapter(n_lines=cohort_size)
+        cfg = load_configs(evolve_root, cohort_size=cohort_size)
         run_cycle(
             layout=_layout(evolve_root),
             repo_root=REAL_REPO_ROOT,
-            cohort_size=cohort_size,
             adapter=adapter,
+            cfg=cfg,
         )
         return handler.stream.getvalue()
     finally:
@@ -78,7 +80,7 @@ def shared_cohort_run(tmp_path_factory):
     # sharing the fixture cuts the suite by ~3 full cycle runs.
     evolve_root = _setup_repo(tmp_path_factory.mktemp("shared"))
     log = _run_cycle(evolve_root, cohort_size=3)
-    return CohortRun(cycle_layout=_layout(evolve_root).cycle(CycleId(1)), log=log)
+    return CohortRun(cycle_layout=_layout(evolve_root).outputs.cycle(CycleId(1)), log=log)
 
 
 @pytest.mark.slow
@@ -189,7 +191,7 @@ def test_failing_variant_implementer_aborts_cycle(tmp_path, monkeypatch):
     # Both jobs ran — failures aren't short-circuited.
     assert sorted(invoked) == ["H01.md", "H02.md"]
     # Cycle never completed → no winners.json.
-    assert not _layout(evolve_root).cycle(CycleId(1)).winners_json.exists()
+    assert not _layout(evolve_root).outputs.cycle(CycleId(1)).winners_json.exists()
 
 
 @pytest.mark.slow
@@ -202,7 +204,7 @@ def test_hypothesis_lines_map_to_variants(tmp_path):
     ]
     _run_cycle(evolve_root, cohort_size=3, hypothesis_lines=lines)
 
-    cycle_layout = _layout(evolve_root).cycle(CycleId(1))
+    cycle_layout = _layout(evolve_root).outputs.cycle(CycleId(1))
     files = sorted(
         p.name for p in cycle_layout.hypotheses_dir.iterdir() if re.fullmatch(r"H\d{2}\.md", p.name)
     )

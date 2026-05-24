@@ -16,9 +16,8 @@ the cohort, not peer Variants, not the ledger.
      `segment.rs`. The first non-empty line of the preamble is the
      testable claim.
    - **Parent variant's `segment.rs`** — the Rust source you are modifying.
-   - **Parent variant's `manifest.toml`** — eviction policy + ordinal of
-     the parent variant. Inherit these unless your changes require
-     otherwise.
+   - **Parent variant's `manifest.toml`** — eviction policy name of
+     the parent variant. Inherit unless your changes require otherwise.
    - **Parent variant's `fitness-vector.json`** and **`insight.md`** when
      present — context on what the parent variant achieves, so your
      changes are deliberate refinements rather than blind rewrites.
@@ -38,9 +37,9 @@ the cohort, not peer Variants, not the ledger.
   The G1 build harness compiles this against the live `dash-cache-rs`
   crate; the G2 contract test instantiates `VariantSegment` and exercises
   the trait.
-- `manifest.toml` has a `[variant]` table with `eviction_policy` and
-  `eviction_policy_ordinal` (must be a valid `EvictionPolicy` ordinal;
-  G2 calls `EvictionPolicy::from_usize` to validate).
+- `manifest.toml` has a `[variant]` table with `eviction_policy` (the
+  Rust enum name, e.g. `"ClassicLRU"`; G2 calls `EvictionPolicy::from_name`
+  to validate).
 
 ## Constraints
 
@@ -70,7 +69,7 @@ the cohort, not peer Variants, not the ledger.
 
 - G1 (build): missing `segment.rs`, or compile error.
 - G2 (contract): trait method missing or wrong signature, or manifest
-  ordinal is not a valid `EvictionPolicy`.
+  `eviction_policy` is not a valid `EvictionPolicy` name.
 - G3 (invariants): duplicate keys, lost insert, capacity overflow.
 
 Rejection is logged with the failing gate and compiler output. Do not

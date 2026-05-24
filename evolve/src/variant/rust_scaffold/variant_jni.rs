@@ -3,7 +3,11 @@ use dash::dash::dash_settings::DashSettings;
 use dash::dash::Dash;
 use dash::shared::logging;
 
-use jni::{objects::JClass, sys::jlong, JNIEnv};
+use jni::{
+	objects::{JClass, JString},
+	sys::jlong,
+	JNIEnv,
+};
 use log::{error, info, trace};
 
 type CacheTy = Dash<i64, i64, VariantSegment<i64, i64>>;
@@ -25,7 +29,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 
 #[no_mangle]
 pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_initCache(
-	_env: JNIEnv,
+	env: JNIEnv,
 	_class: JClass,
 	num_of_segments: jlong,
 	num_of_normal_buckets: jlong,
@@ -33,8 +37,18 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	bucket_size: jlong,
 	eviction_policy: jlong,
 	debug_mode: jlong,
+	log_path: JString,
 ) -> jlong {
-	logging::init_file_logger("dash_variant", debug_mode.max(0) as usize);
+	let log_path: String = env
+		.get_string(log_path)
+		.map(Into::into)
+		.unwrap_or_default();
+	let debug = debug_mode.max(0) as usize;
+	if log_path.is_empty() {
+		logging::init_file_logger("dash_variant", debug);
+	} else {
+		logging::init_file_logger_at("dash_variant", debug, &log_path);
+	}
 
 	let Some(settings) = DashSettings::from_jni_args(
 		num_of_segments,
@@ -52,6 +66,8 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 fn create_cache(settings: DashSettings) -> jlong {
+	// Safety net: if a path reaches create_cache without prior init (e.g. initDefaultCache),
+	// fall back to the default rust-logs dir. Once-guarded; no-op if the JNI entry already inited.
 	logging::init_file_logger("dash_variant", settings.debug_mode);
 
 	if !matches!(

@@ -7,6 +7,7 @@ import pytest
 
 from evolve import run_cycle
 from src._io import read_utf8
+from src.config import load_configs
 from src.identifiers import CycleId
 from src.paths import Layout
 
@@ -32,12 +33,13 @@ def _layout(evolve_root: Path) -> Layout:
 
 
 def _run_cycles(evolve_root: Path, n: int) -> None:
+    cfg = load_configs(evolve_root, cohort_size=COHORT)
     for _ in range(n):
         run_cycle(
             layout=_layout(evolve_root),
             repo_root=REAL_REPO_ROOT,
-            cohort_size=COHORT,
             adapter=StubLLMAdapter(n_lines=COHORT),
+            cfg=cfg,
         )
 
 

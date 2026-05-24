@@ -4,7 +4,7 @@
 // Runs the Invariant suite against the Variant's `VariantSegment` via
 // `dash::test_utils::run_invariant_suite`. A failure panics with a message
 // prefixed by the invariant name (e.g. "P3 slot_legality"), which the G3 gate
-// parses into rejection-log.md.
+// parses into the variant's rejection.md.
 use dash::dash::dash_settings::DashSettings;
 use dash::shared::eviction_policy::EvictionPolicy;
 use dash::test_utils::run_invariant_suite;

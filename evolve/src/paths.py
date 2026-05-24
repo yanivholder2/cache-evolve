@@ -74,6 +74,10 @@ class VariantDir:
     def insight_md(self) -> Path:
         return self.root / "insight.md"
 
+    @property
+    def rejection_md(self) -> Path:
+        return self.root / "rejection.md"
+
 
 @dataclass(frozen=True)
 class CargoWorkspaceDir:
@@ -242,24 +246,20 @@ class SourcesLayout:
         return self.root / "bench"
 
     @property
-    def harness_dir(self) -> Path:
-        return self.root / "harness"
+    def rust_scaffold_dir(self) -> Path:
+        return self.root / "src" / "variant" / "rust_scaffold"
 
     @property
     def g2_contract_rs(self) -> Path:
-        return self.harness_dir / "g2_contract.rs"
+        return self.rust_scaffold_dir / "g2_contract.rs"
 
     @property
     def g3_invariant_rs(self) -> Path:
-        return self.harness_dir / "g3_invariant.rs"
-
-    @property
-    def caffeine_jni_dir(self) -> Path:
-        return self.root / "caffeine_jni"
+        return self.rust_scaffold_dir / "g3_invariant.rs"
 
     @property
     def variant_jni_rs(self) -> Path:
-        return self.caffeine_jni_dir / "variant_jni.rs"
+        return self.rust_scaffold_dir / "variant_jni.rs"
 
     @property
     def dash_src(self) -> Path:
@@ -287,10 +287,6 @@ class OutputsLayout:
     @property
     def synthesis_md(self) -> Path:
         return self.root / "synthesis" / "current.md"
-
-    @property
-    def rejection_log(self) -> Path:
-        return self.root / "rejection-log.md"
 
     @property
     def target_dir(self) -> Path:

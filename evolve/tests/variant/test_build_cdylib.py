@@ -35,7 +35,8 @@ EXPECTED_METHODS = (
 def _stage_baseline(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "out")
     layout.evolve_root.mkdir(parents=True, exist_ok=True)
-    layout.sources.caffeine_jni_dir.symlink_to(EVOLVE_ROOT / "caffeine_jni")
+    layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
+    layout.sources.rust_scaffold_dir.symlink_to(EVOLVE_ROOT / "src" / "variant" / "rust_scaffold")
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
     shutil.copytree(EVOLVE_ROOT / "subject" / "baseline" / "impl", variant_dir.impl_dir)
     return layout, VARIANT
@@ -80,7 +81,6 @@ def test_build_cdylib_broken_variant_raises_and_produces_no_artifact(tmp_path, m
 
     workspaces_root = tmp_path / "cdylib-workspaces"
     workspaces_root.mkdir()
-    rejection_log = tmp_path / "rejection-log.md"
     monkeypatch.setattr(
         "src.paths.mkdtemp",
         lambda prefix="tmp": tempfile.mkdtemp(prefix=prefix, dir=workspaces_root),
@@ -90,5 +90,6 @@ def test_build_cdylib_broken_variant_raises_and_produces_no_artifact(tmp_path, m
         build_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
 
     assert list(workspaces_root.iterdir()) == []
-    # cdylib failure must NOT touch the rejection log (asymmetric vs gates).
-    assert not rejection_log.exists() or rejection_log.read_text() == ""
+    # cdylib failure must NOT write a variant rejection.md (asymmetric vs gates).
+    rejection_md = variant.resolve(layout).rejection_md
+    assert not rejection_md.exists() or rejection_md.read_text() == ""

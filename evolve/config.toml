@@ -19,3 +19,8 @@ outputs_root = "outputs"
 # Log level for stderr + per-cycle log file (--log-level). One of:
 # DEBUG, INFO, WARNING, ERROR, CRITICAL.
 log_level = "DEBUG"
+
+[simulator]
+# Per-variant simulator invocation timeout (seconds). Surfaces as
+# FitnessError when exceeded — does not crash the cycle.
+timeout_s = 600

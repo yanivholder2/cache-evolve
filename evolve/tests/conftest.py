@@ -32,6 +32,11 @@ def _register_module(name: str, file: Path, *, is_package: bool = False) -> None
 _register_module("src", EVOLVE_DIR / "src" / "__init__.py", is_package=True)
 _register_module("evolve", SCRIPTS_DIR / "evolve.py")
 
+# Top-level `scripts/` package at repo root (e.g. `from scripts import caffeine_runner`).
+REPO_ROOT = EVOLVE_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 if str(TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(TESTS_DIR))
 
@@ -43,21 +48,36 @@ def pytest_addoption(parser):
         default=False,
         help="run tests marked `slow` (real cargo builds; adds ~2min)",
     )
+    parser.addoption(
+        "--caffeine-needed",
+        action="store_true",
+        default=False,
+        help="run tests marked `caffeine_needed` (require ~/projects/caffeine)",
+    )
 
 
 def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: end-to-end test that drives a real cargo build"
     )
+    config.addinivalue_line(
+        "markers",
+        "caffeine_needed: end-to-end test that requires ~/projects/caffeine "
+        "and a working JDK; invoke explicitly with --caffeine-needed, never in CI",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--slow"):
-        return
-    skip_slow = pytest.mark.skip(reason="needs --slow to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
+    if not config.getoption("--slow"):
+        skip_slow = pytest.mark.skip(reason="needs --slow to run")
+        for item in items:
+            if "slow" in item.keywords:
+                item.add_marker(skip_slow)
+    if not config.getoption("--caffeine-needed"):
+        skip_caffeine = pytest.mark.skip(reason="needs --caffeine-needed to run")
+        for item in items:
+            if "caffeine_needed" in item.keywords:
+                item.add_marker(skip_caffeine)
 
 
 @pytest.fixture(autouse=True, scope="session")

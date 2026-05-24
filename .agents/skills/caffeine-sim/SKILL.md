@@ -3,28 +3,33 @@ name: caffeine-sim
 description: Build dash.dll and run the Caffeine cache simulator. Use when the user wants to run caffeine, test with caffeine, build and run the simulator, test logs, verify JNI integration, or do a single simulation run. Triggers on "run caffeine", "test with caffeine", "caffeine run", "test the logs", "build and run", "run the simulator", "simulate".
 ---
 
-Build the Rust JNI library and run the Caffeine cache simulator.
+Single-trace × single-size Caffeine run. Wraps `scripts/caffeine_runner.py run`.
+
+Read `docs/caffeine-simulator.md` for the full invocation reference (JVM args, config keys per target, output files).
 
 ## Steps
 
-1. **Resolve the library path** — the DLL must come from the current repo root (which may be a worktree):
+1. **Resolve the cdylib dir** — must come from the current repo root (worktrees included):
    ```bash
    REPO_ROOT=$(git rev-parse --show-toplevel)
+   LIB_DIR="$REPO_ROOT/target/release"
    ```
-   Use `$REPO_ROOT/target/release` as the `java.library.path`.
 
-2. **Build**: Run `cargo build --release`. Run this as a background subagent.
+2. **Build** (background subagent): `cargo build --release`. Stop on failure.
 
-3. Wait for the build to complete. If it fails, report the error and stop.
-
-4. **Run the simulator** (10-minute timeout):
+3. **Run a single (trace, size)** via the shared runner:
    ```bash
-   REPO_ROOT=$(git rev-parse --show-toplevel)
-   CAFFEINE_DIR=~/projects/caffeine
-   "$CAFFEINE_DIR/gradlew" -p "$CAFFEINE_DIR" simulator:run -PjvmArgs="-XX:+UseParallelGC,-Xmx8g,-Djava.library.path=$REPO_ROOT/target/release" -q
+   python "$REPO_ROOT/scripts/caffeine_runner.py" run \
+       --target dash \
+       --library-path "$LIB_DIR" \
+       --trace lirs:multi1.trace.gz \
+       --size 16384 \
+       --policies classiclru
    ```
+   Override `--target dashvariant` (uses `libdash_variant.so`) when testing the variant cdylib. Override `--normal-buckets`, `--stash-buckets`, `--bucket-size` to set geometry (must satisfy `segments × (normal + stash) × bucket_size == size`).
 
 ## Gotchas
 
-- In a git worktree, `target/release/` is inside the worktree root, not the main repo. Always use `git rev-parse --show-toplevel` to get the correct path.
-- Log files are written to `rust-logs/` relative to the JVM working directory (typically `caffeine/simulator/rust-logs/`).
+- In a git worktree, `target/release/` is inside the worktree root. Always use `git rev-parse --show-toplevel`.
+- The `dashvariant` cdylib currently only accepts `classiclru` end-to-end (issue #102).
+- JNI logs land in `rust-logs/` under the JVM cwd (typically `~/projects/caffeine/simulator/rust-logs/`).

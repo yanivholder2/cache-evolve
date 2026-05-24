@@ -11,6 +11,7 @@ import pytest
 
 from evolve import run_cycle
 from src._io import read_utf8, write_utf8
+from src.config import load_configs
 from src.hypothesis.writer import write_hypotheses
 from src.identifiers import CycleId, HypothesisId
 from src.paths import Layout
@@ -177,11 +178,12 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
         "Stash-bias eviction lifts hot-set hit rate on Zipfian traces.",
         "Lazy promotion cuts per-op time on read-heavy workloads.",
     ]
+    cfg = load_configs(evolve_root, cohort_size=2)
     run_cycle(
         layout=_layout(evolve_root),
         repo_root=REPO_ROOT,
-        cohort_size=2,
         adapter=StubLLMAdapter(hypothesis_lines=lines),
+        cfg=cfg,
     )
 
     cycle_layout = _layout(evolve_root).outputs.cycle(CycleId(1))
