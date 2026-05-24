@@ -52,8 +52,8 @@ def _write_task_md(
         f"- Parent manifest.toml:  {parent_dir.manifest_toml}\n"
         f"- Parent fitness-vector: {parent_dir.fitness_vector_json}\n"
         f"- Parent insight.md:     {parent_dir.insight_md}\n"
-        f"- Extension points:      {layout.extension_points_md}\n"
-        f"- Baseline segment.rs:   {layout.baseline.segment_rs}\n\n"
+        f"- Extension points:      {layout.sources.extension_points_md}\n"
+        f"- Baseline segment.rs:   {layout.sources.baseline.segment_rs}\n\n"
         f"## Write\n\n"
         f"Exactly two files under the output dir: `segment.rs` and `manifest.toml`.\n"
     )
@@ -83,7 +83,7 @@ def implement_variant(
     adapter.run(
         agent_name=AGENT_NAME,
         workspace=impl_dir,
-        readable_roots=[hypothesis_file, parent_dir.root, layout.dash_src, layout.subject_dir],
+        readable_roots=[hypothesis_file, parent_dir.root, layout.sources.dash_src, layout.sources.subject_dir],
         allow_edits=True,
     )
 

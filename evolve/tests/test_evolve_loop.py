@@ -7,6 +7,7 @@ import pytest
 
 from evolve import run_cycle
 from src._io import read_utf8
+from src.config import load_configs
 from src.identifiers import CycleId
 from src.paths import Layout
 
@@ -32,12 +33,13 @@ def _layout(evolve_root: Path) -> Layout:
 
 
 def _run_cycles(evolve_root: Path, n: int) -> None:
+    cfg = load_configs(evolve_root, cohort_size=COHORT)
     for _ in range(n):
         run_cycle(
             layout=_layout(evolve_root),
             repo_root=REAL_REPO_ROOT,
-            cohort_size=COHORT,
             adapter=StubLLMAdapter(n_lines=COHORT),
+            cfg=cfg,
         )
 
 
@@ -48,11 +50,11 @@ def test_two_cycles_both_sealed(tmp_path):
 
     layout = _layout(evolve_root)
     for n in ("0001", "0002"):
-        cycle_layout = layout.cycle(n)
+        cycle_layout = layout.outputs.cycle(n)
         assert cycle_layout.root.is_dir(), f"missing cycle {n}"
         assert cycle_layout.sealed_marker.is_file(), f"cycle {n} not sealed"
 
-    rows = read_utf8(layout.ledger).splitlines()
+    rows = read_utf8(layout.outputs.ledger).splitlines()
     assert len(rows) == 2
 
 
@@ -60,7 +62,7 @@ def test_two_cycles_both_sealed(tmp_path):
 def test_single_cycle_default(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run_cycles(evolve_root, 1)
-    cycles_root = _layout(evolve_root).cycles_dir
+    cycles_root = _layout(evolve_root).outputs.cycles_dir
     cycles = sorted(p.name for p in cycles_root.iterdir() if p.is_dir())
     assert cycles == ["0001"]
 
@@ -75,4 +77,4 @@ def test_loop_aborts_on_cycle_failure(tmp_path, monkeypatch):
     with pytest.raises(SystemExit):
         _run_cycles(evolve_root, 2)
 
-    assert not _layout(evolve_root).cycle(CycleId(2)).root.exists()
+    assert not _layout(evolve_root).outputs.cycle(CycleId(2)).root.exists()

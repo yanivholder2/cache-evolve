@@ -8,8 +8,11 @@ import logging
 from pathlib import Path
 
 from src._io import read_utf8, write_utf8
+from src.config import Configs
 from src.fitness._contract import ContractError, validate_plugin_dict
+from src.fitness.caffeine_simulator import CaffeineSimulatorError, simulate_variant
 from src.fitness.plugins import hit_rate, metadata_size, per_op_time
+from src.fitness.plugins._common import PluginError
 from src.paths import Layout, Variant
 
 log = logging.getLogger(__name__)
@@ -24,23 +27,34 @@ def compute_fitness(
     *,
     layout: Layout,
     repo_root: Path,
+    cfg: Configs,
 ) -> None:
     """Run every fitness plugin for one variant, write per-plugin JSONs,
     and write the aggregated fitness vector."""
 
     variant_dir = variant.resolve(layout)
-    target_dir = layout.target_dir
+    target_dir = layout.outputs.target_dir
     fitness_dir = variant_dir.fitness_dir
     fitness_dir.mkdir(parents=True, exist_ok=True)
 
+    log.debug("[%s] caffeine simulate (build cdylib + run)", variant)
+    try:
+        caffeine_results = simulate_variant(variant, layout=layout, repo_root=repo_root, cfg=cfg)
+    except CaffeineSimulatorError as exception:
+        log.error("[%s] caffeine simulator failed: %s", variant, exception)
+        raise FitnessError(f"caffeine simulator failed for {variant}: {exception}") from exception
+
     plugins = {
-        "hit-rate": lambda: hit_rate.compute(repo_root=repo_root, target_dir=target_dir),
+        "hit-rate": lambda: hit_rate.compute(results=caffeine_results),
         "per-op-time": lambda: per_op_time.compute(evolve_root=layout.evolve_root, target_dir=target_dir),
         "metadata-size": lambda: metadata_size.compute(repo_root=repo_root, target_dir=target_dir),
     }
     for name, fn in plugins.items():
         log.debug("[%s] plugin %s", variant, name)
-        record = fn()
+        try:
+            record = fn()
+        except PluginError as exception:
+            raise FitnessError(f"plugin {name} failed for {variant}: {exception}") from exception
         write_utf8(fitness_dir / f"{name}.json", json.dumps(record, indent=2) + "\n")
 
     log.debug("[%s] aggregate fitness-vector", variant)

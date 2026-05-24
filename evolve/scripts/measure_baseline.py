@@ -12,6 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.config import load_configs  # noqa: E402
 from src.fitness.runner import compute_fitness  # noqa: E402
 from src.variant.gate_check import run_gates  # noqa: E402
 from src.paths import Baseline, Layout  # noqa: E402
@@ -24,8 +25,9 @@ def main() -> None:
     evolve_root = script_dir.parent.resolve()
     repo_root = evolve_root.parent.resolve()
 
+    cfg = load_configs(evolve_root)
     layout = Layout(evolve_root=evolve_root, outputs_root=evolve_root / "outputs")
-    baseline = layout.baseline
+    baseline = layout.sources.baseline
 
     if not baseline.segment_rs.is_file():
         raise FileNotFoundError(f"{baseline.segment_rs} not found - seed the baseline before measuring")
@@ -36,9 +38,9 @@ def main() -> None:
     variant = Baseline()
 
     logging.info("measuring baseline at %s", baseline.root)
-    if not run_gates(variant, layout=layout, repo_root=repo_root, rejection_log=layout.rejection_log):
+    if not run_gates(variant, layout=layout, repo_root=repo_root):
         raise RuntimeError("baseline failed gate-check")
-    compute_fitness(variant, layout=layout, repo_root=repo_root)
+    compute_fitness(variant, layout=layout, repo_root=repo_root, cfg=cfg)
     logging.info("baseline fitness measured - %s", baseline.fitness_vector_json)
 
 

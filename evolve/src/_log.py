@@ -13,7 +13,7 @@ from pathlib import Path
 FORMAT = "%(asctime)s %(levelname)s [%(name)s : %(funcName)s] %(message)s"
 DATEFMT = "%H:%M:%S"
 
-LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 
 
 def setup(log_file: Path | None, level: str = "DEBUG") -> None:

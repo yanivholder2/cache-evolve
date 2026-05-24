@@ -12,9 +12,19 @@ from pathlib import Path
 import pytest
 
 from src._io import read_utf8, write_utf8
+from src.config import Configs, FrameworkConfig, SimulatorConfig
 from src.fitness.runner import FitnessError, _aggregate, compute_fitness
 from src.identifiers import CycleId, VariantId
 from src.paths import CycleVariant, Layout
+
+
+_TEST_CFG = Configs(
+    framework=FrameworkConfig(
+        cycles=1, cohort_size=1, ai_agent_tool="claude-sdk",
+        outputs_root=Path("/tmp"), log_level="DEBUG",
+    ),
+    simulator=SimulatorConfig(timeout_s=600),
+)
 
 
 def _stage(tmp_path: Path) -> tuple[Layout, CycleVariant]:
@@ -25,7 +35,7 @@ def _stage(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     evolve_root.mkdir()
     layout = Layout(evolve_root=evolve_root, outputs_root=tmp_path / "out")
     variant = CycleVariant(CycleId(1), VariantId(1))
-    layout.cycle(variant.cycle_id).variant(variant.variant_id).impl_dir.mkdir(parents=True)
+    layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id).impl_dir.mkdir(parents=True)
     return layout, variant
 
 
@@ -35,6 +45,11 @@ def _stub_plugins(monkeypatch) -> None:
             return {"dim": dim, "values": [], "summary": 0.0, "higher_is_better": higher_is_better}
         return _compute
 
+    from src.fitness.caffeine_simulator import CaffeineResults
+    monkeypatch.setattr(
+        "src.fitness.runner.simulate_variant",
+        lambda *_a, **_kw: CaffeineResults(results=[]),
+    )
     monkeypatch.setattr("src.fitness.runner.hit_rate.compute", stub("hit-rate", True))
     monkeypatch.setattr("src.fitness.runner.per_op_time.compute", stub("per-op-time", False))
     monkeypatch.setattr("src.fitness.runner.metadata_size.compute", stub("metadata-size", False))
@@ -44,7 +59,7 @@ def test_writes_per_plugin_json_and_fitness_vector(tmp_path, monkeypatch):
     layout, variant = _stage(tmp_path)
     _stub_plugins(monkeypatch)
 
-    compute_fitness(variant, layout=layout, repo_root=tmp_path)
+    compute_fitness(variant, layout=layout, repo_root=tmp_path, cfg=_TEST_CFG)
 
     variant_dir = variant.resolve(layout)
     assert (variant_dir.fitness_dir / "hit-rate.json").is_file()

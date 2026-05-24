@@ -36,22 +36,28 @@ fn g2_core_accessible() {
 }
 
 #[test]
-fn g2_valid_eviction_policy_ordinal() {
-    if let Ok(manifest) = std::fs::read_to_string("manifest.toml") {
-        for line in manifest.lines() {
-            if line.trim().starts_with("eviction_policy_ordinal") {
-                let parts: Vec<&str> = line.split('=').collect();
-                if parts.len() == 2 {
-                    let ordinal_str = parts[1].trim();
-                    if let Ok(ordinal) = ordinal_str.parse::<usize>() {
-                        assert!(
-                            EvictionPolicy::from_usize(ordinal).is_some(),
-                            "eviction_policy_ordinal={} is not a valid EvictionPolicy index",
-                            ordinal
-                        );
-                    }
-                }
+fn g2_valid_eviction_policy_name() {
+    let manifest = std::fs::read_to_string("manifest.toml")
+        .expect("manifest.toml must be readable from the workspace root");
+    let mut found = false;
+    for line in manifest.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("eviction_policy") {
+            let parts: Vec<&str> = line.splitn(2, '=').collect();
+            if parts.len() == 2 {
+                let raw = parts[1].trim();
+                let name = raw.trim_matches(|c: char| c == '"' || c == '\'');
+                assert!(
+                    EvictionPolicy::from_name(name).is_some(),
+                    "eviction_policy={:?} is not a valid EvictionPolicy name",
+                    name
+                );
+                found = true;
             }
         }
     }
+    assert!(
+        found,
+        "manifest.toml has no eviction_policy = ... line"
+    );
 }

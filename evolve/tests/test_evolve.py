@@ -8,6 +8,7 @@ import pytest
 
 from evolve import _next_cycle_id, run_cycle
 from src._io import read_utf8, write_utf8
+from src.config import load_configs
 from src.identifiers import CycleId, VariantId
 from src.paths import Layout
 
@@ -33,11 +34,12 @@ def _layout(evolve_root: Path) -> Layout:
 
 
 def _run(evolve_root: Path, *, cohort_size: int = 2, adapter=None) -> None:
+    cfg = load_configs(evolve_root, cohort_size=cohort_size)
     run_cycle(
         layout=_layout(evolve_root),
         repo_root=REAL_REPO_ROOT,
-        cohort_size=cohort_size,
         adapter=adapter or StubLLMAdapter(n_lines=cohort_size),
+        cfg=cfg,
     )
 
 
@@ -46,7 +48,7 @@ def test_evolve_produces_sealed_cycle(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run(evolve_root)
 
-    cycle_layout = _layout(evolve_root).cycle(CycleId(1))
+    cycle_layout = _layout(evolve_root).outputs.cycle(CycleId(1))
     assert cycle_layout.root.is_dir()
     assert cycle_layout.cycle_insight_md.is_file()
     assert cycle_layout.winners_json.is_file()
@@ -65,7 +67,7 @@ def test_evolve_appends_exactly_one_ledger_row(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run(evolve_root)
 
-    ledger = _layout(evolve_root).ledger
+    ledger = _layout(evolve_root).outputs.ledger
     assert ledger.is_file()
     lines = read_utf8(ledger).splitlines()
     assert len(lines) == 1
@@ -97,7 +99,7 @@ def test_ledger_row_has_relative_paths(tmp_path):
     evolve_root = _setup_repo(tmp_path)
     _run(evolve_root)
 
-    ledger = _layout(evolve_root).ledger
+    ledger = _layout(evolve_root).outputs.ledger
     row = json.loads(read_utf8(ledger).splitlines()[0])
 
     for key, value in row.items():

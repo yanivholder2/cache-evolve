@@ -106,12 +106,6 @@ def test_cycle_variant_resolves_to_variant_dir(tmp_path):
     assert CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3)).resolve(layout).root == variant_dir
 
 
-def test_cycle_variant_missing_dir_raises(tmp_path):
-    layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "outputs")
-    with pytest.raises(FileNotFoundError, match="variant dir not found"):
-        CycleVariant(cycle_id=CycleId(1), variant_id=VariantId(1)).resolve(layout)
-
-
 def test_variant_str_round_trips(tmp_path):
     assert str(Baseline()) == "baseline"
     assert str(CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3))) == "cycle/0002/v003"

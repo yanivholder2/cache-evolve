@@ -3,72 +3,56 @@ name: caffeine-sweep
 description: Run batch Caffeine simulations across multiple traces and cache sizes. Use when the user wants to sweep, run multiple traces, compare policies, benchmark, or generate hit-rate reports. Triggers on "sweep", "batch run", "run all traces", "compare policies", "hit rate comparison", "benchmark".
 ---
 
-Run batch Caffeine cache simulations sweeping across traces and cache sizes.
+Multi-trace × multi-size Caffeine sweep. Loops `scripts/caffeine_runner.py simulate` once per trace and aggregates outputs.
 
-## How it works
+Read `docs/caffeine-simulator.md` for the per-invocation reference (JVM args, output files) and the sweep root layout (`## Sweep root layout`).
 
-`sweep.py` iterates over traces, running the Caffeine simulator for each trace with all cache sizes in one invocation. For each trace it:
-1. Builds `dash.dll` via `cargo build --release` (skippable with `--skip-build`)
-2. Calls `gradlew simulator:simulate` with the trace, sizes, dash config, and eviction policies passed as system properties
-3. Copies Caffeine's generated `hit_rate.csv` and `hit_rate.png` from the reports dir into a per-trace subdirectory before the next run overwrites them
-4. After all traces complete, aggregates per-trace CSVs into a single `summary.csv`
-
-## Output files
-
-All output goes to `<output-dir>/<timestamp>/` (default: `caffeine/simulator/build/reports/sweep/<timestamp>/`).
-
-```
-<timestamp>/
-├── summary.csv                    # All traces combined (Trace, Policy, size1, size2, ...)
-├── multi1_lirs/
-│   ├── hit_rate.csv               # Combined hit rates for this trace
-│   ├── hit_rate.png               # Chart
-│   ├── hit_rate_512.csv           # Per-size breakdown
-│   ├── hit_rate_1024.csv
-│   └── ...
-└── multi2_lirs/
-    ├── hit_rate.csv
-    ├── hit_rate.png
-    └── ...
-```
+**Scope: one target per sweep.** Defaults to `--target dash`. To compare `dash` vs `dashvariant`, run the sweep twice with different `OUT_ROOT`s — there is no `--targets` loop.
 
 ## Steps
 
-1. **Resolve traces**: Interpret $ARGUMENTS to select traces from the bundled list below. The user may specify traces by name, format, or description (e.g., "all lirs", "multi1 and sprite", "address traces"). If no traces mentioned, use defaults.
-2. Build the `--traces` flag using resolved traces in `format:name.trace.gz` syntax (comma-separated).
-3. Run `cargo build --release` (unless `--skip-build` in $ARGUMENTS).
-4. Run `python scripts/sweep.py --traces <resolved_traces> <other_flags>`
-   Pass through any other flags from $ARGUMENTS (--sizes, --policies, --normal-buckets, --stash-buckets, --bucket-size, --debug, --skip-build, --dry-run, --output-dir).
-5. Read and display the summary CSV.
+1. **Resolve traces**: Interpret $ARGUMENTS to select traces from the bundled list below. Defaults below if none mentioned.
+2. **Resolve cdylib dir**:
+   ```bash
+   REPO_ROOT=$(git rev-parse --show-toplevel)
+   LIB_DIR="$REPO_ROOT/target/release"
+   ```
+3. **Build** (unless `--skip-build` in $ARGUMENTS): `cargo build --release`.
+4. **Choose an output root**:
+   ```bash
+   OUT_ROOT="${OUTPUT_DIR:-$HOME/projects/caffeine/simulator/build/reports/sweep}/$(date +%Y-%m-%d_%H-%M-%S)"
+   mkdir -p "$OUT_ROOT"
+   ```
+5. **Loop traces**, invoking the runner once per trace with all sizes:
+   ```bash
+   for trace in "${TRACES[@]}"; do
+       name="$(basename "${trace#*:}" .trace.gz)_${trace%%:*}"
+       trace_dir="$OUT_ROOT/$name"
+       python "$REPO_ROOT/scripts/caffeine_runner.py" simulate \
+           --target dash \
+           --library-path "$LIB_DIR" \
+           --trace "$trace" \
+           --sizes "$SIZES" \
+           --policies "$POLICIES" \
+           --output-dir "$trace_dir"
+   done
+   ```
+   `--output-dir` keeps Caffeine from overwriting between traces (per `docs/caffeine-simulator.md`).
+6. **Aggregate** the per-trace `hit_rate.csv` files into `$OUT_ROOT/summary.csv` (prepend a `Trace` column). Show the full summary at the end.
 
-## Default behavior (no args)
+## Defaults
 
-Traces: lirs:multi1, lirs:multi2. Sizes: 512..65536 (9 values). Policies: classiclru, lfu, fifo.
+- Traces: `lirs:multi1.trace.gz`, `lirs:multi2.trace.gz`.
+- Sizes: `512,1024,1536,2048,4096,8192,16384,32768,65536`.
+- Policies: `classiclru,lfu,fifo`.
 
 ## Bundled traces
 
-| Format | Traces |
-|--------|--------|
-| lirs | 2_pools, backf, cpp, cs, gli, loop, multi1, multi2, multi3, ps, scan, sprite, zigzag |
-| address | gcc, gzip, mcf, swim, twolf |
-| cache2k | orm-busy, orm-night, web07, web12 |
-| scarab | prods, recs, scarab-recs |
+| Format  | Traces                                                                 |
+|---------|------------------------------------------------------------------------|
+| lirs    | 2_pools, backf, cpp, cs, gli, loop, multi1, multi2, multi3, ps, scan, sprite, zigzag |
+| address | gcc, gzip, mcf, swim, twolf                                            |
+| cache2k | orm-busy, orm-night, web07, web12                                      |
+| scarab  | prods, recs, scarab-recs                                               |
 
-Trace format for `--traces`: `<format>:<name>.trace.gz` (e.g., `lirs:multi1.trace.gz`)
-
-## Script args (passed through to sweep.py)
-
-| Arg | Example | Default |
-|-----|---------|---------|
-| `--traces` | `lirs:multi1.trace.gz,lirs:sprite.trace.gz` | multi1, multi2 |
-| `--sizes` | `512,1024,4096` | 512..65536 (9 sizes) |
-| `--policies` | `classiclru,lfu` | classiclru,lfu,fifo |
-| `--normal-buckets` | `28` | 28 |
-| `--stash-buckets` | `4` | 4 |
-| `--bucket-size` | `12` | 12 |
-| `--debug` | (flag) | off |
-| `--skip-build` | (flag) | off |
-| `--dry-run` | (flag) | off |
-| `--output-dir` | `path/to/dir` | caffeine/.../reports/sweep |
-
-IMPORTANT: Always show the full summary CSV contents when the sweep completes.
+Trace selector format: `<format>:<name>.trace.gz` (e.g. `lirs:multi1.trace.gz`).

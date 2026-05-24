@@ -39,4 +39,4 @@ jobs:
 
       - name: Python tests
         working-directory: evolve
-        run: pytest --slow
+        run: pytest --slow -m "not caffeine_needed"

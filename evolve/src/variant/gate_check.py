@@ -12,7 +12,7 @@ from pathlib import Path
 
 from src._io import append_utf8
 from src.variant.build import build_variant_for_gates
-from src.paths import CargoWorkspaceDir, Layout, Variant
+from src.paths import GatesWorkspace, Layout, Variant
 
 log = logging.getLogger("gate-check")
 
@@ -37,12 +37,12 @@ class GatesResult:
         return self.all_passed
 
 
-def _append_entry(rejection_log: Path, body: str) -> None:
-    rejection_log.parent.mkdir(parents=True, exist_ok=True)
-    append_utf8(rejection_log, body)
+def _append_entry(rejection_md: Path, body: str) -> None:
+    rejection_md.parent.mkdir(parents=True, exist_ok=True)
+    append_utf8(rejection_md, body)
 
 
-def _run_cargo_test(workspace: CargoWorkspaceDir, test_name: str) -> subprocess.CompletedProcess:
+def _run_cargo_test(workspace: GatesWorkspace, test_name: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["cargo", "test", "--manifest-path", str(workspace.cargo_toml), "--test", test_name],
         capture_output=True,
@@ -50,7 +50,7 @@ def _run_cargo_test(workspace: CargoWorkspaceDir, test_name: str) -> subprocess.
     )
 
 
-def _check_g2(workspace: CargoWorkspaceDir, variant: Variant, rejection_log: Path) -> bool:
+def _check_g2(workspace: GatesWorkspace, variant: Variant, rejection_md: Path) -> bool:
     proc = _run_cargo_test(workspace, "g2_contract")
     if proc.returncode == 0:
         log.info("G2: passed")
@@ -58,21 +58,21 @@ def _check_g2(workspace: CargoWorkspaceDir, variant: Variant, rejection_log: Pat
     log.info("G2: FAILED")
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _append_entry(
-        rejection_log,
+        rejection_md,
         f"\n## {ts} — variant={variant}\n\n"
         f"**Gate**: G2 (trait contract)\n"
         f"**Error**:\n"
         f"```\n{proc.stdout + proc.stderr}\n```\n"
         f"---\n",
     )
-    log.info("rejection logged to %s", rejection_log)
+    log.info("rejection logged to %s", rejection_md)
     return False
 
 
 def _check_g3(
-    workspace: CargoWorkspaceDir,
+    workspace: GatesWorkspace,
     variant: Variant,
-    rejection_log: Path,
+    rejection_md: Path,
     fingerprint: str,
 ) -> bool:
     proc = _run_cargo_test(workspace, "g3_invariant")
@@ -93,7 +93,7 @@ def _check_g3(
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _append_entry(
-        rejection_log,
+        rejection_md,
         f"\n## {ts} — variant={variant}\n\n"
         f"**Fingerprint**: {fingerprint}\n"
         f"**Gate**: {gate_label}\n"
@@ -102,7 +102,7 @@ def _check_g3(
         f"```\n{output}\n```\n"
         f"---\n",
     )
-    log.info("rejection logged to %s", rejection_log)
+    log.info("rejection logged to %s", rejection_md)
     return False
 
 
@@ -111,17 +111,19 @@ def run_gates(
     *,
     layout: Layout,
     repo_root: Path,
-    rejection_log: Path,
     fingerprint: str = "pending",
 ) -> GatesResult:
-    """Run G1+G2+G3 against the variant's impl/. Result is truthy iff all pass."""
+    """Run G1+G2+G3 against the variant's impl/. Result is truthy iff all pass.
 
+    A failing gate writes its entry to `<variant_dir>/rejection.md`.
+    """
+
+    rejection_md = variant.resolve(layout).rejection_md
     try:
         workspace = build_variant_for_gates(
             variant,
             layout=layout,
             repo_root=repo_root,
-            rejection_log=rejection_log,
         )
     except FileNotFoundError as e:
         log.error("%s", e)
@@ -130,10 +132,10 @@ def run_gates(
         return GatesResult(g1_passed=False)
 
     try:
-        g2_passed = _check_g2(workspace, variant, rejection_log)
+        g2_passed = _check_g2(workspace, variant, rejection_md)
         if not g2_passed:
             return GatesResult(g1_passed=True, g2_passed=False)
-        g3_passed = _check_g3(workspace, variant, rejection_log, fingerprint)
+        g3_passed = _check_g3(workspace, variant, rejection_md, fingerprint)
     finally:
         shutil.rmtree(
             workspace.root,

@@ -31,6 +31,18 @@ impl EvictionPolicy {
 			_ => None,
 		}
 	}
+
+	pub fn from_name(name: &str) -> Option<Self> {
+		match name {
+			"ClassicLRU" => Some(EvictionPolicy::ClassicLRU),
+			"TimestampLRU" => Some(EvictionPolicy::TimestampLRU),
+			"Lifo" => Some(EvictionPolicy::Lifo),
+			"Lfu" => Some(EvictionPolicy::Lfu),
+			"Fifo" => Some(EvictionPolicy::Fifo),
+			"Swap" => Some(EvictionPolicy::Swap),
+			_ => None,
+		}
+	}
 }
 
 #[cfg(test)]
@@ -58,5 +70,22 @@ mod tests {
 		assert!(EvictionPolicy::from_usize(6).is_none());
 		assert!(EvictionPolicy::from_usize(100).is_none());
 		assert!(EvictionPolicy::from_usize(usize::MAX).is_none());
+	}
+
+	#[test]
+	fn from_name_valid() {
+		assert!(matches!(EvictionPolicy::from_name("ClassicLRU"), Some(EvictionPolicy::ClassicLRU)));
+		assert!(matches!(EvictionPolicy::from_name("TimestampLRU"), Some(EvictionPolicy::TimestampLRU)));
+		assert!(matches!(EvictionPolicy::from_name("Lifo"), Some(EvictionPolicy::Lifo)));
+		assert!(matches!(EvictionPolicy::from_name("Lfu"), Some(EvictionPolicy::Lfu)));
+		assert!(matches!(EvictionPolicy::from_name("Fifo"), Some(EvictionPolicy::Fifo)));
+		assert!(matches!(EvictionPolicy::from_name("Swap"), Some(EvictionPolicy::Swap)));
+	}
+
+	#[test]
+	fn from_name_unknown() {
+		assert!(EvictionPolicy::from_name("classiclru").is_none());
+		assert!(EvictionPolicy::from_name("NotAPolicy").is_none());
+		assert!(EvictionPolicy::from_name("").is_none());
 	}
 }

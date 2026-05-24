@@ -27,14 +27,15 @@ fn build_config() -> Config {
 		.build()
 }
 
-fn create_log_file(cache_type: &str) -> Option<File> {
-	let log_folder = "rust-logs";
-	if let Err(e) = create_dir_all(log_folder) {
-		eprintln!("WARN: failed to create {log_folder} dir: {e}");
+const DEFAULT_LOG_DIR: &str = "rust-logs";
+
+fn create_log_file(cache_type: &str, log_dir: &str) -> Option<File> {
+	if let Err(e) = create_dir_all(log_dir) {
+		eprintln!("WARN: failed to create {log_dir} dir: {e}");
 		return None;
 	}
 	let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-	let path = format!("{log_folder}/{cache_type}_{timestamp}.log");
+	let path = format!("{log_dir}/{cache_type}_{timestamp}.log");
 	match File::create(&path) {
 		Ok(f) => Some(f),
 		Err(e) => {
@@ -45,8 +46,12 @@ fn create_log_file(cache_type: &str) -> Option<File> {
 }
 
 pub fn init_file_logger(cache_type: &str, debug_mode: usize) {
+	init_file_logger_at(cache_type, debug_mode, DEFAULT_LOG_DIR);
+}
+
+pub fn init_file_logger_at(cache_type: &str, debug_mode: usize, log_dir: &str) {
 	INIT.call_once(|| {
-		let Some(log_file) = create_log_file(cache_type) else {
+		let Some(log_file) = create_log_file(cache_type, log_dir) else {
 			return;
 		};
 		let level = debug_mode_to_level(debug_mode);
@@ -62,7 +67,7 @@ pub fn init_file_and_stdout_logger(cache_type: &str, debug_mode: usize) {
 		let level = debug_mode_to_level(debug_mode);
 		let config = build_config();
 		let mut loggers: Vec<Box<dyn SharedLogger>> = vec![SimpleLogger::new(level, config.clone())];
-		if let Some(log_file) = create_log_file(cache_type) {
+		if let Some(log_file) = create_log_file(cache_type, DEFAULT_LOG_DIR) {
 			loggers.push(WriteLogger::new(level, config, log_file));
 		}
 		if let Err(e) = CombinedLogger::init(loggers) {
