@@ -6,9 +6,9 @@ front, filtering simulator logs, assembling its own context — runs become
 prohibitively expensive and the LLM's context bloats with material the
 framework could derive deterministically. We commit architecturally to a split:
 **the LLM reserves itself for genuine judgment** (hypothesizing, code-writing,
-smoke-log review, insight synthesis); **everything else is a framework
+smoke-log review, cycle insight writing); **everything else is a framework
 module in `evolve/src/`** (ledger reads/appends, leaderboard computation,
-log filtering, context bundling, variant fingerprinting, cycle sealing).
+log filtering, context bundling, cycle sealing).
 
 ## Considered options
 

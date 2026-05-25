@@ -1,4 +1,4 @@
-"""Renders leaderboard.md from the cycle ledger and per-cycle winners.json files."""
+"""Renders leaderboard.md by scanning the cycles directory for winners.json files."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from src._io import read_utf8, write_utf8
-from src.identifiers import CycleId
+from src.identifiers import CYCLE_ID_WIDTH, CycleId
 from src.paths import OutputsLayout
 
 log = logging.getLogger("leaderboard")
@@ -18,20 +18,21 @@ class LeaderboardError(Exception):
     pass
 
 
-def _load_cycles(layout: OutputsLayout) -> list:
-    ledger = layout.ledger
-    if not ledger.exists():
+def _enumerate_cycle_ids(layout: OutputsLayout) -> list[CycleId]:
+    cycles_dir = layout.cycles_dir
+    if not cycles_dir.is_dir():
         return []
-    cycles = []
-    for n, line in enumerate(read_utf8(ledger).splitlines(), start=1):
-        line = line.strip()
-        if not line:
+    ids: list[CycleId] = []
+    for entry in cycles_dir.iterdir():
+        if not entry.is_dir():
             continue
-        try:
-            cycles.append(json.loads(line))
-        except json.JSONDecodeError as e:
-            raise LeaderboardError(f"malformed ledger line {n} in {ledger}: {e}") from e
-    return cycles
+        if len(entry.name) != CYCLE_ID_WIDTH or not entry.name.isdigit():
+            continue
+        if not (entry / "winners.json").is_file():
+            continue
+        ids.append(CycleId.from_str(entry.name))
+    ids.sort()
+    return ids
 
 
 def _load_winners(layout: OutputsLayout, cycle_id: CycleId) -> Optional[dict]:
@@ -91,15 +92,8 @@ def _render(cycles_data: list) -> str:
 def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
     """Returns the rendered leaderboard markdown; writes it to `output` if given."""
 
-    ledger_rows = _load_cycles(layout)
     cycles_data = []
-    for row in ledger_rows:
-        raw = row["cycle"]
-        try:
-            cycle_id = CycleId(int(raw))
-        except (TypeError, ValueError) as e:
-            log.warning("skipping ledger row with malformed cycle %r: %s", raw, e)
-            continue
+    for cycle_id in _enumerate_cycle_ids(layout):
         winners = _load_winners(layout, cycle_id)
         fvs = winners.get("fitness_vectors", []) if winners else []
         pareto_front = winners.get("pareto_front", []) if winners else []

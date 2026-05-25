@@ -116,7 +116,6 @@ def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     content = read_utf8(variant.resolve(layout).rejection_md)
     assert "G3 (invariant suite)" in content
     assert EXPECTED_VARIANT_TAG in content
-    assert "Fingerprint" in content
     # **Failing invariant** must name a P[1-5] property, not just appear in
     # the embedded panic block.
     assert re.search(r"\*\*Failing invariant\*\*: P[1-5] [a-z_]+", content)

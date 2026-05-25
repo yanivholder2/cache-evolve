@@ -11,7 +11,11 @@ from src.cycle.ledger_append import append_row
 
 def test_single_append_writes_one_row(tmp_path):
     ledger = tmp_path / "cycles.jsonl"
-    row = {"cycle": "0001", "cycle_dir": "evolve/cycles/0001"}
+    row = {
+        "cycle": "0001",
+        "cycle_dir": "evolve/cycles/0001",
+        "cycle_insight": "# Cycle 0001 Insight\n\nbody\n",
+    }
     append_row(ledger, row)
     lines = read_utf8(ledger).splitlines()
     assert len(lines) == 1
@@ -31,7 +35,12 @@ def test_concurrent_appends_produce_no_torn_rows(tmp_path):
     errors: list[str] = []
 
     def append_one(i: int):
-        row = {"cycle": "0001", "seq": i, "cycle_dir": "evolve/cycles/0001"}
+        row = {
+            "cycle": "0001",
+            "seq": i,
+            "cycle_dir": "evolve/cycles/0001",
+            "cycle_insight": f"# Cycle 0001 Insight\n\nbody for writer {i}\n" + ("x" * 256),
+        }
         try:
             append_row(ledger, row)
         except Exception as e:

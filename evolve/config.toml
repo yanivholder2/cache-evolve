@@ -20,6 +20,13 @@ outputs_root = "outputs"
 # DEBUG, INFO, WARNING, ERROR, CRITICAL.
 log_level = "DEBUG"
 
+# Number of prior Cycle insights inlined into the cycle-insight-writer prompt.
+digest_cycles = 3
+
+# Worker threads for the per-variant fan-out (--max-workers).
+# 0 means: match cohort_size.
+max_workers = 0
+
 [simulator]
 # Per-variant simulator invocation timeout (seconds). Surfaces as
 # FitnessError when exceeded — does not crash the cycle.
