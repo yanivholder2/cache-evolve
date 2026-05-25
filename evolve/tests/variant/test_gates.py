@@ -19,7 +19,7 @@ from src._io import read_utf8, write_utf8
 from src.variant.build import build_variant_for_gates
 from src.variant.gate_check import run_gates
 from src.identifiers import CycleId, VariantId
-from src.paths import CycleVariant, Layout
+from src.paths import CycleVariant, Layout, SourcesLayout, VariantDir
 
 EVOLVE_ROOT = Path(__file__).parent.parent.parent
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -36,9 +36,9 @@ def _stage(tmp_path: Path, fixture_name: str) -> tuple[Layout, CycleVariant]:
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "out")
     layout.evolve_root.mkdir(parents=True, exist_ok=True)
     layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.symlink_to(EVOLVE_ROOT / "src" / "variant" / "rust_scaffold")
+    layout.sources.rust_scaffold_dir.symlink_to(SourcesLayout(root=EVOLVE_ROOT).rust_scaffold_dir)
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
-    shutil.copytree(FIXTURES_DIR / fixture_name / "impl", variant_dir.impl_dir)
+    shutil.copytree(VariantDir(root=FIXTURES_DIR / fixture_name).impl_dir, variant_dir.impl_dir)
     return layout, VARIANT
 
 

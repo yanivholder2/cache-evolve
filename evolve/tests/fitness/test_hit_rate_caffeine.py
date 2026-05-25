@@ -21,7 +21,7 @@ from src.fitness.caffeine_simulator import (
 )
 from src.fitness.plugins import hit_rate
 from src.identifiers import CycleId, VariantId
-from src.paths import CycleVariant, Layout
+from src.paths import CycleVariant, Layout, SourcesLayout, VariantDir
 
 EVOLVE_ROOT = Path(__file__).parent.parent.parent
 REPO_ROOT = EVOLVE_ROOT.parent
@@ -34,11 +34,10 @@ def _stage_good(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "out")
     layout.evolve_root.mkdir(parents=True, exist_ok=True)
     layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.symlink_to(EVOLVE_ROOT / "src" / "variant" / "rust_scaffold")
-    # load_configs reads <evolve_root>/config.toml.
-    shutil.copy(EVOLVE_ROOT / "config.toml", layout.evolve_root / "config.toml")
+    layout.sources.rust_scaffold_dir.symlink_to(SourcesLayout(root=EVOLVE_ROOT).rust_scaffold_dir)
+    shutil.copy(SourcesLayout(root=EVOLVE_ROOT).config_toml, layout.sources.config_toml)
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
-    shutil.copytree(FIXTURES_DIR / "good" / "impl", variant_dir.impl_dir)
+    shutil.copytree(VariantDir(root=FIXTURES_DIR / "good").impl_dir, variant_dir.impl_dir)
     return layout, VARIANT
 
 
@@ -66,9 +65,9 @@ def test_hit_rate_caffeine_end_to_end(tmp_path):
         "hit_rate": single.hit_rate,
     }]
 
-    caffeine_out = variant.resolve(layout).root / "caffeine"
-    assert (caffeine_out / f"hit_rate_{HARDCODED_SIZE}.csv").is_file()
-    assert (caffeine_out / "gradle.stdout.log").is_file()
-    assert (caffeine_out / "gradle.stderr.log").is_file()
-    rust_logs = list((caffeine_out / "rust-logs").glob("dash_variant_*.log"))
-    assert rust_logs, f"no rust JNI log under {caffeine_out / 'rust-logs'}"
+    caffeine_out = variant.resolve(layout).caffeine_dir
+    assert caffeine_out.hit_rate_csv(HARDCODED_SIZE).is_file()
+    assert caffeine_out.gradle_stdout_log.is_file()
+    assert caffeine_out.gradle_stderr_log.is_file()
+    rust_logs = list(caffeine_out.rust_logs_dir.glob("dash_variant_*.log"))
+    assert rust_logs, f"no rust JNI log under {caffeine_out.rust_logs_dir}"

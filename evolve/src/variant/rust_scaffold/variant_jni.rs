@@ -1,11 +1,12 @@
 use crate::VariantSegment;
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::Dash;
+use dash::shared::eviction_policy::EvictionPolicy;
 use dash::shared::logging;
 
 use jni::{
 	objects::{JClass, JString},
-	sys::jlong,
+	sys::{jlong, jobjectArray},
 	JNIEnv,
 };
 use log::{error, info, trace};
@@ -35,7 +36,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	num_of_normal_buckets: jlong,
 	num_of_stash_buckets: jlong,
 	bucket_size: jlong,
-	eviction_policy: jlong,
+	eviction_policy: JString,
 	debug_mode: jlong,
 	log_path: JString,
 ) -> jlong {
@@ -50,19 +51,67 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		logging::init_file_logger_at("dash_variant", debug, &log_path);
 	}
 
-	let Some(settings) = DashSettings::from_jni_args(
+	let policy_name: String = match env.get_string(eviction_policy) {
+		Ok(s) => s.into(),
+		Err(error) => {
+			error!("dash_variant_jni.init: failed to read eviction_policy JString: {error}");
+			return NULL_CACHE_PTR;
+		}
+	};
+	let Some(policy) = EvictionPolicy::from_name(&policy_name) else {
+		error!("dash_variant_jni.init: unknown eviction_policy name={policy_name}");
+		return NULL_CACHE_PTR;
+	};
+
+	let Some(settings) = DashSettings::from_jni_args_with_policy(
 		num_of_segments,
 		num_of_normal_buckets,
 		num_of_stash_buckets,
 		bucket_size,
-		eviction_policy,
+		policy,
 		debug_mode,
 	) else {
-		error!("dash_variant_jni.init invalid args: segments={num_of_segments} buckets={num_of_normal_buckets} stash={num_of_stash_buckets} bucket_size={bucket_size} policy={eviction_policy} debug={debug_mode}");
+		error!("dash_variant_jni.init invalid args: segments={num_of_segments} buckets={num_of_normal_buckets} stash={num_of_stash_buckets} bucket_size={bucket_size} policy={policy_name} debug={debug_mode}");
 		return NULL_CACHE_PTR;
 	};
 
 	create_cache(settings)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_listPolicies(
+	env: JNIEnv,
+	_class: JClass,
+) -> jobjectArray {
+	let names = EvictionPolicy::all_names();
+	let string_class = match env.find_class("java/lang/String") {
+		Ok(c) => c,
+		Err(error) => {
+			error!("dash_variant_jni.listPolicies: find_class String failed: {error}");
+			return std::ptr::null_mut();
+		}
+	};
+	let array = match env.new_object_array(names.len() as i32, string_class, jni::objects::JObject::null()) {
+		Ok(a) => a,
+		Err(error) => {
+			error!("dash_variant_jni.listPolicies: new_object_array failed: {error}");
+			return std::ptr::null_mut();
+		}
+	};
+	for (i, name) in names.iter().enumerate() {
+		let jname = match env.new_string(*name) {
+			Ok(s) => s,
+			Err(error) => {
+				error!("dash_variant_jni.listPolicies: new_string({name}) failed: {error}");
+				return std::ptr::null_mut();
+			}
+		};
+		if let Err(error) = env.set_object_array_element(array, i as i32, jname) {
+			error!("dash_variant_jni.listPolicies: set_object_array_element({i}) failed: {error}");
+			return std::ptr::null_mut();
+		}
+	}
+	array
 }
 
 fn create_cache(settings: DashSettings) -> jlong {

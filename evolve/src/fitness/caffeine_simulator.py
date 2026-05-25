@@ -25,7 +25,7 @@ from scripts import caffeine_runner  # noqa: E402
 
 from src._io import read_utf8
 from src.config import Configs
-from src.paths import Layout, Variant
+from src.paths import CaffeineOutputDir, Layout, Variant
 from src.variant.build import build_cdylib
 
 log = logging.getLogger("fitness.caffeine")
@@ -123,9 +123,10 @@ def _read_eviction_policy(manifest_toml: Path) -> str:
     return str(variant["eviction_policy"])
 
 
-def _per_size_csv(reports_dir: Path, size: int) -> Path:
-    candidate = reports_dir / f"hit_rate_{size}.csv"
+def _per_size_csv(caffeine_out: CaffeineOutputDir, size: int) -> Path:
+    candidate = caffeine_out.hit_rate_csv(size)
     if not candidate.is_file():
+        reports_dir = caffeine_out.root
         raise CaffeineSimulatorError(
             f"caffeine did not produce {candidate.name} under {reports_dir} "
             f"(contents: {sorted(p.name for p in reports_dir.iterdir()) if reports_dir.is_dir() else 'missing'})"
@@ -197,10 +198,9 @@ def simulate_variant(
     policy_name = _read_eviction_policy(variant_dir.manifest_toml)
     debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
 
-    caffeine_out = variant_dir.root / "caffeine"
-    rust_logs_dir = caffeine_out / "rust-logs"
-    caffeine_out.mkdir(parents=True, exist_ok=True)
-    rust_logs_dir.mkdir(parents=True, exist_ok=True)
+    caffeine_out = variant_dir.caffeine_dir
+    caffeine_out.root.mkdir(parents=True, exist_ok=True)
+    caffeine_out.rust_logs_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         workspace, cdylib_path = build_cdylib(variant, layout=layout, repo_root=repo_root)
@@ -219,15 +219,15 @@ def simulate_variant(
                     policies=[policy_name.lower()],
                     timeout_s=cfg.simulator.timeout_s,
                     debug_mode=debug_mode,
-                    log_path=rust_logs_dir,
-                    output_dir=caffeine_out,
+                    log_path=caffeine_out.rust_logs_dir,
+                    output_dir=caffeine_out.root,
                 )
         except caffeine_runner.CaffeineError as exception:
             _write_gradle_logs(caffeine_out, stdout="", stderr=str(exception))
             raise CaffeineSimulatorError(str(exception)) from exception
 
         _write_gradle_logs(caffeine_out, stdout=run_result.stdout, stderr=run_result.stderr)
-        csv_path = _per_size_csv(run_result.output_dir, HARDCODED_SIZE)
+        csv_path = _per_size_csv(caffeine_out, HARDCODED_SIZE)
         results = _parse_csv(csv_path, trace=HARDCODED_TRACE, size=HARDCODED_SIZE)
         return CaffeineResults(results=results)
     finally:
@@ -239,6 +239,6 @@ def simulate_variant(
         )
 
 
-def _write_gradle_logs(dest: Path, *, stdout: str, stderr: str) -> None:
-    (dest / "gradle.stdout.log").write_text(stdout, encoding="utf-8")
-    (dest / "gradle.stderr.log").write_text(stderr, encoding="utf-8")
+def _write_gradle_logs(dest: CaffeineOutputDir, *, stdout: str, stderr: str) -> None:
+    dest.gradle_stdout_log.write_text(stdout, encoding="utf-8")
+    dest.gradle_stderr_log.write_text(stderr, encoding="utf-8")
