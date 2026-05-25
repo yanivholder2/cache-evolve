@@ -26,6 +26,7 @@ from src.config import Configs, ConfigError, load_configs  # noqa: E402
 from src.cycle.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
 from src.cycle.ledger_append import append_row  # noqa: E402
 from src.cycle.seal import seal_cycle  # noqa: E402
+from src.cycle.cross_cycle_insight_writer import write_cross_cycle_insight  # noqa: E402
 from src.cycle.cycle_insight_writer import write_cycle_insight  # noqa: E402
 from src.fitness.runner import compute_fitness  # noqa: E402
 from src.hypothesis.writer import write_hypotheses  # noqa: E402
@@ -322,6 +323,12 @@ def run_cycle(
                 layout=layout,
             )
 
+        with _phase("cross-cycle-insights"):
+            try:
+                write_cross_cycle_insight(cycle_layout, layout=layout, adapter=adapter)
+            except Exception:
+                log.warning("cross-cycle-insight writer failed; cycle proceeds", exc_info=True)
+
         with _phase("seal"):
             seal_cycle(cycle_dir)
 
@@ -350,8 +357,8 @@ def _check_no_leftovers(layout: Layout) -> None:
         leftovers.append(str(layout.outputs.logs_dir))
     if layout.outputs.leaderboard_md.exists():
         leftovers.append(str(layout.outputs.leaderboard_md))
-    if layout.outputs.cross_cycle_synthesis_md.exists():
-        leftovers.append(str(layout.outputs.cross_cycle_synthesis_md))
+    if layout.outputs.cross_cycle_insights_md.exists():
+        leftovers.append(str(layout.outputs.cross_cycle_insights_md))
     if leftovers:
         die(f"outputs_root has leftovers from previous runs: {', '.join(leftovers)}")
 

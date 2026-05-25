@@ -105,3 +105,25 @@ def test_ledger_row_has_relative_paths(tmp_path):
     for key, value in row.items():
         if isinstance(value, str):
             assert not value.startswith("/"), f"field '{key}' is absolute: {value!r}"
+
+
+class _CrossCycleFailingAdapter(StubLLMAdapter):
+    """StubLLMAdapter that raises only for the cross-cycle-insight-writer agent."""
+
+    def run(self, agent_name, workspace, *, readable_roots, allow_edits):
+        if agent_name == "cross-cycle-insight-writer":
+            raise RuntimeError("simulated cross-cycle writer failure")
+        return super().run(agent_name, workspace, readable_roots=readable_roots, allow_edits=allow_edits)
+
+
+@pytest.mark.slow
+def test_cross_cycle_writer_failure_does_not_block_seal(tmp_path):
+    evolve_root = _setup_repo(tmp_path)
+    _run(evolve_root, adapter=_CrossCycleFailingAdapter(n_lines=2))
+
+    cycle_layout = _layout(evolve_root).outputs.cycle(CycleId(1))
+    assert cycle_layout.sealed_marker.is_file(), "seal must complete despite cross-cycle writer failure"
+    assert _layout(evolve_root).outputs.ledger.is_file()
+    assert not _layout(evolve_root).outputs.cross_cycle_insights_md.exists(), (
+        "no prior file existed, so the failed writer must leave nothing at the destination"
+    )

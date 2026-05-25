@@ -278,10 +278,10 @@ Append-only record of Cycle insights, and the single cross-cycle source of
 truth. See [ADR-0001](docs/adr/0001-append-only-insight-ledger.md).
 _Avoid_: Log, history, archive.
 
-**Cross-cycle synthesis**:
+**Cross-cycle insights**:
 Recomputable narrative across cycles derived from the Insight ledger. Rewritten
 freely; never the source of truth.
-_Avoid_: Summary, distillation, bare "Synthesis".
+_Avoid_: Summary, distillation, synthesis, bare "Insights".
 
 ### Evaluation
 
@@ -332,4 +332,4 @@ _Avoid_: Distributed prerequisites, cluster invariants.
 - **"Demote"** — strictly means the promotion tier cascade; combined never demotes, it **places** items and drops evicted ones to stash.
 - **"Promotion"** — overloaded: strategy name (**Promotion strategy**) and the act of moving an item up a tier. Prefer **Promotion strategy** when the strategy is meant and the bare verb **Promote** when the action is meant.
 - **"Variant"** — overloaded across contexts. In the **Dash** domain, used only as a compound noun for promotion sub-variants (**Hot variant**, **Cold variant**). In the **Evolve framework** domain, **Variant** alone is a proposed alternative implementation of a Subject cache. Bare "variant" is ambiguous when both contexts are in scope; qualify with the domain.
-- **"Insight"** — bare "insight" is ambiguous within the framework. Always qualify: **Variant insight** (per-variant) or **Cycle insight** (per-cycle summary). The **Insight ledger** is the durable record; **Cross-cycle synthesis** is the recomputable narrative across cycles.
+- **"Insight"** — bare "insight" is ambiguous within the framework. Always qualify: **Variant insight** (per-variant) or **Cycle insight** (per-cycle summary). The **Insight ledger** is the durable record; **Cross-cycle insights** is the recomputable narrative across cycles.
