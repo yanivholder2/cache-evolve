@@ -55,6 +55,8 @@ class StubLLMAdapter:
             write_utf8(workspace / "insight.md", "# Variant Insight\n\nstub body\n")
         elif agent_name == "cycle-insight-writer":
             write_utf8(workspace / "cycle-insight.md", "# Cycle Insight\n\nstub body\n")
+        elif agent_name == "cross-cycle-insight-writer":
+            write_utf8(workspace / "cross-cycle-insights.md", "# Cross-Cycle Insights\n\nstub body\n")
         else:
             raise RuntimeError(f"stub-adapter: unknown agent {agent_name!r}")
 

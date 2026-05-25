@@ -82,7 +82,7 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: 
         f"### Cross-cycle history\n\n"
         f"- {layout.outputs.leaderboard_md} — current Pareto-front variants and fitness summaries across all cycles.\n"
         f"- {layout.outputs.ledger} — one JSON row per completed cycle (cohort size, Pareto front, insights).\n"
-        f"- {layout.outputs.cross_cycle_synthesis_md} — long-running narrative of what has been learned across cycles. Stub today; read if present.\n\n"
+        f"- {layout.outputs.cross_cycle_insights_md} — long-running narrative of what has been learned across cycles. Read if present.\n\n"
         f"### Baseline + extension points\n\n"
         f"- {layout.sources.baseline.root} — the permanent baseline (always a valid parent variant).\n"
         f"- {layout.sources.extension_points_md} — authoritative seams a Variant can plug into. Segment trait is the only realised one.\n"

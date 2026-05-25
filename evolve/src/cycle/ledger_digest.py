@@ -19,23 +19,30 @@ def digest_prior_cycles(ledger: Path, n: int) -> str:
     ledger does not exist or yields no usable rows.
     """
 
-    if not ledger.exists():
-        return ""
+    return _render(_load_rows(ledger)[-n:])
 
-    text = read_utf8(ledger)
+
+def digest_all_cycles(ledger: Path) -> str:
+    """Like `digest_prior_cycles` but cumulative — every row from the ledger."""
+
+    return _render(_load_rows(ledger))
+
+
+def _load_rows(ledger: Path) -> list[dict]:
+    if not ledger.exists():
+        return []
     rows = []
-    for raw in text.splitlines():
+    for raw in read_utf8(ledger).splitlines():
         line = raw.strip()
         if not line:
             continue
         rows.append(json.loads(line))
+    return rows
 
-    if not rows:
-        return ""
 
-    selected = rows[-n:]
+def _render(rows: list[dict]) -> str:
     parts: list[str] = []
-    for row in selected:
+    for row in rows:
         body = row.get("cycle_insight")
         if body is None:
             log.debug("skipping ledger row without cycle_insight for cycle %s", row.get("cycle"))

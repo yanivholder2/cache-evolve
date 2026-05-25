@@ -285,8 +285,8 @@ class OutputsLayout:
         return self.root / "leaderboard.md"
 
     @property
-    def cross_cycle_synthesis_md(self) -> Path:
-        return self.root / "cross-cycle-synthesis" / "current.md"
+    def cross_cycle_insights_md(self) -> Path:
+        return self.root / "cross-cycle-insights.md"
 
     @property
     def target_dir(self) -> Path:
