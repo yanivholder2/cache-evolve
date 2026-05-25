@@ -89,3 +89,5 @@ Markers (defined in `tests/conftest.py`):
 | `caffeine_needed` | `--caffeine-needed` passed    | Tests requiring ~/projects/caffeine and a JDK. Never run in CI.    |
 
 A session-scoped fixture puts `tests/_mocks/` first on `PATH` so the fast suite never invokes a real `cargo`.
+
+`--slow` and `--caffeine-needed` cannot be combined: slow tests assume the caffeine stub is active, which `--caffeine-needed` disables. Passing both aborts collection.

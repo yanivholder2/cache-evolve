@@ -62,27 +62,44 @@ impl DashSettings {
 			error!("DashSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
 			return None;
 		}
+		let Some(policy) = EvictionPolicy::from_usize(eviction_policy as usize) else {
+			error!("DashSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
+			return None;
+		};
+		Self::from_jni_args_with_policy(
+			num_of_segments,
+			num_of_normal_buckets,
+			num_of_stash_buckets,
+			bucket_size,
+			policy,
+			debug_mode,
+		)
+	}
+
+	/// Same as `from_jni_args` but takes an already-resolved policy. Used by
+	/// JNI sites that pass policy names (strings) and resolve on the Rust side.
+	pub fn from_jni_args_with_policy(
+		num_of_segments: i64,
+		num_of_normal_buckets: i64,
+		num_of_stash_buckets: i64,
+		bucket_size: i64,
+		eviction_policy: EvictionPolicy,
+		debug_mode: i64,
+	) -> Option<Self> {
 		if debug_mode < 0 {
-			error!("DashSettings.from_jni_args: invalid debug_mode={debug_mode}");
+			error!("DashSettings.from_jni_args_with_policy: invalid debug_mode={debug_mode}");
 			return None;
 		}
-		let eviction_policy_val = match EvictionPolicy::from_usize(eviction_policy as usize) {
-			Some(p) => p,
-			None => {
-				error!("DashSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
-				return None;
-			}
-		};
 		let settings = DashSettings {
 			num_of_segments: num_of_segments.max(0) as usize,
 			num_of_normal_buckets: num_of_normal_buckets.max(0) as usize,
 			num_of_stash_buckets: num_of_stash_buckets.max(0) as usize,
 			bucket_size: bucket_size.max(0) as usize,
-			eviction_policy: eviction_policy_val,
+			eviction_policy,
 			debug_mode: debug_mode as usize,
 		};
 		if let Err(problems) = settings.validate() {
-			error!("DashSettings.from_jni_args: invalid settings: {}", problems.join(", "));
+			error!("DashSettings.from_jni_args_with_policy: invalid settings: {}", problems.join(", "));
 			return None;
 		}
 		Some(settings)

@@ -11,7 +11,7 @@ import pytest
 from src._io import write_utf8
 from src.variant.build import build_cdylib
 from src.identifiers import CycleId, VariantId
-from src.paths import CycleVariant, Layout
+from src.paths import CycleVariant, Layout, SourcesLayout
 
 EVOLVE_ROOT = Path(__file__).parent.parent.parent
 REPO_ROOT = EVOLVE_ROOT.parent
@@ -36,9 +36,10 @@ def _stage_baseline(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     layout = Layout(evolve_root=tmp_path / "evolve", outputs_root=tmp_path / "out")
     layout.evolve_root.mkdir(parents=True, exist_ok=True)
     layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.symlink_to(EVOLVE_ROOT / "src" / "variant" / "rust_scaffold")
+    real_sources = SourcesLayout(root=EVOLVE_ROOT)
+    layout.sources.rust_scaffold_dir.symlink_to(real_sources.rust_scaffold_dir)
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
-    shutil.copytree(EVOLVE_ROOT / "subject" / "baseline" / "impl", variant_dir.impl_dir)
+    shutil.copytree(real_sources.baseline.impl_dir, variant_dir.impl_dir)
     return layout, VARIANT
 
 

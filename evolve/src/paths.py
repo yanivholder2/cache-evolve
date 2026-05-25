@@ -34,6 +34,29 @@ def cdylib_filename(platform: str) -> str:
 
 
 @dataclass(frozen=True)
+class CaffeineOutputDir:
+    """Per-variant caffeine output directory. Producer (`caffeine_simulator`)
+    and consumers (tests) reference subpaths only through these properties."""
+
+    root: Path
+
+    @property
+    def rust_logs_dir(self) -> Path:
+        return self.root / "rust-logs"
+
+    @property
+    def gradle_stdout_log(self) -> Path:
+        return self.root / "gradle.stdout.log"
+
+    @property
+    def gradle_stderr_log(self) -> Path:
+        return self.root / "gradle.stderr.log"
+
+    def hit_rate_csv(self, size: int) -> Path:
+        return self.root / f"hit_rate_{size}.csv"
+
+
+@dataclass(frozen=True)
 class VariantDir:
     """A variant-shaped on-disk directory. `root.name` need not be a valid
     `VariantId` — `baseline/` and prose templates carrying the literal
@@ -77,6 +100,10 @@ class VariantDir:
     @property
     def rejection_md(self) -> Path:
         return self.root / "rejection.md"
+
+    @property
+    def caffeine_dir(self) -> CaffeineOutputDir:
+        return CaffeineOutputDir(root=self.root / "caffeine")
 
 
 @dataclass(frozen=True)
@@ -225,6 +252,10 @@ class SourcesLayout:
     """Paths in the read-only evolve sources subtree."""
 
     root: Path
+
+    @property
+    def config_toml(self) -> Path:
+        return self.root / "config.toml"
 
     @property
     def subject_dir(self) -> Path:

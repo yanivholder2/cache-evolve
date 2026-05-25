@@ -13,6 +13,7 @@ from pathlib import Path
 
 from src._log import LOG_LEVELS
 from src.adapters import ADAPTER_REGISTRY
+from src.paths import SourcesLayout
 
 
 class ConfigError(ValueError):
@@ -57,7 +58,7 @@ def load_configs(
     values.
     """
 
-    cfg_path = evolve_root / "config.toml"
+    cfg_path = SourcesLayout(root=evolve_root).config_toml
     if not cfg_path.is_file():
         raise ConfigError(f"config.toml not found at {cfg_path}")
     with open(cfg_path, "rb") as f:

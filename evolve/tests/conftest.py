@@ -65,6 +65,12 @@ def pytest_configure(config):
         "caffeine_needed: end-to-end test that requires ~/projects/caffeine "
         "and a working JDK; invoke explicitly with --caffeine-needed, never in CI",
     )
+    if config.getoption("--slow") and config.getoption("--caffeine-needed"):
+        raise pytest.UsageError(
+            "--slow and --caffeine-needed cannot be combined: slow tests "
+            "assume the caffeine stub is active, which --caffeine-needed disables. "
+            "Run each marker in a separate invocation."
+        )
 
 
 def pytest_collection_modifyitems(config, items):
