@@ -73,7 +73,6 @@ def _check_g3(
     workspace: GatesWorkspace,
     variant: Variant,
     rejection_md: Path,
-    fingerprint: str,
 ) -> bool:
     proc = _run_cargo_test(workspace, "g3_invariant")
     if proc.returncode == 0:
@@ -95,7 +94,6 @@ def _check_g3(
     _append_entry(
         rejection_md,
         f"\n## {ts} — variant={variant}\n\n"
-        f"**Fingerprint**: {fingerprint}\n"
         f"**Gate**: {gate_label}\n"
         f"**Failing invariant**: {invariant}\n"
         f"**Error**:\n"
@@ -111,7 +109,6 @@ def run_gates(
     *,
     layout: Layout,
     repo_root: Path,
-    fingerprint: str = "pending",
 ) -> GatesResult:
     """Run G1+G2+G3 against the variant's impl/. Result is truthy iff all pass.
 
@@ -135,7 +132,7 @@ def run_gates(
         g2_passed = _check_g2(workspace, variant, rejection_md)
         if not g2_passed:
             return GatesResult(g1_passed=True, g2_passed=False)
-        g3_passed = _check_g3(workspace, variant, rejection_md, fingerprint)
+        g3_passed = _check_g3(workspace, variant, rejection_md)
     finally:
         shutil.rmtree(
             workspace.root,

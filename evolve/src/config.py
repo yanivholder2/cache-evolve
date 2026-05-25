@@ -26,6 +26,8 @@ class FrameworkConfig:
     ai_agent_tool: str
     outputs_root: Path
     log_level: str
+    digest_cycles: int
+    max_workers: int
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,7 @@ def load_configs(
     outputs_root: Path | None = None,
     log_level: str | None = None,
     simulator_timeout_s: int | None = None,
+    max_workers: int | None = None,
 ) -> Configs:
     """Build `Configs` from `<evolve_root>/config.toml`, with optional overrides
     taking precedence per field. Raises `ConfigError` for missing or invalid
@@ -68,6 +71,8 @@ def load_configs(
         ai_agent_tool=_resolve_ai_agent_tool(ai_agent_tool, framework_defaults),
         outputs_root=_resolve_outputs_root(outputs_root, framework_defaults, evolve_root),
         log_level=_resolve_log_level(log_level, framework_defaults),
+        digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
+        max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
     )
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),
@@ -75,20 +80,32 @@ def load_configs(
     return Configs(framework=framework, simulator=simulator)
 
 
-def _resolve(override, defaults: dict, key: str, flag: str, section: str):
+def _resolve(override, defaults: dict, key: str, flag: str | None, section: str):
     if override is not None:
         return override
     if key in defaults:
         return defaults[key]
-    raise ConfigError(
-        f"{section}.{key} not set (pass {flag} or set {section}.{key} in config.toml)"
+    hint = (
+        f"pass {flag} or set {section}.{key} in config.toml"
+        if flag
+        else f"set {section}.{key} in config.toml"
     )
+    raise ConfigError(f"{section}.{key} not set ({hint})")
 
 
-def _resolve_positive_int(override: int | None, defaults: dict, key: str, flag: str, section: str) -> int:
+def _resolve_positive_int(override: int | None, defaults: dict, key: str, flag: str | None, section: str) -> int:
     value = int(_resolve(override, defaults, key, flag, section))
     if value < 1:
-        raise ConfigError(f"{flag} must be a positive integer, got: {value}")
+        source = flag if flag else f"{section}.{key}"
+        raise ConfigError(f"{source} must be a positive integer, got: {value}")
+    return value
+
+
+def _resolve_non_negative_int(override: int | None, defaults: dict, key: str, flag: str | None, section: str) -> int:
+    value = int(_resolve(override, defaults, key, flag, section))
+    if value < 0:
+        source = flag if flag else f"{section}.{key}"
+        raise ConfigError(f"{source} must be a non-negative integer, got: {value}")
     return value
 
 

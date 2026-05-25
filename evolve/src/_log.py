@@ -10,7 +10,7 @@ import logging
 import sys
 from pathlib import Path
 
-FORMAT = "%(asctime)s %(levelname)s [%(name)s : %(funcName)s] %(message)s"
+FORMAT = "%(asctime)s %(levelname)s [%(threadName)s : %(name)s : %(funcName)s] %(message)s"
 DATEFMT = "%H:%M:%S"
 
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -81,6 +80,7 @@ class Invocation:
     trace: str
     sizes: list[int]
     policies: list[str]
+    output_dir: Path
     num_of_normal_buckets: int = DEFAULT_NUM_OF_NORMAL_BUCKETS
     num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS
     bucket_size: int = DEFAULT_BUCKET_SIZE
@@ -107,6 +107,7 @@ class Invocation:
             "simulator:simulate", "-q",
             f"--maximumSize={sizes_str}",
             f"--title={title}",
+            f"--outputDir={self.output_dir}",
             f"-PjvmArgs={jvm_args}",
             "-Dcaffeine.simulator.trace.source=files",
             f"-Dcaffeine.simulator.files.paths.0={self.trace}",
@@ -131,10 +132,6 @@ def _trace_display_name(trace: str) -> str:
     return f"{name}_{fmt}" if filename else name
 
 
-def _reports_dir(caffeine_dir: Path) -> Path:
-    return caffeine_dir / "simulator" / "build" / "reports" / "simulate"
-
-
 def _invoke(invocation: Invocation, *, timeout_s: int) -> RunResult:
     cmd = invocation.gradle_cmd()
     try:
@@ -156,7 +153,7 @@ def _invoke(invocation: Invocation, *, timeout_s: int) -> RunResult:
             f"{stderr_tail}"
         )
     return RunResult(
-        output_dir=_reports_dir(invocation.caffeine_dir),
+        output_dir=invocation.output_dir,
         stdout=proc.stdout,
         stderr=proc.stderr,
     )
@@ -170,6 +167,7 @@ def run(
     size: int,
     policies: list[str],
     timeout_s: int,
+    output_dir: Path,
     num_of_normal_buckets: int = DEFAULT_NUM_OF_NORMAL_BUCKETS,
     num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS,
     bucket_size: int = DEFAULT_BUCKET_SIZE,
@@ -191,6 +189,7 @@ def run(
         bucket_size=bucket_size,
         debug_mode=debug_mode,
         log_path=log_path,
+        output_dir=output_dir,
         caffeine_dir=caffeine_dir,
     )
 
@@ -203,6 +202,7 @@ def simulate(
     sizes: list[int],
     policies: list[str],
     timeout_s: int,
+    output_dir: Path,
     num_of_normal_buckets: int = DEFAULT_NUM_OF_NORMAL_BUCKETS,
     num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS,
     bucket_size: int = DEFAULT_BUCKET_SIZE,
@@ -233,23 +233,10 @@ def simulate(
         bucket_size=bucket_size,
         debug_mode=debug_mode,
         log_path=log_path,
+        output_dir=output_dir,
         caffeine_dir=caffeine_dir,
     )
     return _invoke(invocation, timeout_s=timeout_s)
-
-
-def copy_outputs(reports_dir: Path, dest: Path) -> list[Path]:
-    """Copy hit_rate* files from `reports_dir` into `dest`. Caffeine overwrites
-    on each invocation, so callers that need durable outputs must copy."""
-
-    dest.mkdir(parents=True, exist_ok=True)
-    copied = []
-    for entry in sorted(reports_dir.iterdir()):
-        if entry.name.startswith("hit_rate") and entry.suffix in {".csv", ".png"}:
-            target = dest / entry.name
-            shutil.copy2(entry, target)
-            copied.append(target)
-    return copied
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +262,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         p.add_argument("--debug-mode", type=int, default=0)
         p.add_argument("--log-path", type=Path, default=None,
                        help="Override the cdylib's rust-logs dir (dashvariant only).")
+        p.add_argument("--output-dir", type=Path, required=True,
+                       help="Caffeine reports dir (passed as --outputDir to simulate).")
         p.add_argument("--caffeine-dir", type=Path, default=DEFAULT_CAFFEINE_DIR)
         p.add_argument("--timeout-s", type=int, default=DEFAULT_TIMEOUT_S)
 
@@ -304,6 +293,7 @@ def _main(argv: list[str] | None = None) -> int:
         bucket_size=args.bucket_size,
         debug_mode=args.debug_mode,
         log_path=args.log_path,
+        output_dir=args.output_dir,
         caffeine_dir=args.caffeine_dir,
     )
     try:

@@ -10,6 +10,7 @@ import logging
 import shutil
 import subprocess
 import sys
+import threading
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +34,8 @@ log = logging.getLogger("fitness.caffeine")
 HARDCODED_TRACE = "lirs:multi1.trace.gz"
 HARDCODED_SIZE = 512
 TARGET = "dashvariant"
+
+_CAFFEINE_LOCK = threading.Lock()
 
 # Caffeine emits Hit Rate / Miss Rate / Admit rate as percentages (0–100).
 # Normalise to fractions (0–1) at parse time so plugin output stays consistent
@@ -207,23 +210,24 @@ def simulate_variant(
     try:
         log.info("[%s] caffeine simulate trace=%s size=%d policy=%s", variant, HARDCODED_TRACE, HARDCODED_SIZE, policy_name)
         try:
-            run_result = caffeine_runner.run(
-                target=TARGET,
-                library_path=cdylib_path.parent,
-                trace=HARDCODED_TRACE,
-                size=HARDCODED_SIZE,
-                policies=[policy_name.lower()],
-                timeout_s=cfg.simulator.timeout_s,
-                debug_mode=debug_mode,
-                log_path=rust_logs_dir,
-            )
+            with _CAFFEINE_LOCK:
+                run_result = caffeine_runner.run(
+                    target=TARGET,
+                    library_path=cdylib_path.parent,
+                    trace=HARDCODED_TRACE,
+                    size=HARDCODED_SIZE,
+                    policies=[policy_name.lower()],
+                    timeout_s=cfg.simulator.timeout_s,
+                    debug_mode=debug_mode,
+                    log_path=rust_logs_dir,
+                    output_dir=caffeine_out,
+                )
         except caffeine_runner.CaffeineError as exception:
             _write_gradle_logs(caffeine_out, stdout="", stderr=str(exception))
             raise CaffeineSimulatorError(str(exception)) from exception
 
         _write_gradle_logs(caffeine_out, stdout=run_result.stdout, stderr=run_result.stderr)
         csv_path = _per_size_csv(run_result.output_dir, HARDCODED_SIZE)
-        caffeine_runner.copy_outputs(run_result.output_dir, caffeine_out)
         results = _parse_csv(csv_path, trace=HARDCODED_TRACE, size=HARDCODED_SIZE)
         return CaffeineResults(results=results)
     finally:

@@ -185,7 +185,7 @@ The cache under study by the framework.
 _Avoid_: Target cache, test cache, system under study.
 
 **Framework / Evolve**:
-The agentic research loop that proposes, validates, evaluates, and synthesizes
+The agentic research loop that proposes, validates, evaluates, and summarises
 Variants of a Subject cache. Codename `evolve`.
 _Avoid_: Tool, agent, pipeline.
 
@@ -270,7 +270,7 @@ Per-Variant AI-written explanation of why a Variant behaved as it did. Tags
 which Fitness dimensions the Variant helped or hurt.
 
 **Cycle insight**:
-Per-Cycle AI-written synthesis across the Cohort's Variant insights. The
+Per-Cycle AI-written summary across the Cohort's Variant insights. The
 canonical record of what the framework learned in one Cycle.
 
 **Insight ledger**:
@@ -278,10 +278,10 @@ Append-only record of Cycle insights, and the single cross-cycle source of
 truth. See [ADR-0001](docs/adr/0001-append-only-insight-ledger.md).
 _Avoid_: Log, history, archive.
 
-**Synthesis**:
-Recomputable cross-cycle narrative derived from the Insight ledger. Rewritten
+**Cross-cycle synthesis**:
+Recomputable narrative across cycles derived from the Insight ledger. Rewritten
 freely; never the source of truth.
-_Avoid_: Summary, distillation.
+_Avoid_: Summary, distillation, bare "Synthesis".
 
 ### Evaluation
 
@@ -309,11 +309,6 @@ The set of non-dominated Variants in a Cycle's Fitness vectors. The Cycle's
 winners — typically several, not one.
 _Avoid_: Leaderboard, top-K.
 
-**Fingerprint**:
-Stable hash of a Variant's implementation, used to detect when the AI
-re-proposes the same Variant.
-_Avoid_: Hash, signature.
-
 ### Architectural principles
 
 **Token-frugal principle**:
@@ -321,10 +316,11 @@ Anything that doesn't require LLM judgment is a script, not an LLM call. See
 [ADR-0002](docs/adr/0002-token-frugal-principle.md).
 _Avoid_: Token budget (means a numeric cap; the principle is architectural).
 
-**v2-ready invariants**:
-Architectural commitments that keep v2 multi-machine execution a storage-layer
-swap rather than a refactor. See
-[ADR-0003](docs/adr/0003-v1-single-machine-v2-ready-invariants.md).
+**Ledger and path invariants**:
+Two rules every written artifact obeys: atomic ledger append (safe under
+concurrent variant execution within a cycle) and repo-relative paths only
+(sealed cycle directories are reproducible across checkouts). See
+[ADR-0003](docs/adr/0003-ledger-and-path-invariants.md).
 _Avoid_: Distributed prerequisites, cluster invariants.
 
 ## Flagged ambiguities
@@ -336,4 +332,4 @@ _Avoid_: Distributed prerequisites, cluster invariants.
 - **"Demote"** — strictly means the promotion tier cascade; combined never demotes, it **places** items and drops evicted ones to stash.
 - **"Promotion"** — overloaded: strategy name (**Promotion strategy**) and the act of moving an item up a tier. Prefer **Promotion strategy** when the strategy is meant and the bare verb **Promote** when the action is meant.
 - **"Variant"** — overloaded across contexts. In the **Dash** domain, used only as a compound noun for promotion sub-variants (**Hot variant**, **Cold variant**). In the **Evolve framework** domain, **Variant** alone is a proposed alternative implementation of a Subject cache. Bare "variant" is ambiguous when both contexts are in scope; qualify with the domain.
-- **"Insight"** — bare "insight" is ambiguous within the framework. Always qualify: **Variant insight** (per-variant) or **Cycle insight** (per-cycle synthesis). The **Insight ledger** is the durable record; **Synthesis** is the recomputable narrative.
+- **"Insight"** — bare "insight" is ambiguous within the framework. Always qualify: **Variant insight** (per-variant) or **Cycle insight** (per-cycle summary). The **Insight ledger** is the durable record; **Cross-cycle synthesis** is the recomputable narrative across cycles.

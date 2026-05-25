@@ -1,8 +1,8 @@
 # Evolve
 
-`evolve/` is the research framework that drives caches experimental loop. It runs **cycles** of cache-policy evolution: each cycle proposes a **cohort** of hypotheses, generates one Rust variant per hypothesis, runs correctness gates (G1/G2/G3) plus three fitness plugins (hit-rate, per-op time, metadata size), computes a Pareto front, and appends one row to the immutable ledger.
+`evolve/` is the research framework that drives caches experimental loop. It runs **cycles** of cache-policy evolution: each cycle proposes a **cohort** of hypotheses, generates one Rust variant per hypothesis, runs correctness gates (G1/G2/G3) plus fitness plugins (For example hit-rate), writes one LLM-authored Variant insight per surviving Variant, writes one Cycle insight summarising the cohort, computes a Pareto front, and appends one row to the immutable ledger.
 
-Subagents handle judgment work (hypothesize, implement) via in-process SDK adapters. Library modules under `src/` handle everything deterministic — scaffolding, gates, scoring, sealing, ledger/leaderboard maintenance. Everything a run writes lands under `evolve/outputs/` (gitignored): cycle artifacts at `outputs/cycles/NNNN/` (sealed `chmod -w` once complete), plus `outputs/ledger/cycles.jsonl` and `outputs/leaderboard.md` as the persistent across-cycle views.
+Subagents handle judgment work (hypothesize, implement, write variant insight, write cycle insight) via in-process adapters. Library modules under `src/` handle everything deterministic — scaffolding, gates, scoring, sealing, ledger/leaderboard maintenance. Everything a run writes lands under `evolve/outputs/` (gitignored): cycle artifacts at `outputs/cycles/NNNN/` (sealed once complete), plus `outputs/ledger/cycles.jsonl` and `outputs/leaderboard.md` as the persistent across-cycle views.
 
 ## Environment Setup
 
@@ -59,11 +59,6 @@ evolve/subject/baseline/
   eval/fitness-vector.json  # measured fitness, produced by measure_baseline.py
   insight.md                # short prose describing the baseline
 ```
-
-The hypotheses-writer reads it differently on cycle 1 vs cycle 2+:
-
-- **Cycle 1 (cold start):** reads `subject/baseline/` (as a singleton "previous variant") plus `subject/extension-points.md`. Cross-cycle artefacts are empty stubs and not listed.
-- **Cycle 2+:** reads every variant under `cycles/<N-1>/variants/`, plus `cycles/<N-1>/winners.json` and `cycles/<N-1>/cycle-insight.md`, plus cross-cycle artefacts (`leaderboard.md`, `cycles.jsonl`, `synthesis/current.md`), plus `subject/extension-points.md`. **Baseline is not read.**
 
 ### Measuring the baseline
 

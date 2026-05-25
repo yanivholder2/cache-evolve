@@ -1,10 +1,10 @@
-"""Tests for src/leaderboard.regenerate."""
+"""Tests for src/cycle/leaderboard.regenerate."""
 
 import json
 
 import pytest
 
-from src._io import append_utf8, read_utf8, write_utf8
+from src._io import read_utf8, write_utf8
 from src.identifiers import CycleId
 from src.cycle.leaderboard import LeaderboardError, regenerate
 from src.paths import OutputsLayout
@@ -26,11 +26,9 @@ def _make_evolve_root(tmp_path, cycles_data):
     evolve = tmp_path / "evolve"
     layout = OutputsLayout(root=evolve)
     layout.cycles_dir.mkdir(parents=True)
-    layout.ledger.parent.mkdir()
     for cycle_str, variants in cycles_data.items():
         cycle_id = CycleId.from_str(cycle_str)
         _setup_cycle(layout, cycle_id, variants)
-        append_utf8(layout.ledger, json.dumps({"cycle": str(cycle_id), "cycle_dir": f"evolve/cycles/{cycle_id}"}) + "\n")
     return evolve
 
 
@@ -46,12 +44,10 @@ def test_generates_leaderboard_md(tmp_path):
     assert "v001" in content
 
 
-def test_empty_ledger_produces_valid_md(tmp_path):
+def test_no_cycles_produces_valid_md(tmp_path):
     evolve = tmp_path / "evolve"
     layout = OutputsLayout(root=evolve)
     layout.cycles_dir.mkdir(parents=True)
-    layout.ledger.parent.mkdir()
-    write_utf8(layout.ledger, "")
 
     out = tmp_path / "leaderboard.md"
     regenerate(layout=layout, output=out)
@@ -93,11 +89,6 @@ def test_pareto_front_fallback_renders(tmp_path):
     layout = OutputsLayout(root=evolve)
     cycle_layout = layout.cycle(CycleId(1))
     cycle_layout.root.mkdir(parents=True)
-    layout.ledger.parent.mkdir()
-    write_utf8(
-        layout.ledger,
-        json.dumps({"cycle": "0001", "cycle_dir": "evolve/cycles/0001"}) + "\n",
-    )
     write_utf8(cycle_layout.winners_json, json.dumps({
         "cycle": "0001",
         "pareto_front": ["v007"],
@@ -108,26 +99,11 @@ def test_pareto_front_fallback_renders(tmp_path):
     assert "v007" in read_utf8(out)
 
 
-def test_malformed_ledger_errors(tmp_path):
-    evolve = tmp_path / "evolve"
-    layout = OutputsLayout(root=evolve)
-    layout.cycles_dir.mkdir(parents=True)
-    layout.ledger.parent.mkdir()
-    write_utf8(layout.ledger, '{"cycle": "0001"}\nnot json\n')
-    with pytest.raises(LeaderboardError, match="malformed ledger"):
-        regenerate(layout=layout)
-
-
 def test_malformed_winners_errors(tmp_path):
     evolve = tmp_path / "evolve"
     layout = OutputsLayout(root=evolve)
     cycle_layout = layout.cycle(CycleId(1))
     cycle_layout.root.mkdir(parents=True)
-    layout.ledger.parent.mkdir()
-    write_utf8(
-        layout.ledger,
-        json.dumps({"cycle": "0001", "cycle_dir": "evolve/cycles/0001"}) + "\n",
-    )
     write_utf8(cycle_layout.winners_json, "not valid json {{{")
     with pytest.raises(LeaderboardError, match="malformed winners.json"):
         regenerate(layout=layout)
@@ -143,3 +119,42 @@ def test_multiple_cycles_all_shown(tmp_path):
     content = read_utf8(out)
     assert "0001" in content
     assert "0002" in content
+
+
+def test_unsealed_cycle_with_winners_is_included(tmp_path):
+    """Cycle dirs with winners.json but no SEALED marker are still counted."""
+    fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.5, "higher_is_better": True}]}]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv})
+    # No SEALED marker written.
+    layout = OutputsLayout(root=evolve)
+    assert not layout.cycle(CycleId(1)).sealed_marker.exists()
+
+    out = tmp_path / "leaderboard.md"
+    regenerate(layout=layout, output=out)
+    assert "0001" in read_utf8(out)
+
+
+def test_dir_without_winners_json_is_skipped(tmp_path):
+    evolve = tmp_path / "evolve"
+    layout = OutputsLayout(root=evolve)
+    layout.cycles_dir.mkdir(parents=True)
+    (layout.cycles_dir / "0001").mkdir()
+
+    out = tmp_path / "leaderboard.md"
+    regenerate(layout=layout, output=out)
+    assert "0001" not in read_utf8(out)
+
+
+def test_non_cycle_subdirs_skipped(tmp_path):
+    fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.5, "higher_is_better": True}]}]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv})
+    layout = OutputsLayout(root=evolve)
+    (layout.cycles_dir / "junk").mkdir()
+    (layout.cycles_dir / "12345").mkdir()  # wrong width
+
+    out = tmp_path / "leaderboard.md"
+    regenerate(layout=layout, output=out)
+    content = read_utf8(out)
+    assert "0001" in content
+    assert "junk" not in content
+    assert "12345" not in content

@@ -14,9 +14,14 @@ from pathlib import Path
 
 from src._io import read_utf8, write_utf8
 
+# Free-form body fields exempt from the repo-relative path rule.
+_NON_PATH_FIELDS = frozenset({"cycle_insight"})
+
 
 def _validate(row: dict) -> None:
     for key, value in row.items():
+        if key in _NON_PATH_FIELDS:
+            continue
         if isinstance(value, str) and value.startswith("/"):
             raise ValueError(f"field '{key}' must be repo-relative, got absolute path: {value!r}")
 

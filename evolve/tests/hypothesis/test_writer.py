@@ -227,7 +227,7 @@ def test_cold_start_task_md_omits_cross_cycle_stubs(tmp_path):
     layout = _layout(evolve)
     assert str(layout.outputs.leaderboard_md) not in task_md
     assert str(layout.outputs.ledger) not in task_md
-    assert str(layout.outputs.synthesis_md) not in task_md
+    assert str(layout.outputs.cross_cycle_synthesis_md) not in task_md
 
 
 def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
@@ -277,8 +277,8 @@ def test_continuation_task_md_lists_cross_cycle_artefacts(tmp_path):
     layout = _layout(evolve)
     assert layout.outputs.leaderboard_md.name in task_md
     assert layout.outputs.ledger.name in task_md
-    # synthesis_md basename is generic ("current.md") — anchor on the dir.
-    assert "synthesis" in task_md and layout.outputs.synthesis_md.name in task_md
+    # cross_cycle_synthesis_md basename is generic ("current.md") — anchor on the dir.
+    assert "cross-cycle-synthesis" in task_md and layout.outputs.cross_cycle_synthesis_md.name in task_md
 
 
 def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):

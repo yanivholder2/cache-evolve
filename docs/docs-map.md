@@ -59,12 +59,12 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** deciding whether to use LLM reasoning vs. deterministic computation.
 
-### [0003 — v1 single-machine, v2-ready invariants](adr/0003-v1-single-machine-v2-ready-invariants.md)
+### [0003 — Atomic ledger append](adr/0003-atomic-ledger-append.md)
 
 * Considered options
 * Consequences
 
-**Read when** adding parallelism or distributed features.
+**Read when** modifying ledger writes.
 
 ### [0004 — Formalize uniqueness invariant](adr/0004-formalize-uniqueness-invariant.md)
 
@@ -82,7 +82,7 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 * Logging
 * Variable naming
 
-**Read when** writing or reviewing code style or commenting conventions.
+**Read when** writing or reviewing code.
 
 ## Agent workflow
 

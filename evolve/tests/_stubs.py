@@ -51,6 +51,10 @@ class StubLLMAdapter:
             self._write_hypotheses(workspace)
         elif agent_name == "variant-implementer":
             self._write_variant(workspace)
+        elif agent_name == "variant-insight-writer":
+            write_utf8(workspace / "insight.md", "# Variant Insight\n\nstub body\n")
+        elif agent_name == "cycle-insight-writer":
+            write_utf8(workspace / "cycle-insight.md", "# Cycle Insight\n\nstub body\n")
         else:
             raise RuntimeError(f"stub-adapter: unknown agent {agent_name!r}")
 
