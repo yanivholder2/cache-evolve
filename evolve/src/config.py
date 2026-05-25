@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass
+from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 from src._log import LOG_LEVELS
@@ -127,8 +129,18 @@ def _resolve_log_level(override: str | None, defaults: dict) -> str:
 
 
 def _resolve_outputs_root(override: Path | None, defaults: dict, evolve_root: Path) -> Path:
-    raw = _resolve(override, defaults, "outputs_root", "--outputs-root", "framework")
+    if override is not None:
+        raw = str(override)
+    else:
+        raw = str(_resolve(None, defaults, "outputs_root", "--outputs-root", "framework"))
+        raw = raw.format(timestamp=_timestamp())
     path = Path(raw)
     if not path.is_absolute():
         path = evolve_root / path
     return path.resolve()
+
+
+@lru_cache(maxsize=1)
+def _timestamp() -> str:
+    now = datetime.now()
+    return now.strftime("%Y-%m-%d_%H-%M-%S-") + f"{now.microsecond // 1000:03d}"

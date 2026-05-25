@@ -13,8 +13,11 @@ cohort_size = 3
 ai_agent_tool = "claude-sdk"
 
 # Read-write working dir for cycles/ledger/logs (--outputs-root). Relative
-# paths resolve against evolve/.
-outputs_root = "outputs"
+# paths resolve against evolve/. The literal `{timestamp}` is replaced with
+# the local-time process-start stamp `YYYY-MM-DD_HH-MM-SS-mmm`, giving each
+# invocation its own subdir (useful when sweeping). Only this config value
+# is interpolated; --outputs-root overrides are used literally.
+outputs_root = "outputs/{timestamp}"
 
 # Log level for stderr + per-cycle log file (--log-level). One of:
 # DEBUG, INFO, WARNING, ERROR, CRITICAL.

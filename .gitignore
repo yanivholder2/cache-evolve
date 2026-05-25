@@ -4,6 +4,10 @@ rust-logs/
 # Microbench harness output (regenerated per run)
 evolve/bench/bench.json
 
+# Per-invocation evolve outputs (timestamped subdirs)
+evolve/outputs/*
+!evolve/outputs/.gitkeep
+
 ### Claude Code ###
 .claude/worktrees/
 

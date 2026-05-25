@@ -339,30 +339,6 @@ def run_cycle(
         raise
 
 
-def _check_no_leftovers(layout: Layout) -> None:
-    """Die if outputs_root has artifacts from previous runs.
-
-    Ignores target/ — cargo cache is intended to persist.
-    """
-
-    def has_non_gitkeep(d: Path) -> bool:
-        return d.is_dir() and any(p.name != ".gitkeep" for p in d.iterdir())
-
-    leftovers = []
-    if has_non_gitkeep(layout.outputs.cycles_dir):
-        leftovers.append(str(layout.outputs.cycles_dir))
-    if layout.outputs.ledger.exists():
-        leftovers.append(str(layout.outputs.ledger))
-    if has_non_gitkeep(layout.outputs.logs_dir):
-        leftovers.append(str(layout.outputs.logs_dir))
-    if layout.outputs.leaderboard_md.exists():
-        leftovers.append(str(layout.outputs.leaderboard_md))
-    if layout.outputs.cross_cycle_insights_md.exists():
-        leftovers.append(str(layout.outputs.cross_cycle_insights_md))
-    if leftovers:
-        die(f"outputs_root has leftovers from previous runs: {', '.join(leftovers)}")
-
-
 def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="evolve.py",
@@ -411,7 +387,6 @@ def main(argv: list[str] | None = None) -> None:
     layout = Layout(evolve_root=evolve_root, outputs_root=cfg.framework.outputs_root)
 
     _log.setup(None, level=cfg.framework.log_level)
-    _check_no_leftovers(layout)
     log.debug("evolve_root=%s repo_root=%s", evolve_root, repo_root)
     log.debug(
         "adapter=%s outputs_root=%s log_level=%s",
