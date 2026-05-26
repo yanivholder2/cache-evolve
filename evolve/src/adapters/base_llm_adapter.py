@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,35 @@ Usage = dict[str, Any]
 AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
 
 log = logging.getLogger("llm-adapter")
+
+_TOKEN_TOTALS: dict[str, int] = {}
+_TOKEN_TOTALS_LOCK = threading.Lock()
+
+
+def _accumulate_usage(usage: Usage | None) -> None:
+    """Fold one invocation's int-valued usage fields into the run-level total.
+
+    Concurrent adapter calls (per-variant fan-out) update the totals under
+    a lock so the cumulative snapshot is consistent.
+    """
+    if not usage:
+        return
+    with _TOKEN_TOTALS_LOCK:
+        for key, value in usage.items():
+            if isinstance(value, int):
+                _TOKEN_TOTALS[key] = _TOKEN_TOTALS.get(key, 0) + value
+
+
+def snapshot_token_totals() -> dict[str, int]:
+    """Return a copy of cumulative token usage seen so far this process."""
+    with _TOKEN_TOTALS_LOCK:
+        return dict(_TOKEN_TOTALS)
+
+
+def format_token_totals(totals: dict[str, int]) -> str:
+    if not totals:
+        return "none"
+    return ", ".join(f"{key}={value}" for key, value in sorted(totals.items()))
 
 
 class LLMAdapter:
@@ -89,6 +119,7 @@ class LLMAdapter:
                 finally:
                     _write_footer(log_io, status, time.monotonic() - started_mono, usage)
         finally:
+            _accumulate_usage(usage)
             log.info(
                 "agent %s finished status=%s usage=%s log=%s",
                 agent_name,

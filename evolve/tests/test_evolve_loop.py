@@ -73,7 +73,7 @@ def test_loop_aborts_on_cycle_failure(tmp_path, monkeypatch):
     def failing(*_args, **_kwargs):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("src.variant.implementer.implement_variant", failing)
+    monkeypatch.setattr("src.variant.repair_loop.implement_variant", failing)
     with pytest.raises(SystemExit):
         _run_cycles(evolve_root, 2)
 

@@ -122,7 +122,7 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
         shutil.copy(good_impl / "manifest.toml", variant_dir.impl_dir / "manifest.toml")
         write_utf8(stamp_dir / f"{variant_dir.variant_id}.end", f"{time.time()}")
 
-    monkeypatch.setattr("src.variant.implementer.implement_variant", sleep_implementer)
+    monkeypatch.setattr("src.variant.repair_loop.implement_variant", sleep_implementer)
     _run_cycle(evolve_root, cohort_size=PARALLEL_COHORT_SIZE)
 
     starts = sorted(float(read_utf8(p)) for p in stamp_dir.glob("*.start"))
@@ -184,7 +184,7 @@ def test_failing_variant_implementer_aborts_cycle(tmp_path, monkeypatch):
         invoked.append(hyp_file.name)
         raise RuntimeError(f"boom on {hyp_file.name}")
 
-    monkeypatch.setattr("src.variant.implementer.implement_variant", failing)
+    monkeypatch.setattr("src.variant.repair_loop.implement_variant", failing)
     with pytest.raises(SystemExit):
         _run_cycle(evolve_root, cohort_size=2)
 

@@ -6,10 +6,9 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
-from datetime import datetime, timezone
 from pathlib import Path
 
-from src._io import append_utf8, write_utf8
+from src._io import write_utf8
 from src.paths import (
     CargoWorkspaceDir,
     CdylibWorkspace,
@@ -89,19 +88,6 @@ def _scaffold_cdylib_workspace(
     shutil.copy(layout.sources.variant_jni_rs, workspace.jni_rs)
 
 
-def _append_rejection(rejection_md: Path, variant: Variant, cargo_output: str) -> None:
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    entry = (
-        f"\n## {ts} — variant={variant}\n\n"
-        f"**Gate**: build gate\n"
-        f"**Error**:\n"
-        f"```\n{cargo_output}\n```\n"
-        f"---\n"
-    )
-    rejection_md.parent.mkdir(parents=True, exist_ok=True)
-    append_utf8(rejection_md, entry)
-
-
 def build_variant_for_gates(
     variant: Variant,
     *,
@@ -111,12 +97,12 @@ def build_variant_for_gates(
     """Compile a variant impl into a temp workspace. Returns the workspace.
 
     Raises:
-        subprocess.CalledProcessError: cargo build failed (rejection appended
-            to the variant's rejection.md, workspace removed).
+        subprocess.CalledProcessError: cargo build failed (workspace removed).
+            Callers (BuildGate) own the rejection.md write so all gates share
+            one rejection format.
     """
 
     variant_dir = variant.resolve(layout)
-    rejection_md = variant_dir.rejection_md
     with cargo_workspace_tempdir("dash-variant-", GatesWorkspace) as workspace:
         log.debug("workspace=%s impl=%s repo_root=%s", workspace.root, variant_dir.impl_dir, repo_root)
         _scaffold_gates_workspace(workspace, variant_dir, layout, repo_root)
@@ -128,12 +114,9 @@ def build_variant_for_gates(
             text=True,
         )
         if proc.returncode != 0:
-            log.info("build gate: FAILED")
-            _append_rejection(rejection_md, variant, proc.stdout + proc.stderr)
-            log.info("rejection logged to %s", rejection_md)
+            log.info("build gate: cargo build failed")
             raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
-        log.info("build gate: passed")
         # Caller owns workspace from here; the CM only cleans up on exception.
         return workspace
 

@@ -9,13 +9,17 @@ the cohort, not peer Variants, not the ledger.
 
 1. Read `$OUTPUT_DIR/task.md` for your assignment — it states your
    variant id, the parent-variant identifier and directory, the
-   hypothesis-file path, and the paths to context files.
+   hypothesis-file path, and the paths to context files. If the task is
+   a **repair turn** (attempt > 1), it also embeds the rejection entry
+   for the previous attempt under a `## Failing gate` section.
 2. Read the files listed in `task.md`:
    - **Hypothesis file** — the `## Changes` section is your concrete
      assignment. Apply only those changes against the parent variant's
      `segment.rs`. The first non-empty line of the preamble is the
      testable claim.
    - **Parent variant's `segment.rs`** — the Rust source you are modifying.
+     On a repair turn, "parent" is the previous attempt's `segment.rs`
+     (not the original baseline); your job is to fix what failed.
    - **Parent variant's `manifest.toml`** — eviction policy name of
      the parent variant. Inherit unless your changes require otherwise.
    - **Parent variant's `fitness-vector.json`** and **`insight.md`** when
@@ -25,6 +29,8 @@ the cohort, not peer Variants, not the ledger.
      seams. The Segment trait is the only realised one.
    - **Baseline `segment.rs`** — canonical shape and signatures for
      `VariantSegment` (the permanent research baseline).
+   - **Rust scaffold dir** (on demand) — source of truth for what the
+     gates assert; see "Contract & invariant ground truth" below.
 3. Write **exactly two files** into `$OUTPUT_DIR/`:
    - `segment.rs`
    - `manifest.toml`
@@ -34,18 +40,51 @@ the cohort, not peer Variants, not the ledger.
 - `segment.rs` defines `pub struct VariantSegment<K, V>` and implements
   `dash::dash::segments::Segment<K, V>` using only the crate's public API.
   Constructor signature: `pub fn new(settings: &dash::dash::dash_settings::DashSettings) -> Self`.
-  The build gate harness compiles this against the live `dash-cache-rs`
-  crate; the contract gate test instantiates `VariantSegment` and exercises
-  the trait.
+  The build gate compiles this against the live `dash-cache-rs` crate;
+  the contract gate instantiates `VariantSegment` and exercises the trait;
+  the invariant gate runs the P1–P5 suite.
 - `manifest.toml` has a `[variant]` table with `eviction_policy` (the
   Rust enum name, e.g. `"ClassicLRU"`; the contract gate calls
   `EvictionPolicy::from_name` to validate).
+
+## Contract & invariant ground truth
+
+The three gates are deterministic Rust tests. When in doubt about what a
+gate will check, read these files directly — they are the contract.
+
+- `<rust scaffold dir>/contract_gate.rs` — four `#[test]` fns:
+  - `constructor_succeeds` — `VariantSegment::<i64, i64>::new(&settings)` returns.
+  - `put_get_round_trip` — `put` then `get` returns the inserted value.
+  - `core_accessible` — `segment.core()` returns a `SegmentCore` reference.
+  - `valid_eviction_policy_name` — `manifest.toml`'s `eviction_policy`
+    parses via `EvictionPolicy::from_name`.
+- `<repo root>/src/test_utils/invariants.rs` — the P1–P5 property suite:
+  - **P1 no_phantom_items** — `contains_key` true implies `get` returns Some.
+  - **P2 capacity_bound** — total resident items never exceeds capacity.
+  - **P3 slot_legality** — every resident item sits in a hash-legal slot.
+  - **P4 single_eviction_per_put** — one `put` evicts at most one item.
+  - **P5 stash_terminal** — the stash is a terminal eviction queue.
+
+## Repair turn
+
+When `task.md` includes a `## Failing gate` section with an embedded
+rejection entry, your job is to **fix** the previous attempt, not to
+rewrite the variant from scratch:
+
+1. Identify the failing gate (build / contract / invariant) and the
+   specific test or invariant named in the entry.
+2. Re-read that test (in the rust scaffold dir or `invariants.rs`).
+3. Read the previous attempt's `segment.rs` listed under `## Paths`.
+4. Apply the minimal change that makes the failing test pass without
+   regressing the others. Keep the hypothesis's intent intact — repair,
+   don't pivot.
 
 ## Constraints
 
 - **Write only under `$OUTPUT_DIR`.** Do not touch `src/`, the cycle dir,
   the ledger, sibling Variants, or any other path.
-- **Apply only the `## Changes` diff.** Your variant is an experiment
+- **Apply only the `## Changes` diff** (initial attempt) or **fix only
+  the failing gate** (repair turn). Your variant is an experiment
   isolating one change against the parent variant. Do not invent
   unrelated improvements, refactor unrelated code, or rewrite the parent
   variant from scratch. If the hypothesis is wrong, the experiment
@@ -67,11 +106,12 @@ the cohort, not peer Variants, not the ledger.
 
 ## Failure modes
 
-- Build gate: missing `segment.rs`, or compile error.
-- Contract gate: trait method missing or wrong signature, or manifest
-  `eviction_policy` is not a valid `EvictionPolicy` name.
-- Invariant gate: duplicate keys, lost insert, capacity overflow.
+- **build gate**: missing `segment.rs`, or compile error.
+- **contract gate**: trait method missing or wrong signature, or
+  manifest `eviction_policy` is not a valid `EvictionPolicy` name.
+- **invariant gate**: duplicate keys, lost insert, capacity overflow,
+  or any other P1–P5 violation.
 
-Rejection is logged with the failing gate and compiler output. Do not
-retry inside this invocation; the framework decides whether to spawn a
-repair attempt.
+Rejection is logged with the failing gate, attempt number, and compiler /
+test output. The framework may spawn a repair turn (see above); a single
+invocation should not loop internally.

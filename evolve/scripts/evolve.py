@@ -40,8 +40,7 @@ from src.hypothesis.writer import write_hypotheses  # noqa: E402
 from src.identifiers import CYCLE_ID_WIDTH, CycleId, HypothesisId, VariantId  # noqa: E402
 from src._io import read_utf8  # noqa: E402
 from src.paths import CycleLayout, CycleVariant, CycleVariantDir, Layout  # noqa: E402
-from src.variant.gate_check import run_gates  # noqa: E402
-from src.variant import implementer as _implementer  # noqa: E402
+from src.variant.repair_loop import VariantStepFailed, implement_with_repair  # noqa: E402
 from src.variant.variant_insight_writer import write_insight  # noqa: E402
 
 log = logging.getLogger("evolve")
@@ -78,18 +77,6 @@ def _phase(name: str, timings: dict[str, float] | None = None):
             timings[name] = elapsed
 
 
-class VariantStepFailed(Exception):
-    """Sentinel: one step in a variant's pipeline failed; abort remaining steps.
-
-    `reason` is a short tag like "implement", "gate:contract gate", "fitness", "insight"
-    so the cycle-level survival summary can attribute each rejection.
-    """
-
-    def __init__(self, reason: str):
-        super().__init__(reason)
-        self.reason = reason
-
-
 @contextmanager
 def _variant_pipeline_step(name: str, variant_id: VariantId):
     """Log step success/failure for one variant; convert any exception into VariantStepFailed.
@@ -117,7 +104,7 @@ class VariantOutcome:
     variant_id: VariantId
     hypothesis_id: HypothesisId
     survived: bool
-    reason: str | None  # None iff survived; e.g. "gate:contract gate", "implement"
+    reason: str | None  # None iff survived; e.g. "gate:contract gate (3/3 attempts)", "implement"
 
 
 def _next_cycle_id(cycles_dir: Path) -> CycleId:
@@ -158,14 +145,19 @@ def _run_variant_pipeline(
     variant_dir = cycle_layout.variant(variant_id)
     hypothesis_id = HypothesisId(variant_id.value)
     hypothesis_file = cycle_layout.hypothesis_file(hypothesis_id)
+    max_attempts = cfg.framework.implementation_attempts
 
     try:
-        with _variant_pipeline_step("implement", variant_id):
-            _implementer.implement_variant(hypothesis_file, variant_dir, layout=layout, adapter=adapter)
-        with _variant_pipeline_step("gate-check", variant_id):
-            gates_result = run_gates(variant, layout=layout, repo_root=repo_root, hypothesis=hypothesis_id)
+        with _variant_pipeline_step("implement-and-gate", variant_id):
+            gates_result = implement_with_repair(
+                hypothesis_file, variant_dir,
+                variant=variant, layout=layout, repo_root=repo_root,
+                adapter=adapter, max_attempts=max_attempts, hypothesis=hypothesis_id,
+            )
             if not gates_result:
-                raise VariantStepFailed(f"gate:{gates_result.first_failed_gate}")
+                raise VariantStepFailed(
+                    f"gate:{gates_result.first_failed_gate} ({max_attempts}/{max_attempts} attempts)"
+                )
         with _variant_pipeline_step("fitness", variant_id):
             compute_fitness(variant, layout=layout, repo_root=repo_root, cfg=cfg)
         with _variant_pipeline_step("insight", variant_id):

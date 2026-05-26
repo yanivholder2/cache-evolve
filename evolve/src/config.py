@@ -31,6 +31,7 @@ class FrameworkConfig:
     log_level: str
     digest_cycles: int
     max_workers: int
+    implementation_attempts: int
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,7 @@ def load_configs(
         log_level=_resolve_log_level(log_level, framework_defaults),
         digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
         max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
+        implementation_attempts=_resolve_positive_int(None, framework_defaults, "implementation_attempts", None, "framework"),
     )
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),

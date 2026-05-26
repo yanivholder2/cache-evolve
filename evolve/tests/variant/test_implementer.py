@@ -49,6 +49,7 @@ def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
     implement_variant(
         hypothesis,
         variant_dir,
+        attempt=1,
         layout=layout,
         adapter=StubLLMAdapter(capture_file=capture),
     )
@@ -57,6 +58,51 @@ def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
     baseline_root = layout.sources.baseline.root
     assert str(baseline_root) in body, "task.md should embed baseline parent dir"
     assert str(baseline_root) in body.split("readable-roots:")[1].split("\n")[0]
+
+
+def test_initial_attempt_writes_under_attempts_01(tmp_path):
+    evolve = _setup_evolve(tmp_path)
+    layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
+    cycle_layout = layout.outputs.cycle(CycleId(1))
+    variant_dir = cycle_layout.variant(VariantId(1))
+
+    hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
+    _write_hypothesis(hypothesis, parent_variant="baseline")
+
+    attempt_dir = implement_variant(
+        hypothesis,
+        variant_dir,
+        attempt=1,
+        layout=layout,
+        adapter=StubLLMAdapter(),
+    )
+
+    assert attempt_dir.root == variant_dir.attempts_dir / "01"
+    assert (attempt_dir.impl_dir / "segment.rs").is_file()
+    assert (attempt_dir.impl_dir / "manifest.toml").is_file()
+
+
+def test_readable_roots_include_rust_scaffold_dir(tmp_path):
+    evolve = _setup_evolve(tmp_path)
+    layout = Layout(evolve_root=evolve, outputs_root=evolve / "outputs")
+    cycle_layout = layout.outputs.cycle(CycleId(1))
+    variant_dir = cycle_layout.variant(VariantId(1))
+
+    hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
+    _write_hypothesis(hypothesis, parent_variant="baseline")
+
+    capture = tmp_path / "capture.txt"
+    implement_variant(
+        hypothesis,
+        variant_dir,
+        attempt=1,
+        layout=layout,
+        adapter=StubLLMAdapter(capture_file=capture),
+    )
+
+    body = read_utf8(capture)
+    readable_line = body.split("readable-roots:")[1].split("\n")[0]
+    assert str(layout.sources.rust_scaffold_dir) in readable_line
 
 
 def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
@@ -76,6 +122,7 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
     implement_variant(
         hypothesis,
         current_variant,
+        attempt=1,
         layout=layout,
         adapter=StubLLMAdapter(capture_file=capture),
     )
@@ -109,6 +156,7 @@ def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
         implement_variant(
             hypothesis,
             variant_dir,
+            attempt=1,
             layout=layout,
             adapter=_SilentNoOpAdapter(),
         )
@@ -127,5 +175,5 @@ def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
     capture = tmp_path / "capture.txt"
     adapter = StubLLMAdapter(capture_file=capture)
     with pytest.raises(ValueError, match="missing '## Parent'"):
-        implement_variant(hypothesis, variant_dir, layout=layout, adapter=adapter)
+        implement_variant(hypothesis, variant_dir, attempt=1, layout=layout, adapter=adapter)
     assert not capture.exists(), "adapter must not be invoked when hypothesis is malformed"

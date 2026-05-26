@@ -189,14 +189,71 @@ def cargo_workspace_tempdir(prefix: str, cls: Type[_W]) -> Iterator[_W]:
         raise
 
 
+ATTEMPT_DIR_WIDTH = 2
+
+
+@dataclass(frozen=True)
+class AttemptDir(VariantDir):
+    """One implementation attempt under `cycle_variant_dir.attempts_dir`.
+
+    Inherits VariantDir's `root / "impl"` semantics — each attempt has its
+    own self-contained `impl/` payload (task.md, segment.rs, manifest.toml).
+    """
+
+    @property
+    def attempt_number(self) -> int:
+        return int(self.root.name)
+
+
 @dataclass(frozen=True)
 class CycleVariantDir(VariantDir):
     """A concrete cycle variant (cycles/<id>/variants/v<NNN>); `root.name`
-    must parse as a `VariantId`."""
+    must parse as a `VariantId`.
+
+    `impl_dir` / `segment_rs` / `manifest_toml` / `impl_task_md` resolve to
+    the latest `attempts/NN/` on disk so downstream consumers (fitness,
+    insight) need no knowledge of the repair-loop layout. When no attempt
+    exists yet, they resolve to `attempt(1)` — the next-to-be-written slot.
+    """
 
     @property
     def variant_id(self) -> VariantId:
         return VariantId.from_str(self.root.name)
+
+    @property
+    def attempts_dir(self) -> Path:
+        return self.root / "attempts"
+
+    def attempt(self, n: int) -> AttemptDir:
+        return AttemptDir(root=self.attempts_dir / f"{n:0{ATTEMPT_DIR_WIDTH}d}")
+
+    @property
+    def latest_attempt(self) -> AttemptDir:
+        """Latest `attempts/NN/` on disk; falls back to `attempt(1)` when none exist."""
+        if self.attempts_dir.is_dir():
+            attempts = sorted(
+                p for p in self.attempts_dir.iterdir()
+                if p.is_dir() and p.name.isdigit()
+            )
+            if attempts:
+                return AttemptDir(root=attempts[-1])
+        return self.attempt(1)
+
+    @property
+    def impl_dir(self) -> Path:
+        return self.latest_attempt.impl_dir
+
+    @property
+    def impl_task_md(self) -> Path:
+        return self.latest_attempt.impl_task_md
+
+    @property
+    def manifest_toml(self) -> Path:
+        return self.latest_attempt.manifest_toml
+
+    @property
+    def segment_rs(self) -> Path:
+        return self.latest_attempt.segment_rs
 
 
 @dataclass(frozen=True)
