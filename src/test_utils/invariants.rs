@@ -6,7 +6,7 @@ use proptest::test_runner::{TestError, TestRunner};
 
 /// Run all invariant properties against any [`Segment`] implementation.
 ///
-/// This is the G3 gate artifact. A Variant's thin harness declares:
+/// This is the invariant-gate artifact. A Variant's thin harness declares:
 ///
 /// ```toml
 /// [dependencies]
@@ -23,7 +23,7 @@ use proptest::test_runner::{TestError, TestRunner};
 /// Uses proptest internally — same randomized coverage as the property tests
 /// in `tests/invariant_suite.rs`. Returns `Ok(())` if all invariants hold,
 /// `Err(message)` naming the first violation with proptest's shrunk counterexample
-/// — suitable for populating `rejection-log.md` on G3 failure.
+/// — suitable for populating `rejection-log.md` on invariant-gate failure.
 pub fn run_invariant_suite<S>(factory: impl Fn() -> S) -> Result<(), String>
 where
     S: Segment<i64, i64>,

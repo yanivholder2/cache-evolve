@@ -2,12 +2,12 @@
 # Mock cargo for evolve gate-script tests.
 #
 # Handles the cargo invocations made by scripts/build.py and scripts/gate-check.py
-# (i.e. variant-crate `cargo build --tests` and `cargo test --test {g2_contract,g3_invariant}`)
+# (i.e. variant-crate `cargo build --tests` and `cargo test --test {contract_gate,invariant_gate}`)
 # by inspecting markers in the variant source — no real Rust compilation runs:
-#   // MOCK_CARGO: g1_fail              -> `cargo build --tests` fails
-#   // MOCK_CARGO: g3_fail P<n> <name>  -> `cargo test --test g3_invariant` fails
-#                                          with the matching panic format
-# `cargo test --test g2_contract` fails when the manifest declares an
+#   // MOCK_CARGO: build_gate_fail                 -> `cargo build --tests` fails
+#   // MOCK_CARGO: invariant_gate_fail P<n> <name> -> `cargo test --test invariant_gate` fails
+#                                                     with the matching panic format
+# `cargo test --test contract_gate` fails when the manifest declares an
 # eviction_policy name not in the known set (mirrors the real harness check).
 #
 # Any other cargo invocation (fitness plugins building real binaries, etc.)
@@ -45,7 +45,7 @@ while [ $i -lt ${#ARGS[@]} ]; do
         --tests)         IS_GATE_BUILD=true; i=$((i+1));;
         --test)
             case "${ARGS[$((i+1))]}" in
-                g2_contract|g3_invariant) IS_GATE_TEST="${ARGS[$((i+1))]}";;
+                contract_gate|invariant_gate) IS_GATE_TEST="${ARGS[$((i+1))]}";;
             esac
             i=$((i+2));;
         *) i=$((i+1));;
@@ -70,8 +70,8 @@ VARIANT_RS="${WORK_DIR}/src/variant.rs"
 MANIFEST_TOML="${WORK_DIR}/manifest.toml"
 
 if [ "$SUBCMD" = "build" ]; then
-    if [ -f "$VARIANT_RS" ] && grep -q '^// MOCK_CARGO: g1_fail' "$VARIANT_RS"; then
-        echo "error[E0599]: mock cargo: g1_fail marker present in $VARIANT_RS" >&2
+    if [ -f "$VARIANT_RS" ] && grep -q '^// MOCK_CARGO: build_gate_fail' "$VARIANT_RS"; then
+        echo "error[E0599]: mock cargo: build_gate_fail marker present in $VARIANT_RS" >&2
         exit 101
     fi
     exit 0
@@ -79,7 +79,7 @@ fi
 
 # Gate test path
 case "$IS_GATE_TEST" in
-    g2_contract)
+    contract_gate)
         if [ -f "$MANIFEST_TOML" ]; then
             NAME=$(grep -E '^[[:space:]]*eviction_policy[[:space:]]*=' "$MANIFEST_TOML" \
                 | grep -v 'eviction_policy_ordinal' \
@@ -90,7 +90,7 @@ case "$IS_GATE_TEST" in
                 case "$NAME" in
                     ClassicLRU|TimestampLRU|Lifo|Lfu|Fifo|Swap) ;;
                     *)
-                        echo "thread 'main' panicked: G2 trait contract failed: eviction_policy=\"$NAME\" is not a valid EvictionPolicy name" >&2
+                        echo "thread 'main' panicked: contract gate trait contract failed: eviction_policy=\"$NAME\" is not a valid EvictionPolicy name" >&2
                         exit 101
                         ;;
                 esac
@@ -98,13 +98,13 @@ case "$IS_GATE_TEST" in
         fi
         exit 0
         ;;
-    g3_invariant)
+    invariant_gate)
         if [ -f "$VARIANT_RS" ]; then
-            MARK=$(grep -oE '^// MOCK_CARGO: g3_fail P[1-5] [a-z_]+' "$VARIANT_RS" | head -n1 || true)
+            MARK=$(grep -oE '^// MOCK_CARGO: invariant_gate_fail P[1-5] [a-z_]+' "$VARIANT_RS" | head -n1 || true)
             if [ -n "$MARK" ]; then
-                INV="${MARK#// MOCK_CARGO: g3_fail }"
-                echo "thread 'tokio-runtime-worker' panicked at evolve/harness/g3_invariant.rs:1:1:" >&2
-                echo "G3 invariant violated: $INV" >&2
+                INV="${MARK#// MOCK_CARGO: invariant_gate_fail }"
+                echo "thread 'tokio-runtime-worker' panicked at evolve/harness/invariant_gate.rs:1:1:" >&2
+                echo "invariant gate violated: $INV" >&2
                 exit 101
             fi
         fi

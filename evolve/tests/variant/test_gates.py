@@ -60,7 +60,7 @@ def test_build_broken_fixture_logs_structured_entry(tmp_path):
     with pytest.raises(subprocess.CalledProcessError):
         build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
     content = read_utf8(variant.resolve(layout).rejection_md)
-    assert "G1 (build)" in content
+    assert "build gate" in content
     assert EXPECTED_VARIANT_TAG in content
 
 
@@ -85,11 +85,11 @@ def test_gate_check_broken_fixture_logs_structured_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT)
     content = read_utf8(variant.resolve(layout).rejection_md)
-    assert "G1 (build)" in content
+    assert "build gate" in content
     assert EXPECTED_VARIANT_TAG in content
 
 
-def test_gate_check_invalid_policy_name_fails_g2(tmp_path):
+def test_gate_check_invalid_policy_name_fails_contract_gate(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     write_utf8(
         variant.resolve(layout).manifest_toml,
@@ -97,16 +97,16 @@ def test_gate_check_invalid_policy_name_fails_g2(tmp_path):
     )
     assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT)
     content = read_utf8(variant.resolve(layout).rejection_md)
-    assert "G2 (trait contract)" in content
+    assert "contract gate" in content
     assert "NotAPolicy" in content
 
 
-def test_gate_check_bad_invariant_fixture_fails_g3(tmp_path):
+def test_gate_check_bad_invariant_fixture_fails_invariant_gate(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
     result = run_gates(variant, layout=layout, repo_root=REPO_ROOT)
-    assert result.g1_passed is True
-    assert result.g2_passed is True
-    assert result.g3_passed is False
+    assert result.build_gate_passed is True
+    assert result.contract_gate_passed is True
+    assert result.invariant_gate_passed is False
     assert not result.all_passed
 
 
@@ -114,19 +114,19 @@ def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT)
     content = read_utf8(variant.resolve(layout).rejection_md)
-    assert "G3 (invariant suite)" in content
+    assert "invariant gate" in content
     assert EXPECTED_VARIANT_TAG in content
     # **Failing invariant** must name a P[1-5] property, not just appear in
     # the embedded panic block.
     assert re.search(r"\*\*Failing invariant\*\*: P[1-5] [a-z_]+", content)
 
 
-def test_gate_check_good_fixture_passes_g3(tmp_path):
+def test_gate_check_good_fixture_passes_invariant_gate(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     result = run_gates(variant, layout=layout, repo_root=REPO_ROOT)
-    assert result.g1_passed is True
-    assert result.g2_passed is True
-    assert result.g3_passed is True
+    assert result.build_gate_passed is True
+    assert result.contract_gate_passed is True
+    assert result.invariant_gate_passed is True
     assert result.all_passed
     rejection_md = variant.resolve(layout).rejection_md
     assert not rejection_md.is_file() or read_utf8(rejection_md).strip() == ""

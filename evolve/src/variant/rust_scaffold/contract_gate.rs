@@ -1,4 +1,4 @@
-// Copied into $WORK_DIR/tests/g2_contract.rs at build time — not compiled from here.
+// Copied into $WORK_DIR/tests/contract_gate.rs at build time — not compiled from here.
 // Kept as a real .rs file so rustfmt, IDEs, and trait-drift review can target it.
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::Segment;
@@ -18,25 +18,25 @@ fn default_settings() -> DashSettings {
 }
 
 #[test]
-fn g2_constructor_succeeds() {
+fn contract_gate_constructor_succeeds() {
     let _seg = VariantSegment::<i64, i64>::new(&default_settings());
 }
 
 #[test]
-fn g2_put_get_round_trip() {
+fn contract_gate_put_get_round_trip() {
     let mut seg = VariantSegment::<i64, i64>::new(&default_settings());
     seg.put(Item::new(1i64, 100i64));
     assert_eq!(seg.get(&1i64).expect("item must be resident after put").value, 100i64);
 }
 
 #[test]
-fn g2_core_accessible() {
+fn contract_gate_core_accessible() {
     let seg = VariantSegment::<i64, i64>::new(&default_settings());
     let _ = seg.core();
 }
 
 #[test]
-fn g2_valid_eviction_policy_name() {
+fn contract_gate_valid_eviction_policy_name() {
     let manifest = std::fs::read_to_string("manifest.toml")
         .expect("manifest.toml must be readable from the workspace root");
     let mut found = false;

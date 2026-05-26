@@ -1,11 +1,11 @@
-// Invariant Suite — G3 gate artifact
+// Invariant Suite — invariant-gate artifact
 //
 // Negative fixtures confirm each property test catches the violation it claims to.
 // The invariant properties live in `run_invariant_suite` (src/test_utils/invariants.rs),
 // which is the single source of truth. The `harness_tests` module below drives that
 // suite against all built-in segment types.
 //
-// ## G3 gate-check mechanism
+// ## Invariant-gate check mechanism
 //
 // Against main `src/`:
 //   cargo test --features test-utils --test invariant_suite
@@ -14,9 +14,9 @@
 //   1. The Variant implements the `Segment` trait (the stable extension point).
 //   2. Add a thin harness test that depends on this crate with the `test-utils`
 //      feature and calls `dash::test_utils::run_invariant_suite(|| MySegment::new(&s))`.
-//   3. The G3 gate script runs `cargo test --test invariant_suite` from the
-//      Variant workspace. Non-zero exit = G3 failure; the failing invariant
-//      name is recorded in `rejection-log.md`.
+//   3. The invariant-gate script runs `cargo test --test invariant_suite` from
+//      the Variant workspace. Non-zero exit = invariant-gate failure; the failing
+//      invariant name is recorded in `rejection-log.md`.
 
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
@@ -136,7 +136,7 @@ fn stash_terminal_negative_fixture() {
 
 // ── run_invariant_suite: drives all built-in segment types ────────────────────
 // Requires --features test-utils.  Variants call run_invariant_suite directly
-// from their own thin harness test; see the G3 gate-check comment at the top.
+// from their own thin harness test; see the invariant-gate comment at the top.
 
 #[cfg(feature = "test-utils")]
 mod harness_tests {

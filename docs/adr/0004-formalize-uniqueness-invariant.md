@@ -40,7 +40,7 @@ already upheld by the caller sequence. The performance cost is not justified.
 - The uniqueness invariant is now the documented caller contract for `Dash::put`
   and `Segment::put`. Any future caller that violates it will panic in debug
   builds immediately at the insertion site.
-- The G3 invariant suite's no-phantom-items property is consistent with this
-  contract: a phantom can only arise from a duplicate insertion, which the
-  assert will catch before it reaches the bucket.
+- The invariant gate's invariant suite's no-phantom-items property is
+  consistent with this contract: a phantom can only arise from a duplicate
+  insertion, which the assert will catch before it reaches the bucket.
 - Release builds are unaffected: `debug_assert!` compiles out with `--release`.

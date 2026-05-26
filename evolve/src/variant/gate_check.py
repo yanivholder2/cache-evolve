@@ -1,4 +1,4 @@
-"""G1 + G2 + G3 gates for a variant impl/."""
+"""Build gate + contract gate + invariant gate checks for a variant impl/."""
 
 from __future__ import annotations
 
@@ -18,31 +18,31 @@ from src.paths import GatesWorkspace, Layout, Variant
 
 log = logging.getLogger("gate-check")
 
-G3_MARKER_RE = re.compile(r"G3 invariant violated: P[1-5] [a-z_]+")
+INVARIANT_GATE_MARKER_RE = re.compile(r"invariant gate violated: P[1-5] [a-z_]+")
 
 
 @dataclass(frozen=True)
 class GatesResult:
     """Per-gate outcome of a `run_gates()` call. Gates execute in order
-    G1 → G2 → G3; a gate that didn't run (because an earlier one failed)
-    is recorded as False."""
+    build gate → contract gate → invariant gate; a gate that didn't run
+    (because an earlier one failed) is recorded as False."""
 
-    g1_passed: bool = False
-    g2_passed: bool = False
-    g3_passed: bool = False
+    build_gate_passed: bool = False
+    contract_gate_passed: bool = False
+    invariant_gate_passed: bool = False
 
     @property
     def all_passed(self) -> bool:
-        return self.g1_passed and self.g2_passed and self.g3_passed
+        return self.build_gate_passed and self.contract_gate_passed and self.invariant_gate_passed
 
     @property
     def first_failed_gate(self) -> str | None:
-        if not self.g1_passed:
-            return "G1"
-        if not self.g2_passed:
-            return "G2"
-        if not self.g3_passed:
-            return "G3"
+        if not self.build_gate_passed:
+            return "build gate"
+        if not self.contract_gate_passed:
+            return "contract gate"
+        if not self.invariant_gate_passed:
+            return "invariant gate"
         return None
 
     def __bool__(self) -> bool:
@@ -80,21 +80,21 @@ def _rejection_header(variant: Variant, hypothesis: HypothesisId | None) -> str:
     return f"\n## {ts} — variant={variant} {hypothesis_part}\n\n"
 
 
-def _check_g2(
+def _check_contract_gate(
     workspace: GatesWorkspace,
     variant: Variant,
     rejection_md: Path,
     hypothesis: HypothesisId | None,
 ) -> bool:
-    proc = _run_cargo_test(workspace, "g2_contract")
+    proc = _run_cargo_test(workspace, "contract_gate")
     if proc.returncode == 0:
-        log.info("G2: passed for %s", variant)
+        log.info("contract gate: passed for %s", variant)
         return True
-    log.info("G2: FAILED for %s (hypothesis=%s)", variant, hypothesis)
+    log.info("contract gate: FAILED for %s (hypothesis=%s)", variant, hypothesis)
     _append_entry(
         rejection_md,
         _rejection_header(variant, hypothesis)
-        + f"**Gate**: G2 (trait contract)\n"
+        + f"**Gate**: contract gate\n"
         + f"**Hypothesis**: {hypothesis}\n"
         + f"**Error**:\n"
         + f"```\n{proc.stdout + proc.stderr}\n```\n"
@@ -104,27 +104,27 @@ def _check_g2(
     return False
 
 
-def _check_g3(
+def _check_invariant_gate(
     workspace: GatesWorkspace,
     variant: Variant,
     rejection_md: Path,
     hypothesis: HypothesisId | None,
 ) -> bool:
-    proc = _run_cargo_test(workspace, "g3_invariant")
+    proc = _run_cargo_test(workspace, "invariant_gate")
     if proc.returncode == 0:
-        log.info("G3: passed for %s", variant)
+        log.info("invariant gate: passed for %s", variant)
         return True
-    log.info("G3: FAILED for %s (hypothesis=%s)", variant, hypothesis)
+    log.info("invariant gate: FAILED for %s (hypothesis=%s)", variant, hypothesis)
     output = proc.stdout + proc.stderr
 
-    marker = G3_MARKER_RE.search(output)
+    marker = INVARIANT_GATE_MARKER_RE.search(output)
     if marker:
-        invariant = marker.group(0).removeprefix("G3 invariant violated: ")
-        gate_label = "G3 (invariant suite)"
+        invariant = marker.group(0).removeprefix("invariant gate violated: ")
+        gate_label = "invariant gate"
     else:
-        log.warning("G3 cargo test failed without an invariant marker — treating as harness error")
+        log.warning("invariant gate cargo test failed without an invariant marker — treating as harness error")
         invariant = "<harness error — see Error block>"
-        gate_label = "G3 (harness error)"
+        gate_label = "invariant gate (harness error)"
 
     _append_entry(
         rejection_md,
@@ -147,7 +147,8 @@ def run_gates(
     repo_root: Path,
     hypothesis: HypothesisId | None = None,
 ) -> GatesResult:
-    """Run G1+G2+G3 against the variant's impl/. Result is truthy iff all pass.
+    """Run build gate + contract gate + invariant gate against the variant's impl/.
+    Result is truthy iff all pass.
 
     A failing gate writes its entry to `<variant_dir>/rejection.md`.
     """
@@ -161,22 +162,26 @@ def run_gates(
         )
     except FileNotFoundError as e:
         log.error("%s", e)
-        return GatesResult(g1_passed=False)
+        return GatesResult(build_gate_passed=False)
     except subprocess.CalledProcessError:
-        return GatesResult(g1_passed=False)
+        return GatesResult(build_gate_passed=False)
 
     try:
-        g2_passed = _check_g2(workspace, variant, rejection_md, hypothesis)
-        if not g2_passed:
-            return GatesResult(g1_passed=True, g2_passed=False)
-        g3_passed = _check_g3(workspace, variant, rejection_md, hypothesis)
+        contract_gate_passed = _check_contract_gate(workspace, variant, rejection_md, hypothesis)
+        if not contract_gate_passed:
+            return GatesResult(build_gate_passed=True, contract_gate_passed=False)
+        invariant_gate_passed = _check_invariant_gate(workspace, variant, rejection_md, hypothesis)
     finally:
         shutil.rmtree(
             workspace.root,
             onexc=lambda fn, path, exception: log.warning("workspace cleanup failed for %s: %s", path, exception),
         )
 
-    result = GatesResult(g1_passed=True, g2_passed=True, g3_passed=g3_passed)
+    result = GatesResult(
+        build_gate_passed=True,
+        contract_gate_passed=True,
+        invariant_gate_passed=invariant_gate_passed,
+    )
     if result.all_passed:
         log.info("gate-check: all gates passed for %s", variant)
     return result

@@ -1,12 +1,13 @@
-// Bad-Variant fixture: compiles, passes G2 round-trip, violates P3 slot_legality.
-// MOCK_CARGO: g3_fail P3 slot_legality
+// Bad-Variant fixture: compiles, passes contract-gate round-trip, violates P3 slot_legality.
+// MOCK_CARGO: invariant_gate_fail P3 slot_legality
 //
 // On construction, force-pushes a phantom item into bucket 0 whose key hashes to
-// a different bucket. The legit Segment surface (`get`, `put`) still works, so G1
-// and G2 pass; the G3 Invariant suite catches the illegal slot.
+// a different bucket. The legit Segment surface (`get`, `put`) still works, so
+// the build gate and contract gate pass; the invariant gate's Invariant suite
+// catches the illegal slot.
 //
 // `VariantSegment` is declared `<K, V>` to match the shape every Variant must
-// expose (the shared g2_contract harness instantiates `VariantSegment::<i64, i64>`);
+// expose (the shared contract_gate harness instantiates `VariantSegment::<i64, i64>`);
 // only the `<i64, i64>` constructor is provided because the rejection-log
 // machinery in scripts/gate-check.py is wired for that key/value type.
 use dash::dash::dash_settings::DashSettings;
