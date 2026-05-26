@@ -12,7 +12,7 @@ cohort_size = 3
 # evolve/src/adapters/REGISTRY.
 ai_agent_tool = "claude-sdk"
 
-# Read-write working dir for cycles/ledger/logs (--outputs-root). Relative
+# Read-write working dir for cycles, ledger, and logs (--outputs-root). Relative
 # paths resolve against evolve/. The literal `{timestamp}` is replaced with
 # the local-time process-start stamp `YYYY-MM-DD_HH-MM-SS-mmm`, giving each
 # invocation its own subdir (useful when sweeping). Only this config value

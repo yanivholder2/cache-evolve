@@ -78,7 +78,7 @@ def test_task_md_contains_pareto_insights_and_hypotheses(tmp_path):
     v2 = _seed_variant(cycle_layout, VariantId(2), "v002 insight body\n")
     h1 = _seed_hypothesis(cycle_layout, HypothesisId(1), "h1 body\n")
     h2 = _seed_hypothesis(cycle_layout, HypothesisId(2), "h2 body\n")
-    ledger = tmp_path / "ledger" / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
 
     adapter = _RecordingAdapter()
     write_cycle_insight(
@@ -104,7 +104,7 @@ def test_task_md_inlines_digest_body(tmp_path):
     cycle_layout = _cycle_layout(tmp_path, CycleId(2))
     v1 = _seed_variant(cycle_layout, VariantId(1), "vbody")
     h1 = _seed_hypothesis(cycle_layout, HypothesisId(1), "h body")
-    ledger = tmp_path / "ledger" / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
     _seed_ledger(ledger, [("0001", "prior cycle continuation text")])
 
     adapter = _RecordingAdapter()
@@ -129,7 +129,7 @@ def test_readable_roots_are_insights_and_hypotheses_only(tmp_path):
     v2 = _seed_variant(cycle_layout, VariantId(2), "v2")
     h1 = _seed_hypothesis(cycle_layout, HypothesisId(1), "h1")
     h2 = _seed_hypothesis(cycle_layout, HypothesisId(2), "h2")
-    ledger = tmp_path / "ledger" / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
 
     adapter = _RecordingAdapter()
     write_cycle_insight(
@@ -158,7 +158,7 @@ def test_missing_cycle_insight_md_raises(tmp_path):
     cycle_layout = _cycle_layout(tmp_path, CycleId(1))
     v1 = _seed_variant(cycle_layout, VariantId(1), "v1")
     h1 = _seed_hypothesis(cycle_layout, HypothesisId(1), "h1")
-    ledger = tmp_path / "ledger" / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
 
     with pytest.raises(FileNotFoundError, match="cycle-insight.md"):
         write_cycle_insight(
@@ -176,7 +176,7 @@ def test_no_prior_cycles_yields_no_digest_section_body(tmp_path):
     cycle_layout = _cycle_layout(tmp_path, CycleId(1))
     v1 = _seed_variant(cycle_layout, VariantId(1), "v1")
     h1 = _seed_hypothesis(cycle_layout, HypothesisId(1), "h1")
-    ledger = tmp_path / "ledger" / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
 
     adapter = _RecordingAdapter()
     write_cycle_insight(

@@ -59,13 +59,6 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** deciding whether to use LLM reasoning vs. deterministic computation.
 
-### [0003 — Atomic ledger append](adr/0003-atomic-ledger-append.md)
-
-* Considered options
-* Consequences
-
-**Read when** modifying ledger writes.
-
 ### [0004 — Formalize uniqueness invariant](adr/0004-formalize-uniqueness-invariant.md)
 
 * What was done

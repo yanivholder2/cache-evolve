@@ -2,7 +2,7 @@
 
 `evolve/` is the research framework that drives caches experimental loop. It runs **cycles** of cache-policy evolution: each cycle proposes a **cohort** of hypotheses, generates one Rust variant per hypothesis, runs correctness gates (G1/G2/G3) plus fitness plugins (For example hit-rate), writes one LLM-authored Variant insight per surviving Variant, writes one Cycle insight summarising the cohort, computes a Pareto front, and appends one row to the immutable ledger.
 
-Subagents handle judgment work (hypothesize, implement, write variant insight, write cycle insight) via in-process adapters. Library modules under `src/` handle everything deterministic — scaffolding, gates, scoring, sealing, ledger/leaderboard maintenance. Everything a run writes lands under `evolve/outputs/` (gitignored): cycle artifacts at `outputs/cycles/NNNN/` (sealed once complete), plus `outputs/ledger/cycles.jsonl` and `outputs/leaderboard.md` as the persistent across-cycle views.
+Subagents handle judgment work (hypothesize, implement, write variant insight, write cycle insight) via in-process adapters. Library modules under `src/` handle everything deterministic — scaffolding, gates, scoring, sealing, ledger/leaderboard maintenance. Everything a run writes lands under `evolve/outputs/` (gitignored): cycle artifacts at `outputs/cycles/NNNN/` (sealed once complete), plus `outputs/cycles-ledger.jsonl` and `outputs/leaderboard.md` as the persistent across-cycle views.
 
 ## Environment Setup
 
@@ -29,7 +29,7 @@ Flags (defaults sourced from [`config.toml`](config.toml); flags override per-ru
 | `--cycles N`                | `framework.cycles`         | Number of cycles to run sequentially. Aborts on first failure.                         |
 | `--cohort-size N`           | `framework.cohort_size`    | Number of variants per cycle.                                                          |
 | `--ai-agent-tool <name>`    | `framework.ai_agent_tool`  | AI agent backend to drive subagents. Choices: `antigravity-sdk`, `claude-sdk`.         |
-| `--outputs-root <path>`     | —                          | Read-write dir for cycles/ledger/logs (default: `outputs/`).                           |
+| `--outputs-root <path>`     | —                          | Read-write dir for cycles, ledger, and logs (default: `outputs/`).                     |
 | `--log-level <level>`       | `framework.log_level`      | Log verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                 |
 | `--simulator-timeout-s N`   | `simulator.timeout_s`      | Per-variant simulator invocation timeout (seconds). Surfaces as `FitnessError`.        |
 

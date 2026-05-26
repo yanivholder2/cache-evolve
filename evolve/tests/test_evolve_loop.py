@@ -23,7 +23,7 @@ def _setup_repo(tmp_path: Path) -> Path:
     shutil.copytree(
         EVOLVE_SRC,
         evolve_dst,
-        ignore=shutil.ignore_patterns(".venv", "cycles", "ledger", "__pycache__", "*.pyc", "logs"),
+        ignore=shutil.ignore_patterns(".venv", "cycles", "cycles-ledger.jsonl", "__pycache__", "*.pyc", "logs"),
     )
     return evolve_dst
 

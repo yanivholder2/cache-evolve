@@ -351,7 +351,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ai-agent-tool", choices=sorted(ADAPTER_REGISTRY), default=None,
                         help="AI agent CLI to drive subagents.")
     parser.add_argument("--outputs-root", type=Path, default=None,
-                        help="Read-write working dir for cycles/ledger/logs.")
+                        help="Read-write working dir for cycles, ledger, and logs.")
     parser.add_argument("--log-level", choices=LOG_LEVELS, default=None,
                         type=str.upper,
                         help="Log level for stderr + cycle log file.")
