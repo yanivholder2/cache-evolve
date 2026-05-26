@@ -34,12 +34,12 @@ the cohort, not peer Variants, not the ledger.
 - `segment.rs` defines `pub struct VariantSegment<K, V>` and implements
   `dash::dash::segments::Segment<K, V>` using only the crate's public API.
   Constructor signature: `pub fn new(settings: &dash::dash::dash_settings::DashSettings) -> Self`.
-  The G1 build harness compiles this against the live `dash-cache-rs`
-  crate; the G2 contract test instantiates `VariantSegment` and exercises
+  The build gate harness compiles this against the live `dash-cache-rs`
+  crate; the contract gate test instantiates `VariantSegment` and exercises
   the trait.
 - `manifest.toml` has a `[variant]` table with `eviction_policy` (the
-  Rust enum name, e.g. `"ClassicLRU"`; G2 calls `EvictionPolicy::from_name`
-  to validate).
+  Rust enum name, e.g. `"ClassicLRU"`; the contract gate calls
+  `EvictionPolicy::from_name` to validate).
 
 ## Constraints
 
@@ -67,10 +67,10 @@ the cohort, not peer Variants, not the ledger.
 
 ## Failure modes
 
-- G1 (build): missing `segment.rs`, or compile error.
-- G2 (contract): trait method missing or wrong signature, or manifest
+- Build gate: missing `segment.rs`, or compile error.
+- Contract gate: trait method missing or wrong signature, or manifest
   `eviction_policy` is not a valid `EvictionPolicy` name.
-- G3 (invariants): duplicate keys, lost insert, capacity overflow.
+- Invariant gate: duplicate keys, lost insert, capacity overflow.
 
 Rejection is logged with the failing gate and compiler output. Do not
 retry inside this invocation; the framework decides whether to spawn a

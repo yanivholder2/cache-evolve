@@ -233,29 +233,30 @@ _Avoid_: Hook, plugin slot.
 
 **Gate**:
 A check a Variant must pass before its fitness is admitted to the leaderboard.
-Hard gates (G1 build, G2 trait contract, G3 invariant suite) are
-deterministic; soft gates (G5 smoke-log review) are AI-judged.
+Hard gates (build gate, contract gate, invariant gate) are
+deterministic; soft gates (smoke gate) are AI-judged. A planned
+differential gate is opt-in for refactor-shaped variants.
 _Avoid_: Check, validator.
 
 **Invariant suite**:
-The codified correctness contract for the Subject cache (G3); a Variant must
-satisfy it to be admitted to the leaderboard.
+The codified correctness contract for the Subject cache (enforced by the
+invariant gate); a Variant must satisfy it to be admitted to the leaderboard.
 _Avoid_: Property tests, test suite.
 
 **Smoke trace**:
-A small canonical trace used by G5 to produce a log for AI behavioral review.
-Distinct from evaluation traces.
+A small canonical trace used by the smoke gate to produce a log for AI
+behavioral review. Distinct from evaluation traces.
 _Avoid_: Test trace, mini trace.
 
 **Variant verdict**:
-Qualitative AI judgment from G5 smoke-log review. Non-blocking — a negative
-verdict triggers the self-repair sub-loop but does not suppress fitness
-numbers.
+Qualitative AI judgment from the smoke gate's smoke-log review. Non-blocking
+— a negative verdict triggers the self-repair sub-loop but does not suppress
+fitness numbers.
 _Avoid_: Review, opinion.
 
 **Self-repair sub-loop**:
-Bounded retry loop inside G5; the AI re-implements a Variant when the
-smoke-log review flags a likely bug. Same Variant ID across attempts.
+Bounded retry loop inside the smoke gate; the AI re-implements a Variant
+when the smoke-log review flags a likely bug. Same Variant ID across attempts.
 _Avoid_: Fix loop, retry chain.
 
 **Rejection log**:

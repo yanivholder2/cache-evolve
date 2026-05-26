@@ -1,4 +1,4 @@
-"""Variant cargo builds: the G1 gate's test artifact and the
+"""Variant cargo builds: the build gate's test artifact and the
 Caffeine-loadable cdylib for one variant."""
 
 from __future__ import annotations
@@ -76,8 +76,8 @@ def _scaffold_variant_workspace(
 def _scaffold_gates_workspace(workspace: GatesWorkspace, variant_dir: VariantDir, layout: Layout, repo_root: Path) -> None:
     _scaffold_variant_workspace(workspace, variant_dir, cargo_toml=_cargo_toml_gates(repo_root), lib_rs=LIB_RS_GATES)
     workspace.tests_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy(layout.sources.g2_contract_rs, workspace.g2_contract_rs)
-    shutil.copy(layout.sources.g3_invariant_rs, workspace.g3_invariant_rs)
+    shutil.copy(layout.sources.contract_gate_rs, workspace.contract_gate_rs)
+    shutil.copy(layout.sources.invariant_gate_rs, workspace.invariant_gate_rs)
 
 
 def _scaffold_cdylib_workspace(
@@ -93,7 +93,7 @@ def _append_rejection(rejection_md: Path, variant: Variant, cargo_output: str) -
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     entry = (
         f"\n## {ts} — variant={variant}\n\n"
-        f"**Gate**: G1 (build)\n"
+        f"**Gate**: build gate\n"
         f"**Error**:\n"
         f"```\n{cargo_output}\n```\n"
         f"---\n"
@@ -121,19 +121,19 @@ def build_variant_for_gates(
         log.debug("workspace=%s impl=%s repo_root=%s", workspace.root, variant_dir.impl_dir, repo_root)
         _scaffold_gates_workspace(workspace, variant_dir, layout, repo_root)
 
-        log.info("G1: compiling variant %s ...", variant)
+        log.info("build gate: compiling variant %s ...", variant)
         proc = subprocess.run(
             ["cargo", "build", "--tests", "--manifest-path", str(workspace.cargo_toml)],
             capture_output=True,
             text=True,
         )
         if proc.returncode != 0:
-            log.info("G1: FAILED")
+            log.info("build gate: FAILED")
             _append_rejection(rejection_md, variant, proc.stdout + proc.stderr)
             log.info("rejection logged to %s", rejection_md)
             raise subprocess.CalledProcessError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
-        log.info("G1: passed")
+        log.info("build gate: passed")
         # Caller owns workspace from here; the CM only cleans up on exception.
         return workspace
 

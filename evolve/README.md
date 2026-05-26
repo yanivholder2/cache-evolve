@@ -1,6 +1,6 @@
 # Evolve
 
-`evolve/` is the research framework that drives caches experimental loop. It runs **cycles** of cache-policy evolution: each cycle proposes a **cohort** of hypotheses, generates one Rust variant per hypothesis, runs correctness gates (G1/G2/G3) plus fitness plugins (For example hit-rate), writes one LLM-authored Variant insight per surviving Variant, writes one Cycle insight summarising the cohort, computes a Pareto front, and appends one row to the immutable ledger.
+`evolve/` is the research framework that drives caches experimental loop. It runs **cycles** of cache-policy evolution: each cycle proposes a **cohort** of hypotheses, generates one Rust variant per hypothesis, runs correctness gates (build gate, contract gate, invariant gate) plus fitness plugins (For example hit-rate), writes one LLM-authored Variant insight per surviving Variant, writes one Cycle insight summarising the cohort, computes a Pareto front, and appends one row to the immutable ledger.
 
 Subagents handle judgment work (hypothesize, implement, write variant insight, write cycle insight) via in-process adapters. Library modules under `src/` handle everything deterministic — scaffolding, gates, scoring, sealing, ledger/leaderboard maintenance. Everything a run writes lands under `evolve/outputs/` (gitignored): cycle artifacts at `outputs/cycles/NNNN/` (sealed once complete), plus `outputs/cycles-ledger.jsonl` and `outputs/leaderboard.md` as the persistent across-cycle views.
 

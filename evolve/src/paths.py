@@ -138,19 +138,19 @@ class CargoWorkspaceDir:
 
 @dataclass(frozen=True)
 class GatesWorkspace(CargoWorkspaceDir):
-    """Cargo crate scaffolded to run the G2/G3 harness tests."""
+    """Cargo crate scaffolded to run the contract gate + invariant gate harness tests."""
 
     @property
     def tests_dir(self) -> Path:
         return self.root / "tests"
 
     @property
-    def g2_contract_rs(self) -> Path:
-        return self.tests_dir / "g2_contract.rs"
+    def contract_gate_rs(self) -> Path:
+        return self.tests_dir / "contract_gate.rs"
 
     @property
-    def g3_invariant_rs(self) -> Path:
-        return self.tests_dir / "g3_invariant.rs"
+    def invariant_gate_rs(self) -> Path:
+        return self.tests_dir / "invariant_gate.rs"
 
 
 @dataclass(frozen=True)
@@ -167,7 +167,7 @@ class CdylibWorkspace(CargoWorkspaceDir):
 
 
 # Preserves the concrete subclass through `cargo_workspace_tempdir` so callers
-# keep access to subclass-only paths (e.g. `GatesWorkspace.g2_contract_rs`).
+# keep access to subclass-only paths (e.g. `GatesWorkspace.contract_gate_rs`).
 _W = TypeVar("_W", bound=CargoWorkspaceDir)
 
 @contextmanager
@@ -281,12 +281,12 @@ class SourcesLayout:
         return self.root / "src" / "variant" / "rust_scaffold"
 
     @property
-    def g2_contract_rs(self) -> Path:
-        return self.rust_scaffold_dir / "g2_contract.rs"
+    def contract_gate_rs(self) -> Path:
+        return self.rust_scaffold_dir / "contract_gate.rs"
 
     @property
-    def g3_invariant_rs(self) -> Path:
-        return self.rust_scaffold_dir / "g3_invariant.rs"
+    def invariant_gate_rs(self) -> Path:
+        return self.rust_scaffold_dir / "invariant_gate.rs"
 
     @property
     def variant_jni_rs(self) -> Path:

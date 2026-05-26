@@ -81,7 +81,7 @@ def _phase(name: str, timings: dict[str, float] | None = None):
 class VariantStepFailed(Exception):
     """Sentinel: one step in a variant's pipeline failed; abort remaining steps.
 
-    `reason` is a short tag like "implement", "gate:G2", "fitness", "insight"
+    `reason` is a short tag like "implement", "gate:contract gate", "fitness", "insight"
     so the cycle-level survival summary can attribute each rejection.
     """
 
@@ -117,7 +117,7 @@ class VariantOutcome:
     variant_id: VariantId
     hypothesis_id: HypothesisId
     survived: bool
-    reason: str | None  # None iff survived; e.g. "gate:G2", "implement"
+    reason: str | None  # None iff survived; e.g. "gate:contract gate", "implement"
 
 
 def _next_cycle_id(cycles_dir: Path) -> CycleId:

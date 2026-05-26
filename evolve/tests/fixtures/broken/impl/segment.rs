@@ -1,5 +1,5 @@
-// Intentionally broken fixture: calls a non-existent method to trigger a G1 compile error.
-// MOCK_CARGO: g1_fail
+// Intentionally broken fixture: calls a non-existent method to trigger a build-gate compile error.
+// MOCK_CARGO: build_gate_fail
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
 use dash::shared::item::Item;
@@ -40,7 +40,7 @@ where
     }
 
     fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
-        // G1 failure: `private_lookup` is not a method on PromotionColdSegment
+        // build-gate failure: `private_lookup` is not a method on PromotionColdSegment
         self.inner.private_lookup(key)
     }
 }
