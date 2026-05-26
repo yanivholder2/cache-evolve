@@ -27,7 +27,7 @@ def _setup_repo(tmp_path: Path) -> Path:
         ignore=shutil.ignore_patterns(
             ".venv",
             "cycles",
-            "ledger",
+            "cycles-ledger.jsonl",
             "logs",
             "cross-cycle-insights.md",
             "leaderboard.md",

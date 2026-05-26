@@ -316,11 +316,10 @@ Anything that doesn't require LLM judgment is a script, not an LLM call. See
 [ADR-0002](docs/adr/0002-token-frugal-principle.md).
 _Avoid_: Token budget (means a numeric cap; the principle is architectural).
 
-**Ledger and path invariants**:
-Two rules every written artifact obeys: atomic ledger append (safe under
-concurrent variant execution within a cycle) and repo-relative paths only
-(sealed cycle directories are reproducible across checkouts). See
-[ADR-0003](docs/adr/0003-ledger-and-path-invariants.md).
+**Path invariant**:
+Every written artifact uses repo-relative paths only, so sealed cycle
+directories are reproducible across checkouts. Enforced in
+`evolve/src/cycle/ledger_append.py` (`_validate`) and `evolve/src/paths.py`.
 _Avoid_: Distributed prerequisites, cluster invariants.
 
 ## Flagged ambiguities

@@ -309,7 +309,7 @@ class OutputsLayout:
 
     @property
     def ledger(self) -> Path:
-        return self.root / "ledger" / "cycles.jsonl"
+        return self.root / "cycles-ledger.jsonl"
 
     @property
     def leaderboard_md(self) -> Path:
@@ -355,10 +355,7 @@ class Layout:
 
     # repo-relative ledger formatting
     def cycle_ledger_path(self, cycle_id: CycleId) -> str:
-        """Repo-relative path string for a cycle dir (ADR-0003).
-
-        Anchored to `evolve_root.parent`.
-        """
+        """Repo-relative path string for a cycle dir, anchored to `evolve_root.parent`."""
 
         anchor = self.evolve_root.parent
         cycle_dir = self.outputs.cycle(cycle_id).root
@@ -367,7 +364,7 @@ class Layout:
         except ValueError as e:
             raise ValueError(
                 f"cycle dir {cycle_dir} is not under evolve_root.parent {anchor}; "
-                "outputs_root must live inside the repo (ADR-0003: repo-relative paths only)"
+                "outputs_root must live inside the repo (repo-relative paths only)"
             ) from e
         return str(rel)
 

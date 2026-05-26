@@ -16,18 +16,18 @@ def _row(cycle: str, body: str | None) -> str:
 
 
 def test_missing_ledger_returns_empty_string(tmp_path):
-    ledger = tmp_path / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
     assert digest_prior_cycles(ledger, 3) == ""
 
 
 def test_empty_ledger_returns_empty_string(tmp_path):
-    ledger = tmp_path / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
     ledger.touch()
     assert digest_prior_cycles(ledger, 3) == ""
 
 
 def test_fewer_rows_than_n_returns_all(tmp_path):
-    ledger = tmp_path / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
     append_utf8(ledger, _row("0001", "first body"))
     append_utf8(ledger, _row("0002", "second body"))
 
@@ -39,7 +39,7 @@ def test_fewer_rows_than_n_returns_all(tmp_path):
 
 
 def test_more_rows_than_n_returns_last_n_in_order(tmp_path):
-    ledger = tmp_path / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
     for n in range(1, 6):
         append_utf8(ledger, _row(f"{n:04d}", f"body {n}"))
 
@@ -52,7 +52,7 @@ def test_more_rows_than_n_returns_last_n_in_order(tmp_path):
 
 
 def test_row_without_cycle_insight_field_is_skipped(tmp_path):
-    ledger = tmp_path / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
     append_utf8(ledger, _row("0001", None))
     append_utf8(ledger, _row("0002", "second body"))
 
@@ -63,7 +63,7 @@ def test_row_without_cycle_insight_field_is_skipped(tmp_path):
 
 
 def test_output_structure_matches_format(tmp_path):
-    ledger = tmp_path / "cycles.jsonl"
+    ledger = tmp_path / "cycles-ledger.jsonl"
     append_utf8(ledger, _row("0007", "the body"))
 
     digest = digest_prior_cycles(ledger, 5)

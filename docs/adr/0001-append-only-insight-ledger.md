@@ -7,7 +7,7 @@ under recency bias, destroying the longitudinal record that is the whole point.
 We split the record into two layers: an **append-only JSONL Insight ledger**
 (one immutable row per Cycle, the source of truth) and a **recomputable
 Cross-cycle insights view** the AI rewrites freely (derived from the ledger;
-never authoritative). Atomic-append is enforced by the ledger-append script,
+never authoritative). The append is performed by the ledger-append script,
 never by the LLM.
 
 ## Considered options
@@ -25,6 +25,6 @@ never by the LLM.
 - All cross-cycle reasoning loads via a digest script over the ledger; the
   Cross-cycle insights view is convenience, not authority.
 - If Cross-cycle insights go wrong, recompute from the ledger. If the
-  ledger is corrupted, history is lost — atomic-append is non-negotiable.
+  ledger is corrupted, history is lost — preserving it is non-negotiable.
 - The split aligns with the token-frugal principle (ADR-0002): the LLM writes
   prose, the script enforces durability.
