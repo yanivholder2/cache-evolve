@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 
@@ -16,3 +17,9 @@ def write_utf8(path: Path, text: str) -> None:
 def append_utf8(path: Path, text: str) -> None:
     with open(path, "a", encoding="utf-8") as f:
         f.write(text)
+
+
+def write_json(path: Path, data: object) -> None:
+    """Pretty-print JSON with indent=2 and a trailing newline. Use for all .json file writes."""
+
+    write_utf8(path, json.dumps(data, indent=2) + "\n")

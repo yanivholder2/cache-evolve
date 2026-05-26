@@ -7,7 +7,7 @@ import json
 import logging
 from pathlib import Path
 
-from src._io import read_utf8, write_utf8
+from src._io import read_utf8, write_json
 from src.config import Configs
 from src.fitness._contract import ContractError, validate_plugin_dict
 from src.fitness.caffeine_simulator import CaffeineSimulatorError, simulate_variant
@@ -55,11 +55,11 @@ def compute_fitness(
             record = fn()
         except PluginError as exception:
             raise FitnessError(f"plugin {name} failed for {variant}: {exception}") from exception
-        write_utf8(fitness_dir / f"{name}.json", json.dumps(record, indent=2) + "\n")
+        write_json(fitness_dir / f"{name}.json", record)
 
     log.debug("[%s] aggregate fitness-vector", variant)
     fv = _aggregate(variant.label, fitness_dir)
-    write_utf8(variant_dir.fitness_vector_json, json.dumps(fv, indent=2) + "\n")
+    write_json(variant_dir.fitness_vector_json, fv)
 
 
 def _aggregate(variant: str, plugin_dir: Path) -> dict:

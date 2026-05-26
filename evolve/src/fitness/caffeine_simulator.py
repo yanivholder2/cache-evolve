@@ -23,7 +23,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 from scripts import caffeine_runner  # noqa: E402
 
-from src._io import read_utf8
+from src._io import read_utf8, write_utf8
 from src.config import Configs
 from src.paths import CaffeineOutputDir, Layout, Variant
 from src.variant.build import build_cdylib
@@ -240,5 +240,5 @@ def simulate_variant(
 
 
 def _write_gradle_logs(dest: CaffeineOutputDir, *, stdout: str, stderr: str) -> None:
-    dest.gradle_stdout_log.write_text(stdout, encoding="utf-8")
-    dest.gradle_stderr_log.write_text(stderr, encoding="utf-8")
+    write_utf8(dest.gradle_stdout_log, stdout)
+    write_utf8(dest.gradle_stderr_log, stderr)

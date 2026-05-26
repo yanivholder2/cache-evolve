@@ -9,7 +9,9 @@ import logging
 import re
 import sys
 import threading
+import time
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
 
@@ -20,7 +22,12 @@ if __name__ == "__main__":
 
 from src import _log  # noqa: E402
 from src._log import LOG_LEVELS  # noqa: E402
-from src.adapters import ADAPTER_REGISTRY, LLMAdapter  # noqa: E402
+from src.adapters import (  # noqa: E402
+    ADAPTER_REGISTRY,
+    LLMAdapter,
+    format_token_totals,
+    snapshot_token_totals,
+)
 from src.aggregate.cohort import compute_cohort_pareto, write_winners_json  # noqa: E402
 from src.config import Configs, ConfigError, load_configs  # noqa: E402
 from src.cycle.leaderboard import regenerate as regenerate_leaderboard  # noqa: E402
@@ -47,35 +54,70 @@ def die(msg: str) -> NoReturn:
 
 
 @contextmanager
-def _phase(name: str):
-    """Log a header for `name`, then a matching footer on exit.
+def _phase(name: str, timings: dict[str, float] | None = None):
+    """Log a header for `name`, then a matching footer with elapsed time on exit.
 
     Footer reads "done" on clean exit, "failed" when an exception propagates.
+    When `timings` is provided, the elapsed seconds are recorded under `name`
+    so the cycle can report a per-phase breakdown.
     """
     log.info("--- %s ---", name)
+    started = time.monotonic()
     try:
         yield
     except BaseException:
-        log.info("--- %s failed ---", name)
+        elapsed = time.monotonic() - started
+        log.info("--- %s failed (%.1fs) ---", name, elapsed)
+        if timings is not None:
+            timings[name] = elapsed
         raise
     else:
-        log.info("--- %s done ---", name)
+        elapsed = time.monotonic() - started
+        log.info("--- %s done (%.1fs) ---", name, elapsed)
+        if timings is not None:
+            timings[name] = elapsed
 
 
 class VariantStepFailed(Exception):
-    """Sentinel: one step in a variant's pipeline failed; abort remaining steps."""
+    """Sentinel: one step in a variant's pipeline failed; abort remaining steps.
+
+    `reason` is a short tag like "implement", "gate:G2", "fitness", "insight"
+    so the cycle-level survival summary can attribute each rejection.
+    """
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
 
 
 @contextmanager
 def _variant_pipeline_step(name: str, variant_id: VariantId):
-    """Log step success/failure for one variant; convert any exception into VariantStepFailed."""
+    """Log step success/failure for one variant; convert any exception into VariantStepFailed.
+
+    Already-tagged VariantStepFailed (e.g. from gate-check naming a specific
+    gate) propagates as-is so the survival summary keeps the finer reason.
+    """
     try:
         yield
+    except VariantStepFailed as exception:
+        log.warning("[%s] %s failed: %s", variant_id, name, exception.reason)
+        raise
     except Exception as exception:
         log.warning("[%s] %s failed: %s", variant_id, name, exception)
-        raise VariantStepFailed from exception
+        raise VariantStepFailed(name) from exception
     else:
         log.info("[%s] %s done", variant_id, name)
+
+
+@dataclass(frozen=True)
+class VariantOutcome:
+    """Per-variant result threaded out of the per-variant fan-out for the
+    cycle-level survival summary."""
+
+    variant_id: VariantId
+    hypothesis_id: HypothesisId
+    survived: bool
+    reason: str | None  # None iff survived; e.g. "gate:G2", "implement"
 
 
 def _next_cycle_id(cycles_dir: Path) -> CycleId:
@@ -106,33 +148,35 @@ def _run_variant_pipeline(
     repo_root: Path,
     adapter: LLMAdapter,
     cfg: Configs,
-) -> bool:
+) -> VariantOutcome:
     """Run implement, gate-check, fitness, insight for one variant. Soft-fail.
 
-    Returns True iff all four steps succeed.
+    Returns a `VariantOutcome` carrying survival + first-failing-step reason.
     """
 
     variant = CycleVariant(cycle_id, variant_id)
     variant_dir = cycle_layout.variant(variant_id)
-    hypothesis_file = cycle_layout.hypothesis_file(HypothesisId(variant_id.value))
+    hypothesis_id = HypothesisId(variant_id.value)
+    hypothesis_file = cycle_layout.hypothesis_file(hypothesis_id)
 
     try:
         with _variant_pipeline_step("implement", variant_id):
             _implementer.implement_variant(hypothesis_file, variant_dir, layout=layout, adapter=adapter)
         with _variant_pipeline_step("gate-check", variant_id):
-            if not run_gates(variant, layout=layout, repo_root=repo_root):
-                raise RuntimeError("rejected variant")
+            gates_result = run_gates(variant, layout=layout, repo_root=repo_root, hypothesis=hypothesis_id)
+            if not gates_result:
+                raise VariantStepFailed(f"gate:{gates_result.first_failed_gate}")
         with _variant_pipeline_step("fitness", variant_id):
             compute_fitness(variant, layout=layout, repo_root=repo_root, cfg=cfg)
         with _variant_pipeline_step("insight", variant_id):
             write_insight(
                 cycle_layout.variant(variant_id),
-                cycle_layout.hypothesis_file(HypothesisId(variant_id.value)),
+                hypothesis_file,
                 layout=layout, adapter=adapter,
             )
-        return True
-    except VariantStepFailed:
-        return False
+        return VariantOutcome(variant_id, hypothesis_id, True, None)
+    except VariantStepFailed as exception:
+        return VariantOutcome(variant_id, hypothesis_id, False, exception.reason)
 
 
 def _run_per_variant(
@@ -144,8 +188,12 @@ def _run_per_variant(
     repo_root: Path,
     adapter: LLMAdapter,
     cfg: Configs,
-) -> list[CycleVariantDir]:
-    """Fan out the full per-variant pipeline (implement, gate, fitness, insight) in parallel."""
+) -> tuple[list[CycleVariantDir], list[VariantOutcome]]:
+    """Fan out the full per-variant pipeline (implement, gate, fitness, insight) in parallel.
+
+    Returns `(survivors, outcomes)` so the caller can emit a per-cycle
+    survival summary that names which step rejected each variant.
+    """
 
     variant_ids = [VariantId(i) for i in range(1, cohort_size + 1)]
 
@@ -156,25 +204,44 @@ def _run_per_variant(
             cfg.framework.max_workers, cohort_size,
         )
 
-    results: dict[VariantId, bool] = {}
+    outcomes_by_id: dict[VariantId, VariantOutcome] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=pool_size) as pool:
         future_to_id = {
             pool.submit(
-                _named_thread, str(vid), _run_variant_pipeline,
-                variant_id=vid, cycle_id=cycle_id, cycle_layout=cycle_layout,
+                _named_thread, str(variant_id), _run_variant_pipeline,
+                variant_id=variant_id, cycle_id=cycle_id, cycle_layout=cycle_layout,
                 layout=layout, repo_root=repo_root, adapter=adapter, cfg=cfg,
-            ): vid
-            for vid in variant_ids
+            ): variant_id
+            for variant_id in variant_ids
         }
         for future in concurrent.futures.as_completed(future_to_id):
-            vid = future_to_id[future]
+            variant_id = future_to_id[future]
             try:
-                results[vid] = future.result()
+                outcomes_by_id[variant_id] = future.result()
             except Exception as exception:
-                log.warning("[%s] dropped: %s", vid, exception)
-                results[vid] = False
+                log.warning("[%s] dropped: %s", variant_id, exception)
+                outcomes_by_id[variant_id] = VariantOutcome(
+                    variant_id, HypothesisId(variant_id.value), False, f"dropped:{type(exception).__name__}",
+                )
 
-    return [cycle_layout.variant(vid) for vid in variant_ids if results.get(vid)]
+    outcomes = [outcomes_by_id[variant_id] for variant_id in variant_ids]
+    survivors = [cycle_layout.variant(o.variant_id) for o in outcomes if o.survived]
+    return survivors, outcomes
+
+
+def _log_survival_summary(cycle_id: CycleId, cohort_size: int, outcomes: list[VariantOutcome]) -> None:
+    """Single INFO line summarising who survived and who failed where.
+
+    Recovering survival used to require ls-ing rejection.md across variants;
+    this line surfaces an outlier cycle (e.g. survivors=2/5) at a glance.
+    """
+
+    survived = sum(1 for o in outcomes if o.survived)
+    rejected = {str(o.variant_id): (o.reason or "?") for o in outcomes if not o.survived}
+    log.info(
+        "cycle %s survivors=%d/%d rejected=%s",
+        cycle_id, survived, cohort_size, rejected,
+    )
 
 
 def _run_cycle_level(
@@ -270,6 +337,8 @@ def run_cycle(
     """Run a single evolve cycle end-to-end."""
 
     cohort_size = cfg.framework.cohort_size
+    timings: dict[str, float] = {}
+    cycle_started = time.monotonic()
     try:
         cycle_id = _next_cycle_id(layout.outputs.cycles_dir)
         cycle_layout = layout.outputs.cycle(cycle_id)
@@ -283,7 +352,7 @@ def run_cycle(
         log.info("=== cycle %s allocated at %s ===", cycle_id, cycle_dir)
         log.info("cohort_size=%d adapter=%s", cohort_size, adapter.identity())
 
-        with _phase("write hypotheses"):
+        with _phase("write hypotheses", timings):
             write_hypotheses(
                 cohort_size,
                 layout=layout,
@@ -291,8 +360,8 @@ def run_cycle(
                 adapter=adapter,
             )
 
-        with _phase("per-variant"):
-            survivors = _run_per_variant(
+        with _phase("per-variant", timings):
+            survivors, outcomes = _run_per_variant(
                 cycle_layout=cycle_layout,
                 cycle_id=cycle_id,
                 cohort_size=cohort_size,
@@ -301,10 +370,11 @@ def run_cycle(
                 adapter=adapter,
                 cfg=cfg,
             )
+            _log_survival_summary(cycle_id, cohort_size, outcomes)
             if not survivors:
                 die(f"no variants survived in cycle {cycle_id}")
 
-        with _phase("cycle-level"):
+        with _phase("cycle-level", timings):
             pareto_front, cycle_insight = _run_cycle_level(
                 cycle_layout=cycle_layout,
                 cycle_id=cycle_id,
@@ -323,15 +393,22 @@ def run_cycle(
                 layout=layout,
             )
 
-        with _phase("cross-cycle-insights"):
+        with _phase("cross-cycle-insights", timings):
             try:
                 write_cross_cycle_insight(cycle_layout, layout=layout, adapter=adapter)
             except Exception:
                 log.warning("cross-cycle-insight writer failed; cycle proceeds", exc_info=True)
 
-        with _phase("seal"):
+        with _phase("seal", timings):
             seal_cycle(cycle_dir)
 
+        cycle_elapsed = time.monotonic() - cycle_started
+        log.info(
+            "cycle %s timings: total=%.1fs %s",
+            cycle_id, cycle_elapsed,
+            " ".join(f"{name}={timings[name]:.1f}s" for name in timings),
+        )
+        log.info("cycle %s cumulative tokens: %s", cycle_id, format_token_totals(snapshot_token_totals()))
         log.info("=== cycle %s complete (cohort=%d) ===", cycle_id, cohort_size)
         print(f"cycle {cycle_id} complete — sealed at {cycle_dir} (cohort={cohort_size})")
     except Exception:
@@ -397,6 +474,8 @@ def main(argv: list[str] | None = None) -> None:
     for i in range(1, cfg.framework.cycles + 1):
         log.info("--- evolve loop: cycle %d/%d ---", i, cfg.framework.cycles)
         run_cycle(layout=layout, repo_root=repo_root, adapter=adapter, cfg=cfg)
+
+    log.info("run-level cumulative tokens: %s", format_token_totals(snapshot_token_totals()))
 
 
 if __name__ == "__main__":

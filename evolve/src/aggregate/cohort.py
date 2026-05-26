@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from src._io import read_utf8, write_utf8
+from src._io import read_utf8, write_json
 from src.identifiers import CycleId
 from src.paths import CycleLayout, CycleVariantDir
 from src.aggregate.pareto import compute_pareto_front
@@ -32,13 +32,13 @@ def write_winners_json(
 ) -> None:
     """Write the cohort's `winners.json` file."""
 
-    write_utf8(
+    write_json(
         cycle_layout.winners_json,
-        json.dumps({
+        {
             "cycle": str(cycle_id),
             "pareto_front": pareto_front,
             "fitness_vectors": fitness_vectors,
-        }),
+        },
     )
 
 
