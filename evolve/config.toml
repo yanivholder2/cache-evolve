@@ -9,7 +9,7 @@ cycles = 1
 cohort_size = 3
 
 # AI agent backend to drive subagents (--ai-agent-tool). One of the keys in
-# evolve/src/adapters/REGISTRY.
+# evolve/src/llm/ADAPTER_REGISTRY.
 ai_agent_tool = "claude-sdk"
 
 # Read-write working dir for cycles, ledger, and logs (--outputs-root). Relative

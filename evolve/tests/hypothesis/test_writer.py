@@ -14,7 +14,7 @@ from src._io import read_utf8, write_utf8
 from src.config import load_configs
 from src.hypothesis.writer import write_hypotheses
 from src.identifiers import CycleId, HypothesisId
-from src.paths import Layout
+from src.paths import Layout, SourcesLayout
 
 from _stubs import StubLLMAdapter
 
@@ -292,7 +292,7 @@ def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):
 
 
 def test_subagent_markdown_states_contract():
-    agent_md = EVOLVE_SRC / "src" / "agents" / "hypotheses-writer.md"
+    agent_md = SourcesLayout(root=EVOLVE_SRC).agent_prompt("hypotheses-writer")
     assert agent_md.is_file(), f"missing {agent_md}"
     body = read_utf8(agent_md)
     assert "hypothesis" in body.lower()

@@ -86,6 +86,14 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_caffeine)
 
 
+@pytest.fixture(autouse=True)
+def _reset_adapter_token_totals():
+    from src.llm.token_usage import reset_token_totals
+    reset_token_totals()
+    yield
+    reset_token_totals()
+
+
 @pytest.fixture(autouse=True, scope="session")
 def mock_cargo_on_path():
     original = os.environ.get("PATH", "")

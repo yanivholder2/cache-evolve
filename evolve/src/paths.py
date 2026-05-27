@@ -262,6 +262,13 @@ class SourcesLayout:
         return self.root / "subject"
 
     @property
+    def agents_dir(self) -> Path:
+        return self.root / "src" / "agents"
+
+    def agent_prompt(self, agent_name: str) -> Path:
+        return self.agents_dir / f"{agent_name}.md"
+
+    @property
     def extension_points_md(self) -> Path:
         return self.subject_dir / "extension-points.md"
 

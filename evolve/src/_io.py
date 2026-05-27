@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TextIO
 
 
 def read_utf8(path: Path) -> str:
@@ -15,8 +16,29 @@ def write_utf8(path: Path, text: str) -> None:
 
 
 def append_utf8(path: Path, text: str) -> None:
-    with open(path, "a", encoding="utf-8") as f:
+    with open_utf8_append(path) as f:
         f.write(text)
+
+
+def open_utf8_write(path: Path) -> TextIO:
+    """Open `path` for streaming UTF-8 writes (truncates). Caller closes."""
+    return path.open("w", encoding="utf-8")
+
+
+def open_utf8_append(path: Path) -> TextIO:
+    """Open `path` for streaming UTF-8 appends. Caller closes."""
+    return path.open("a", encoding="utf-8")
+
+
+def read_utf8_tail(path: Path, max_bytes: int) -> str:
+    """Return up to the trailing `max_bytes` of `path`, UTF-8 decoded (replacing bad bytes)."""
+
+    size = path.stat().st_size
+    with path.open("rb") as f:
+        if size > max_bytes:
+            f.seek(size - max_bytes)
+        data = f.read()
+    return data.decode("utf-8", errors="replace")
 
 
 def write_json(path: Path, data: object) -> None:
