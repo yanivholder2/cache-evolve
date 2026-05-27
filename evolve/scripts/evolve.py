@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
 from src import _log  # noqa: E402
 from src._log import LOG_LEVELS  # noqa: E402
-from src.adapters import (  # noqa: E402
+from src.llm import (  # noqa: E402
     ADAPTER_REGISTRY,
     LLMAdapter,
     format_token_totals,

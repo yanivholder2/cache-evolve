@@ -15,7 +15,7 @@ from evolve import run_cycle
 from src._io import read_utf8, write_utf8
 from src.config import load_configs
 from src.identifiers import CycleId, HypothesisId, VariantId
-from src.paths import CycleLayout, Layout
+from src.paths import CycleLayout, Layout, SourcesLayout
 
 from _stubs import StubLLMAdapter
 
@@ -167,7 +167,7 @@ def test_winners_pareto_front_spans_cohort(shared_cohort_run):
 
 
 def test_variant_implementer_agent_markdown_exists():
-    agent_md = EVOLVE_SRC / "src" / "agents" / "variant-implementer.md"
+    agent_md = SourcesLayout(root=EVOLVE_SRC).agent_prompt("variant-implementer")
     assert agent_md.is_file(), f"missing {agent_md}"
     body = read_utf8(agent_md)
     assert "hypothesis" in body.lower()

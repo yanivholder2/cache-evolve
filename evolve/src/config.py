@@ -14,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from src._log import LOG_LEVELS
-from src.adapters import ADAPTER_REGISTRY
+from src.llm import ADAPTER_REGISTRY
 from src.paths import SourcesLayout
 
 

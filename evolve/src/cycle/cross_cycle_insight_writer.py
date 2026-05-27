@@ -10,7 +10,7 @@ import logging
 import shutil
 
 from src._io import read_utf8, write_utf8
-from src.adapters import LLMAdapter
+from src.llm import LLMAdapter
 from src.cycle.ledger_digest import digest_all_cycles
 from src.paths import CycleLayout, Layout
 

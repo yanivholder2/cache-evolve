@@ -8,7 +8,8 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, TextIO
 
-from .base_llm_adapter import LLMAdapter, Usage, write_timeline
+from src.llm.base_adapter import LLMAdapter, write_timeline
+from src.llm.token_usage import Usage
 
 
 def _format_args(args: Any) -> str:

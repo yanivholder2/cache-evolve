@@ -7,12 +7,16 @@ from pathlib import Path
 import pytest
 
 from src._io import read_utf8, write_utf8
-from src.adapters.base_llm_adapter import LLMAdapter
+from src.llm.base_adapter import LLMAdapter
+from src.llm.token_usage import ZeroTokenUsageError
+
+# Adapter raises on zero token usage, so happy-path tests must return non-zero.
+_OK_USAGE = {"input_tokens": 1, "output_tokens": 1}
 
 
 class _NoopAdapter(LLMAdapter):
     async def call_llm_and_log(self, *args, **kwargs):  # noqa: ANN001
-        return None
+        return _OK_USAGE
 
 
 def _prep_workspace(tmp_path: Path) -> Path:
@@ -56,7 +60,7 @@ def test_run_resolves_relative_readable_roots(tmp_path, monkeypatch):
     class _CaptureAdapter(LLMAdapter):
         async def call_llm_and_log(self, *args, **kwargs):  # noqa: ANN001
             captured["readable_roots"] = kwargs["readable_roots"]
-            return None
+            return _OK_USAGE
 
     _CaptureAdapter().run(
         agent_name="hypotheses-writer",
@@ -159,3 +163,50 @@ def test_run_requires_agent_prompt_file(tmp_path):
             readable_roots=[tmp_path],
             allow_edits=False,
         )
+
+
+def test_run_raises_when_usage_is_none(tmp_path):
+    workspace = _prep_workspace(tmp_path)
+
+    class _NoUsageAdapter(LLMAdapter):
+        async def call_llm_and_log(self, *args, **kwargs):  # noqa: ANN001
+            return None
+
+    with pytest.raises(ZeroTokenUsageError):
+        _NoUsageAdapter().run(
+            agent_name="hypotheses-writer",
+            workspace=workspace,
+            readable_roots=[tmp_path],
+            allow_edits=False,
+        )
+
+
+def test_run_raises_when_both_input_and_output_tokens_are_zero(tmp_path):
+    workspace = _prep_workspace(tmp_path)
+
+    class _ZeroTokenAdapter(LLMAdapter):
+        async def call_llm_and_log(self, *args, **kwargs):  # noqa: ANN001
+            return {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 1234}
+
+    with pytest.raises(ZeroTokenUsageError):
+        _ZeroTokenAdapter().run(
+            agent_name="hypotheses-writer",
+            workspace=workspace,
+            readable_roots=[tmp_path],
+            allow_edits=False,
+        )
+
+
+def test_run_accepts_nonzero_input_with_zero_output(tmp_path):
+    workspace = _prep_workspace(tmp_path)
+
+    class _OnlyInputAdapter(LLMAdapter):
+        async def call_llm_and_log(self, *args, **kwargs):  # noqa: ANN001
+            return {"input_tokens": 42, "output_tokens": 0}
+
+    _OnlyInputAdapter().run(
+        agent_name="hypotheses-writer",
+        workspace=workspace,
+        readable_roots=[tmp_path],
+        allow_edits=False,
+    )

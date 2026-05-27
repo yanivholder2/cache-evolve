@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 from src._io import write_utf8
-from src.adapters import LLMAdapter
+from src.llm import LLMAdapter
 from src.identifiers import HYPOTHESIS_ID_WIDTH, CycleId
 from src.paths import Layout
 

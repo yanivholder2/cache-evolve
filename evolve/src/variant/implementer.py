@@ -10,7 +10,7 @@ from pathlib import Path
 
 from src._io import write_utf8
 from src.hypothesis import parser
-from src.adapters import LLMAdapter
+from src.llm import LLMAdapter
 from src.paths import CycleVariantDir, Layout, Variant, VariantDir
 
 AGENT_NAME = "variant-implementer"
