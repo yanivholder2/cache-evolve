@@ -1,17 +1,12 @@
-mod combined_segment;
 mod promotion_cold_segment;
-mod promotion_hot_segment;
 mod promotion_logic;
 
-pub use combined_segment::{CombinedSegment, EvictionTieBreaker};
 pub use promotion_cold_segment::PromotionColdSegment;
-pub use promotion_hot_segment::PromotionHotSegment;
 
 pub(crate) use promotion_logic::promotion_get;
 
 use super::dash_bucket::DashBucket;
 use super::dash_settings::DashSettings;
-use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
 use crate::shared::utils::get_index;
@@ -37,9 +32,6 @@ where
 	pub(crate) segment_size: usize,
 	pub(crate) stash_buckets: Vec<DashBucket<K, V>>,
 	pub(crate) stash_size: usize,
-	/// Eviction policy is segment-wide (every bucket uses the same one). Stored here so
-	/// segment-level logic can read it without reaching into a specific bucket.
-	pub(crate) eviction_policy: EvictionPolicy,
 }
 
 impl<K, V> SegmentCore<K, V>
@@ -66,7 +58,6 @@ where
 			stash_size: settings.num_of_stash_buckets,
 			buckets,
 			stash_buckets,
-			eviction_policy: settings.eviction_policy,
 		})
 	}
 
@@ -241,12 +232,9 @@ mod tests {
 	}
 
 	#[test]
-	fn all_segments_put_goes_to_stash() {
+	fn promotion_cold_put_goes_to_stash() {
 		let lru = small_dash_settings(EvictionPolicy::ClassicLRU);
-		let ts = small_dash_settings(EvictionPolicy::TimestampLRU);
 		assert_put_goes_to_stash(PromotionColdSegment::new(&lru));
-		assert_put_goes_to_stash(PromotionHotSegment::new(&lru));
-		assert_put_goes_to_stash(CombinedSegment::new(&ts, EvictionTieBreaker::EvictProbing));
 	}
 
 	#[test]

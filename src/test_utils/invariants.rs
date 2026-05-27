@@ -1,8 +1,21 @@
-use crate::dash::segments::Segment;
+use crate::dash::segments::{PromotionColdSegment, Segment};
 use crate::dash::Dash;
+use crate::test_utils::baseline_dash_settings;
 use proptest::collection::vec;
 use proptest::prelude::*;
 use proptest::test_runner::{TestError, TestRunner};
+
+/// Invariant entry point for the Dash baseline. Delegates to
+/// [`run_invariant_suite`], which remains public for negative fixtures and
+/// Variant harnesses.
+pub struct DashInvariants;
+
+impl framework::Invariants for DashInvariants {
+	fn run_invariant_suite() -> Result<(), String> {
+		let settings = baseline_dash_settings();
+		run_invariant_suite(|| PromotionColdSegment::new(&settings))
+	}
+}
 
 /// Run all invariant properties against any [`Segment`] implementation.
 ///

@@ -93,11 +93,24 @@ where
 	}
 }
 
+impl<K, V, S> framework::Cache<K, V> for Dash<K, V, S>
+where
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
+	S: Segment<K, V>,
+{
+	fn put(&mut self, key: K, value: V) {
+		Dash::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		Dash::get_and_update_item(self, key)
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::dash::dash_settings::DRAGON_SETTINGS;
-	use crate::dash::segments::{CombinedSegment, EvictionTieBreaker};
 	use crate::shared::eviction_policy::EvictionPolicy;
 	use crate::test_utils::small_dash_settings;
 	use segments::PromotionColdSegment;
@@ -123,9 +136,22 @@ mod tests {
 
 	#[test]
 	fn try_new_rejects_zero_segments() {
-		let res = Dash::<i64, i64, CombinedSegment<i64, i64>>::try_new(0, || {
-			CombinedSegment::try_new(&DRAGON_SETTINGS, EvictionTieBreaker::EvictProbing)
+		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let res = Dash::<i64, i64, PromotionColdSegment<i64, i64>>::try_new(0, || {
+			PromotionColdSegment::try_new(&settings)
 		});
 		assert!(res.is_none());
+	}
+
+	#[test]
+	fn dash_implements_framework_cache_trait() {
+		use framework::Cache;
+		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
+			PromotionColdSegment::new(&settings)
+		});
+		Cache::put(&mut cache, 1_i64, 10_i64);
+		assert_eq!(Cache::get(&mut cache, &1_i64), Some(&10_i64));
+		assert_eq!(Cache::get(&mut cache, &999_i64), None);
 	}
 }

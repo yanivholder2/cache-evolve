@@ -18,23 +18,11 @@
 //      the Variant workspace. Non-zero exit = invariant-gate failure; the failing
 //      invariant name is recorded in `rejection-log.md`.
 
-use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
 use dash::dash::Dash;
 use dash::get_index;
-use dash::shared::eviction_policy::EvictionPolicy;
 use dash::shared::item::Item;
-
-fn small_settings() -> DashSettings {
-	DashSettings {
-		num_of_segments: 1,
-		num_of_normal_buckets: 4,
-		num_of_stash_buckets: 2,
-		bucket_size: 3,
-		eviction_policy: EvictionPolicy::ClassicLRU,
-		debug_mode: 0,
-	}
-}
+use dash::test_utils::baseline_dash_settings;
 
 /// Returns the first key in 0..1000 whose target bucket index equals `bucket_idx`.
 fn key_for_bucket(bucket_idx: usize, num_buckets: usize) -> i64 {
@@ -47,7 +35,7 @@ fn key_for_bucket(bucket_idx: usize, num_buckets: usize) -> i64 {
 
 #[test]
 fn no_phantom_items_negative_fixture() {
-	let s = small_settings();
+	let s = baseline_dash_settings();
 	let mut core = SegmentCore::<i64, i64>::new(&s);
 	// Insert a key that hashes to bucket 2 directly into bucket 0.
 	// contains_key checks stash, bucket 2, bucket 3 — never bucket 0.
@@ -63,7 +51,7 @@ fn no_phantom_items_negative_fixture() {
 
 #[test]
 fn capacity_bound_negative_fixture() {
-	let s = small_settings();
+	let s = baseline_dash_settings();
 	let mut core = SegmentCore::<i64, i64>::new(&s);
 	// Overfill bucket 0 beyond its max_size by bypassing normal eviction.
 	for k in 0..=(s.bucket_size as i64) {
@@ -81,7 +69,7 @@ fn capacity_bound_negative_fixture() {
 
 #[test]
 fn slot_legality_negative_fixture() {
-	let s = small_settings();
+	let s = baseline_dash_settings();
 	let mut core = SegmentCore::<i64, i64>::new(&s);
 	// A key that hashes to bucket 2 placed in bucket 0 violates slot legality.
 	let bad_key = key_for_bucket(2, s.num_of_normal_buckets);
@@ -96,7 +84,7 @@ fn slot_legality_negative_fixture() {
 
 #[test]
 fn single_eviction_per_put_negative_fixture() {
-	let s = small_settings();
+	let s = baseline_dash_settings();
 	let mut core = SegmentCore::<i64, i64>::new(&s);
 	let before = core.total_items();
 	// Simulate a buggy segment that inserts two items in one put.
@@ -113,7 +101,7 @@ fn single_eviction_per_put_negative_fixture() {
 
 #[test]
 fn stash_terminal_negative_fixture() {
-	let s = small_settings();
+	let s = baseline_dash_settings();
 	let mut cache: Dash<i64, i64, _> =
 		Dash::new(1, || PromotionColdSegment::new(&s));
 	// Place a key that hashes to bucket 2 into bucket 0 — contains_key will
@@ -140,28 +128,20 @@ fn stash_terminal_negative_fixture() {
 
 #[cfg(feature = "test-utils")]
 mod harness_tests {
-	use super::small_settings;
-	use dash::dash::dash_settings::DashSettings;
-	use dash::dash::segments::{CombinedSegment, EvictionTieBreaker, PromotionColdSegment, PromotionHotSegment};
-	use dash::shared::eviction_policy::EvictionPolicy;
+	use super::baseline_dash_settings;
+	use dash::dash::segments::PromotionColdSegment;
 	use dash::test_utils::run_invariant_suite;
 
 	#[test]
 	fn promotion_cold_passes_all_invariants() {
-		let s = small_settings();
+		let s = baseline_dash_settings();
 		run_invariant_suite(|| PromotionColdSegment::new(&s)).unwrap();
 	}
 
 	#[test]
-	fn promotion_hot_passes_all_invariants() {
-		let s = small_settings();
-		run_invariant_suite(|| PromotionHotSegment::new(&s)).unwrap();
-	}
-
-	#[test]
-	fn combined_passes_all_invariants() {
-		// CombinedSegment requires TimestampLRU or Lfu.
-		let s = DashSettings { eviction_policy: EvictionPolicy::TimestampLRU, ..small_settings() };
-		run_invariant_suite(|| CombinedSegment::new(&s, EvictionTieBreaker::EvictProbing)).unwrap();
+	fn dash_invariants_runs_baseline_suite() {
+		use dash::test_utils::DashInvariants;
+		use framework::Invariants;
+		DashInvariants::run_invariant_suite().unwrap();
 	}
 }
