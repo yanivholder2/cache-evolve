@@ -38,7 +38,7 @@ def _cargo_toml_gates(repo_root: Path) -> str:
         'edition = "2021"\n'
         "\n"
         "[dependencies]\n"
-        f'dash = {{ package = "dash-cache-rs", path = "{repo_root_str}", '
+        f'dash = {{ path = "{repo_root_str}", '
         'features = ["test-utils"] }\n'
     )
 
@@ -57,7 +57,7 @@ def _cargo_toml_cdylib(repo_root: Path) -> str:
         'crate-type = ["cdylib", "rlib"]\n'
         "\n"
         "[dependencies]\n"
-        f'dash = {{ package = "dash-cache-rs", path = "{repo_root_str}" }}\n'
+        f'dash = {{ path = "{repo_root_str}" }}\n'
         f'jni = "{_JNI_CRATE_VERSION}"\n'
         f'log = "{_LOG_CRATE_VERSION}"\n'
     )

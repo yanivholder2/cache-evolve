@@ -2,7 +2,7 @@
 members = [".", "evolve/bench"]
 
 [package]
-name = "dash-cache-rs"
+name = "dash"
 version = "0.1.0"
 edition = "2021"
 

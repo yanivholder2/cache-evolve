@@ -34,7 +34,7 @@ the cohort, not peer Variants, not the ledger.
 - `segment.rs` defines `pub struct VariantSegment<K, V>` and implements
   `dash::dash::segments::Segment<K, V>` using only the crate's public API.
   Constructor signature: `pub fn new(settings: &dash::dash::dash_settings::DashSettings) -> Self`.
-  The build gate harness compiles this against the live `dash-cache-rs`
+  The build gate harness compiles this against the live `dash`
   crate; the contract gate test instantiates `VariantSegment` and exercises
   the trait.
 - `manifest.toml` has a `[variant]` table with `eviction_policy` (the
@@ -58,7 +58,7 @@ the cohort, not peer Variants, not the ledger.
 - **Hypothesis-faithful.** The Variant must actually attempt the
   Hypothesis. A pass-through that ignores it is a defect, not a baseline.
 - **No external dependencies.** Add no crates beyond what the harness
-  already wires (`dash` package = `dash-cache-rs`).
+  already wires (the `dash` crate).
 - **Do not read the parent variant's `task.md`.** Reason from
   `segment.rs` plus your own hypothesis, not from the parent variant's
   prompt. Other past variants, sibling Variants in your cohort, the

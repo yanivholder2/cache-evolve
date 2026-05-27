@@ -29,4 +29,4 @@ Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s c
 **Build + Run workflow**:
 1. `cargo build --release` (produces `target/release/dash.dll`)
 2. `cargo test`
-3. (Optional, only if requested) From caffeine dir: `./gradlew simulator:run -PjvmArgs="-XX:+UseParallelGC,-Xmx8g,-Djava.library.path=<path-to-dash-cache-rs>/target/release" -q`
+3. (Optional, only if requested) From caffeine dir: `./gradlew simulator:run -PjvmArgs="-XX:+UseParallelGC,-Xmx8g,-Djava.library.path=<path-to-cache-evolve>/target/release" -q`
