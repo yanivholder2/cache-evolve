@@ -21,8 +21,6 @@ the cohort, not peer Variants, not the ledger.
    - **Parent variant's `fitness-vector.json`** and **`insight.md`** when
      present — context on what the parent variant achieves, so your
      changes are deliberate refinements rather than blind rewrites.
-   - **`extension-points.md`** — authoritative list of stable plug-in
-     seams. The Segment trait is the only realised one.
    - **Baseline `segment.rs`** — canonical shape and signatures for
      `VariantSegment` (the permanent research baseline).
 3. Write **exactly two files** into `$OUTPUT_DIR/`:

@@ -1,0 +1,23 @@
+[subject]
+name = "dash"
+crate-path = "."
+cdylib-name = "dash"
+
+[[extension-points]]
+name = "eviction-policy"
+trait = "dash::shared::eviction_policy::EvictionPolicy"
+impl-files = ["src/shared/eviction_policy.rs"]
+description = "Algorithm choosing which item to evict from a bucket"
+
+[[extension-points]]
+name = "bucket"
+trait = "dash::shared::traits::Bucket"
+impl-files = ["src/dash/dash_bucket.rs"]
+description = "Container for items within a segment"
+
+[docs]
+context = "CONTEXT.md"
+insight = "baseline/insight.md"
+
+[evaluation]
+fitness-vector = "baseline/eval/fitness-vector.json"
