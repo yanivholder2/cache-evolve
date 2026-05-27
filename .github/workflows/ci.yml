@@ -32,11 +32,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
       - name: Install Python dependencies
-        run: pip install -r evolve/requirements.txt
+        run: |
+          pip install uv
+          uv sync
 
       - name: Python tests
-        working-directory: evolve
-        run: pytest --slow -m "not caffeine_needed"
+        run: uv run pytest --slow -m "not caffeine_needed"

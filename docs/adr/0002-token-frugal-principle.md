@@ -7,7 +7,7 @@ prohibitively expensive and the LLM's context bloats with material the
 framework could derive deterministically. We commit architecturally to a split:
 **the LLM reserves itself for genuine judgment** (hypothesizing, code-writing,
 smoke-log review, cycle insight writing); **everything else is a framework
-module in `evolve/src/`** (ledger reads/appends, leaderboard computation,
+module in `src/evolve/`** (ledger reads/appends, leaderboard computation,
 log filtering, context bundling, cycle sealing).
 
 ## Considered options
@@ -22,7 +22,7 @@ log filtering, context bundling, cycle sealing).
 
 ## Consequences
 
-- Module proliferation in `evolve/src/` is expected and correct, not
+- Module proliferation in `src/evolve/` is expected and correct, not
   evidence of bloat.
 - Reviewing a Cycle later is auditable: the AI's tool calls are bounded to a
   small set of named verbs plus file reads/writes.

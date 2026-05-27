@@ -1,0 +1,27 @@
+[project]
+name = "evolve"
+version = "0.1.0"
+description = "Agentic research loop for evolving cache policies"
+requires-python = ">=3.11"
+dependencies = [
+    "pytest>=7.0",
+    "google-antigravity",
+    "claude-agent-sdk",
+]
+
+[project.scripts]
+evolve = "evolve.cli:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: end-to-end test that drives a real cargo build",
+    "caffeine_needed: end-to-end test that requires ~/projects/caffeine and a JDK; never run in CI",
+]

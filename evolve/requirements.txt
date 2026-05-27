@@ -1,3 +1,0 @@
-pytest>=7.0
-google-antigravity
-claude-agent-sdk

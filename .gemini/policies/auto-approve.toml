@@ -4,7 +4,7 @@ commandPrefix = [
     "cargo",
     "gradlew",
     "pytest",
-    "evolve/scripts/evolve.py",
+    "src/evolve/cli.py",
 ]
 decision = "allow"
 priority = 100

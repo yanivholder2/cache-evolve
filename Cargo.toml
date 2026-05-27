@@ -1,31 +1,3 @@
 [workspace]
-members = [".", "evolve/bench", "framework-rs"]
-
-[package]
-name = "dash"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-name = "dash"
-crate-type = ["cdylib", "lib"]
-
-[features]
-test-utils = ["proptest"]
-
-[dependencies]
-framework = { path = "framework-rs" }
-jni = "0.20.0"
-log = "0.4"
-simplelog = "0.11"
-chrono = "0.4"
-rand = "0.8.5"
-proptest = { version = "1", optional = true }
-
-[dev-dependencies]
-rand = "0.8.5"
-proptest = "1"
-
-[[bin]]
-name = "evolve-metadata-size"
-path = "src/bin/evolve_metadata_size.rs"
+members = ["framework-rs", "inputs/subjects/dash", "inputs/subjects/dash/bench"]
+resolver = "2"
