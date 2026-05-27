@@ -40,11 +40,6 @@ _(none)_
 	- Check that each public fn has clear semantics and appropriate error handling
 - Components to review: `Dash`, `DashSegment`, `DashBucket`, `AssociativeCache`, `Bucket` trait, `EvictionPolicy`, JNI layers, shared types
 
-### Deduplicate dash JNI boilerplate
-- **Created**: 2026-04-28 | **Priority**: 2
-- `src/dash/jni/dash_combined_jni.rs`, `dash_promotion_cold_jni.rs`, `dash_promotion_hot_jni.rs` have ~160 lines of byte-identical bodies for `getFromCacheIfPresent`, `putToCache`, `dropCache`. Only the Java class name in the symbol and `CacheTy` differ. Init paths for cold/hot differ only by the log-name string and segment type.
-- Extract a `jni_cache_exports!` declarative macro keyed on `(java_class_path, cache_ty, log_name)`. Combined keeps a per-file `initCache` because of the extra `tie_breaker` arg.
-
 ### Review Dash integration tests
 - **Created**: 2026-03-27 | **Priority**: 5
 - Review `tests/dash_integration.rs` manually for correctness and completeness. Key areas:

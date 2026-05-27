@@ -17,8 +17,21 @@ pub fn small_dash_settings(policy: EvictionPolicy) -> DashSettings {
 	}
 }
 
+/// Single-segment baseline settings — shared by the invariant suite and
+/// the `DashInvariants` framework entry point.
+pub fn baseline_dash_settings() -> DashSettings {
+	DashSettings {
+		num_of_segments: 1,
+		num_of_normal_buckets: 4,
+		num_of_stash_buckets: 2,
+		bucket_size: 3,
+		eviction_policy: EvictionPolicy::ClassicLRU,
+		debug_mode: 0,
+	}
+}
+
 #[cfg(feature = "test-utils")]
-pub use invariants::run_invariant_suite;
+pub use invariants::{run_invariant_suite, DashInvariants};
 
 #[cfg(feature = "test-utils")]
 mod invariants;

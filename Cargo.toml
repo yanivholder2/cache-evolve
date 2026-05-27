@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "evolve/bench"]
+members = [".", "evolve/bench", "framework-rs"]
 
 [package]
 name = "dash"
@@ -14,6 +14,7 @@ crate-type = ["cdylib", "lib"]
 test-utils = ["proptest"]
 
 [dependencies]
+framework = { path = "framework-rs" }
 jni = "0.20.0"
 log = "0.4"
 simplelog = "0.11"

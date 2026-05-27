@@ -52,9 +52,8 @@ the cohort, not peer Variants, not the ledger.
   fails — that is evidence the framework needs.
 - **Stay inside extension points.** Level-3 work plugs into stable seams.
 - **Public API only.** `get_index`, `buckets`, and `stash_buckets` are
-  `pub(crate)`. Compose existing `PromotionColdSegment` /
-  `PromotionHotSegment` / `CombinedSegment` helpers rather than reaching
-  into internals.
+  `pub(crate)`. Compose existing `PromotionColdSegment` helpers rather
+  than reaching into internals.
 - **Hypothesis-faithful.** The Variant must actually attempt the
   Hypothesis. A pass-through that ignores it is a defect, not a baseline.
 - **No external dependencies.** Add no crates beyond what the harness

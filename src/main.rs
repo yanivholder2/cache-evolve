@@ -1,6 +1,6 @@
 use dash::associative_cache::{associative_cache_settings::AssociativeCacheSettings, AssociativeCache};
 use dash::dash::dash_settings::DashSettings;
-use dash::dash::segments::{CombinedSegment, EvictionTieBreaker, PromotionColdSegment, PromotionHotSegment, Segment};
+use dash::dash::segments::{PromotionColdSegment, Segment};
 use dash::dash::Dash;
 use dash::shared::eviction_policy::EvictionPolicy;
 use log::info;
@@ -19,8 +19,6 @@ const CACHE_KIND: CacheKind = CacheKind::Associative;
 enum CacheKind {
 	Associative,
 	DashPromotionCold,
-	DashPromotionHot,
-	DashCombined,
 }
 
 fn run_simulator<C: Cache>(mut cache: C) {
@@ -75,18 +73,6 @@ fn promotion_settings() -> DashSettings {
 	}
 }
 
-/// Combined segments require a comparable staleness metric (TimestampLRU or Lfu).
-fn combined_settings() -> DashSettings {
-	DashSettings {
-		num_of_segments: 1,
-		num_of_normal_buckets: 2,
-		num_of_stash_buckets: 8,
-		bucket_size: 4,
-		eviction_policy: EvictionPolicy::Lfu,
-		debug_mode: 2,
-	}
-}
-
 fn main() {
 	match CACHE_KIND {
 		CacheKind::Associative => {
@@ -101,18 +87,6 @@ fn main() {
 			dash::init_file_and_stdout_logger("dash_promotion_cold", 2);
 			let s = promotion_settings();
 			run_simulator(Dash::new(s.num_of_segments, || PromotionColdSegment::new(&s)));
-		}
-		CacheKind::DashPromotionHot => {
-			dash::init_file_and_stdout_logger("dash_promotion_hot", 2);
-			let s = promotion_settings();
-			run_simulator(Dash::new(s.num_of_segments, || PromotionHotSegment::new(&s)));
-		}
-		CacheKind::DashCombined => {
-			dash::init_file_and_stdout_logger("dash_combined", 2);
-			let s = combined_settings();
-			run_simulator(Dash::new(s.num_of_segments, || {
-				CombinedSegment::new(&s, EvictionTieBreaker::EvictProbing)
-			}));
 		}
 	}
 }
