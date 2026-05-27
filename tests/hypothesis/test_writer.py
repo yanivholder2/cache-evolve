@@ -27,8 +27,8 @@ REPO_SRC = Path(__file__).parent.parent.parent
 
 def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard: bool = False) -> Path:
     # write_hypotheses doesn't read the evolve source tree — only references
-    # baseline/extension-points paths in the task.md it writes. Create the
-    # outputs the test needs; skip the rest.
+    # baseline paths in the task.md it writes. Create the outputs the test
+    # needs; skip the rest.
     dst = tmp_path / "evolve"
     dst.mkdir()
     layout = _layout(dst)
