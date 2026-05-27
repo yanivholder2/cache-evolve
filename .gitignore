@@ -2,11 +2,17 @@ output.log
 rust-logs/
 
 # Microbench harness output (regenerated per run)
-evolve/bench/bench.json
+inputs/subjects/dash/bench/bench.json
 
 # Per-invocation evolve outputs (timestamped subdirs)
-evolve/outputs/*
-!evolve/outputs/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Python venv + build artefacts
+.venv/
+*.egg-info/
+dist/
+build/
 
 ### Claude Code ###
 .claude/worktrees/
@@ -211,3 +217,4 @@ Cargo.lock
 # Python bytecode
 __pycache__/
 *.pyc
+.pytest_cache/

@@ -4,7 +4,7 @@ Index of reference docs. Paths are relative to the repo root. Read on demand; do
 
 ## READMEs
 
-### [evolve/README.md](../evolve/README.md)
+### [README.md](../README.md)
 
 * Environment setup
 * Usage (flags, examples)
@@ -15,7 +15,7 @@ Index of reference docs. Paths are relative to the repo root. Read on demand; do
 
 **Read when** running the evolve framework, configuring a cycle, or running its test suite.
 
-### [evolve/src/agents/README.md](../evolve/src/agents/README.md)
+### [src/evolve/agents/README.md](../src/evolve/agents/README.md)
 
 * Agent prompt convention (markdown body = system prompt)
 
@@ -36,6 +36,12 @@ Index of reference docs. Paths are relative to the repo root. Read on demand; do
 * Flagged ambiguities
 
 **Read when** encountering unfamiliar domain terms or before any cache-structure change.
+
+### [inputs/subjects/dash/CONTEXT.md](../inputs/subjects/dash/CONTEXT.md)
+
+Dash subject-specific domain glossary.
+
+**Read when** working on the dash crate.
 
 ### [docs/research-proposal.tex](research-proposal.tex)
 

@@ -6,7 +6,7 @@ Consumers:
 
 - `.agents/skills/caffeine-sim/` — single-run skill.
 - `.agents/skills/caffeine-sweep/` — multi-trace/multi-size skill.
-- `evolve/src/fitness/caffeine_simulator.py` — evolve fitness wrapper (build cdylib + invoke + parse + aggregate).
+- `src/evolve/fitness/caffeine_simulator.py` — evolve fitness wrapper (build cdylib + invoke + parse + aggregate).
 
 All consumers go through `scripts/caffeine_runner.py`, which owns invocation. Parsing/aggregation is each consumer's concern.
 
