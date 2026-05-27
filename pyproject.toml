@@ -2,7 +2,7 @@
 name = "evolve"
 version = "0.1.0"
 description = "Agentic research loop for evolving cache policies"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "pytest>=7.0",
     "google-antigravity",
