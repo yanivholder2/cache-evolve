@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import logging
-import shutil
 import sys
-from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from tempfile import mkdtemp
-from typing import Iterator, Type, TypeVar, Union
+from typing import Union
 
 from evolve.identifiers import CycleId, HypothesisId, VariantId
 
@@ -18,9 +15,9 @@ BASELINE_STR = "baseline"
 log = logging.getLogger("paths")
 
 _CDYLIB_FILENAMES = {
-    "linux": "libdash_variant.so",
-    "win32": "dash_variant.dll",
-    "darwin": "libdash_variant.dylib",
+    "linux": "libdash.so",
+    "win32": "dash.dll",
+    "darwin": "libdash.dylib",
 }
 
 
@@ -61,25 +58,21 @@ class VariantDir:
     """A variant-shaped on-disk directory. `root.name` need not be a valid
     `VariantId` — `baseline/` and prose templates carrying the literal
     `v<NNN>` placeholder share this layout. Use `CycleVariantDir` when the id
-    matters."""
+    matters.
+
+    Variants are overlay-by-path: source overrides live under
+    `files/<path-within-subject>`. An empty/missing `files/` means "no overlay"
+    (used by the baseline)."""
 
     root: Path
 
     @property
-    def impl_dir(self) -> Path:
-        return self.root / "impl"
+    def files_dir(self) -> Path:
+        return self.root / "files"
 
     @property
-    def impl_task_md(self) -> Path:
-        return self.impl_dir / "task.md"
-
-    @property
-    def manifest_toml(self) -> Path:
-        return self.impl_dir / "manifest.toml"
-
-    @property
-    def segment_rs(self) -> Path:
-        return self.impl_dir / "segment.rs"
+    def task_md(self) -> Path:
+        return self.root / "task.md"
 
     @property
     def eval_dir(self) -> Path:
@@ -107,11 +100,14 @@ class VariantDir:
 
 
 @dataclass(frozen=True)
-class CargoWorkspaceDir:
-    """Path layout of a cargo crate built for one variant.
+class CargoWorkspace:
+    """A subject-copy cargo workspace prepared for one variant build.
 
-    Does not own its root directory; callers manage cleanup.
-    """
+    Materialised by `evolve.variant.build.prepare_variant_workspace`: a fresh
+    tempdir containing a full copy of the subject crate, the variant's `files/`
+    overlay applied, and the `framework` path dependency rewritten to an
+    absolute path. Callers own the lifecycle and must `shutil.rmtree(root)` once
+    they no longer need the artifacts."""
 
     root: Path
 
@@ -120,73 +116,8 @@ class CargoWorkspaceDir:
         return self.root / "Cargo.toml"
 
     @property
-    def manifest_toml(self) -> Path:
-        return self.root / "manifest.toml"
-
-    @property
-    def src_dir(self) -> Path:
-        return self.root / "src"
-
-    @property
-    def lib_rs(self) -> Path:
-        return self.src_dir / "lib.rs"
-
-    @property
-    def variant_rs(self) -> Path:
-        return self.src_dir / "variant.rs"
-
-
-@dataclass(frozen=True)
-class GatesWorkspace(CargoWorkspaceDir):
-    """Cargo crate scaffolded to run the contract gate + invariant gate harness tests."""
-
-    @property
-    def tests_dir(self) -> Path:
-        return self.root / "tests"
-
-    @property
-    def contract_gate_rs(self) -> Path:
-        return self.tests_dir / "contract_gate.rs"
-
-    @property
-    def invariant_gate_rs(self) -> Path:
-        return self.tests_dir / "invariant_gate.rs"
-
-
-@dataclass(frozen=True)
-class CdylibWorkspace(CargoWorkspaceDir):
-    """Cargo crate scaffolded to build a Caffeine-loadable cdylib."""
-
-    @property
-    def jni_rs(self) -> Path:
-        return self.src_dir / "jni.rs"
-
-    @property
     def cdylib(self) -> Path:
         return self.root / "target" / "release" / cdylib_filename(sys.platform)
-
-
-# Preserves the concrete subclass through `cargo_workspace_tempdir` so callers
-# keep access to subclass-only paths (e.g. `GatesWorkspace.contract_gate_rs`).
-_W = TypeVar("_W", bound=CargoWorkspaceDir)
-
-@contextmanager
-def cargo_workspace_tempdir(prefix: str, cls: Type[_W]) -> Iterator[_W]:
-    """Create a tempdir-rooted workspace of `cls`. Removes the dir on exception
-    only; on clean exit the caller owns the workspace lifetime."""
-
-    root = Path(mkdtemp(prefix=prefix))
-    workspace = cls(root=root)
-    try:
-        yield workspace
-    except BaseException:
-        shutil.rmtree(
-            root,
-            onexc=lambda fn, path, exception: log.warning(
-                "workspace cleanup failed for %s: %s", path, exception
-            ),
-        )
-        raise
 
 
 @dataclass(frozen=True)
@@ -280,24 +211,20 @@ class SourcesLayout:
         return self.subject_dir / "bench"
 
     @property
-    def rust_scaffold_dir(self) -> Path:
-        return self.root / "src" / "evolve" / "variant" / "rust_scaffold"
-
-    @property
-    def contract_gate_rs(self) -> Path:
-        return self.rust_scaffold_dir / "contract_gate.rs"
-
-    @property
-    def invariant_gate_rs(self) -> Path:
-        return self.rust_scaffold_dir / "invariant_gate.rs"
-
-    @property
-    def variant_jni_rs(self) -> Path:
-        return self.rust_scaffold_dir / "variant_jni.rs"
-
-    @property
     def dash_src(self) -> Path:
         return self.subject_dir / "src"
+
+    @property
+    def subject_manifest(self) -> Path:
+        return self.subject_dir / "manifest.toml"
+
+    @property
+    def subject_cargo_toml(self) -> Path:
+        return self.subject_dir / "Cargo.toml"
+
+    @property
+    def framework_crate_dir(self) -> Path:
+        return self.root / "framework-rs"
 
 
 @dataclass(frozen=True)

@@ -1,4 +1,4 @@
-"""Tests for src/variant/build.py build_cdylib (real cargo build, marked slow)."""
+"""Tests for src/variant/build.py compile_cdylib (real cargo build, marked slow)."""
 
 import shutil
 import subprocess
@@ -8,17 +8,17 @@ from pathlib import Path
 
 import pytest
 
-from evolve._io import write_utf8
-from evolve.variant.build import build_cdylib
+from evolve.variant.build import compile_cdylib
 from evolve.identifiers import CycleId, VariantId
-from evolve.paths import CycleVariant, Layout, SourcesLayout
+from evolve.paths import CycleVariant, Layout
 
 REPO_ROOT = Path(__file__).parent.parent.parent
+FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 VARIANT = CycleVariant(CycleId(1), VariantId(1))
 VARIANT_SYMBOL_PREFIX = (
     "Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_"
-    "DashVariantRustPolicy_"
+    "DashRustPolicy_"
 )
 # Java side resolves these by JNI naming convention; missing any of them =
 # ClassNotFoundException at simulator startup.
@@ -31,14 +31,20 @@ EXPECTED_METHODS = (
 )
 
 
-def _stage_baseline(tmp_path: Path) -> tuple[Layout, CycleVariant]:
+def _stage(tmp_path: Path, fixture_name: str | None) -> tuple[Layout, CycleVariant]:
+    """Stage a Layout pointing at the real subject + framework crates. Optional
+    `fixture_name` selects an overlay (None = empty)."""
+
     layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out")
     layout.repo_root.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
-    real_sources = SourcesLayout(root=REPO_ROOT)
-    layout.sources.rust_scaffold_dir.symlink_to(real_sources.rust_scaffold_dir)
+    layout.sources.subject_dir.parent.mkdir(parents=True, exist_ok=True)
+    layout.sources.subject_dir.symlink_to(REPO_ROOT / "inputs" / "subjects" / "dash")
+    layout.sources.framework_crate_dir.symlink_to(REPO_ROOT / "framework-rs")
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
-    shutil.copytree(real_sources.baseline.impl_dir, variant_dir.impl_dir)
+    if fixture_name is None:
+        variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        shutil.copytree(FIXTURES_DIR / fixture_name / "files", variant_dir.files_dir)
     return layout, VARIANT
 
 
@@ -57,9 +63,12 @@ def _exported_jni_methods(cdylib_path: Path) -> set[str]:
 
 
 @pytest.mark.slow
-def test_build_cdylib_good_baseline(tmp_path):
-    layout, variant = _stage_baseline(tmp_path)
-    workspace, cdylib_path = build_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
+def test_build_cdylib_empty_overlay(tmp_path):
+    """Baseline-equivalent build: empty overlay produces the subject cdylib
+    with all `DashRustPolicy` JNI symbols exported."""
+
+    layout, variant = _stage(tmp_path, None)
+    workspace, cdylib_path = compile_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
     try:
         assert cdylib_path.is_file()
         assert cdylib_path.stat().st_size > 0
@@ -75,19 +84,18 @@ def test_build_cdylib_good_baseline(tmp_path):
 
 
 @pytest.mark.slow
-def test_build_cdylib_broken_variant_raises_and_produces_no_artifact(tmp_path, monkeypatch):
-    layout, variant = _stage_baseline(tmp_path)
-    write_utf8(variant.resolve(layout).segment_rs, "this is not valid rust;\n")
+def test_build_cdylib_broken_overlay_raises_and_produces_no_artifact(tmp_path, monkeypatch):
+    layout, variant = _stage(tmp_path, "broken")
 
     workspaces_root = tmp_path / "cdylib-workspaces"
     workspaces_root.mkdir()
     monkeypatch.setattr(
-        "evolve.paths.mkdtemp",
+        "evolve.variant.build.mkdtemp",
         lambda prefix="tmp": tempfile.mkdtemp(prefix=prefix, dir=workspaces_root),
     )
 
     with pytest.raises(subprocess.CalledProcessError):
-        build_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
+        compile_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
 
     assert list(workspaces_root.iterdir()) == []
     # cdylib failure must NOT write a variant rejection.md (asymmetric vs gates).

@@ -4,48 +4,17 @@ from pathlib import Path
 
 import pytest
 
-from evolve.variant.build import LIB_RS_CDYLIB, _cargo_toml_cdylib, _cargo_toml_gates
+from evolve._io import read_utf8, write_utf8
 from evolve.paths import cdylib_filename
-
-
-REPO_ROOT = Path("/some/repo/root")
-
-
-def test_cargo_toml_cdylib_shape():
-    toml = _cargo_toml_cdylib(REPO_ROOT)
-    assert 'crate-type = ["cdylib", "rlib"]' in toml
-    assert 'name = "dash_variant"' in toml
-    assert 'jni = "0.20.0"' in toml
-    assert 'log = "0.4"' in toml
-    # Production cdylib must NOT pull test-utils.
-    assert "test-utils" not in toml
-
-
-def test_cargo_toml_gates_shape():
-    toml = _cargo_toml_gates(REPO_ROOT)
-    assert "[lib]" not in toml
-    assert "jni =" not in toml
-    assert "test-utils" in toml
-
-
-def test_cargo_toml_uses_posix_path_separators():
-    # Cargo accepts forward slashes on Windows; this avoids TOML treating
-    # backslashes as escape sequences.
-    toml = _cargo_toml_cdylib(Path("/a/b/c"))
-    assert 'path = "/a/b/c/inputs/subjects/dash"' in toml
-
-
-def test_lib_rs_cdylib_shape():
-    assert "pub mod jni;" in LIB_RS_CDYLIB
-    assert "pub use variant::VariantSegment;" in LIB_RS_CDYLIB
+from evolve.variant.build import _apply_overlay, _rewrite_framework_path
 
 
 @pytest.mark.parametrize(
     "platform, expected",
     [
-        ("linux", "libdash_variant.so"),
-        ("win32", "dash_variant.dll"),
-        ("darwin", "libdash_variant.dylib"),
+        ("linux", "libdash.so"),
+        ("win32", "dash.dll"),
+        ("darwin", "libdash.dylib"),
     ],
 )
 def test_cdylib_filename_supported(platform, expected):
@@ -55,3 +24,57 @@ def test_cdylib_filename_supported(platform, expected):
 def test_cdylib_filename_unsupported_raises():
     with pytest.raises(RuntimeError, match="unsupported platform"):
         cdylib_filename("plan9")
+
+
+def test_rewrite_framework_path_substitutes_absolute(tmp_path):
+    cargo_toml = tmp_path / "Cargo.toml"
+    write_utf8(
+        cargo_toml,
+        '[dependencies]\nframework = { path = "../../../framework-rs" }\n',
+    )
+    absolute = tmp_path / "framework-rs"
+    _rewrite_framework_path(cargo_toml, absolute)
+    contents = read_utf8(cargo_toml)
+    assert f'path = "{absolute.as_posix()}"' in contents
+
+
+def test_rewrite_framework_path_preserves_other_dep_keys(tmp_path):
+    cargo_toml = tmp_path / "Cargo.toml"
+    write_utf8(
+        cargo_toml,
+        '[dependencies]\nframework = { path = "old", features = ["x"] }\n',
+    )
+    _rewrite_framework_path(cargo_toml, Path("/abs/framework-rs"))
+    contents = read_utf8(cargo_toml)
+    assert 'features = ["x"]' in contents
+    assert 'path = "/abs/framework-rs"' in contents
+
+
+def test_rewrite_framework_path_missing_dep_raises(tmp_path):
+    cargo_toml = tmp_path / "Cargo.toml"
+    write_utf8(cargo_toml, '[dependencies]\nother = "1.0"\n')
+    with pytest.raises(RuntimeError, match="framework"):
+        _rewrite_framework_path(cargo_toml, Path("/abs/framework-rs"))
+
+
+def test_apply_overlay_copies_files_at_relative_paths(tmp_path):
+    files_dir = tmp_path / "files"
+    workspace = tmp_path / "workspace"
+    (files_dir / "src" / "deep").mkdir(parents=True)
+    (files_dir / "src" / "factory.rs").write_text("// overlay")
+    (files_dir / "src" / "deep" / "nested.rs").write_text("// nested")
+    workspace.mkdir()
+    (workspace / "src").mkdir()
+    (workspace / "src" / "factory.rs").write_text("// baseline")  # to be overwritten
+
+    _apply_overlay(files_dir, workspace)
+
+    assert (workspace / "src" / "factory.rs").read_text() == "// overlay"
+    assert (workspace / "src" / "deep" / "nested.rs").read_text() == "// nested"
+
+
+def test_apply_overlay_noop_when_files_dir_missing(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    _apply_overlay(tmp_path / "absent", workspace)  # must not raise
+    assert list(workspace.iterdir()) == []

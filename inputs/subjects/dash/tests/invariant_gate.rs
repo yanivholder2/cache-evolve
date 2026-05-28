@@ -1,4 +1,4 @@
-// Invariant Suite — invariant-gate artifact
+// Invariant gate — invariant-gate artifact
 //
 // Negative fixtures confirm each property test catches the violation it claims to.
 // The invariant properties live in `run_invariant_suite` (src/test_utils/invariants.rs),
@@ -7,16 +7,12 @@
 //
 // ## Invariant-gate check mechanism
 //
-// Against main `src/`:
-//   cargo test --features test-utils --test invariant_suite
+// Against the subject crate:
+//   cargo test --features test-utils --test invariant_gate
 //
-// Against a Variant's compiled segment:
-//   1. The Variant implements the `Segment` trait (the stable extension point).
-//   2. Add a thin harness test that depends on this crate with the `test-utils`
-//      feature and calls `dash::test_utils::run_invariant_suite(|| MySegment::new(&s))`.
-//   3. The invariant-gate script runs `cargo test --test invariant_suite` from
-//      the Variant workspace. Non-zero exit = invariant-gate failure; the failing
-//      invariant name is recorded in `rejection-log.md`.
+// Variants overlay subject files (e.g. `src/factory.rs`); the overlaid workspace
+// is run with the same command. Non-zero exit = invariant-gate failure; the
+// failing invariant name is recorded in `rejection.md`.
 
 use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
 use dash::dash::Dash;

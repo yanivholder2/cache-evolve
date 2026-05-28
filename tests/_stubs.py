@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 from pathlib import Path
 
 from evolve._io import append_utf8, read_utf8, write_utf8
-
-GOOD_IMPL = Path(__file__).parent / "fixtures" / "good" / "impl"
 
 
 class StubLLMAdapter:
@@ -78,8 +75,12 @@ class StubLLMAdapter:
             )
 
     def _write_variant(self, workspace: Path) -> None:
-        for name in ("segment.rs", "manifest.toml"):
-            shutil.copy(GOOD_IMPL / name, workspace / name)
+        # `workspace` is the variant's `files/` overlay dir. The empty overlay
+        # ("no changes vs. subject") is a legal variant — the build harness
+        # treats a missing/empty `files/` as a no-op. A sentinel keeps the dir
+        # detectable so downstream "did the adapter produce anything?" checks
+        # succeed.
+        write_utf8(workspace / ".overlay", "")
 
     def _capture(self, agent_name, workspace, readable_roots, allow_edits):
         task_md = ""

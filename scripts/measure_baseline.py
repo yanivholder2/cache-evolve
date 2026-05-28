@@ -25,11 +25,14 @@ def main() -> None:
     layout = Layout(repo_root=repo_root, outputs_root=repo_root / "outputs")
     baseline = layout.sources.baseline
 
-    if not baseline.segment_rs.is_file():
-        raise FileNotFoundError(f"{baseline.segment_rs} not found - seed the baseline before measuring")
-    if not baseline.manifest_toml.is_file():
-        raise FileNotFoundError(f"{baseline.manifest_toml} not found - seed the baseline before measuring")
+    # Baseline is the subject as-is (empty overlay); the subject manifest
+    # must exist for the harness to copytree.
+    if not layout.sources.subject_manifest.is_file():
+        raise FileNotFoundError(
+            f"{layout.sources.subject_manifest} not found - check out the subject crate"
+        )
 
+    baseline.files_dir.mkdir(parents=True, exist_ok=True)
     baseline.fitness_dir.mkdir(parents=True, exist_ok=True)
     variant = Baseline()
 

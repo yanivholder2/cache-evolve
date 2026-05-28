@@ -26,7 +26,7 @@ Read `docs/caffeine-simulator.md` for the full invocation reference (JVM args, c
        --size 16384 \
        --policies classiclru
    ```
-   Override `--target dashvariant` (uses `libdash_variant.so`) when testing the variant cdylib. Override `--normal-buckets`, `--stash-buckets`, `--bucket-size` to set geometry (must satisfy `segments × (normal + stash) × bucket_size == size`).
+   Only one target: `dash` (cdylib `libdash.so`/`dash.dll`/`libdash.dylib`). Override `--normal-buckets`, `--stash-buckets`, `--bucket-size` to set geometry (must satisfy `segments × (normal + stash) × bucket_size == size`).
 
 ## Gotchas
 

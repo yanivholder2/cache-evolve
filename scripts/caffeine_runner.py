@@ -1,8 +1,8 @@
 """Caffeine simulator invocation core.
 
 Library + CLI for invoking `gradlew simulator:simulate` against the
-Dash policy (`dash`) or the per-variant policy (`dashvariant`). Owns
-invocation only; parsing is each caller's concern.
+consolidated Dash policy (`dash`). Owns invocation only; parsing is each
+caller's concern.
 
 See docs/caffeine-simulator.md for the full invocation reference.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 DEFAULT_CAFFEINE_DIR = Path.home() / "projects" / "caffeine"
 
 # Geometry defaults (used when caller does not override). Match the
-# dashvariant block in application.conf: 1 × (2+6) × 64 = 512.
+# dash block in application.conf: 1 × (2+6) × 64 = 512.
 DEFAULT_NUM_OF_NORMAL_BUCKETS = 2
 DEFAULT_NUM_OF_STASH_BUCKETS = 6
 DEFAULT_BUCKET_SIZE = 64
@@ -49,7 +49,7 @@ class TargetSpec:
     name: str
     cdylib_basename: str
     config_prefix: str
-    policy_key: str          # "policy" (dash) | "evictionPolicies" (dashvariant)
+    policy_key: str          # config key holding the eviction-policy list (e.g. "evictionPolicies")
     policy_spec_name: str    # value for caffeine.simulator.policies.0
 
 
@@ -58,15 +58,8 @@ TARGETS: dict[str, TargetSpec] = {
         name="dash",
         cdylib_basename="dash",
         config_prefix="caffeine.simulator.dash",
-        policy_key="policy",
-        policy_spec_name="dash.DashPromotionColdRust",
-    ),
-    "dashvariant": TargetSpec(
-        name="dashvariant",
-        cdylib_basename="dash_variant",
-        config_prefix="caffeine.simulator.dashvariant",
         policy_key="evictionPolicies",
-        policy_spec_name="dash.DashVariant",
+        policy_spec_name="dash.DashRust",
     ),
 }
 
@@ -119,7 +112,7 @@ class Invocation:
         ]
         for i, policy in enumerate(self.policies):
             cmd.append(f"-D{prefix}.{self.target.policy_key}.{i}={policy}")
-        if self.log_path is not None and self.target.name == "dashvariant":
+        if self.log_path is not None:
             cmd.append(f"-D{prefix}.logPath={self.log_path}")
         return cmd
 
@@ -218,10 +211,6 @@ def simulate(
         raise CaffeineError("simulate(): sizes must be non-empty")
     if not policies:
         raise CaffeineError("simulate(): policies must be non-empty")
-    if log_path is not None and target != "dashvariant":
-        raise CaffeineError(
-            f"log_path is only supported for target='dashvariant', got target={target!r}"
-        )
     invocation = Invocation(
         target=TARGETS[target],
         library_path=library_path,
@@ -252,7 +241,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     def add_common(p: argparse.ArgumentParser) -> None:
         p.add_argument("--target", choices=sorted(TARGETS), default="dash")
         p.add_argument("--library-path", type=Path, required=True,
-                       help="Dir containing the cdylib (dash.dll / libdash.so / dash_variant.dll / libdash_variant.so).")
+                       help="Dir containing the cdylib (dash.dll / libdash.so / libdash.dylib).")
         p.add_argument("--trace", required=True, help="<format>:<path> (e.g. lirs:multi1.trace.gz)")
         p.add_argument("--policies", required=True,
                        help="Comma-separated eviction policies (e.g. classiclru,lfu).")
@@ -261,7 +250,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         p.add_argument("--bucket-size", type=int, default=DEFAULT_BUCKET_SIZE)
         p.add_argument("--debug-mode", type=int, default=0)
         p.add_argument("--log-path", type=Path, default=None,
-                       help="Override the cdylib's rust-logs dir (dashvariant only).")
+                       help="Override the cdylib's rust-logs dir.")
         p.add_argument("--output-dir", type=Path, required=True,
                        help="Caffeine reports dir (passed as --outputDir to simulate).")
         p.add_argument("--caffeine-dir", type=Path, default=DEFAULT_CAFFEINE_DIR)

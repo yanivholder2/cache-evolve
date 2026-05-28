@@ -1,8 +1,13 @@
-use crate::VariantSegment;
-use dash::dash::dash_settings::DashSettings;
-use dash::dash::Dash;
-use dash::shared::eviction_policy::EvictionPolicy;
-use dash::shared::logging;
+//! JNI surface for the Caffeine `DashRustPolicy`.
+//!
+//! Holds a `Box<dyn framework::Cache<i64, i64>>` constructed via the
+//! subject-owned `factory::make_cache`. Variants overlay `src/factory.rs` to
+//! substitute their cache; the JNI symbols stay the same.
+
+use crate::dash::dash_settings::DashSettings;
+use crate::factory::make_cache;
+use crate::shared::eviction_policy::EvictionPolicy;
+use crate::shared::logging;
 
 use jni::{
 	objects::{JClass, JString},
@@ -11,17 +16,18 @@ use jni::{
 };
 use log::{error, info, trace};
 
-type CacheTy = Dash<i64, i64, VariantSegment<i64, i64>>;
+type CacheTy = Box<dyn framework::Cache<i64, i64>>;
 
-// Shared SAFETY contract for every `unsafe { &mut *(cache_ptr as *mut CacheTy) }` site below:
-// the Java caller stores the pointer returned by create_cache, passes it back on every JNI call,
-// guarantees single-threaded access per pointer, and calls dropCache exactly once per pointer.
+// Shared SAFETY contract for every `unsafe { &mut *(cache_ptr as *mut CacheTy) }` site:
+// the Java caller stores the pointer returned by create_cache, passes it back on every
+// JNI call, guarantees single-threaded access per pointer, and calls dropCache exactly
+// once per pointer.
 
 const NULL_CACHE_PTR: jlong = 0;
 const MISS_SENTINEL: jlong = -1;
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_initDefaultCache(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initDefaultCache(
 	_env: JNIEnv,
 	_class: JClass,
 ) -> jlong {
@@ -29,7 +35,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_initCache(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_initCache(
 	env: JNIEnv,
 	_class: JClass,
 	num_of_segments: jlong,
@@ -46,20 +52,20 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		.unwrap_or_default();
 	let debug = debug_mode.max(0) as usize;
 	if log_path.is_empty() {
-		logging::init_file_logger("dash_variant", debug);
+		logging::init_file_logger("dash", debug);
 	} else {
-		logging::init_file_logger_at("dash_variant", debug, &log_path);
+		logging::init_file_logger_at("dash", debug, &log_path);
 	}
 
 	let policy_name: String = match env.get_string(eviction_policy) {
 		Ok(s) => s.into(),
-		Err(error) => {
-			error!("dash_variant_jni.init: failed to read eviction_policy JString: {error}");
+		Err(exception) => {
+			error!("dash_jni.init: failed to read eviction_policy JString: {exception}");
 			return NULL_CACHE_PTR;
 		}
 	};
 	let Some(policy) = EvictionPolicy::from_name(&policy_name) else {
-		error!("dash_variant_jni.init: unknown eviction_policy name={policy_name}");
+		error!("dash_jni.init: unknown eviction_policy name={policy_name}");
 		return NULL_CACHE_PTR;
 	};
 
@@ -71,7 +77,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		policy,
 		debug_mode,
 	) else {
-		error!("dash_variant_jni.init invalid args: segments={num_of_segments} buckets={num_of_normal_buckets} stash={num_of_stash_buckets} bucket_size={bucket_size} policy={policy_name} debug={debug_mode}");
+		error!("dash_jni.init invalid args: segments={num_of_segments} buckets={num_of_normal_buckets} stash={num_of_stash_buckets} bucket_size={bucket_size} policy={policy_name} debug={debug_mode}");
 		return NULL_CACHE_PTR;
 	};
 
@@ -79,35 +85,35 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_listPolicies(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_listPolicies(
 	env: JNIEnv,
 	_class: JClass,
 ) -> jobjectArray {
 	let names = EvictionPolicy::all_names();
 	let string_class = match env.find_class("java/lang/String") {
 		Ok(c) => c,
-		Err(error) => {
-			error!("dash_variant_jni.listPolicies: find_class String failed: {error}");
+		Err(exception) => {
+			error!("dash_jni.listPolicies: find_class String failed: {exception}");
 			return std::ptr::null_mut();
 		}
 	};
 	let array = match env.new_object_array(names.len() as i32, string_class, jni::objects::JObject::null()) {
 		Ok(a) => a,
-		Err(error) => {
-			error!("dash_variant_jni.listPolicies: new_object_array failed: {error}");
+		Err(exception) => {
+			error!("dash_jni.listPolicies: new_object_array failed: {exception}");
 			return std::ptr::null_mut();
 		}
 	};
 	for (i, name) in names.iter().enumerate() {
 		let jname = match env.new_string(*name) {
 			Ok(s) => s,
-			Err(error) => {
-				error!("dash_variant_jni.listPolicies: new_string({name}) failed: {error}");
+			Err(exception) => {
+				error!("dash_jni.listPolicies: new_string({name}) failed: {exception}");
 				return std::ptr::null_mut();
 			}
 		};
-		if let Err(error) = env.set_object_array_element(array, i as i32, jname) {
-			error!("dash_variant_jni.listPolicies: set_object_array_element({i}) failed: {error}");
+		if let Err(exception) = env.set_object_array_element(array, i as i32, jname) {
+			error!("dash_jni.listPolicies: set_object_array_element({i}) failed: {exception}");
 			return std::ptr::null_mut();
 		}
 	}
@@ -119,15 +125,9 @@ fn create_cache(settings: DashSettings) -> jlong {
 	// fall back to the default rust-logs dir. The file logger uses a shared `Once`, so this
 	// is a no-op when the JNI entry (initCache) already initialised the logger at the
 	// caller-supplied path.
-	logging::init_file_logger("dash_variant", settings.debug_mode);
+	logging::init_file_logger("dash", settings.debug_mode);
 
-	let Some(cache) = CacheTy::try_new(settings.num_of_segments, || Some(VariantSegment::new(&settings))) else {
-		error!(
-			"dash_variant_jni.create_cache: initialization failed. segments={}, buckets={}, stash={}, policy={:?}",
-			settings.num_of_segments, settings.num_of_normal_buckets, settings.num_of_stash_buckets, settings.eviction_policy
-		);
-		return NULL_CACHE_PTR;
-	};
+	let cache: CacheTy = make_cache(&settings);
 	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
 
 	info!("create_cache: ptr={cache_ptr} settings={settings:?}");
@@ -135,7 +135,7 @@ fn create_cache(settings: DashSettings) -> jlong {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_getFromCacheIfPresent(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_getFromCacheIfPresent(
 	_env: JNIEnv,
 	_class: JClass,
 	cache_ptr: jlong,
@@ -146,7 +146,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		return MISS_SENTINEL;
 	}
 	let cache = unsafe { &mut *(cache_ptr as *mut CacheTy) };
-	match cache.get_and_update_item(&key) {
+	match cache.get(&key) {
 		None => {
 			trace!("getFromCacheIfPresent: ptr={cache_ptr} key={key} miss");
 			MISS_SENTINEL
@@ -159,7 +159,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_putToCache(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_putToCache(
 	_env: JNIEnv,
 	_class: JClass,
 	cache_ptr: jlong,
@@ -176,7 +176,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashVariantRustPolicy_dropCache(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_dash_DashRustPolicy_dropCache(
 	_env: JNIEnv,
 	_class: JClass,
 	cache_ptr: jlong,

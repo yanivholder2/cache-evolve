@@ -7,7 +7,7 @@ Multi-trace × multi-size Caffeine sweep. Loops `scripts/caffeine_runner.py simu
 
 Read `docs/caffeine-simulator.md` for the per-invocation reference (JVM args, output files) and the sweep root layout (`## Sweep root layout`).
 
-**Scope: one target per sweep.** Defaults to `--target dash`. To compare `dash` vs `dashvariant`, run the sweep twice with different `OUT_ROOT`s — there is no `--targets` loop.
+**Scope: one target per sweep.** Defaults to `--target dash` (the only target).
 
 ## Steps
 

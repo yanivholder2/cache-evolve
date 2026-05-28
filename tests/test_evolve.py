@@ -67,7 +67,7 @@ def test_evolve_produces_sealed_cycle(tmp_path):
 
     variant_dir = cycle_layout.variant(VariantId(1))
     assert variant_dir.root.is_dir()
-    assert variant_dir.impl_dir.is_dir()
+    assert variant_dir.files_dir.is_dir()
     assert variant_dir.eval_dir.is_dir()
     assert variant_dir.insight_md.is_file()
 
