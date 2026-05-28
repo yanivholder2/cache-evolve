@@ -6,10 +6,11 @@
 # and `cargo test --test {contract_gate,invariant_gate}`) by scanning the
 # overlaid workspace for marker comments — no real Rust compilation runs:
 #
-#   // MOCK_CARGO: build_gate_fail                 -> `cargo build --tests` fails
-#   // MOCK_CARGO: contract_gate_fail              -> `cargo test --test contract_gate` fails
-#   // MOCK_CARGO: invariant_gate_fail P<n> <name> -> `cargo test --test invariant_gate` fails
-#                                                     with the matching panic format
+#   // MOCK_CARGO: build_gate_fail                            -> `cargo build --tests` fails
+#   // MOCK_CARGO: contract_gate_fail                         -> `cargo test --test contract_gate` fails
+#   // MOCK_CARGO: universal_invariant_gate_fail U<n> <name>  -> `cargo test --test universal_invariant_gate` fails
+#   // MOCK_CARGO: invariant_gate_fail P<n> <name>            -> `cargo test --test invariant_gate` fails
+#                                                                with the matching panic format
 #
 # Markers must appear at the start of a line in any `.rs` file under the
 # workspace `src/` tree (so a variant overlaying any source file can trigger
@@ -50,7 +51,7 @@ while [ $i -lt ${#ARGS[@]} ]; do
         --tests)         IS_GATE_BUILD=true; i=$((i+1));;
         --test)
             case "${ARGS[$((i+1))]}" in
-                contract_gate|invariant_gate) IS_GATE_TEST="${ARGS[$((i+1))]}";;
+                contract_gate|universal_invariant_gate|invariant_gate) IS_GATE_TEST="${ARGS[$((i+1))]}";;
             esac
             i=$((i+2));;
         *) i=$((i+1));;
@@ -91,6 +92,16 @@ case "$IS_GATE_TEST" in
     contract_gate)
         if [ -n "$(_first_marker '^// MOCK_CARGO: contract_gate_fail')" ]; then
             echo "thread 'main' panicked: contract gate failed (mock marker)" >&2
+            exit 101
+        fi
+        exit 0
+        ;;
+    universal_invariant_gate)
+        MARK=$(_first_marker '^// MOCK_CARGO: universal_invariant_gate_fail U[0-9]+ [a-z_]+')
+        if [ -n "$MARK" ]; then
+            INV="${MARK#// MOCK_CARGO: universal_invariant_gate_fail }"
+            echo "thread 'main' panicked at tests/universal_invariant_gate.rs:1:1:" >&2
+            echo "universal invariant violated: $INV" >&2
             exit 101
         fi
         exit 0

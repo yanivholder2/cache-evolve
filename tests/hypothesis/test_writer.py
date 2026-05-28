@@ -180,7 +180,9 @@ def test_cold_cycle_e2e_writes_real_hypothesis_files(tmp_path):
         "Stash-bias eviction lifts hot-set hit rate on Zipfian traces.",
         "Lazy promotion cuts per-op time on read-heavy workloads.",
     ]
-    cfg = load_configs(repo_root, cohort_size=2)
+    # Stub overlay writes a `.overlay` sentinel, not a manifest impl file;
+    # full-autonomy keeps it legal so this e2e run isn't scope-gated.
+    cfg = load_configs(repo_root, cohort_size=2, authoring_scope="full-autonomy")
     run_cycle(
         layout=_layout(repo_root),
         repo_root=repo_root,

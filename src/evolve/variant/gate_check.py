@@ -1,4 +1,4 @@
-"""Build gate + contract gate + invariant gate checks for a variant overlay."""
+"""Build, contract, universal-invariant, and invariant gate checks for a variant overlay."""
 
 from __future__ import annotations
 
@@ -19,21 +19,28 @@ from evolve.paths import Layout, Variant, CargoWorkspace
 log = logging.getLogger("gate-check")
 
 INVARIANT_GATE_MARKER_RE = re.compile(r"invariant gate violated: P[1-5] [a-z_]+")
+UNIVERSAL_INVARIANT_GATE_MARKER_RE = re.compile(r"universal invariant violated: U[0-9]+ [a-z_]+")
 
 
 @dataclass(frozen=True)
 class GatesResult:
     """Per-gate outcome of a `run_gates()` call. Gates execute in order
-    build gate → contract gate → invariant gate; a gate that didn't run
-    (because an earlier one failed) is recorded as False."""
+    build gate → contract gate → universal invariant gate → invariant gate;
+    a gate that didn't run (because an earlier one failed) is recorded as False."""
 
     build_gate_passed: bool = False
     contract_gate_passed: bool = False
+    universal_invariant_gate_passed: bool = False
     invariant_gate_passed: bool = False
 
     @property
     def all_passed(self) -> bool:
-        return self.build_gate_passed and self.contract_gate_passed and self.invariant_gate_passed
+        return (
+            self.build_gate_passed
+            and self.contract_gate_passed
+            and self.universal_invariant_gate_passed
+            and self.invariant_gate_passed
+        )
 
     @property
     def first_failed_gate(self) -> str | None:
@@ -41,6 +48,8 @@ class GatesResult:
             return "build gate"
         if not self.contract_gate_passed:
             return "contract gate"
+        if not self.universal_invariant_gate_passed:
+            return "universal invariant gate"
         if not self.invariant_gate_passed:
             return "invariant gate"
         return None
@@ -111,27 +120,36 @@ def _check_contract_gate(
     return False
 
 
-def _check_invariant_gate(
+def _check_marker_gate(
     workspace: CargoWorkspace,
     variant: Variant,
     rejection_md: Path,
     hypothesis: HypothesisId | None,
+    *,
+    test_name: str,
+    gate_name: str,
+    marker_re: re.Pattern[str],
+    violation_prefix: str,
 ) -> bool:
-    proc = _run_cargo_test(workspace, "invariant_gate")
+    """Run a marker-driven cargo gate. On failure, parse the `<gate> violated:`
+    marker out of the test output to name the failing invariant, then log a
+    structured rejection entry. Returns True iff the gate passed."""
+
+    proc = _run_cargo_test(workspace, test_name)
     if proc.returncode == 0:
-        log.info("invariant gate: passed for %s", variant)
+        log.info("%s: passed for %s", gate_name, variant)
         return True
-    log.info("invariant gate: FAILED for %s (hypothesis=%s)", variant, hypothesis)
+    log.info("%s: FAILED for %s (hypothesis=%s)", gate_name, variant, hypothesis)
     output = proc.stdout + proc.stderr
 
-    marker = INVARIANT_GATE_MARKER_RE.search(output)
+    marker = marker_re.search(output)
     if marker:
-        invariant = marker.group(0).removeprefix("invariant gate violated: ")
-        gate_label = "invariant gate"
+        invariant = marker.group(0).removeprefix(violation_prefix)
+        gate_label = gate_name
     else:
-        log.warning("invariant gate cargo test failed without an invariant marker — treating as harness error")
+        log.warning("%s cargo test failed without a marker — treating as harness error", gate_name)
         invariant = "<harness error — see Error block>"
-        gate_label = "invariant gate (harness error)"
+        gate_label = f"{gate_name} (harness error)"
 
     _append_entry(
         rejection_md,
@@ -147,6 +165,36 @@ def _check_invariant_gate(
     return False
 
 
+def _check_universal_invariant_gate(
+    workspace: CargoWorkspace,
+    variant: Variant,
+    rejection_md: Path,
+    hypothesis: HypothesisId | None,
+) -> bool:
+    return _check_marker_gate(
+        workspace, variant, rejection_md, hypothesis,
+        test_name="universal_invariant_gate",
+        gate_name="universal invariant gate",
+        marker_re=UNIVERSAL_INVARIANT_GATE_MARKER_RE,
+        violation_prefix="universal invariant violated: ",
+    )
+
+
+def _check_invariant_gate(
+    workspace: CargoWorkspace,
+    variant: Variant,
+    rejection_md: Path,
+    hypothesis: HypothesisId | None,
+) -> bool:
+    return _check_marker_gate(
+        workspace, variant, rejection_md, hypothesis,
+        test_name="invariant_gate",
+        gate_name="invariant gate",
+        marker_re=INVARIANT_GATE_MARKER_RE,
+        violation_prefix="invariant gate violated: ",
+    )
+
+
 def run_gates(
     variant: Variant,
     *,
@@ -154,8 +202,8 @@ def run_gates(
     repo_root: Path,
     hypothesis: HypothesisId | None = None,
 ) -> GatesResult:
-    """Run build gate + contract gate + invariant gate against the variant
-    overlay. Result is truthy iff all pass.
+    """Run build gate + contract gate + universal invariant gate + invariant
+    gate against the variant overlay. Result is truthy iff all pass.
 
     A failing gate writes its entry to `<variant_dir>/rejection.md`.
     """
@@ -177,6 +225,13 @@ def run_gates(
         contract_gate_passed = _check_contract_gate(workspace, variant, rejection_md, hypothesis)
         if not contract_gate_passed:
             return GatesResult(build_gate_passed=True, contract_gate_passed=False)
+        universal_invariant_gate_passed = _check_universal_invariant_gate(workspace, variant, rejection_md, hypothesis)
+        if not universal_invariant_gate_passed:
+            return GatesResult(
+                build_gate_passed=True,
+                contract_gate_passed=True,
+                universal_invariant_gate_passed=False,
+            )
         invariant_gate_passed = _check_invariant_gate(workspace, variant, rejection_md, hypothesis)
     finally:
         shutil.rmtree(
@@ -187,6 +242,7 @@ def run_gates(
     result = GatesResult(
         build_gate_passed=True,
         contract_gate_passed=True,
+        universal_invariant_gate_passed=True,
         invariant_gate_passed=invariant_gate_passed,
     )
     if result.all_passed:

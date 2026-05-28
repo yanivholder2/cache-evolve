@@ -10,6 +10,7 @@ from __future__ import annotations
 import tomllib
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
@@ -22,6 +23,13 @@ class ConfigError(ValueError):
     """Raised when config.toml + overrides cannot produce a valid `Configs`."""
 
 
+class AuthoringScope(StrEnum):
+    """Write surface the variant-implementer agent may author."""
+
+    EXTENSION_POINTS = "extension-points"
+    FULL_AUTONOMY = "full-autonomy"
+
+
 @dataclass(frozen=True)
 class FrameworkConfig:
     cycles: int
@@ -31,6 +39,7 @@ class FrameworkConfig:
     log_level: str
     digest_cycles: int
     max_workers: int
+    authoring_scope: AuthoringScope
 
 
 @dataclass(frozen=True)
@@ -54,6 +63,7 @@ def load_configs(
     log_level: str | None = None,
     simulator_timeout_s: int | None = None,
     max_workers: int | None = None,
+    authoring_scope: AuthoringScope | str | None = None,
 ) -> Configs:
     """Build `Configs` from `<repo_root>/config.toml`, with optional overrides
     taking precedence per field. Raises `ConfigError` for missing or invalid
@@ -76,6 +86,7 @@ def load_configs(
         log_level=_resolve_log_level(log_level, framework_defaults),
         digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
         max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
+        authoring_scope=_resolve_authoring_scope(authoring_scope, framework_defaults),
     )
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),
@@ -119,6 +130,15 @@ def _resolve_ai_agent_tool(override: str | None, defaults: dict) -> str:
             f"--ai-agent-tool must be one of {sorted(ADAPTER_REGISTRY)}, got: {value!r}"
         )
     return value
+
+
+def _resolve_authoring_scope(override: AuthoringScope | str | None, defaults: dict) -> AuthoringScope:
+    value = str(_resolve(override, defaults, "authoring_scope", "--authoring-scope", "framework"))
+    if value not in {scope.value for scope in AuthoringScope}:
+        raise ConfigError(
+            f"--authoring-scope must be one of {[scope.value for scope in AuthoringScope]}, got: {value!r}"
+        )
+    return AuthoringScope(value)
 
 
 def _resolve_log_level(override: str | None, defaults: dict) -> str:

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from evolve._io import read_utf8, write_utf8
+from evolve.config import AuthoringScope
 from evolve.identifiers import CycleId, HypothesisId, VariantId
 from evolve.paths import Layout
 from evolve.variant.implementer import implement_variant
@@ -54,6 +55,7 @@ def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
         variant_dir,
         layout=layout,
         adapter=StubLLMAdapter(capture_file=capture),
+        authoring_scope=AuthoringScope.FULL_AUTONOMY,
     )
 
     body = read_utf8(capture)
@@ -81,6 +83,7 @@ def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
         current_variant,
         layout=layout,
         adapter=StubLLMAdapter(capture_file=capture),
+        authoring_scope=AuthoringScope.FULL_AUTONOMY,
     )
 
     body = read_utf8(capture)
@@ -114,6 +117,7 @@ def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
             variant_dir,
             layout=layout,
             adapter=_SilentNoOpAdapter(),
+            authoring_scope=AuthoringScope.EXTENSION_POINTS,
         )
 
 
@@ -130,5 +134,96 @@ def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
     capture = tmp_path / "capture.txt"
     adapter = StubLLMAdapter(capture_file=capture)
     with pytest.raises(ValueError, match="missing '## Parent'"):
-        implement_variant(hypothesis, variant_dir, layout=layout, adapter=adapter)
+        implement_variant(
+            hypothesis, variant_dir, layout=layout, adapter=adapter,
+            authoring_scope=AuthoringScope.FULL_AUTONOMY,
+        )
     assert not capture.exists(), "adapter must not be invoked when hypothesis is malformed"
+
+
+class _WritingAdapter:
+    """Adapter that writes a fixed set of overlay files (relative to files/)."""
+
+    def __init__(self, rel_paths: list[str]) -> None:
+        self.rel_paths = rel_paths
+
+    def identity(self) -> str:
+        return "WritingAdapter"
+
+    def run(self, agent_name, workspace, *, readable_roots, allow_edits) -> None:
+        for rel in self.rel_paths:
+            target = workspace / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            write_utf8(target, "// stub\n")
+
+
+class _EmptySubdirAdapter:
+    """Adapter that creates only an empty subdirectory — no files."""
+
+    def identity(self) -> str:
+        return "EmptySubdirAdapter"
+
+    def run(self, agent_name, workspace, *, readable_roots, allow_edits) -> None:
+        (workspace / "src").mkdir(parents=True, exist_ok=True)
+
+
+def _prepare(tmp_path: Path):
+    evolve = _setup_evolve(tmp_path)
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    cycle_layout = layout.outputs.cycle(CycleId(1))
+    variant_dir = cycle_layout.variant(VariantId(1))
+    hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
+    _write_hypothesis(hypothesis, parent_variant="baseline")
+    return layout, variant_dir, hypothesis
+
+
+def test_extension_points_scope_allows_whitelisted_file(tmp_path):
+    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    implement_variant(
+        hypothesis, variant_dir, layout=layout,
+        adapter=_WritingAdapter(["src/shared/eviction_policy.rs"]),
+        authoring_scope=AuthoringScope.EXTENSION_POINTS,
+    )
+    assert (variant_dir.files_dir / "src/shared/eviction_policy.rs").is_file()
+
+
+def test_extension_points_scope_rejects_non_whitelisted_file(tmp_path):
+    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    with pytest.raises(ValueError, match="extension-points"):
+        implement_variant(
+            hypothesis, variant_dir, layout=layout,
+            adapter=_WritingAdapter(["src/factory.rs"]),
+            authoring_scope=AuthoringScope.EXTENSION_POINTS,
+        )
+
+
+def test_full_autonomy_scope_allows_any_file(tmp_path):
+    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    implement_variant(
+        hypothesis, variant_dir, layout=layout,
+        adapter=_WritingAdapter(["src/factory.rs"]),
+        authoring_scope=AuthoringScope.FULL_AUTONOMY,
+    )
+    assert (variant_dir.files_dir / "src/factory.rs").is_file()
+
+
+def test_empty_subdir_overlay_raises(tmp_path):
+    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    with pytest.raises(FileNotFoundError, match="adapter produced no overlay files"):
+        implement_variant(
+            hypothesis, variant_dir, layout=layout,
+            adapter=_EmptySubdirAdapter(),
+            authoring_scope=AuthoringScope.FULL_AUTONOMY,
+        )
+
+
+def test_task_md_contains_manifest_path_and_scope(tmp_path):
+    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    implement_variant(
+        hypothesis, variant_dir, layout=layout,
+        adapter=_WritingAdapter(["src/shared/eviction_policy.rs"]),
+        authoring_scope=AuthoringScope.EXTENSION_POINTS,
+    )
+    body = read_utf8(variant_dir.task_md)
+    assert str(layout.sources.subject_manifest) in body
+    assert "extension-points" in body

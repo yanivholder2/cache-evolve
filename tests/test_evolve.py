@@ -46,7 +46,9 @@ def _layout(repo_root: Path) -> Layout:
 
 
 def _run(repo_root: Path, *, cohort_size: int = 2, adapter=None) -> None:
-    cfg = load_configs(repo_root, cohort_size=cohort_size)
+    # Stub overlay writes a `.overlay` sentinel, not a manifest impl file;
+    # full-autonomy keeps it legal so these end-to-end runs aren't scope-gated.
+    cfg = load_configs(repo_root, cohort_size=cohort_size, authoring_scope="full-autonomy")
     run_cycle(
         layout=_layout(repo_root),
         repo_root=repo_root,

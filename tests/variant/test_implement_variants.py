@@ -58,7 +58,10 @@ def _run_cycle(
     logging.getLogger().addHandler(handler)
     try:
         adapter = StubLLMAdapter(hypothesis_lines=hypothesis_lines) if hypothesis_lines else StubLLMAdapter(n_lines=cohort_size)
-        cfg = load_configs(repo_root, cohort_size=cohort_size)
+        # The stub overlay writes a `.overlay` sentinel, not a manifest impl
+        # file; full-autonomy keeps that legal so the pipeline mechanics under
+        # test aren't gated by authoring scope.
+        cfg = load_configs(repo_root, cohort_size=cohort_size, authoring_scope="full-autonomy")
         run_cycle(
             layout=_layout(repo_root),
             repo_root=repo_root,
@@ -174,10 +177,15 @@ def test_variant_implementer_agent_markdown_exists():
     agent_md = SourcesLayout(root=REPO_SRC).agent_prompt("variant-implementer")
     assert agent_md.is_file(), f"missing {agent_md}"
     body = read_utf8(agent_md)
-    assert "hypothesis" in body.lower()
+    lower = body.lower()
+    assert "hypothesis" in lower
     assert "files/" in body
     assert "factory.rs" in body
-    assert "task.md" in body.lower()
+    assert "task.md" in lower
+    assert "manifest" in lower
+    assert "authoring scope" in lower
+    assert "extension-points" in body
+    assert "full-autonomy" in body
 
 
 def test_failing_variant_implementer_aborts_cycle(tmp_path, monkeypatch):
