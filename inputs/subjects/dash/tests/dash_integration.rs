@@ -1,9 +1,9 @@
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::PromotionColdSegment;
 use dash::dash::Dash;
-use dash::shared::eviction_policy::EvictionPolicy;
+use dash::shared::eviction_policy::EvictionPolicyKind;
 
-fn probing_settings(policy: EvictionPolicy) -> DashSettings {
+fn probing_settings(policy: EvictionPolicyKind) -> DashSettings {
 	DashSettings {
 		num_of_segments: 2,
 		num_of_normal_buckets: 4,
@@ -16,7 +16,7 @@ fn probing_settings(policy: EvictionPolicy) -> DashSettings {
 
 #[test]
 fn promotion_cold_put_then_get() {
-	let settings = probing_settings(EvictionPolicy::ClassicLRU);
+	let settings = probing_settings(EvictionPolicyKind::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || PromotionColdSegment::new(&settings));
 	cache.put(1, 10);
 	assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
@@ -24,7 +24,7 @@ fn promotion_cold_put_then_get() {
 
 #[test]
 fn promotion_cold_many_keys() {
-	let settings = probing_settings(EvictionPolicy::ClassicLRU);
+	let settings = probing_settings(EvictionPolicyKind::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || PromotionColdSegment::new(&settings));
 	for i in 0..20 {
 		cache.put(i, i * 10);
@@ -35,7 +35,7 @@ fn promotion_cold_many_keys() {
 
 #[test]
 fn promotion_cold_repeated_access_promotes() {
-	let settings = probing_settings(EvictionPolicy::ClassicLRU);
+	let settings = probing_settings(EvictionPolicyKind::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || PromotionColdSegment::new(&settings));
 	cache.put(1, 10);
 	for _ in 0..10 {
@@ -45,7 +45,7 @@ fn promotion_cold_repeated_access_promotes() {
 
 #[test]
 fn promotion_cold_miss() {
-	let settings = probing_settings(EvictionPolicy::ClassicLRU);
+	let settings = probing_settings(EvictionPolicyKind::ClassicLRU);
 	let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || PromotionColdSegment::new(&settings));
 	assert!(cache.get_and_update_item(&999).is_none());
 }
@@ -54,7 +54,7 @@ fn promotion_cold_miss() {
 fn random_workload_no_panic() {
 	use rand::Rng;
 	let mut rng = rand::thread_rng();
-	let s_lru = probing_settings(EvictionPolicy::ClassicLRU);
+	let s_lru = probing_settings(EvictionPolicyKind::ClassicLRU);
 
 	let mut cold: Dash<i64, i64, _> = Dash::new(s_lru.num_of_segments, || PromotionColdSegment::new(&s_lru));
 

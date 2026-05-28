@@ -111,13 +111,13 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::shared::eviction_policy::EvictionPolicy;
+	use crate::shared::eviction_policy::EvictionPolicyKind;
 	use crate::test_utils::small_dash_settings;
 	use segments::PromotionColdSegment;
 
 	#[test]
 	fn put_then_get() {
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
 			PromotionColdSegment::new(&settings)
 		});
@@ -127,7 +127,7 @@ mod tests {
 
 	#[test]
 	fn miss_returns_none() {
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
 			PromotionColdSegment::new(&settings)
 		});
@@ -136,7 +136,7 @@ mod tests {
 
 	#[test]
 	fn try_new_rejects_zero_segments() {
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let res = Dash::<i64, i64, PromotionColdSegment<i64, i64>>::try_new(0, || {
 			PromotionColdSegment::try_new(&settings)
 		});
@@ -146,7 +146,7 @@ mod tests {
 	#[test]
 	fn dash_implements_framework_cache_trait() {
 		use framework::Cache;
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
 			PromotionColdSegment::new(&settings)
 		});

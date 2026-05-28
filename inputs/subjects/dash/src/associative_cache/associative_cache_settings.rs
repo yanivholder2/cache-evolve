@@ -1,11 +1,11 @@
-use crate::shared::eviction_policy::EvictionPolicy;
+use crate::shared::eviction_policy::EvictionPolicyKind;
 use log::error;
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssociativeCacheSettings {
 	pub num_of_buckets: usize,
 	pub bucket_size: usize,
-	pub eviction_policy: EvictionPolicy,
+	pub eviction_policy: EvictionPolicyKind,
 }
 
 impl AssociativeCacheSettings {
@@ -33,7 +33,7 @@ impl AssociativeCacheSettings {
 			error!("AssociativeCacheSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
 			return None;
 		}
-		let policy = match EvictionPolicy::from_usize(eviction_policy as usize) {
+		let policy = match EvictionPolicyKind::from_usize(eviction_policy as usize) {
 			Some(p) => p,
 			None => {
 				error!("AssociativeCacheSettings.from_jni_args: unknown eviction_policy={eviction_policy}");
@@ -58,7 +58,7 @@ impl Default for AssociativeCacheSettings {
 		AssociativeCacheSettings {
 			num_of_buckets: 1,
 			bucket_size: 8,
-			eviction_policy: EvictionPolicy::ClassicLRU,
+			eviction_policy: EvictionPolicyKind::ClassicLRU,
 		}
 	}
 }

@@ -1,7 +1,7 @@
-use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
+use crate::shared::traits::eviction_policy::EvictionPolicy;
 use log::{debug, trace};
-use std::{fmt::Debug, hash::Hash, time::Instant};
+use std::{fmt::Debug, hash::Hash};
 
 /// Where to insert a new item within a bucket.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -31,7 +31,7 @@ where
 	}
 
 	/// Returns the eviction policy of the bucket.
-	fn get_eviction_policy(&self) -> &EvictionPolicy;
+	fn get_eviction_policy(&self) -> &dyn EvictionPolicy<K, V>;
 
 	// ----------------------------------------------------------------------------------
 
@@ -86,40 +86,19 @@ where
 	/// Returns a reference to the item located in `position`.
 	///
 	/// As a side effect makes updates according to the eviction policy.
-	fn get_from_position(&mut self, position: usize) -> &Item<K, V> {
-		match self.get_eviction_policy() {
-			EvictionPolicy::Fifo | EvictionPolicy::Lifo => &self.get_items()[position],
-			EvictionPolicy::ClassicLRU => {
-				let item = self.get_items_mut().remove(position);
-				self.get_items_mut().push(item);
-				self.get_items().last().expect("bucket invariant: just pushed")
-			}
-			EvictionPolicy::TimestampLRU => {
-				self.get_items_mut()[position].timestamp = Instant::now();
-				&self.get_items()[position]
-			}
-			EvictionPolicy::Swap => {
-				if position > 0 {
-					self.get_items_mut().swap(position, position - 1);
-					&self.get_items()[position - 1]
-				} else {
-					&self.get_items()[position]
-				}
-			}
-			EvictionPolicy::Lfu => {
-				self.get_items_mut()[position].lfu_counter += 1;
-				&self.get_items()[position]
-			}
-		}
-	}
+	///
+	/// Required on the implementor: dispatching to the policy needs the policy
+	/// and the items vector borrowed at once, which only the concrete struct can
+	/// do across its disjoint fields.
+	fn get_from_position(&mut self, position: usize) -> &Item<K, V>;
 
 	/// Evicts an item from the bucket according to the eviction policy and return it.
 	fn evict_item(&mut self) -> Option<Item<K, V>> {
 		let idx = self.eviction_candidate_index()?;
 		let evicted = self.remove_at(idx);
 		debug!(
-			"Bucket.evict_item: policy={:?} evicted_key={:?}",
-			self.get_eviction_policy(),
+			"Bucket.evict_item: policy={} evicted_key={:?}",
+			self.get_eviction_policy().name(),
 			evicted.key
 		);
 		Some(evicted)
@@ -140,28 +119,7 @@ where
 		if self.get_items().is_empty() {
 			return None;
 		}
-		Some(match self.get_eviction_policy() {
-			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => 0,
-			EvictionPolicy::TimestampLRU => {
-				self
-					.get_items()
-					.iter()
-					.enumerate()
-					.min_by_key(|(_, item)| item.timestamp)
-					.expect("bucket invariant: non-empty after is_empty check")
-					.0
-			}
-			EvictionPolicy::Lifo => self.get_items().len() - 1,
-			EvictionPolicy::Lfu => {
-				self
-					.get_items()
-					.iter()
-					.enumerate()
-					.min_by_key(|(_, item)| item.lfu_counter)
-					.expect("bucket invariant: non-empty after is_empty check")
-					.0
-			}
-		})
+		Some(self.get_eviction_policy().eviction_candidate_index(self.get_items()))
 	}
 
 	/// Returns the index of the "hottest" item - the one most protected from eviction.
@@ -170,28 +128,7 @@ where
 		if self.get_items().is_empty() {
 			return None;
 		}
-		Some(match self.get_eviction_policy() {
-			EvictionPolicy::ClassicLRU | EvictionPolicy::Fifo | EvictionPolicy::Swap => self.get_items().len() - 1,
-			EvictionPolicy::Lifo => 0,
-			EvictionPolicy::TimestampLRU => {
-				self
-					.get_items()
-					.iter()
-					.enumerate()
-					.max_by_key(|(_, item)| item.timestamp)
-					.expect("bucket invariant: non-empty after is_empty check")
-					.0
-			}
-			EvictionPolicy::Lfu => {
-				self
-					.get_items()
-					.iter()
-					.enumerate()
-					.max_by_key(|(_, item)| item.lfu_counter)
-					.expect("bucket invariant: non-empty after is_empty check")
-					.0
-			}
-		})
+		Some(self.get_eviction_policy().promotion_candidate_index(self.get_items()))
 	}
 
 	/// Remove and return the item at the given index. Panics if out of bounds.
@@ -208,20 +145,21 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::shared::eviction_policy::EvictionPolicyKind;
 
 	/// Minimal Bucket impl for testing trait default methods in isolation.
 	struct TestBucket {
 		items: Vec<Item<i64, i64>>,
 		max_size: usize,
-		eviction_policy: EvictionPolicy,
+		eviction_policy: Box<dyn EvictionPolicy<i64, i64>>,
 	}
 
 	impl TestBucket {
-		fn new(max_size: usize, policy: EvictionPolicy) -> Self {
+		fn new(max_size: usize, policy: EvictionPolicyKind) -> Self {
 			Self {
 				items: Vec::new(),
 				max_size,
-				eviction_policy: policy,
+				eviction_policy: policy.build(),
 			}
 		}
 	}
@@ -236,8 +174,12 @@ mod tests {
 		fn get_max_size(&self) -> usize {
 			self.max_size
 		}
-		fn get_eviction_policy(&self) -> &EvictionPolicy {
-			&self.eviction_policy
+		fn get_eviction_policy(&self) -> &dyn EvictionPolicy<i64, i64> {
+			&*self.eviction_policy
+		}
+		fn get_from_position(&mut self, position: usize) -> &Item<i64, i64> {
+			let index = self.eviction_policy.get_from_position(&mut self.items, position);
+			&self.items[index]
 		}
 	}
 
@@ -250,14 +192,14 @@ mod tests {
 
 	#[test]
 	fn empty_bucket() {
-		let bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		assert_eq!(bucket.size(), 0);
 		assert!(!bucket.is_full());
 	}
 
 	#[test]
 	fn put_and_get() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		assert_eq!(bucket.size(), 1);
 		assert_eq!(bucket.get(&1).unwrap().value, 10);
@@ -265,7 +207,7 @@ mod tests {
 
 	#[test]
 	fn put_updates_existing_key() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(1, 20));
 		assert_eq!(bucket.size(), 1);
@@ -274,13 +216,13 @@ mod tests {
 
 	#[test]
 	fn get_missing_key_returns_none() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		assert!(bucket.get(&99).is_none());
 	}
 
 	#[test]
 	fn remove_existing_key() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.remove(&1);
@@ -291,7 +233,7 @@ mod tests {
 
 	#[test]
 	fn remove_missing_key_is_noop() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		bucket.remove(&99);
 		assert_eq!(bucket.size(), 1);
@@ -299,7 +241,7 @@ mod tests {
 
 	#[test]
 	fn is_full_at_max_size() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		assert!(!bucket.is_full());
 		bucket.put(Item::new(2, 20));
@@ -308,7 +250,7 @@ mod tests {
 
 	#[test]
 	fn evict_from_empty_returns_none() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		assert!(bucket.evict_item().is_none());
 	}
 
@@ -316,7 +258,7 @@ mod tests {
 
 	#[test]
 	fn fifo_evicts_oldest_inserted() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		// Bucket full, inserting 3 should evict 1
@@ -327,7 +269,7 @@ mod tests {
 
 	#[test]
 	fn fifo_get_does_not_reorder() {
-		let mut bucket = TestBucket::new(3, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(3, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.put(Item::new(3, 30));
@@ -339,7 +281,7 @@ mod tests {
 
 	#[test]
 	fn lifo_evicts_newest_inserted() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::Lifo);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::Lifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		let (_, evicted) = bucket.put(Item::new(3, 30));
@@ -349,7 +291,7 @@ mod tests {
 
 	#[test]
 	fn lifo_get_does_not_reorder() {
-		let mut bucket = TestBucket::new(3, EvictionPolicy::Lifo);
+		let mut bucket = TestBucket::new(3, EvictionPolicyKind::Lifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&2);
@@ -360,7 +302,7 @@ mod tests {
 
 	#[test]
 	fn classic_lru_evicts_least_recently_used() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::ClassicLRU);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::ClassicLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&1); // touch 1, so 2 is now LRU
@@ -370,7 +312,7 @@ mod tests {
 
 	#[test]
 	fn classic_lru_get_moves_to_back() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::ClassicLRU);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::ClassicLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.put(Item::new(3, 30));
@@ -380,7 +322,7 @@ mod tests {
 
 	#[test]
 	fn classic_lru_eviction_chain() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::ClassicLRU);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::ClassicLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		// Access 1 -> order: [2, 1], evict 2
@@ -397,7 +339,7 @@ mod tests {
 
 	#[test]
 	fn timestamp_lru_evicts_oldest_timestamp() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::TimestampLRU);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::TimestampLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&1); // refreshes timestamp of 1
@@ -407,7 +349,7 @@ mod tests {
 
 	#[test]
 	fn timestamp_lru_get_does_not_reorder_vec() {
-		let mut bucket = TestBucket::new(3, EvictionPolicy::TimestampLRU);
+		let mut bucket = TestBucket::new(3, EvictionPolicyKind::TimestampLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&1);
@@ -418,7 +360,7 @@ mod tests {
 
 	#[test]
 	fn swap_get_moves_toward_front() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Swap);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Swap);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.put(Item::new(3, 30));
@@ -435,7 +377,7 @@ mod tests {
 
 	#[test]
 	fn swap_evicts_front_item() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::Swap);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::Swap);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		let (_, evicted) = bucket.put(Item::new(3, 30));
@@ -446,7 +388,7 @@ mod tests {
 
 	#[test]
 	fn lfu_get_increments_counter() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Lfu);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Lfu);
 		bucket.put(Item::new(1, 10));
 		assert_eq!(bucket.get(&1).unwrap().lfu_counter, 1);
 		assert_eq!(bucket.get(&1).unwrap().lfu_counter, 2);
@@ -455,7 +397,7 @@ mod tests {
 
 	#[test]
 	fn lfu_evicts_least_frequently_used() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::Lfu);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::Lfu);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&1); // counter: 1
@@ -468,7 +410,7 @@ mod tests {
 
 	#[test]
 	fn lfu_evicts_first_on_tie() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::Lfu);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::Lfu);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		// Both have counter 0 — min_by_key picks first
@@ -480,7 +422,7 @@ mod tests {
 
 	#[test]
 	fn put_returns_ref_to_inserted_item() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		let (inserted, evicted) = bucket.put(Item::new(5, 50));
 		assert_eq!(inserted.key, 5);
 		assert_eq!(inserted.value, 50);
@@ -489,7 +431,7 @@ mod tests {
 
 	#[test]
 	fn put_returns_ref_and_evicted_when_full() {
-		let mut bucket = TestBucket::new(1, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(1, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		let (inserted, evicted) = bucket.put(Item::new(2, 20));
 		assert_eq!(inserted.key, 2);
@@ -500,8 +442,8 @@ mod tests {
 
 	#[test]
 	fn put_at_back_is_same_as_put() {
-		let mut a = TestBucket::new(4, EvictionPolicy::ClassicLRU);
-		let mut b = TestBucket::new(4, EvictionPolicy::ClassicLRU);
+		let mut a = TestBucket::new(4, EvictionPolicyKind::ClassicLRU);
+		let mut b = TestBucket::new(4, EvictionPolicyKind::ClassicLRU);
 		a.put(Item::new(1, 10));
 		b.put_at(Item::new(1, 10), InsertPosition::Back);
 		assert_eq!(keys(&a), keys(&b));
@@ -509,7 +451,7 @@ mod tests {
 
 	#[test]
 	fn put_at_front_inserts_at_position_zero() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::ClassicLRU);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::ClassicLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.put_at(Item::new(3, 30), InsertPosition::Front);
@@ -518,7 +460,7 @@ mod tests {
 
 	#[test]
 	fn put_at_front_evicts_when_full() {
-		let mut bucket = TestBucket::new(2, EvictionPolicy::ClassicLRU);
+		let mut bucket = TestBucket::new(2, EvictionPolicyKind::ClassicLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		let (_, evicted) = bucket.put_at(Item::new(3, 30), InsertPosition::Front);
@@ -528,7 +470,7 @@ mod tests {
 
 	#[test]
 	fn put_at_front_no_eviction_when_not_full() {
-		let mut bucket = TestBucket::new(3, EvictionPolicy::ClassicLRU);
+		let mut bucket = TestBucket::new(3, EvictionPolicyKind::ClassicLRU);
 		bucket.put(Item::new(1, 10));
 		let (_, evicted) = bucket.put_at(Item::new(2, 20), InsertPosition::Front);
 		assert!(evicted.is_none());
@@ -539,13 +481,13 @@ mod tests {
 
 	#[test]
 	fn eviction_candidate_index_empty() {
-		let bucket = TestBucket::new(4, EvictionPolicy::ClassicLRU);
+		let bucket = TestBucket::new(4, EvictionPolicyKind::ClassicLRU);
 		assert_eq!(bucket.eviction_candidate_index(), None);
 	}
 
 	#[test]
 	fn eviction_candidate_index_classic_lru() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::ClassicLRU);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::ClassicLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		assert_eq!(bucket.eviction_candidate_index(), Some(0));
@@ -553,7 +495,7 @@ mod tests {
 
 	#[test]
 	fn eviction_candidate_index_lifo() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Lifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Lifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		assert_eq!(bucket.eviction_candidate_index(), Some(1));
@@ -561,7 +503,7 @@ mod tests {
 
 	#[test]
 	fn eviction_candidate_index_lfu() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Lfu);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Lfu);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&1); // counter: 1
@@ -573,7 +515,7 @@ mod tests {
 
 	#[test]
 	fn eviction_candidate_index_timestamp_lru() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::TimestampLRU);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::TimestampLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&2); // refresh timestamp of 2
@@ -586,13 +528,13 @@ mod tests {
 
 	#[test]
 	fn promotion_candidate_index_empty() {
-		let bucket = TestBucket::new(4, EvictionPolicy::ClassicLRU);
+		let bucket = TestBucket::new(4, EvictionPolicyKind::ClassicLRU);
 		assert_eq!(bucket.promotion_candidate_index(), None);
 	}
 
 	#[test]
 	fn promotion_candidate_index_classic_lru_fifo_swap_is_last() {
-		for policy in [EvictionPolicy::ClassicLRU, EvictionPolicy::Fifo, EvictionPolicy::Swap] {
+		for policy in [EvictionPolicyKind::ClassicLRU, EvictionPolicyKind::Fifo, EvictionPolicyKind::Swap] {
 			let mut bucket = TestBucket::new(4, policy);
 			bucket.put(Item::new(1, 10));
 			bucket.put(Item::new(2, 20));
@@ -602,7 +544,7 @@ mod tests {
 
 	#[test]
 	fn promotion_candidate_index_lifo_is_first() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Lifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Lifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		assert_eq!(bucket.promotion_candidate_index(), Some(0));
@@ -610,7 +552,7 @@ mod tests {
 
 	#[test]
 	fn promotion_candidate_index_lfu_picks_max_counter() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Lfu);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Lfu);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&2); // counter: 1
@@ -622,7 +564,7 @@ mod tests {
 
 	#[test]
 	fn promotion_candidate_index_timestamp_lru_picks_max_timestamp() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::TimestampLRU);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::TimestampLRU);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		bucket.get(&1); // refresh timestamp of 1
@@ -634,7 +576,7 @@ mod tests {
 
 	#[test]
 	fn remove_at_returns_item() {
-		let mut bucket = TestBucket::new(4, EvictionPolicy::Fifo);
+		let mut bucket = TestBucket::new(4, EvictionPolicyKind::Fifo);
 		bucket.put(Item::new(1, 10));
 		bucket.put(Item::new(2, 20));
 		let removed = bucket.remove_at(0);

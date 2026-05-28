@@ -1,12 +1,12 @@
 use crate::dash::dash_settings::DashSettings;
-use crate::shared::eviction_policy::EvictionPolicy;
+use crate::shared::eviction_policy::EvictionPolicyKind;
 use crate::shared::utils::get_index;
 
 /// Upper bound for brute-force key searches in tests.
 pub const KEY_SEARCH_RANGE: i64 = 200;
 
 /// Returns a small DashSettings for testing. Used by Dash + segment tests.
-pub fn small_dash_settings(policy: EvictionPolicy) -> DashSettings {
+pub fn small_dash_settings(policy: EvictionPolicyKind) -> DashSettings {
 	DashSettings {
 		num_of_segments: 2,
 		num_of_normal_buckets: 4,
@@ -25,7 +25,7 @@ pub fn baseline_dash_settings() -> DashSettings {
 		num_of_normal_buckets: 4,
 		num_of_stash_buckets: 2,
 		bucket_size: 3,
-		eviction_policy: EvictionPolicy::ClassicLRU,
+		eviction_policy: EvictionPolicyKind::ClassicLRU,
 		debug_mode: 0,
 	}
 }

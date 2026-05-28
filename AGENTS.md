@@ -20,7 +20,7 @@ Dash cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s c
 
 **Invariants**:
 - Pointer-based JNI: Java side stores the pointer returned from cache init and passes it back on every call.
-- Eviction-policy enum ordinals must match Rust `EvictionPolicy::from_usize` indices.
+- Eviction-policy ordinals must match Rust `EvictionPolicyKind::from_usize` indices.
 - Java settings inner classes read `dash.*` config from `application.conf`.
 
 **Build + Run workflow**:

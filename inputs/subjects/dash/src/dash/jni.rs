@@ -6,7 +6,7 @@
 
 use crate::dash::dash_settings::DashSettings;
 use crate::factory::make_cache;
-use crate::shared::eviction_policy::EvictionPolicy;
+use crate::shared::eviction_policy::EvictionPolicyKind;
 use crate::shared::logging;
 
 use jni::{
@@ -64,7 +64,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 			return NULL_CACHE_PTR;
 		}
 	};
-	let Some(policy) = EvictionPolicy::from_name(&policy_name) else {
+	let Some(policy) = EvictionPolicyKind::from_name(&policy_name) else {
 		error!("dash_jni.init: unknown eviction_policy name={policy_name}");
 		return NULL_CACHE_PTR;
 	};
@@ -89,7 +89,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	env: JNIEnv,
 	_class: JClass,
 ) -> jobjectArray {
-	let names = EvictionPolicy::all_names();
+	let names = EvictionPolicyKind::all_names();
 	let string_class = match env.find_class("java/lang/String") {
 		Ok(c) => c,
 		Err(exception) => {

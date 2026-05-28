@@ -4,7 +4,7 @@
 
 use dash::dash::dash_settings::DashSettings;
 use dash::factory::make_cache;
-use dash::shared::eviction_policy::EvictionPolicy;
+use dash::shared::eviction_policy::EvictionPolicyKind;
 use framework::test_suite::run_contract_suite;
 
 fn default_settings() -> DashSettings {
@@ -13,7 +13,7 @@ fn default_settings() -> DashSettings {
 		num_of_normal_buckets: 4,
 		num_of_stash_buckets: 2,
 		bucket_size: 2,
-		eviction_policy: EvictionPolicy::ClassicLRU,
+		eviction_policy: EvictionPolicyKind::ClassicLRU,
 		debug_mode: 0,
 	}
 }

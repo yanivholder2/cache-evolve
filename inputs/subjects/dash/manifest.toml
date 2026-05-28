@@ -5,7 +5,7 @@ cdylib-name = "dash"
 
 [[extension-points]]
 name = "eviction-policy"
-trait = "dash::shared::eviction_policy::EvictionPolicy"
+trait = "dash::shared::traits::EvictionPolicy"
 impl-files = ["src/shared/eviction_policy.rs"]
 description = "Algorithm choosing which item to evict from a bucket"
 
