@@ -6,8 +6,6 @@
       "Bash(gradlew*)",
       "Bash(pytest*)",
       "Bash(.venv/bin/python -m pytest*)",
-      "Skill(caffeine-sweep)",
-      "Skill(caffeine-sim)",
       "Skill(sim)"
     ],
     "additionalDirectories": [
