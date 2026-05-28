@@ -37,3 +37,7 @@ required-features = ["test-utils"]
 [[test]]
 name = "contract_gate"
 path = "tests/contract_gate.rs"
+
+[[test]]
+name = "universal_invariant_gate"
+path = "tests/universal_invariant_gate.rs"

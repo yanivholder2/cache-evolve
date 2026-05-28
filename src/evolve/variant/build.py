@@ -70,10 +70,19 @@ def prepare_variant_workspace(
     subject_dir = layout.sources.subject_dir
     framework_crate_dir = layout.sources.framework_crate_dir
 
+    def _ignore_build_cache(directory: str, names: list[str]) -> set[str]:
+        # Skip the subject's build cache: it's gitignored-but-present after any
+        # local cargo build, and copying it is gigabytes of redundant I/O per
+        # variant. Anchored to the crate root so a "target" segment deeper in
+        # the tree (fixtures, test data) is never silently dropped.
+        if Path(directory) == subject_dir and "target" in names:
+            return {"target"}
+        return set()
+
     root = Path(mkdtemp(prefix="variant-workspace-"))
     try:
         # mkdtemp already created root, so copytree must merge into it.
-        shutil.copytree(subject_dir, root, dirs_exist_ok=True)
+        shutil.copytree(subject_dir, root, dirs_exist_ok=True, ignore=_ignore_build_cache)
         _apply_overlay(variant_dir.files_dir, root)
         _rewrite_framework_path(root / "Cargo.toml", framework_crate_dir)
     except BaseException:

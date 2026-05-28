@@ -9,9 +9,11 @@ import logging
 from pathlib import Path
 
 from evolve._io import write_utf8
+from evolve.config import AuthoringScope
 from evolve.hypothesis import parser
 from evolve.llm import LLMAdapter
 from evolve.paths import CycleVariantDir, Layout, Variant, VariantDir
+from evolve.subject import load_subject
 
 AGENT_NAME = "variant-implementer"
 
@@ -24,6 +26,7 @@ def _write_task_md(
     parent_dir: VariantDir,
     variant: Variant,
     layout: Layout,
+    authoring_scope: AuthoringScope,
 ) -> None:
     body = (
         f"# Task: variant-implementer\n\n"
@@ -35,7 +38,10 @@ def _write_task_md(
         f"- Parent files/:         {parent_dir.files_dir}\n"
         f"- Parent fitness-vector: {parent_dir.fitness_vector_json}\n"
         f"- Parent insight.md:     {parent_dir.insight_md}\n"
-        f"- Subject src/:          {layout.sources.dash_src}\n\n"
+        f"- Subject src/:          {layout.sources.dash_src}\n"
+        f"- Subject manifest:      {layout.sources.subject_manifest}\n\n"
+        f"## Authoring scope\n\n"
+        f"{authoring_scope}\n\n"
         f"## Write\n\n"
         f"Place every changed file under `files/<path-within-subject>`; the overlay\n"
         f"is applied verbatim to a copy of the subject crate at build time.\n"
@@ -49,6 +55,7 @@ def implement_variant(
     *,
     layout: Layout,
     adapter: LLMAdapter,
+    authoring_scope: AuthoringScope,
 ) -> None:
     """Materialize one Variant's overlay from a single Hypothesis. Raises on failure."""
 
@@ -57,10 +64,11 @@ def implement_variant(
 
     hypothesis = parser.parse(hypothesis_file)
     parent_dir = hypothesis.parent_variant.resolve(layout)
+    subject = load_subject(layout.sources.subject_dir)
 
     files_dir = variant_dir.files_dir
     files_dir.mkdir(parents=True, exist_ok=True)
-    _write_task_md(variant_dir, hypothesis_file, parent_dir, hypothesis.parent_variant, layout)
+    _write_task_md(variant_dir, hypothesis_file, parent_dir, hypothesis.parent_variant, layout, authoring_scope)
     log.debug("wrote implementer task.md at %s", variant_dir.task_md)
 
     adapter.run(
@@ -70,10 +78,25 @@ def implement_variant(
         allow_edits=True,
     )
 
-    if not any(files_dir.rglob("*")):
+    overlay_files = [p for p in files_dir.rglob("*") if p.is_file()]
+    if not overlay_files:
         # An empty overlay would build but be indistinguishable from the
         # baseline, so treat "agent wrote nothing" as a failure.
         raise FileNotFoundError(
             f"adapter produced no overlay files under {files_dir}"
         )
+
+    if authoring_scope is AuthoringScope.EXTENSION_POINTS:
+        whitelist = subject.ep_scope_whitelist
+        outside = sorted(
+            str(p.relative_to(files_dir))
+            for p in overlay_files
+            if p.relative_to(files_dir) not in whitelist
+        )
+        if outside:
+            raise ValueError(
+                f"authoring scope '{AuthoringScope.EXTENSION_POINTS}' permits writing only the manifest "
+                f"extension-point impl files; variant wrote outside that set: {outside}"
+            )
+
     log.info("variant materialized at %s", files_dir)

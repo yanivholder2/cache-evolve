@@ -96,31 +96,36 @@ def test_gate_check_broken_fixture_logs_structured_entry(tmp_path):
     assert EXPECTED_VARIANT_TAG in content
 
 
-def test_gate_check_bad_invariant_fixture_fails_invariant_gate(tmp_path):
+def test_gate_check_bad_invariant_fixture_fails_universal_invariant_gate(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
     result = run_gates(variant, layout=layout, repo_root=REPO_ROOT)
     assert result.build_gate_passed is True
     assert result.contract_gate_passed is True
+    assert result.universal_invariant_gate_passed is False
+    # The universal gate short-circuits the subject invariant gate, so it never
+    # runs and is recorded False.
     assert result.invariant_gate_passed is False
     assert not result.all_passed
+    assert result.first_failed_gate == "universal invariant gate"
 
 
 def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT)
     content = read_utf8(variant.resolve(layout).rejection_md)
-    assert "invariant gate" in content
+    assert "universal invariant gate" in content
     assert EXPECTED_VARIANT_TAG in content
-    # **Failing invariant** must name a P[1-5] property, not just appear in
-    # the embedded panic block.
-    assert re.search(r"\*\*Failing invariant\*\*: P[1-5] [a-z_]+", content)
+    # **Failing invariant** must name a U<n> law, not just appear in the
+    # embedded panic block.
+    assert re.search(r"\*\*Failing invariant\*\*: U[0-9]+ [a-z_]+", content)
 
 
-def test_gate_check_good_fixture_passes_invariant_gate(tmp_path):
+def test_gate_check_good_fixture_passes_all_gates(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     result = run_gates(variant, layout=layout, repo_root=REPO_ROOT)
     assert result.build_gate_passed is True
     assert result.contract_gate_passed is True
+    assert result.universal_invariant_gate_passed is True
     assert result.invariant_gate_passed is True
     assert result.all_passed
     rejection_md = variant.resolve(layout).rejection_md

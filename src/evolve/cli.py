@@ -24,7 +24,7 @@ from evolve.llm import (
     snapshot_token_totals,
 )
 from evolve.aggregate.cohort import compute_cohort_pareto, write_winners_json
-from evolve.config import Configs, ConfigError, load_configs
+from evolve.config import AuthoringScope, Configs, ConfigError, load_configs
 from evolve.cycle.leaderboard import regenerate as regenerate_leaderboard
 from evolve.cycle.ledger_append import append_row
 from evolve.cycle.seal import seal_cycle
@@ -156,7 +156,10 @@ def _run_variant_pipeline(
 
     try:
         with _variant_pipeline_step("implement", variant_id):
-            _implementer.implement_variant(hypothesis_file, variant_dir, layout=layout, adapter=adapter)
+            _implementer.implement_variant(
+                hypothesis_file, variant_dir, layout=layout, adapter=adapter,
+                authoring_scope=cfg.framework.authoring_scope,
+            )
         with _variant_pipeline_step("gate-check", variant_id):
             gates_result = run_gates(variant, layout=layout, repo_root=repo_root, hypothesis=hypothesis_id)
             if not gates_result:
@@ -431,6 +434,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         help="Per-variant simulator invocation timeout (seconds).")
     parser.add_argument("--max-workers", type=int, default=None,
                         help="Worker threads for per-variant fan-out (0 = match cohort_size).")
+    parser.add_argument("--authoring-scope", type=AuthoringScope, choices=list(AuthoringScope), default=None,
+                        help="Write surface the variant-implementer agent may author.")
     return parser
 
 
@@ -449,6 +454,7 @@ def main(argv: list[str] | None = None) -> None:
             log_level=args.log_level,
             simulator_timeout_s=args.simulator_timeout_s,
             max_workers=args.max_workers,
+            authoring_scope=args.authoring_scope,
         )
     except ConfigError as exception:
         die(str(exception))

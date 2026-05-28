@@ -30,6 +30,12 @@ digest_cycles = 3
 # 0 means: match cohort_size.
 max_workers = 0
 
+# Write surface the variant-implementer agent may author (--authoring-scope).
+# "extension-points": only impl files listed in the subject manifest's
+# [[extension-points]] tables. "full-autonomy": any overlay file, still bound by
+# the Cache<K,V> contract and the subject invariant suite.
+authoring_scope = "extension-points"
+
 [simulator]
 # Per-variant simulator invocation timeout (seconds). Surfaces as
 # FitnessError when exceeded — does not crash the cycle.

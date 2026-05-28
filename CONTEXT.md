@@ -71,7 +71,7 @@ _Avoid_: Lock, close.
 ### Action space and extension points
 
 **Action space**:
-The set of changes a Variant is allowed to make, fixed per Variant by its
+The set of changes a Variant is allowed to make, fixed per run by the run's
 authoring scope (Extension-point scope or Full-autonomy scope).
 _Avoid_: Search space, mutation space.
 
@@ -108,14 +108,23 @@ _Avoid_: Patch, diff, fork.
 
 **Gate**:
 A check a Variant must pass before its fitness is admitted to the leaderboard.
-Hard gates (build gate, contract gate, invariant gate) are
-deterministic; soft gates (smoke gate) are AI-judged. A planned
+Hard gates (build gate, contract gate, universal invariant gate, invariant
+gate) are deterministic; soft gates (smoke gate) are AI-judged. A planned
 differential gate is opt-in for refactor-shaped variants.
 _Avoid_: Check, validator.
 
+**Universal invariant gate**:
+A framework-level (subject-agnostic) hard gate that runs the variant's
+`make_cache` through universal cache laws known only via `Cache<K, V>` (no
+observable phantom item; a put key reads back its value or `None`; a never-put
+key reads `None`). Binds to the variant's actual cache, so a factory-only
+overlay cannot escape it. Sees only observable violations, not structural ones.
+_Avoid_: Generic gate, base gate.
+
 **Invariant suite**:
-The codified correctness contract for the Subject cache (enforced by the
-invariant gate); a Variant must satisfy it to be admitted to the leaderboard.
+The codified Subject-structural correctness contract for the cache (enforced by
+the invariant gate); a Variant must satisfy it to be admitted to the
+leaderboard. Distinct from the universal invariant gate's subject-agnostic laws.
 _Avoid_: Property tests, test suite.
 
 **Smoke trace**:
