@@ -94,3 +94,7 @@ Markers (defined in `tests/conftest.py`):
 A session-scoped fixture puts `tests/_mocks/` first on `PATH` so the fast suite never invokes a real `cargo`.
 
 `--slow` and `--caffeine-needed` cannot be combined: slow tests assume the caffeine stub is active, which `--caffeine-needed` disables. Passing both aborts collection.
+
+## License
+
+Released under the [MIT License](LICENSE).
