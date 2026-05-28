@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # Mock cargo for evolve gate-script tests.
 #
-# Handles the cargo invocations made by scripts/build.py and scripts/gate-check.py
-# (i.e. variant-crate `cargo build --tests` and `cargo test --test {contract_gate,invariant_gate}`)
-# by inspecting markers in the variant source — no real Rust compilation runs:
+# Handles the cargo invocations made by src/evolve/variant/build.py and
+# src/evolve/variant/gate_check.py (variant workspace `cargo build --tests`
+# and `cargo test --test {contract_gate,invariant_gate}`) by scanning the
+# overlaid workspace for marker comments — no real Rust compilation runs:
+#
 #   // MOCK_CARGO: build_gate_fail                 -> `cargo build --tests` fails
+#   // MOCK_CARGO: contract_gate_fail              -> `cargo test --test contract_gate` fails
 #   // MOCK_CARGO: invariant_gate_fail P<n> <name> -> `cargo test --test invariant_gate` fails
 #                                                     with the matching panic format
-# `cargo test --test contract_gate` fails when the manifest declares an
-# eviction_policy name not in the known set (mirrors the real harness check).
+#
+# Markers must appear at the start of a line in any `.rs` file under the
+# workspace `src/` tree (so a variant overlaying any source file can trigger
+# the appropriate gate failure).
 #
 # Any other cargo invocation (fitness plugins building real binaries, etc.)
 # is forwarded to the real cargo found on PATH after stripping this shim's dir.
@@ -66,47 +71,37 @@ WORK_DIR=""
 if [ -n "$MANIFEST" ]; then
     WORK_DIR="$(dirname "$MANIFEST")"
 fi
-VARIANT_RS="${WORK_DIR}/src/variant.rs"
-MANIFEST_TOML="${WORK_DIR}/manifest.toml"
+
+# Scan the workspace `src/` tree for marker comments. Returns the first match.
+_first_marker() {
+    local pattern="$1"
+    [ -d "$WORK_DIR/src" ] || return 0
+    grep -RhoE "$pattern" "$WORK_DIR/src" --include='*.rs' 2>/dev/null | head -n1
+}
 
 if [ "$SUBCMD" = "build" ]; then
-    if [ -f "$VARIANT_RS" ] && grep -q '^// MOCK_CARGO: build_gate_fail' "$VARIANT_RS"; then
-        echo "error[E0599]: mock cargo: build_gate_fail marker present in $VARIANT_RS" >&2
+    if [ -n "$(_first_marker '^// MOCK_CARGO: build_gate_fail')" ]; then
+        echo "error[E0599]: mock cargo: build_gate_fail marker present in workspace src/" >&2
         exit 101
     fi
     exit 0
 fi
 
-# Gate test path
 case "$IS_GATE_TEST" in
     contract_gate)
-        if [ -f "$MANIFEST_TOML" ]; then
-            NAME=$(grep -E '^[[:space:]]*eviction_policy[[:space:]]*=' "$MANIFEST_TOML" \
-                | grep -v 'eviction_policy_ordinal' \
-                | head -n1 \
-                | sed -E 's/.*=[[:space:]]*"?([^"#]*)"?.*/\1/' \
-                | sed -E 's/[[:space:]]+$//' || true)
-            if [ -n "$NAME" ]; then
-                case "$NAME" in
-                    ClassicLRU|TimestampLRU|Lifo|Lfu|Fifo|Swap) ;;
-                    *)
-                        echo "thread 'main' panicked: contract gate trait contract failed: eviction_policy=\"$NAME\" is not a valid EvictionPolicy name" >&2
-                        exit 101
-                        ;;
-                esac
-            fi
+        if [ -n "$(_first_marker '^// MOCK_CARGO: contract_gate_fail')" ]; then
+            echo "thread 'main' panicked: contract gate failed (mock marker)" >&2
+            exit 101
         fi
         exit 0
         ;;
     invariant_gate)
-        if [ -f "$VARIANT_RS" ]; then
-            MARK=$(grep -oE '^// MOCK_CARGO: invariant_gate_fail P[1-5] [a-z_]+' "$VARIANT_RS" | head -n1 || true)
-            if [ -n "$MARK" ]; then
-                INV="${MARK#// MOCK_CARGO: invariant_gate_fail }"
-                echo "thread 'tokio-runtime-worker' panicked at evolve/harness/invariant_gate.rs:1:1:" >&2
-                echo "invariant gate violated: $INV" >&2
-                exit 101
-            fi
+        MARK=$(_first_marker '^// MOCK_CARGO: invariant_gate_fail P[1-5] [a-z_]+')
+        if [ -n "$MARK" ]; then
+            INV="${MARK#// MOCK_CARGO: invariant_gate_fail }"
+            echo "thread 'tokio-runtime-worker' panicked at evolve/harness/invariant_gate.rs:1:1:" >&2
+            echo "invariant gate violated: $INV" >&2
+            exit 101
         fi
         exit 0
         ;;

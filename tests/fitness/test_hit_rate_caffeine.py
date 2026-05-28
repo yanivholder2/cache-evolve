@@ -32,11 +32,15 @@ VARIANT = CycleVariant(CycleId(1), VariantId(1))
 def _stage_good(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out")
     layout.repo_root.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.symlink_to(SourcesLayout(root=REPO_ROOT).rust_scaffold_dir)
-    shutil.copy(SourcesLayout(root=REPO_ROOT).config_toml, layout.sources.config_toml)
+    real = SourcesLayout(root=REPO_ROOT)
+    layout.sources.subject_dir.parent.mkdir(parents=True, exist_ok=True)
+    layout.sources.subject_dir.symlink_to(real.subject_dir)
+    layout.sources.framework_crate_dir.symlink_to(real.root / "framework-rs")
+    shutil.copy(real.config_toml, layout.sources.config_toml)
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
-    shutil.copytree(VariantDir(root=FIXTURES_DIR / "good").impl_dir, variant_dir.impl_dir)
+    # `good` fixture overlay is empty — files_dir is created empty so the
+    # rest of the variant tree matches what a real cycle would produce.
+    variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
     return layout, VARIANT
 
 
@@ -68,5 +72,5 @@ def test_hit_rate_caffeine_end_to_end(tmp_path):
     assert caffeine_out.hit_rate_csv(HARDCODED_SIZE).is_file()
     assert caffeine_out.gradle_stdout_log.is_file()
     assert caffeine_out.gradle_stderr_log.is_file()
-    rust_logs = list(caffeine_out.rust_logs_dir.glob("dash_variant_*.log"))
+    rust_logs = list(caffeine_out.rust_logs_dir.glob("dash_*.log"))
     assert rust_logs, f"no rust JNI log under {caffeine_out.rust_logs_dir}"

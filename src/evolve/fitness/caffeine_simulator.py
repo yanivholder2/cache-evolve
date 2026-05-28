@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import threading
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,14 +25,18 @@ from scripts import caffeine_runner  # noqa: E402
 from evolve._io import read_utf8, write_utf8
 from evolve.config import Configs
 from evolve.paths import CaffeineOutputDir, Layout, Variant
-from evolve.variant.build import build_cdylib
+from evolve.variant.build import compile_cdylib
 
 log = logging.getLogger("fitness.caffeine")
 
 # Issue-85 hardcoded fitness point. #83 replaces these with a trace suite.
 HARDCODED_TRACE = "lirs:multi1.trace.gz"
 HARDCODED_SIZE = 512
-TARGET = "dashvariant"
+TARGET = "dash"
+# Variants no longer declare an eviction policy; the baseline runs ClassicLRU
+# and that's what the simulator drives by default. A variant selects a
+# different policy by overlaying `src/factory.rs`.
+DEFAULT_EVICTION_POLICY = "ClassicLRU"
 
 _CAFFEINE_LOCK = threading.Lock()
 
@@ -110,19 +113,6 @@ _LOG_LEVEL_TO_DEBUG_MODE = {
 }
 
 
-def _read_eviction_policy(manifest_toml: Path) -> str:
-    if not manifest_toml.is_file():
-        raise CaffeineSimulatorError(f"manifest not found at {manifest_toml}")
-    with open(manifest_toml, "rb") as f:
-        data = tomllib.load(f)
-    variant = data.get("variant")
-    if not isinstance(variant, dict) or "eviction_policy" not in variant:
-        raise CaffeineSimulatorError(
-            f"[variant] eviction_policy missing from {manifest_toml}"
-        )
-    return str(variant["eviction_policy"])
-
-
 def _per_size_csv(caffeine_out: CaffeineOutputDir, size: int) -> Path:
     candidate = caffeine_out.hit_rate_csv(size)
     if not candidate.is_file():
@@ -195,7 +185,7 @@ def simulate_variant(
     """
 
     variant_dir = variant.resolve(layout)
-    policy_name = _read_eviction_policy(variant_dir.manifest_toml)
+    policy_name = DEFAULT_EVICTION_POLICY
     debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
 
     caffeine_out = variant_dir.caffeine_dir
@@ -203,7 +193,7 @@ def simulate_variant(
     caffeine_out.rust_logs_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        workspace, cdylib_path = build_cdylib(variant, layout=layout, repo_root=repo_root)
+        workspace, cdylib_path = compile_cdylib(variant, layout=layout, repo_root=repo_root)
     except (RuntimeError, subprocess.CalledProcessError) as exception:
         raise CaffeineSimulatorError(f"cdylib build failed for {variant}: {exception}") from exception
 

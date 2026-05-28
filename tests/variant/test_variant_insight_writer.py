@@ -81,12 +81,11 @@ def test_task_md_lists_current_parent_and_hypothesis_paths(tmp_path):
     task_md = adapter.calls[0]["task_md"]
     baseline_dir = layout.sources.baseline
     assert str(variant_dir.root) in task_md
-    assert str(variant_dir.segment_rs) in task_md
-    assert str(variant_dir.manifest_toml) in task_md
+    assert str(variant_dir.files_dir) in task_md
     assert str(variant_dir.fitness_vector_json) in task_md
     assert str(variant_dir.eval_dir) in task_md
     assert str(baseline_dir.root) in task_md
-    assert str(baseline_dir.segment_rs) in task_md
+    assert str(baseline_dir.files_dir) in task_md
     assert str(baseline_dir.fitness_vector_json) in task_md
     assert str(baseline_dir.insight_md) in task_md
     assert str(hypothesis) in task_md

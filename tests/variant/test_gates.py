@@ -15,11 +15,11 @@ from pathlib import Path
 
 import pytest
 
-from evolve._io import read_utf8, write_utf8
-from evolve.variant.build import build_variant_for_gates
+from evolve._io import read_utf8
+from evolve.variant.build import compile_for_gates
 from evolve.variant.gate_check import run_gates
 from evolve.identifiers import CycleId, VariantId
-from evolve.paths import CycleVariant, Layout, SourcesLayout, VariantDir
+from evolve.paths import CycleVariant, Layout
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -29,21 +29,29 @@ EXPECTED_VARIANT_TAG = "variant=cycle/0001/v001"
 
 
 def _stage(tmp_path: Path, fixture_name: str) -> tuple[Layout, CycleVariant]:
-    """Stage a fixture into a Layout-shaped scratch dir under tmp_path so
-    `VARIANT.resolve(layout)` finds it."""
+    """Stage a fixture into a Layout-shaped scratch dir under tmp_path. The
+    repo subtree is a thin symlink farm pointing at the real subject + framework
+    crate so the build harness's copytree + overlay path resolves to the real
+    sources without mutating them."""
 
     layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out")
     layout.repo_root.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
-    layout.sources.rust_scaffold_dir.symlink_to(SourcesLayout(root=REPO_ROOT).rust_scaffold_dir)
+    real = REPO_ROOT
+    layout.sources.subject_dir.parent.mkdir(parents=True, exist_ok=True)
+    (layout.sources.subject_dir).symlink_to(real / "inputs" / "subjects" / "dash")
+    layout.sources.framework_crate_dir.symlink_to(real / "framework-rs")
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
-    shutil.copytree(VariantDir(root=FIXTURES_DIR / fixture_name).impl_dir, variant_dir.impl_dir)
+    fixture_files = FIXTURES_DIR / fixture_name / "files"
+    if fixture_files.is_dir():
+        shutil.copytree(fixture_files, variant_dir.files_dir)
+    else:
+        variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
     return layout, VARIANT
 
 
 def test_build_good_fixture_returns_workspace(tmp_path):
     layout, variant = _stage(tmp_path, "good")
-    workspace = build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
+    workspace = compile_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
     assert workspace.root.is_dir()
     shutil.rmtree(workspace.root, ignore_errors=True)
 
@@ -51,13 +59,13 @@ def test_build_good_fixture_returns_workspace(tmp_path):
 def test_build_broken_fixture_raises(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
+        compile_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
 
 
 def test_build_broken_fixture_logs_structured_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
-        build_variant_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
+        compile_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
     content = read_utf8(variant.resolve(layout).rejection_md)
     assert "build gate" in content
     assert EXPECTED_VARIANT_TAG in content
@@ -86,18 +94,6 @@ def test_gate_check_broken_fixture_logs_structured_entry(tmp_path):
     content = read_utf8(variant.resolve(layout).rejection_md)
     assert "build gate" in content
     assert EXPECTED_VARIANT_TAG in content
-
-
-def test_gate_check_invalid_policy_name_fails_contract_gate(tmp_path):
-    layout, variant = _stage(tmp_path, "good")
-    write_utf8(
-        variant.resolve(layout).manifest_toml,
-        "[variant]\neviction_policy = \"NotAPolicy\"\n",
-    )
-    assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT)
-    content = read_utf8(variant.resolve(layout).rejection_md)
-    assert "contract gate" in content
-    assert "NotAPolicy" in content
 
 
 def test_gate_check_bad_invariant_fixture_fails_invariant_gate(tmp_path):

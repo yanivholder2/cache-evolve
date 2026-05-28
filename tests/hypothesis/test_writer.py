@@ -212,7 +212,7 @@ def test_cold_start_task_md_grounds_in_baseline(tmp_path):
     # Anchor on "baseline" so a stray "segment.rs" elsewhere doesn't satisfy
     # the check.
     assert "baseline" in task_md
-    for path in (baseline.segment_rs, baseline.manifest_toml, baseline.fitness_vector_json, baseline.insight_md):
+    for path in (baseline.fitness_vector_json, baseline.insight_md):
         assert path.name in task_md, f"{path.name} missing from task.md"
 
 

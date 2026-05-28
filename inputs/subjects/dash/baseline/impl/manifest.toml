@@ -1,2 +1,0 @@
-[variant]
-eviction_policy = "ClassicLRU"

@@ -149,7 +149,7 @@ def test_readable_roots_are_insights_and_hypotheses_only(tmp_path):
     assert h2 in roots
     assert v1.root not in roots
     assert v2.root not in roots
-    assert v1.segment_rs not in roots
+    assert v1.files_dir not in roots
     assert adapter.calls[0]["agent_name"] == AGENT_NAME
     assert adapter.calls[0]["allow_edits"] is True
 

@@ -30,8 +30,8 @@ from evolve.fitness.caffeine_simulator import (
 	_write_gradle_logs,
 )
 from evolve.identifiers import CycleId, VariantId
-from evolve.paths import CycleVariant, Layout, SourcesLayout, VariantDir
-from evolve.variant.build import build_cdylib
+from evolve.paths import CycleVariant, Layout, SourcesLayout
+from evolve.variant.build import compile_cdylib
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures"
@@ -44,16 +44,14 @@ def _stage_variant(tmp_path: Path) -> tuple[Layout, CycleVariant]:
 	variant = CycleVariant(CycleId(1), VariantId(1))
 	layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out")
 	layout.repo_root.mkdir(parents=True, exist_ok=True)
-	layout.sources.rust_scaffold_dir.parent.mkdir(parents=True, exist_ok=True)
-	layout.sources.rust_scaffold_dir.symlink_to(SourcesLayout(root=REPO_ROOT).rust_scaffold_dir)
-	shutil.copy(SourcesLayout(root=REPO_ROOT).config_toml, layout.sources.config_toml)
+	real = SourcesLayout(root=REPO_ROOT)
+	layout.sources.subject_dir.parent.mkdir(parents=True, exist_ok=True)
+	layout.sources.subject_dir.symlink_to(real.subject_dir)
+	layout.sources.framework_crate_dir.symlink_to(real.root / "framework-rs")
+	shutil.copy(real.config_toml, layout.sources.config_toml)
 	variant_dir = layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id)
-	shutil.copytree(VariantDir(root=FIXTURES_DIR / "good").impl_dir, variant_dir.impl_dir)
-	# Manifest policy is unused here (we pass policies directly to caffeine),
-	# but the file must exist for downstream tooling that may read it.
-	variant_dir.manifest_toml.write_text(
-		f'[variant]\neviction_policy = "{POLICIES[0]}"\n'
-	)
+	# Empty overlay (the `good` fixture's shape) — baseline-equivalent build.
+	variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
 	return layout, variant
 
 
@@ -68,7 +66,7 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 	caffeine_out.rust_logs_dir.mkdir(parents=True, exist_ok=True)
 
 	try:
-		workspace, cdylib_path = build_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
+		workspace, cdylib_path = compile_cdylib(variant, layout=layout, repo_root=REPO_ROOT)
 	except (RuntimeError, subprocess.CalledProcessError) as exception:
 		raise CaffeineSimulatorError(f"cdylib build failed: {exception}") from exception
 
@@ -113,5 +111,5 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 			f"policy={policy} hit_rate={row.hit_rate} outside (0, 1]"
 		)
 
-	rust_logs = list(caffeine_out.rust_logs_dir.glob("dash_variant_*.log"))
+	rust_logs = list(caffeine_out.rust_logs_dir.glob("dash_*.log"))
 	assert rust_logs, f"no rust JNI log under {caffeine_out.rust_logs_dir}"

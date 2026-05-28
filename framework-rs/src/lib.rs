@@ -14,3 +14,6 @@ pub trait Cache<K: Hash + Eq, V> {
 pub trait Invariants {
 	fn run_invariant_suite() -> Result<(), String>;
 }
+
+#[cfg(feature = "test-suite")]
+pub mod test_suite;

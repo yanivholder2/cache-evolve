@@ -108,7 +108,7 @@ def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
     hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
     _write_hypothesis(hypothesis, parent_variant="baseline")
 
-    with pytest.raises(FileNotFoundError, match="adapter did not produce"):
+    with pytest.raises(FileNotFoundError, match="adapter produced no overlay files"):
         implement_variant(
             hypothesis,
             variant_dir,

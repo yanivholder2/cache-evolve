@@ -1,4 +1,4 @@
-"""Build gate + contract gate + invariant gate checks for a variant impl/."""
+"""Build gate + contract gate + invariant gate checks for a variant overlay."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from pathlib import Path
 
 from evolve._io import append_utf8
 from evolve.identifiers import HypothesisId
-from evolve.variant.build import build_variant_for_gates
-from evolve.paths import GatesWorkspace, Layout, Variant
+from evolve.variant.build import compile_for_gates
+from evolve.paths import Layout, Variant, CargoWorkspace
 
 log = logging.getLogger("gate-check")
 
@@ -54,13 +54,20 @@ def _append_entry(rejection_md: Path, body: str) -> None:
     append_utf8(rejection_md, body)
 
 
-def _run_cargo_test(workspace: GatesWorkspace, test_name: str) -> subprocess.CompletedProcess:
+def _run_cargo_test(workspace: CargoWorkspace, test_name: str) -> subprocess.CompletedProcess:
     # RUST_BACKTRACE=1 makes panic stack traces show up in `cargo test` output.
     # Without it, rejection.md captures only the panic line, which is rarely
     # enough to explain *why* a contract test keeps failing across cycles.
     env = {**os.environ, "RUST_BACKTRACE": "1"}
+    # The invariant_gate target requires the test-utils feature; contract_gate
+    # doesn't, but enabling the feature for both is harmless and keeps the
+    # invocation uniform.
     return subprocess.run(
-        ["cargo", "test", "--manifest-path", str(workspace.cargo_toml), "--test", test_name],
+        [
+            "cargo", "test", "--features", "test-utils",
+            "--manifest-path", str(workspace.cargo_toml),
+            "--test", test_name,
+        ],
         capture_output=True,
         text=True,
         env=env,
@@ -81,7 +88,7 @@ def _rejection_header(variant: Variant, hypothesis: HypothesisId | None) -> str:
 
 
 def _check_contract_gate(
-    workspace: GatesWorkspace,
+    workspace: CargoWorkspace,
     variant: Variant,
     rejection_md: Path,
     hypothesis: HypothesisId | None,
@@ -105,7 +112,7 @@ def _check_contract_gate(
 
 
 def _check_invariant_gate(
-    workspace: GatesWorkspace,
+    workspace: CargoWorkspace,
     variant: Variant,
     rejection_md: Path,
     hypothesis: HypothesisId | None,
@@ -147,15 +154,15 @@ def run_gates(
     repo_root: Path,
     hypothesis: HypothesisId | None = None,
 ) -> GatesResult:
-    """Run build gate + contract gate + invariant gate against the variant's impl/.
-    Result is truthy iff all pass.
+    """Run build gate + contract gate + invariant gate against the variant
+    overlay. Result is truthy iff all pass.
 
     A failing gate writes its entry to `<variant_dir>/rejection.md`.
     """
 
     rejection_md = variant.resolve(layout).rejection_md
     try:
-        workspace = build_variant_for_gates(
+        workspace = compile_for_gates(
             variant,
             layout=layout,
             repo_root=repo_root,

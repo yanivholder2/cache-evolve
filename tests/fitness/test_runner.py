@@ -36,7 +36,7 @@ def _stage(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     evolve_root.mkdir()
     layout = Layout(repo_root=evolve_root, outputs_root=tmp_path / "out")
     variant = CycleVariant(CycleId(1), VariantId(1))
-    layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id).impl_dir.mkdir(parents=True)
+    layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id).files_dir.mkdir(parents=True)
     return layout, variant
 
 

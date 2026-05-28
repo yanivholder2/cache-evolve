@@ -92,8 +92,11 @@ def test_cohort_produces_n_variants(shared_cohort_run):
     assert variants == ["v001", "v002", "v003"]
     for i in (1, 2, 3):
         variant_dir = shared_cohort_run.cycle_layout.variant(VariantId(i))
-        assert (variant_dir.impl_dir / "segment.rs").is_file()
-        assert (variant_dir.impl_dir / "manifest.toml").is_file()
+        # Overlay-by-path: every variant ships a `files/` directory, even when
+        # the overlay is empty (baseline-equivalent). The stub adapter writes
+        # a `.overlay` sentinel so the dir is non-empty.
+        assert variant_dir.files_dir.is_dir()
+        assert any(variant_dir.files_dir.iterdir())
         assert variant_dir.fitness_vector_json.is_file()
         assert variant_dir.insight_md.is_file()
 
@@ -114,14 +117,13 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
     stamp_dir = tmp_path / "stamps"
     stamp_dir.mkdir()
 
-    good_impl = Path(__file__).parent.parent / "fixtures" / "good" / "impl"
-
     def sleep_implementer(hyp_file, variant_dir, **_):
         write_utf8(stamp_dir / f"{variant_dir.variant_id}.start", f"{time.time()}")
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
-        variant_dir.impl_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy(good_impl / "segment.rs", variant_dir.impl_dir / "segment.rs")
-        shutil.copy(good_impl / "manifest.toml", variant_dir.impl_dir / "manifest.toml")
+        # Empty-but-non-vanishing overlay is enough for the cycle to proceed
+        # to the gate stage (which the real cargo would then run).
+        variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
+        (variant_dir.files_dir / ".overlay").write_text("")
         write_utf8(stamp_dir / f"{variant_dir.variant_id}.end", f"{time.time()}")
 
     monkeypatch.setattr("evolve.variant.implementer.implement_variant", sleep_implementer)
@@ -173,8 +175,8 @@ def test_variant_implementer_agent_markdown_exists():
     assert agent_md.is_file(), f"missing {agent_md}"
     body = read_utf8(agent_md)
     assert "hypothesis" in body.lower()
-    assert "segment.rs" in body
-    assert "manifest.toml" in body
+    assert "files/" in body
+    assert "factory.rs" in body
     assert "task.md" in body.lower()
 
 
