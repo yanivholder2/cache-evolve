@@ -73,6 +73,20 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** modifying insert, evict, or migration logic.
 
+### [0005 — Single generic seam](adr/0005-single-generic-seam.md)
+
+* Considered options
+* Consequences
+
+**Read when** adding or swapping a Subject extension point, or touching `Dash`/`Segment`/JNI type parameters.
+
+### [0006 — Overlay-by-path variants](adr/0006-overlay-by-path-variants.md)
+
+* Considered options
+* Consequences
+
+**Read when** working on variant storage, the build harness, or how Variant edits are materialised.
+
 ## Conventions
 
 ### [docs/CONVENTIONS.md](CONVENTIONS.md)

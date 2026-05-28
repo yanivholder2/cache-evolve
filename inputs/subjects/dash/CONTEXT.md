@@ -49,21 +49,14 @@ _Avoid_: Home bucket
 The neighbor of an item's target bucket: `(target + 1) % n`; overflow destination.
 _Avoid_: Probe bucket, neighbor
 
-### Strategies and variants
+### Strategy
 
 **Promotion strategy**:
-Items earn their way into the probing bucket only after proving they're the hottest in their target.
+The sole baseline strategy. Items earn their way into the probing bucket only
+after proving they're the hottest in their target. Realised by
+`PromotionColdSegment`: a stash→target insert lands at the LRU end, so an item
+must climb before it can be promoted further.
 _Avoid_: Position-based LRU, tiered strategy
-
-**Combined strategy**:
-Target and probing are peer storage; eviction picks the weakest candidate across both.
-_Avoid_: Combined eviction, peer strategy
-
-**Cold variant**:
-Promotion sub-variant where stash→target insert lands at the LRU end (item must climb).
-
-**Hot variant**:
-Promotion sub-variant where stash→target insert lands at the MRU end (one more access promotes).
 
 ### Item lifecycle and movement
 
@@ -99,9 +92,6 @@ Chain of evictions triggered by a single put (e.g., promote_to_probing evicts pr
 **Demotion chain**:
 Promotion strategy's tier order: `probing → target → stash → out`.
 
-**Peer storage**:
-Combined strategy's view of target and probing: non-tiered; evictions go straight to stash.
-
 **Tier drop**:
 Single step down the demotion chain (probing→target or target→stash).
 
@@ -112,9 +102,6 @@ Promotion verb: move an item into its target bucket at a given position; evicted
 
 **promote_to_probing**:
 Promotion verb: move an item into its probing bucket; evicted item cascades through the demotion chain.
-
-**place_in_normal_bucket**:
-Combined verb: place an item into its target or probing (caller's choice); evicted item drops straight to stash.
 
 **put_in_stash** (implicit, via `SegmentCore::put(Slot::Stash, …)`):
 Route a new item into its stash bucket; stash overflow is terminal (item permanently lost).
@@ -154,8 +141,8 @@ _Avoid_: Bottom, front
 - An **Item**'s **Slot** (*Stash*, *Target*, *Probing*) is derived from its key — never chosen by the caller as a raw index.
 - A **Target bucket** for key `k` in bucket `i` is simultaneously the **Probing bucket** for keys hashing to `i-1`. Ownership is resolved by re-hashing the victim's key on eviction.
 - In the **Promotion strategy**, target and probing form a **tier** (probing > target > stash). A **Cascade** obeys the **Demotion chain**.
-- In the **Combined strategy**, target and probing are **Peer storage**. There is no tier; evictions go straight to stash.
-- Only **Promotion** uses the verbs **Promote** / **Demote**. Only **Combined** uses the verb **Place** (peer placement).
+- The **Promotion strategy** uses the verbs **Promote** / **Demote**.
+- A **Dash** is the cache implementation of the dash **Subject**; it satisfies the framework's **Cache contract** (see [`/CONTEXT.md`](../../../CONTEXT.md)).
 
 ## Example dialogue
 
@@ -167,20 +154,16 @@ _Avoid_: Bottom, front
 >
 > **Domain expert:** "Right — a **Tier drop** from probing to target. If the target bucket is also full, another **Tier drop** sends that item to its **Stash**. Stash overflow is terminal."
 >
-> **Dev:** "And for the **Combined strategy**?"
+> **Dev:** "How does a brand-new key first enter the cache?"
 >
-> **Domain expert:** "No **Cascade**. You call **place_in_normal_bucket**. Target and probing are **Peer storage**, so whatever gets evicted goes straight to stash. Cascading would undo the weakness comparison that combined just did."
->
-> **Dev:** "Which **Slot** does the caller pass to **place_in_normal_bucket**?"
->
-> **Domain expert:** "*Target* or *Probing* — never *Stash*. Combined never places new items into the stash directly; that's only for **Put** of brand-new items via `Segment::put`."
+> **Domain expert:** "Via **Put** — `Segment::put` routes it to its **Stash** bucket. It only reaches a **Target** or **Probing bucket** later, by earning a **Promote** on a subsequent **Get**."
 
 ## Flagged ambiguities
 
 - **"Target"** — in code, this is both a noun for "the home bucket of a key" (use **Target bucket** or `Slot::Target`) and an adjective in policy discussion. Prefer **Target bucket** / `Slot::Target` when the domain meaning is intended; avoid bare "target."
 - **"Bucket"** — unqualified "bucket" is ambiguous between stash and normal. Use **Normal bucket** or **Stash bucket** when precision matters. `Slot` makes the intent explicit at call sites.
-- **"Hot"** — overloaded: variant name of the promotion strategy (**Hot variant**) and adjective for a frequently-accessed item. Prefer **Hottest item** for the concept; leave **Hot** as the bare variant label.
+- **"Hot"** — now only an adjective for a frequently-accessed item. Prefer **Hottest item** for the concept. (The former **Hot variant** segment was dropped; `PromotionColdSegment` is the sole baseline.)
 - **"Insert"** vs **"Put"** — now unified: the primitive is **Put** (`SegmentCore::put(slot, item)`). Avoid **Insert** as a verb except when referring to `InsertPosition` (the enum used by `Bucket::put_at`).
-- **"Demote"** — strictly means the promotion tier cascade; combined never demotes, it **places** items and drops evicted ones to stash.
+- **"Demote"** — strictly means a step down the promotion **Demotion chain** (`probing → target → stash`); the evicted item drops one tier, never re-promotes.
 - **"Promotion"** — overloaded: strategy name (**Promotion strategy**) and the act of moving an item up a tier. Prefer **Promotion strategy** when the strategy is meant and the bare verb **Promote** when the action is meant.
-- **"Variant"** (Dash sense) — used only as a compound noun for promotion sub-variants (**Hot variant**, **Cold variant**). The unqualified Evolve framework sense lives in [`/CONTEXT.md`](../../../CONTEXT.md); qualify when both contexts are in scope.
+- **"Variant"** — in the dash Subject this now means only the Evolve framework sense (an evolved cache implementation; see [`/CONTEXT.md`](../../../CONTEXT.md)). The former Dash compound-noun usage (Hot/Cold variant) is retired.

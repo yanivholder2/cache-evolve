@@ -8,14 +8,34 @@ Vocabulary for the **evolve** framework — the agentic research loop that studi
 
 ### Roles and subjects
 
+**Subject**:
+A complete cache implementation that satisfies the Cache contract, packaged
+with its Subject manifest, domain docs, baseline insight, and baseline Fitness
+vector under `inputs/subjects/<name>/`. The unit the framework evolves; the
+framework is subject-agnostic and can host several.
+_Avoid_: Target, system under study.
+
 **Subject cache**:
-The cache under study by the framework.
-_Avoid_: Target cache, test cache, system under study.
+The runtime cache an evolution studies — the code inside a Subject. Use
+**Subject** for the packaged directory entity, **Subject cache** for the cache
+itself.
+_Avoid_: Target cache, test cache.
 
 **Framework / Evolve**:
 The agentic research loop that proposes, validates, evaluates, and summarises
-Variants of a Subject cache. Codename `evolve`.
+Variants of a Subject. Codename `evolve`.
 _Avoid_: Tool, agent, pipeline.
+
+**Framework crate**:
+The Rust crate at `framework-rs/` (crate name `framework`) that publishes the
+Cache contract. Distinct from the Python `evolve` package under `src/evolve/`.
+_Avoid_: Core crate, shared crate.
+
+**Cache contract**:
+The `Cache<K, V>` trait plus the `Invariants` trait, published by the Framework
+crate. The stable surface every Subject implements and every Variant must keep
+satisfying; the framework only ever calls a Variant through it.
+_Avoid_: Cache API, interface.
 
 ### Cycle and cohort
 
@@ -33,9 +53,10 @@ orchestrator and tested by one or more Variants.
 _Avoid_: Idea, conjecture.
 
 **Variant**:
-A proposed alternative implementation of the Subject cache, embodying one
+A proposed alternative implementation of a Subject — a whole cache
+implementation shipped as an Overlay over the Subject tree — embodying one
 Hypothesis. The unit of evaluation; the leaderboard is defined over Variants,
-not Hypotheses.
+not Hypotheses. The framework calls into it only through the Cache contract.
 _Avoid_: Mutation, fork, candidate.
 
 **Variant attempt**:
@@ -50,12 +71,38 @@ _Avoid_: Lock, close.
 ### Action space and extension points
 
 **Action space**:
-The set of changes a Variant is allowed to make.
+The set of changes a Variant is allowed to make, fixed per Variant by its
+authoring scope (Extension-point scope or Full-autonomy scope).
 _Avoid_: Search space, mutation space.
 
 **Extension point**:
-A stable interface in the Subject cache where Variants plug in.
+A trait-object seam below the Segment where a Variant can swap an
+implementation (eviction policy, bucket, item, probing function, cascade
+order, …). Each Subject declares its extension points in its Subject manifest.
 _Avoid_: Hook, plugin slot.
+
+**Subject manifest**:
+The `manifest.toml` at a Subject's root declaring its identity (name, crate
+path, cdylib name), its Extension points, and where its docs and baseline
+evaluation live. The framework unions the Extension points' impl files to
+compute the Extension-point scope whitelist.
+_Avoid_: Config, spec, descriptor.
+
+**Extension-point scope**:
+Authoring scope where a Variant edits only files declared as Extension-point
+impls in the Subject manifest; trait surfaces stay fixed.
+_Avoid_: Restricted scope, narrow scope.
+
+**Full-autonomy scope**:
+Authoring scope where a Variant edits any file in the Subject tree, bounded
+only by the Cache contract and the invariant suite.
+_Avoid_: Open scope, free scope.
+
+**Overlay**:
+A Variant's edits stored as a `files/` tree mirroring the Subject, holding only
+added or modified files. The build harness copies the Subject tree and overlays
+these on top — no deletions. Also "overlay-by-path".
+_Avoid_: Patch, diff, fork.
 
 ### Correctness gates
 
@@ -140,6 +187,13 @@ _Avoid_: Leaderboard, top-K.
 
 ### Architectural principles
 
+**Single generic seam principle**:
+The Segment trait is the only generic seam in a Subject; every other Extension
+point is a trait object owned by the smallest struct that uses it, so no type
+parameter propagates above the Segment. Adding an axis is a local change, not a
+cross-cutting refactor. See [ADR-0005](docs/adr/0005-single-generic-seam.md).
+_Avoid_: Generic-everywhere, type-parameter-per-axis.
+
 **Token-frugal principle**:
 Anything that doesn't require LLM judgment is a script, not an LLM call. See
 [ADR-0002](docs/adr/0002-token-frugal-principle.md).
@@ -153,5 +207,6 @@ _Avoid_: Distributed prerequisites, cluster invariants.
 
 ## Flagged ambiguities
 
-- **"Variant"** (Evolve sense) — a proposed alternative implementation of a Subject cache. Overloaded with the Dash domain's compound-noun usage (**Hot variant**, **Cold variant**) — see [`inputs/subjects/dash/CONTEXT.md`](inputs/subjects/dash/CONTEXT.md). Qualify with the domain when both are in scope.
+- **"Subject"** vs **"Subject cache"** — **Subject** is the packaged directory entity (`inputs/subjects/<name>/`: cache code + manifest + docs + baseline eval); **Subject cache** is the runtime cache code inside it. Prefer **Subject** unless the cache artifact itself is specifically meant.
+- **"Variant"** — the Evolve sense (a proposed alternative implementation of a Subject) is now the only sense. The former Dash compound-noun usage (Hot/Cold variant) is retired — see [`inputs/subjects/dash/CONTEXT.md`](inputs/subjects/dash/CONTEXT.md).
 - **"Insight"** — bare "insight" is ambiguous within the framework. Always qualify: **Variant insight** (per-variant) or **Cycle insight** (per-cycle summary). The **Insight ledger** is the durable record; **Cross-cycle insights** is the recomputable narrative across cycles.
