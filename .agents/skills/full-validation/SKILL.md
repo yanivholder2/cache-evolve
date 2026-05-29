@@ -1,6 +1,6 @@
 ---
 name: full-validation
-description: Run the entire pytest suite including every opt-in marker. Use when the user wants full validation, to run all tests, or to check everything before merging — not just the fast suite.
+description: Run the full repo validation — every pytest marker plus the Rust workspace tests. Use when the user wants full validation, to run all tests, or to check everything before merging — not just the fast suite.
 ---
 
 ## Setup (handles worktrees)
@@ -31,7 +31,12 @@ Markers can't be combined in one run, so run each in its own invocation, in orde
    PYTHONPATH="$WT_SRC" "$VENV_PY" -m pytest --slow
    ```
 
-3. Caffeine suite (requires `~/projects/caffeine` and a working JDK):
+3. Rust workspace tests (coverage pytest never touches — each subject crate's own unit tests):
+   ```
+   cargo test --workspace --manifest-path "$(git rev-parse --show-toplevel)/Cargo.toml"
+   ```
+
+4. Caffeine suite (requires `~/projects/caffeine` and a working JDK):
    ```
    PYTHONPATH="$WT_SRC" "$VENV_PY" -m pytest --caffeine-needed
    ```

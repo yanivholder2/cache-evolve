@@ -35,8 +35,8 @@ use crate::shared::utils::get_index;
 #[derive(Debug)]
 pub struct Dash<K, V, S>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 	S: Segment<K, V>,
 {
 	pub segments: Vec<S>,
@@ -45,8 +45,8 @@ where
 
 impl<K, V, S> Dash<K, V, S>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 	S: Segment<K, V>,
 {
 	/// Creates a new Dash cache with fallible segment initialization.
@@ -95,8 +95,8 @@ where
 
 impl<K, V, S> framework::Cache<K, V> for Dash<K, V, S>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 	S: Segment<K, V>,
 {
 	fn put(&mut self, key: K, value: V) {

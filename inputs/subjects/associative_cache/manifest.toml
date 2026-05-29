@@ -5,13 +5,13 @@ cdylib-name = "associative_cache"
 
 [[extension-points]]
 name = "eviction-policy"
-trait = "associative_cache::shared::eviction_policy::EvictionPolicy"
+contract = "associative_cache::shared::eviction_policy::EvictionPolicy"
 impl-files = ["src/shared/eviction_policy.rs"]
 description = "Algorithm choosing which item to evict from a bucket"
 
 [[extension-points]]
 name = "bucket"
-trait = "associative_cache::shared::traits::Bucket"
+contract = "associative_cache::shared::traits::Bucket"
 impl-files = ["src/associative_cache/associative_cache_bucket.rs"]
 description = "Container for items within the cache"
 

@@ -9,16 +9,16 @@ use std::hash::Hash;
 #[derive(Debug)]
 pub struct PromotionColdSegment<K, V>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	core: SegmentCore<K, V>,
 }
 
 impl<K, V> PromotionColdSegment<K, V>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	/// Creates a new PromotionColdSegment with fallible initialization.
 	pub fn try_new(settings: &DashSettings) -> Option<Self> {
@@ -41,8 +41,8 @@ where
 
 impl<K, V> Segment<K, V> for PromotionColdSegment<K, V>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	fn core(&self) -> &SegmentCore<K, V> {
 		&self.core
@@ -60,7 +60,6 @@ where
 mod tests {
 	use super::*;
 	use crate::shared::eviction_policy::EvictionPolicyKind;
-	use crate::shared::traits::bucket::Bucket;
 	use crate::shared::utils::get_index;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
 

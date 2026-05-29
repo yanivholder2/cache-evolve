@@ -5,7 +5,7 @@ pub use promotion_cold_segment::PromotionColdSegment;
 
 pub(crate) use promotion_logic::promotion_get;
 
-use super::dash_bucket::DashBucket;
+use super::dash_bucket::new_bucket;
 use super::dash_settings::DashSettings;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::{Bucket, InsertPosition};
@@ -22,22 +22,38 @@ pub enum Slot {
 	Probing,
 }
 
-#[derive(Debug)]
 pub struct SegmentCore<K, V>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
-	pub(crate) buckets: Vec<DashBucket<K, V>>,
+	pub(crate) buckets: Vec<Box<dyn Bucket<K, V>>>,
 	pub(crate) segment_size: usize,
-	pub(crate) stash_buckets: Vec<DashBucket<K, V>>,
+	pub(crate) stash_buckets: Vec<Box<dyn Bucket<K, V>>>,
 	pub(crate) stash_size: usize,
+}
+
+// Manual Debug: `Box<dyn Bucket>` is not `Debug` (the `Bucket` trait has no
+// Debug supertrait), so render each bucket through its items instead of deriving.
+impl<K, V> Debug for SegmentCore<K, V>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("SegmentCore")
+			.field("buckets", &self.buckets.iter().map(|b| b.get_items()).collect::<Vec<_>>())
+			.field("segment_size", &self.segment_size)
+			.field("stash_buckets", &self.stash_buckets.iter().map(|b| b.get_items()).collect::<Vec<_>>())
+			.field("stash_size", &self.stash_size)
+			.finish()
+	}
 }
 
 impl<K, V> SegmentCore<K, V>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	/// Creates a new SegmentCore with fallible bucket initialization.
 	/// Returns `None` if the settings are invalid.
@@ -48,10 +64,10 @@ where
 		}
 		info!("SegmentCore.try_new: settings={settings:?}");
 		let buckets: Vec<_> = (0..settings.num_of_normal_buckets)
-			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy.build()))
+			.map(|_| new_bucket(settings.bucket_size, settings.eviction_policy.build()))
 			.collect();
 		let stash_buckets: Vec<_> = (0..settings.num_of_stash_buckets)
-			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy.build()))
+			.map(|_| new_bucket(settings.bucket_size, settings.eviction_policy.build()))
 			.collect();
 		Some(SegmentCore {
 			segment_size: settings.num_of_normal_buckets,
@@ -174,8 +190,8 @@ where
 /// is the defined end of the line.
 pub trait Segment<K, V>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	/// Shared reference to the segment's normal and stash buckets.
 	fn core(&self) -> &SegmentCore<K, V>;

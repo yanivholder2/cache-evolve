@@ -18,16 +18,16 @@ use std::hash::Hash;
 
 struct MinimalSegment<K, V>
 where
-    K: Hash + Eq + Copy + Debug,
-    V: Eq + Copy + Debug,
+    K: Hash + Eq + Copy + Debug + 'static,
+    V: Eq + Copy + Debug + 'static,
 {
     inner: PromotionColdSegment<K, V>,
 }
 
 impl<K, V> MinimalSegment<K, V>
 where
-    K: Hash + Eq + Copy + Debug,
-    V: Eq + Copy + Debug,
+    K: Hash + Eq + Copy + Debug + 'static,
+    V: Eq + Copy + Debug + 'static,
 {
     fn new(settings: &DashSettings) -> Self {
         Self {
@@ -38,8 +38,8 @@ where
 
 impl<K, V> Segment<K, V> for MinimalSegment<K, V>
 where
-    K: Hash + Eq + Copy + Debug,
-    V: Eq + Copy + Debug,
+    K: Hash + Eq + Copy + Debug + 'static,
+    V: Eq + Copy + Debug + 'static,
 {
     fn core(&self) -> &SegmentCore<K, V> {
         self.inner.core()

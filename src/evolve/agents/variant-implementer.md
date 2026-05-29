@@ -19,7 +19,7 @@ Variants, not the ledger.
      assignment. Apply only those changes against the subject. The first
      non-empty line of the preamble is the testable claim.
    - **Subject manifest (`manifest.toml`)** — the `[[extension-points]]`
-     tables describe each axis (eviction policy, bucket, …) and list the impl
+     tables describe each axis (eviction policy, bucket, item, …) and list the impl
      files that realise it. In extension-points scope those impl files are
      your write-whitelist; in both scopes the descriptions orient you.
    - **Parent variant's `files/` overlay** — the files the parent variant
