@@ -2,7 +2,7 @@ use dash::associative_cache::{associative_cache_settings::AssociativeCacheSettin
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{PromotionColdSegment, Segment};
 use dash::dash::Dash;
-use dash::shared::eviction_policy::EvictionPolicy;
+use dash::shared::eviction_policy::EvictionPolicyKind;
 use log::info;
 use rand::Rng;
 
@@ -68,7 +68,7 @@ fn promotion_settings() -> DashSettings {
 		num_of_normal_buckets: 2,
 		num_of_stash_buckets: 8,
 		bucket_size: 4,
-		eviction_policy: EvictionPolicy::ClassicLRU,
+		eviction_policy: EvictionPolicyKind::ClassicLRU,
 		debug_mode: 2,
 	}
 }
@@ -80,7 +80,7 @@ fn main() {
 			run_simulator(AssociativeCache::new(AssociativeCacheSettings {
 				num_of_buckets: 1,
 				bucket_size: 8,
-				eviction_policy: EvictionPolicy::Swap,
+				eviction_policy: EvictionPolicyKind::Swap,
 			}));
 		}
 		CacheKind::DashPromotionCold => {

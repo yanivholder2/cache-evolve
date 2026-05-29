@@ -130,7 +130,7 @@ where
 mod tests {
 	use super::*;
 	use crate::dash::segments::{PromotionColdSegment, Segment};
-	use crate::shared::eviction_policy::EvictionPolicy;
+	use crate::shared::eviction_policy::EvictionPolicyKind;
 	use crate::shared::traits::bucket::Bucket;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
 
@@ -138,7 +138,7 @@ mod tests {
 	/// (one-more-chance), not jump straight to stash.
 	#[test]
 	fn evicted_from_probing_cascades_to_target() {
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut seg = PromotionColdSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
@@ -171,7 +171,7 @@ mod tests {
 	/// Foreign resident demoted via one-more-chance lands at the bucket end determined by
 	/// `insert_pos`: Front for cold, Back for hot.
 	fn target_retry_position(insert_pos: InsertPosition, expected_idx: usize) {
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut seg = PromotionColdSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
@@ -210,7 +210,7 @@ mod tests {
 	/// routes it directly to stash (no retry). Verifies the `true_target == source_idx` branch
 	/// AND that the stash insert honors `insert_pos`.
 	fn direct_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut seg = PromotionColdSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;
@@ -249,7 +249,7 @@ mod tests {
 	/// Probing eviction → foreign-resident retry into full target → second eviction
 	/// cascades into stash. Verifies the cascade stash insert honors `insert_pos`.
 	fn cascade_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
-		let settings = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut seg = PromotionColdSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;

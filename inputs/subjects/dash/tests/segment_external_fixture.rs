@@ -7,7 +7,7 @@
 use dash::dash::dash_settings::DashSettings;
 use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
 use dash::dash::Dash;
-use dash::shared::eviction_policy::EvictionPolicy;
+use dash::shared::eviction_policy::EvictionPolicyKind;
 use dash::shared::item::Item;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -64,7 +64,7 @@ fn minimal_settings() -> DashSettings {
         num_of_normal_buckets: 4,
         num_of_stash_buckets: 2,
         bucket_size: 2,
-        eviction_policy: EvictionPolicy::ClassicLRU,
+        eviction_policy: EvictionPolicyKind::ClassicLRU,
         debug_mode: 0,
     }
 }

@@ -1,6 +1,6 @@
-use crate::shared::eviction_policy::EvictionPolicy;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::Bucket;
+use crate::shared::traits::eviction_policy::EvictionPolicy;
 use std::{
 	fmt::{Debug, Display, Formatter},
 	hash::Hash,
@@ -14,7 +14,7 @@ where
 {
 	items: Vec<Item<K, V>>,
 	max_size: usize,
-	eviction_policy: EvictionPolicy,
+	eviction_policy: Box<dyn EvictionPolicy<K, V>>,
 }
 
 impl<K, V> DashBucket<K, V>
@@ -22,7 +22,7 @@ where
 	K: Hash + Eq + Copy + Debug,
 	V: Eq + Copy + Debug,
 {
-	pub fn new(max_size: usize, eviction_policy: EvictionPolicy) -> Self {
+	pub fn new(max_size: usize, eviction_policy: Box<dyn EvictionPolicy<K, V>>) -> Self {
 		DashBucket {
 			items: Vec::with_capacity(max_size),
 			max_size,
@@ -48,8 +48,13 @@ where
 		self.max_size
 	}
 
-	fn get_eviction_policy(&self) -> &EvictionPolicy {
-		&self.eviction_policy
+	fn get_eviction_policy(&self) -> &dyn EvictionPolicy<K, V> {
+		&*self.eviction_policy
+	}
+
+	fn get_from_position(&mut self, position: usize) -> &Item<K, V> {
+		let index = self.eviction_policy.get_from_position(&mut self.items, position);
+		&self.items[index]
 	}
 }
 

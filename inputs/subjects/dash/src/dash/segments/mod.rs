@@ -48,10 +48,10 @@ where
 		}
 		info!("SegmentCore.try_new: settings={settings:?}");
 		let buckets: Vec<_> = (0..settings.num_of_normal_buckets)
-			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy))
+			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy.build()))
 			.collect();
 		let stash_buckets: Vec<_> = (0..settings.num_of_stash_buckets)
-			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy))
+			.map(|_| DashBucket::new(settings.bucket_size, settings.eviction_policy.build()))
 			.collect();
 		Some(SegmentCore {
 			segment_size: settings.num_of_normal_buckets,
@@ -221,7 +221,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::shared::eviction_policy::EvictionPolicy;
+	use crate::shared::eviction_policy::EvictionPolicyKind;
 	use crate::shared::traits::bucket::InsertPosition;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
 
@@ -233,13 +233,13 @@ mod tests {
 
 	#[test]
 	fn promotion_cold_put_goes_to_stash() {
-		let lru = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let lru = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		assert_put_goes_to_stash(PromotionColdSegment::new(&lru));
 	}
 
 	#[test]
 	fn try_new_rejects_single_normal_bucket() {
-		let mut s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let mut s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		s.num_of_normal_buckets = 1;
 		assert!(s.validate().is_err());
 		assert!(SegmentCore::<i64, i64>::try_new(&s).is_none());
@@ -247,7 +247,7 @@ mod tests {
 
 	#[test]
 	fn try_new_rejects_zero_stash_buckets() {
-		let mut s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let mut s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		s.num_of_stash_buckets = 0;
 		assert!(s.validate().is_err());
 		assert!(SegmentCore::<i64, i64>::try_new(&s).is_none());
@@ -257,14 +257,14 @@ mod tests {
 
 	#[test]
 	fn total_items_empty() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let core = SegmentCore::<i64, i64>::new(&s);
 		assert_eq!(core.total_items(), 0);
 	}
 
 	#[test]
 	fn total_items_counts_normal_and_stash() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		let normal_key = find_keys_for_bucket(0, s.num_of_normal_buckets, 1)[0];
 		core.put_at(Slot::Target, InsertPosition::Back, Item::new(normal_key, normal_key));
@@ -280,7 +280,7 @@ mod tests {
 
 	#[test]
 	fn max_capacity_matches_settings() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let core = SegmentCore::<i64, i64>::new(&s);
 		let expected = (s.num_of_normal_buckets + s.num_of_stash_buckets) * s.bucket_size;
 		assert_eq!(core.max_capacity(), expected);
@@ -290,13 +290,13 @@ mod tests {
 
 	#[test]
 	fn check_slot_legality_empty_is_legal() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		assert!(SegmentCore::<i64, i64>::new(&s).check_slot_legality());
 	}
 
 	#[test]
 	fn check_slot_legality_target_slot_is_legal() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		let key = find_keys_for_bucket(1, s.num_of_normal_buckets, 1)[0];
 		core.put_at(Slot::Target, InsertPosition::Back, Item::new(key, key));
@@ -305,7 +305,7 @@ mod tests {
 
 	#[test]
 	fn check_slot_legality_probing_slot_is_legal() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		// A key at target bucket 0 placed in its probing bucket 1 must be legal.
 		let key = find_keys_for_bucket(0, s.num_of_normal_buckets, 1)[0];
@@ -315,7 +315,7 @@ mod tests {
 
 	#[test]
 	fn check_slot_legality_probing_wraps_around() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		// A key at target bucket 3 (last) has probing index 0 via modulo wrap.
 		// Placing it in bucket 0 via Slot::Probing must be legal.
@@ -326,7 +326,7 @@ mod tests {
 
 	#[test]
 	fn check_slot_legality_detects_wrong_bucket() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		// Key hashes to bucket 2; forcing it into bucket 0 violates legality.
 		let bad_key = find_keys_for_bucket(2, s.num_of_normal_buckets, 1)[0];
@@ -336,7 +336,7 @@ mod tests {
 
 	#[test]
 	fn check_slot_legality_detects_wrong_stash_bucket() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		// Find a key that hashes to stash 1, then force it into stash 0.
 		let key = (0i64..200)
@@ -350,13 +350,13 @@ mod tests {
 
 	#[test]
 	fn check_capacity_bound_empty_is_within_bound() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		assert!(SegmentCore::<i64, i64>::new(&s).check_capacity_bound());
 	}
 
 	#[test]
 	fn check_capacity_bound_at_limit_is_within_bound() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		let keys = find_keys_for_bucket(0, s.num_of_normal_buckets, s.bucket_size);
 		for k in keys {
@@ -367,7 +367,7 @@ mod tests {
 
 	#[test]
 	fn check_capacity_bound_detects_normal_overflow() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		// Push bucket_size + 1 items to exceed capacity.
 		let keys = find_keys_for_bucket(0, s.num_of_normal_buckets, s.bucket_size + 1);
@@ -379,7 +379,7 @@ mod tests {
 
 	#[test]
 	fn check_capacity_bound_detects_stash_overflow() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		// Overfill stash bucket 0 beyond its max_size.
 		let keys = find_keys_for_bucket(0, s.num_of_stash_buckets, s.bucket_size + 1);
@@ -393,7 +393,7 @@ mod tests {
 
 	#[test]
 	fn force_push_normal_bucket_item_appears_in_target_bucket() {
-		let s = small_dash_settings(EvictionPolicy::ClassicLRU);
+		let s = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut core = SegmentCore::<i64, i64>::new(&s);
 		// Use a key whose target is bucket 0, not bucket 3, to confirm the push
 		// bypasses slot derivation and lands in the requested bucket regardless.

@@ -70,7 +70,7 @@ def test_extension_points_carry_trait_and_impl_files():
     by_name = {ep.name: ep for ep in subject.extension_points}
 
     eviction = by_name["eviction-policy"]
-    assert eviction.trait == "dash::shared::eviction_policy::EvictionPolicy"
+    assert eviction.trait == "dash::shared::traits::EvictionPolicy"
     assert eviction.impl_files == (Path("src/shared/eviction_policy.rs"),)
     assert eviction.description == "Algorithm choosing which item to evict from a bucket"
 

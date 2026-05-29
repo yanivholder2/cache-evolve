@@ -59,18 +59,18 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::shared::eviction_policy::EvictionPolicy;
+	use crate::shared::eviction_policy::EvictionPolicyKind;
 	use crate::shared::traits::bucket::Bucket;
 	use crate::shared::utils::get_index;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
 
-	fn cold_segment(policy: EvictionPolicy) -> PromotionColdSegment<i64, i64> {
+	fn cold_segment(policy: EvictionPolicyKind) -> PromotionColdSegment<i64, i64> {
 		PromotionColdSegment::new(&small_dash_settings(policy))
 	}
 
 	#[test]
 	fn stash_hit_inserts_at_front_of_target() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		let target_idx = 0;
 		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
 
@@ -87,7 +87,7 @@ mod tests {
 
 	#[test]
 	fn target_hit_not_hottest_promotes_within_bucket() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		let target_idx = 0;
 		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
 
@@ -106,7 +106,7 @@ mod tests {
 
 	#[test]
 	fn target_hit_hottest_promotes_to_probing() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg.core.segment_size;
 		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
@@ -126,7 +126,7 @@ mod tests {
 
 	#[test]
 	fn probing_hit_touches_in_place() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg.core.segment_size;
 		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
@@ -140,7 +140,7 @@ mod tests {
 
 	#[test]
 	fn probing_eviction_demotes_to_target() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg.core.segment_size;
 		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
@@ -160,7 +160,7 @@ mod tests {
 
 	#[test]
 	fn cascade_demotion_probing_to_full_target_to_stash() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg.core.segment_size;
 		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
@@ -198,7 +198,7 @@ mod tests {
 
 	#[test]
 	fn miss_returns_none() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		assert!(seg.get(&999).is_none());
 	}
 
@@ -206,7 +206,7 @@ mod tests {
 	/// is `segment_size - 1` must probe at bucket 0, not at `segment_size` (out of bounds).
 	#[test]
 	fn last_bucket_probing_wraps_to_zero() {
-		let mut seg = cold_segment(EvictionPolicy::ClassicLRU);
+		let mut seg = cold_segment(EvictionPolicyKind::ClassicLRU);
 		let seg_size = seg.core.segment_size;
 		let target_idx = seg_size - 1;
 		let probing_idx = (target_idx + 1) % seg_size;

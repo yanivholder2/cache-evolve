@@ -3,13 +3,13 @@ mod common;
 use common::find_keys_for_index;
 use dash::associative_cache::associative_cache_settings::AssociativeCacheSettings;
 use dash::associative_cache::AssociativeCache;
-use dash::shared::eviction_policy::EvictionPolicy;
+use dash::shared::eviction_policy::EvictionPolicyKind;
 use rand::Rng;
 use std::thread;
 use std::time::Duration;
 
 /// Single bucket, size 2. All keys map to the same bucket — no hash routing.
-fn tiny_cache(policy: EvictionPolicy) -> AssociativeCache<i64, i64> {
+fn tiny_cache(policy: EvictionPolicyKind) -> AssociativeCache<i64, i64> {
 	AssociativeCache::new(AssociativeCacheSettings {
 		num_of_buckets: 1,
 		bucket_size: 2,
@@ -17,7 +17,7 @@ fn tiny_cache(policy: EvictionPolicy) -> AssociativeCache<i64, i64> {
 	})
 }
 
-fn small_cache_settings(policy: EvictionPolicy) -> AssociativeCacheSettings {
+fn small_cache_settings(policy: EvictionPolicyKind) -> AssociativeCacheSettings {
 	AssociativeCacheSettings {
 		num_of_buckets: 4,
 		bucket_size: 4,
@@ -27,7 +27,7 @@ fn small_cache_settings(policy: EvictionPolicy) -> AssociativeCacheSettings {
 
 #[test]
 fn get_miss_returns_none_all_policies() {
-	for policy in EvictionPolicy::all() {
+	for policy in EvictionPolicyKind::all() {
 		let mut cache = tiny_cache(policy);
 		assert!(
 			cache.get_and_update_item(&42).is_none(),
@@ -39,7 +39,7 @@ fn get_miss_returns_none_all_policies() {
 
 #[test]
 fn put_then_get_all_policies() {
-	for policy in EvictionPolicy::all() {
+	for policy in EvictionPolicyKind::all() {
 		let mut cache = tiny_cache(policy);
 		cache.put(1, 10);
 		assert_eq!(
@@ -53,7 +53,7 @@ fn put_then_get_all_policies() {
 
 #[test]
 fn put_overwrite_all_policies() {
-	for policy in EvictionPolicy::all() {
+	for policy in EvictionPolicyKind::all() {
 		let mut cache = tiny_cache(policy);
 		cache.put(1, 10);
 		cache.put(1, 20);
@@ -72,7 +72,7 @@ fn put_overwrite_all_policies() {
 #[test]
 fn eviction_fifo() {
 	// FIFO evicts the front (oldest insert).
-	let mut cache = tiny_cache(EvictionPolicy::Fifo);
+	let mut cache = tiny_cache(EvictionPolicyKind::Fifo);
 	cache.put(1, 10);
 	cache.put(2, 20);
 	cache.put(3, 30);
@@ -84,7 +84,7 @@ fn eviction_fifo() {
 #[test]
 fn eviction_lifo() {
 	// LIFO evicts the back (most recent insert).
-	let mut cache = tiny_cache(EvictionPolicy::Lifo);
+	let mut cache = tiny_cache(EvictionPolicyKind::Lifo);
 	cache.put(1, 10);
 	cache.put(2, 20);
 	cache.put(3, 30);
@@ -96,7 +96,7 @@ fn eviction_lifo() {
 #[test]
 fn eviction_classic_lru() {
 	// ClassicLRU bumps a hit item to the back; the untouched key becomes the LRU victim.
-	let mut cache = tiny_cache(EvictionPolicy::ClassicLRU);
+	let mut cache = tiny_cache(EvictionPolicyKind::ClassicLRU);
 	cache.put(1, 10);
 	cache.put(2, 20);
 	cache.get_and_update_item(&1);
@@ -110,7 +110,7 @@ fn eviction_classic_lru() {
 fn eviction_timestamp_lru() {
 	// TimestampLRU evicts the oldest wall-clock timestamp; sleeps spread inserts apart
 	// enough that ordering is unambiguous.
-	let mut cache = tiny_cache(EvictionPolicy::TimestampLRU);
+	let mut cache = tiny_cache(EvictionPolicyKind::TimestampLRU);
 	cache.put(1, 10);
 	thread::sleep(Duration::from_millis(20));
 	cache.put(2, 20);
@@ -125,7 +125,7 @@ fn eviction_timestamp_lru() {
 #[test]
 fn eviction_lfu() {
 	// LFU evicts the lowest counter; an unhit key sits at counter 0.
-	let mut cache = tiny_cache(EvictionPolicy::Lfu);
+	let mut cache = tiny_cache(EvictionPolicyKind::Lfu);
 	cache.put(1, 10);
 	cache.put(2, 20);
 	cache.get_and_update_item(&1);
@@ -139,7 +139,7 @@ fn eviction_lfu() {
 #[test]
 fn eviction_swap() {
 	// Swap moves a hit item one slot toward the back; the now-front key is evicted next.
-	let mut cache = tiny_cache(EvictionPolicy::Swap);
+	let mut cache = tiny_cache(EvictionPolicyKind::Swap);
 	cache.put(1, 10);
 	cache.put(2, 20);
 	cache.get_and_update_item(&2);
@@ -161,7 +161,7 @@ fn custom_settings_large_buckets() {
 	let settings = AssociativeCacheSettings {
 		num_of_buckets: 8,
 		bucket_size: 32,
-		eviction_policy: EvictionPolicy::ClassicLRU,
+		eviction_policy: EvictionPolicyKind::ClassicLRU,
 	};
 	let capacity = settings.num_of_buckets * settings.bucket_size;
 	let num_items = 200;
@@ -185,7 +185,7 @@ fn custom_settings_large_buckets() {
 
 #[test]
 fn keys_route_to_different_buckets() {
-	let settings = small_cache_settings(EvictionPolicy::Fifo);
+	let settings = small_cache_settings(EvictionPolicyKind::Fifo);
 	let num_buckets = settings.num_of_buckets;
 	let mut cache: AssociativeCache<i64, i64> = AssociativeCache::new(settings);
 
@@ -214,7 +214,7 @@ fn random_workload_no_panic() {
 	let num_ops = 10_000;
 	let key_range = 100;
 	let mut rng = rand::thread_rng();
-	for policy in EvictionPolicy::all() {
+	for policy in EvictionPolicyKind::all() {
 		let mut cache: AssociativeCache<i64, i64> = AssociativeCache::new(small_cache_settings(policy));
 		for _ in 0..num_ops {
 			let key: i64 = rng.gen_range(0..key_range);
@@ -238,7 +238,7 @@ fn random_workload_no_panic() {
 
 #[test]
 fn fill_beyond_capacity_then_query() {
-	let settings = small_cache_settings(EvictionPolicy::ClassicLRU);
+	let settings = small_cache_settings(EvictionPolicyKind::ClassicLRU);
 	let capacity = settings.num_of_buckets * settings.bucket_size;
 	let num_items: i64 = 1000;
 	let mut cache: AssociativeCache<i64, i64> = AssociativeCache::new(settings);

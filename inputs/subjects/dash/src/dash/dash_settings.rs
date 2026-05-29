@@ -1,4 +1,4 @@
-use crate::shared::eviction_policy::EvictionPolicy;
+use crate::shared::eviction_policy::EvictionPolicyKind;
 use log::error;
 
 #[derive(Debug, Clone, Copy)]
@@ -7,7 +7,7 @@ pub struct DashSettings {
 	pub num_of_normal_buckets: usize,
 	pub num_of_stash_buckets: usize,
 	pub bucket_size: usize,
-	pub eviction_policy: EvictionPolicy,
+	pub eviction_policy: EvictionPolicyKind,
 	pub debug_mode: usize,
 }
 
@@ -18,7 +18,7 @@ impl Default for DashSettings {
 			num_of_normal_buckets: 28,
 			num_of_stash_buckets: 4,
 			bucket_size: 16,
-			eviction_policy: EvictionPolicy::ClassicLRU,
+			eviction_policy: EvictionPolicyKind::ClassicLRU,
 			debug_mode: 1,
 		}
 	}
@@ -62,7 +62,7 @@ impl DashSettings {
 			error!("DashSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
 			return None;
 		}
-		let Some(policy) = EvictionPolicy::from_usize(eviction_policy as usize) else {
+		let Some(policy) = EvictionPolicyKind::from_usize(eviction_policy as usize) else {
 			error!("DashSettings.from_jni_args: invalid eviction_policy={eviction_policy}");
 			return None;
 		};
@@ -83,7 +83,7 @@ impl DashSettings {
 		num_of_normal_buckets: i64,
 		num_of_stash_buckets: i64,
 		bucket_size: i64,
-		eviction_policy: EvictionPolicy,
+		eviction_policy: EvictionPolicyKind,
 		debug_mode: i64,
 	) -> Option<Self> {
 		if debug_mode < 0 {
