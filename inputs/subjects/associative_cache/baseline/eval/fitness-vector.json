@@ -1,0 +1,37 @@
+{
+  "variant": "baseline",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "cache": "assoc",
+          "size": 16,
+          "hit_rate": 0.8775
+        },
+        {
+          "cache": "assoc",
+          "size": 32,
+          "hit_rate": 0.9055
+        }
+      ],
+      "summary": 0.8915,
+      "higher_is_better": true
+    },
+    {
+      "dim": "metadata-size",
+      "values": [
+        {
+          "type": "Item<u64,u64>",
+          "bytes": 40
+        },
+        {
+          "type": "AssociativeCache<u64,u64>",
+          "bytes": 24
+        }
+      ],
+      "summary": 40,
+      "higher_is_better": false
+    }
+  ]
+}

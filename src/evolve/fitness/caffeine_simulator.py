@@ -25,6 +25,7 @@ from scripts import caffeine_runner  # noqa: E402
 from evolve._io import read_utf8, write_utf8
 from evolve.config import Configs
 from evolve.paths import CaffeineOutputDir, Layout, Variant
+from evolve.subject import load_subject
 from evolve.variant.build import compile_cdylib
 
 log = logging.getLogger("fitness.caffeine")
@@ -32,7 +33,6 @@ log = logging.getLogger("fitness.caffeine")
 # Issue-85 hardcoded fitness point. #83 replaces these with a trace suite.
 HARDCODED_TRACE = "lirs:multi1.trace.gz"
 HARDCODED_SIZE = 512
-TARGET = "dash"
 # Variants no longer declare an eviction policy; the baseline runs ClassicLRU
 # and that's what the simulator drives by default. A variant selects a
 # different policy by overlaying `src/factory.rs`.
@@ -186,6 +186,7 @@ def simulate_variant(
 
     variant_dir = variant.resolve(layout)
     policy_name = DEFAULT_EVICTION_POLICY
+    caffeine = load_subject(layout.sources.subject_dir).caffeine
     debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
 
     caffeine_out = variant_dir.caffeine_dir
@@ -202,12 +203,12 @@ def simulate_variant(
         try:
             with _CAFFEINE_LOCK:
                 run_result = caffeine_runner.run(
-                    target=TARGET,
                     library_path=cdylib_path.parent,
                     trace=HARDCODED_TRACE,
                     size=HARDCODED_SIZE,
                     policies=[policy_name.lower()],
                     timeout_s=cfg.simulator.timeout_s,
+                    **caffeine.as_runner_kwargs(),
                     debug_mode=debug_mode,
                     log_path=caffeine_out.rust_logs_dir,
                     output_dir=caffeine_out.root,

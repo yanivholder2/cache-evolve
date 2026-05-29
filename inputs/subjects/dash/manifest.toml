@@ -15,6 +15,26 @@ trait = "dash::shared::traits::Bucket"
 impl-files = ["src/dash/dash_bucket.rs"]
 description = "Container for items within a segment"
 
+[contract]
+protected-files = ["src/dash/jni.rs", "src/factory.rs"]
+
+[caffeine]
+config-prefix = "caffeine.simulator.dash"
+policy-spec-name = "dash.DashRust"
+policy-key = "evictionPolicies"
+supports-log-path = true
+
+[caffeine.geometry]
+numOfNormalBuckets = 2
+numOfStashBuckets = 6
+bucketSize = 64
+
+[bench]
+binary-name = "dash-bench"
+
+[metadata]
+binary-name = "evolve-metadata-size"
+
 [docs]
 context = "CONTEXT.md"
 insight = "baseline/insight.md"

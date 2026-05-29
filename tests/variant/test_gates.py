@@ -21,8 +21,11 @@ from evolve.variant.gate_check import run_gates
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout
 
+from _support import configured_subject
+
 REPO_ROOT = Path(__file__).parent.parent.parent
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
+SUBJECT = configured_subject(REPO_ROOT)
 
 VARIANT = CycleVariant(CycleId(1), VariantId(1))
 EXPECTED_VARIANT_TAG = "variant=cycle/0001/v001"
@@ -34,11 +37,11 @@ def _stage(tmp_path: Path, fixture_name: str) -> tuple[Layout, CycleVariant]:
     crate so the build harness's copytree + overlay path resolves to the real
     sources without mutating them."""
 
-    layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out")
+    layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out", subject=SUBJECT)
     layout.repo_root.mkdir(parents=True, exist_ok=True)
     real = REPO_ROOT
     layout.sources.subject_dir.parent.mkdir(parents=True, exist_ok=True)
-    (layout.sources.subject_dir).symlink_to(real / "inputs" / "subjects" / "dash")
+    (layout.sources.subject_dir).symlink_to(real / "inputs" / "subjects" / SUBJECT)
     layout.sources.framework_crate_dir.symlink_to(real / "framework-rs")
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
     fixture_files = FIXTURES_DIR / fixture_name / "files"

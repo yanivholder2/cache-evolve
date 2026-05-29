@@ -12,8 +12,10 @@ from evolve.identifiers import CycleId
 from evolve.paths import Layout
 
 from _stubs import StubLLMAdapter
+from _support import configured_subject
 
 REPO_SRC = Path(__file__).parent.parent
+SUBJECT = configured_subject(REPO_SRC)
 COHORT = 2
 
 
@@ -31,7 +33,7 @@ def _setup_repo(tmp_path: Path) -> Path:
 
 
 def _layout(repo_root: Path) -> Layout:
-    return Layout(repo_root=repo_root, outputs_root=repo_root / "outputs")
+    return Layout(repo_root=repo_root, outputs_root=repo_root / "outputs", subject=SUBJECT)
 
 
 def _run_cycles(repo_root: Path, n: int) -> None:

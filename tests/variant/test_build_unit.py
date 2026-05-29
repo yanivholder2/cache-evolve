@@ -10,20 +10,22 @@ from evolve.variant.build import _apply_overlay, _rewrite_framework_path
 
 
 @pytest.mark.parametrize(
-    "platform, expected",
+    "platform, name, expected",
     [
-        ("linux", "libdash.so"),
-        ("win32", "dash.dll"),
-        ("darwin", "libdash.dylib"),
+        ("linux", "dash", "libdash.so"),
+        ("win32", "dash", "dash.dll"),
+        ("darwin", "dash", "libdash.dylib"),
+        ("linux", "lru_cache", "liblru_cache.so"),
+        ("win32", "associative_cache", "associative_cache.dll"),
     ],
 )
-def test_cdylib_filename_supported(platform, expected):
-    assert cdylib_filename(platform) == expected
+def test_cdylib_filename_supported(platform, name, expected):
+    assert cdylib_filename(platform, name) == expected
 
 
 def test_cdylib_filename_unsupported_raises():
     with pytest.raises(RuntimeError, match="unsupported platform"):
-        cdylib_filename("plan9")
+        cdylib_filename("plan9", "dash")
 
 
 def test_rewrite_framework_path_substitutes_absolute(tmp_path):

@@ -2,7 +2,7 @@
 
 > **This is a domain language file.** It records the canonical vocabulary for the evolve framework — preferred terms, terms to avoid, relationships, and flagged ambiguities. Before adding, renaming, or removing any term, read the format spec and editing rules at `~/.claude/skills/grill-with-docs/CONTEXT-FORMAT.md`. The `/grill-with-docs` skill is the primary tool for evolving this file.
 
-Vocabulary for the **evolve** framework — the agentic research loop that studies Subject caches. Subject-level vocabulary lives in each subject's own `CONTEXT.md` (e.g. [`inputs/subjects/dash/CONTEXT.md`](inputs/subjects/dash/CONTEXT.md)).
+Vocabulary for the **evolve** framework — the agentic research loop that studies Subject caches. Subject-level vocabulary lives in each subject's own `CONTEXT.md` under `inputs/subjects/<name>/`.
 
 ## Language
 
@@ -79,14 +79,23 @@ _Avoid_: Search space, mutation space.
 A trait-object seam below the Segment where a Variant can swap an
 implementation (eviction policy, bucket, item, probing function, cascade
 order, …). Each Subject declares its extension points in its Subject manifest.
+A Subject may declare zero (e.g. lru_cache), in which case Variants run in
+Full-autonomy scope only.
 _Avoid_: Hook, plugin slot.
 
 **Subject manifest**:
 The `manifest.toml` at a Subject's root declaring its identity (name, crate
-path, cdylib name), its Extension points, and where its docs and baseline
-evaluation live. The framework unions the Extension points' impl files to
-compute the Extension-point scope whitelist.
+path, cdylib name), its Extension points, its Protected files (`[contract]`),
+its Caffeine wiring (`[caffeine]`), an optional microbench (`[bench]`), and
+where its docs and baseline evaluation live. The framework unions the Extension
+points' impl files to compute the Extension-point scope whitelist.
 _Avoid_: Config, spec, descriptor.
+
+**Protected files**:
+Files a Variant may never overwrite, declared in the Subject manifest
+`[contract]` table — the JNI boundary and the variant factory seam. Enforced
+regardless of authoring scope; even Full-autonomy scope stops at them.
+_Avoid_: Frozen files, locked files.
 
 **Extension-point scope**:
 Authoring scope where a Variant edits only files declared as Extension-point
@@ -217,5 +226,5 @@ _Avoid_: Distributed prerequisites, cluster invariants.
 ## Flagged ambiguities
 
 - **"Subject"** vs **"Subject cache"** — **Subject** is the packaged directory entity (`inputs/subjects/<name>/`: cache code + manifest + docs + baseline eval); **Subject cache** is the runtime cache code inside it. Prefer **Subject** unless the cache artifact itself is specifically meant.
-- **"Variant"** — the Evolve sense (a proposed alternative implementation of a Subject) is now the only sense. The former Dash compound-noun usage (Hot/Cold variant) is retired — see [`inputs/subjects/dash/CONTEXT.md`](inputs/subjects/dash/CONTEXT.md).
+- **"Variant"** — at the framework level this always means the Evolve sense: a proposed alternative implementation of a Subject. A Subject may carry its own narrower, retired usages; those are documented in that subject's own `CONTEXT.md`.
 - **"Insight"** — bare "insight" is ambiguous within the framework. Always qualify: **Variant insight** (per-variant) or **Cycle insight** (per-cycle summary). The **Insight ledger** is the durable record; **Cross-cycle insights** is the recomputable narrative across cycles.

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pytest
@@ -14,22 +13,18 @@ from evolve.paths import Layout
 from evolve.variant.implementer import implement_variant
 
 from _stubs import StubLLMAdapter
+from _support import STUB_SUBJECT_NAME, StubSubject, write_stub_subject
 
-REPO_SRC = Path(__file__).parent.parent.parent
 
-
-def _setup_evolve(tmp_path: Path) -> Path:
+def _setup_evolve(tmp_path: Path) -> tuple[Path, StubSubject]:
+    # Scope/contract enforcement is driven entirely by the subject manifest, so
+    # a minimal stub subject exercises the same code path as any real subject
+    # without assuming a particular one.
     dst = tmp_path / "repo"
-    shutil.copytree(
-        REPO_SRC,
-        dst,
-        ignore=shutil.ignore_patterns(
-            ".venv", ".git", "target", "outputs", "traces",
-            "__pycache__", "*.pyc",
-        ),
-    )
+    dst.mkdir()
     (dst / "outputs" / "cycles").mkdir(parents=True)
-    return dst
+    stub = write_stub_subject(dst / "inputs" / "subjects" / STUB_SUBJECT_NAME)
+    return dst, stub
 
 
 def _write_hypothesis(path: Path, *, parent_variant: str, body: str = "test claim") -> None:
@@ -41,8 +36,8 @@ def _write_hypothesis(path: Path, *, parent_variant: str, body: str = "test clai
 
 
 def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
-    evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    evolve, stub = _setup_evolve(tmp_path)
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=stub.name)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
 
@@ -65,8 +60,8 @@ def test_baseline_parent_appears_in_task_md_and_readable_roots(tmp_path):
 
 
 def test_past_variant_parent_appears_in_task_md_and_readable_roots(tmp_path):
-    evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    evolve, stub = _setup_evolve(tmp_path)
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=stub.name)
 
     # Materialize a past variant cycle/0001/v001 so the parser can resolve it.
     past_variant_dir = layout.outputs.cycle(CycleId(1)).variant(VariantId(1)).root
@@ -103,8 +98,8 @@ class _SilentNoOpAdapter:
 
 
 def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
-    evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    evolve, stub = _setup_evolve(tmp_path)
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=stub.name)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
 
@@ -122,8 +117,8 @@ def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
 
 
 def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
-    evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    evolve, stub = _setup_evolve(tmp_path)
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=stub.name)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
 
@@ -168,47 +163,67 @@ class _EmptySubdirAdapter:
 
 
 def _prepare(tmp_path: Path):
-    evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    evolve, stub = _setup_evolve(tmp_path)
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=stub.name)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
     hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
     _write_hypothesis(hypothesis, parent_variant="baseline")
-    return layout, variant_dir, hypothesis
+    return layout, variant_dir, hypothesis, stub
 
 
 def test_extension_points_scope_allows_whitelisted_file(tmp_path):
-    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
     implement_variant(
         hypothesis, variant_dir, layout=layout,
-        adapter=_WritingAdapter(["src/shared/eviction_policy.rs"]),
+        adapter=_WritingAdapter([stub.extension_point_file.as_posix()]),
         authoring_scope=AuthoringScope.EXTENSION_POINTS,
     )
-    assert (variant_dir.files_dir / "src/shared/eviction_policy.rs").is_file()
+    assert (variant_dir.files_dir / stub.extension_point_file).is_file()
 
 
 def test_extension_points_scope_rejects_non_whitelisted_file(tmp_path):
-    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
     with pytest.raises(ValueError, match="extension-points"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
-            adapter=_WritingAdapter(["src/factory.rs"]),
+            adapter=_WritingAdapter([stub.free_file.as_posix()]),
             authoring_scope=AuthoringScope.EXTENSION_POINTS,
         )
 
 
-def test_full_autonomy_scope_allows_any_file(tmp_path):
-    layout, variant_dir, hypothesis = _prepare(tmp_path)
+def test_full_autonomy_scope_allows_any_non_protected_file(tmp_path):
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
     implement_variant(
         hypothesis, variant_dir, layout=layout,
-        adapter=_WritingAdapter(["src/factory.rs"]),
+        adapter=_WritingAdapter([stub.free_file.as_posix()]),
         authoring_scope=AuthoringScope.FULL_AUTONOMY,
     )
-    assert (variant_dir.files_dir / "src/factory.rs").is_file()
+    assert (variant_dir.files_dir / stub.free_file).is_file()
+
+
+def test_full_autonomy_scope_rejects_protected_file(tmp_path):
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
+    with pytest.raises(ValueError, match="contract-protected"):
+        implement_variant(
+            hypothesis, variant_dir, layout=layout,
+            adapter=_WritingAdapter([stub.protected_files[1].as_posix()]),
+            authoring_scope=AuthoringScope.FULL_AUTONOMY,
+        )
+
+
+def test_extension_points_scope_rejects_protected_file(tmp_path):
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
+    with pytest.raises(ValueError, match="contract-protected"):
+        implement_variant(
+            hypothesis, variant_dir, layout=layout,
+            adapter=_WritingAdapter([stub.protected_files[0].as_posix()]),
+            authoring_scope=AuthoringScope.EXTENSION_POINTS,
+        )
 
 
 def test_empty_subdir_overlay_raises(tmp_path):
-    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
     with pytest.raises(FileNotFoundError, match="adapter produced no overlay files"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
@@ -218,10 +233,10 @@ def test_empty_subdir_overlay_raises(tmp_path):
 
 
 def test_task_md_contains_manifest_path_and_scope(tmp_path):
-    layout, variant_dir, hypothesis = _prepare(tmp_path)
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
     implement_variant(
         hypothesis, variant_dir, layout=layout,
-        adapter=_WritingAdapter(["src/shared/eviction_policy.rs"]),
+        adapter=_WritingAdapter([stub.extension_point_file.as_posix()]),
         authoring_scope=AuthoringScope.EXTENSION_POINTS,
     )
     body = read_utf8(variant_dir.task_md)

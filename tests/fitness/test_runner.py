@@ -17,24 +17,28 @@ from evolve.fitness.runner import FitnessError, _aggregate, compute_fitness
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout
 
+from _support import configured_subject
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SUBJECT = configured_subject(REPO_ROOT)
+
 
 _TEST_CFG = Configs(
     framework=FrameworkConfig(
         cycles=1, cohort_size=1, ai_agent_tool="claude-sdk",
         outputs_root=Path("/tmp"), log_level="DEBUG", digest_cycles=3,
-        max_workers=0, authoring_scope="extension-points",
+        max_workers=0, authoring_scope="extension-points", subject=SUBJECT,
     ),
     simulator=SimulatorConfig(timeout_s=600),
 )
 
 
 def _stage(tmp_path: Path) -> tuple[Layout, CycleVariant]:
-    """Build a Layout pointing at tmp_path and a CycleVariant whose dir
-    exists under it."""
+    """Build a Layout whose sources point at the real repo (so the subject
+    manifest loads) and whose outputs live under tmp_path."""
 
-    evolve_root = tmp_path / "evolve"
-    evolve_root.mkdir()
-    layout = Layout(repo_root=evolve_root, outputs_root=tmp_path / "out")
+    layout = Layout(repo_root=REPO_ROOT, outputs_root=tmp_path / "out", subject=SUBJECT)
     variant = CycleVariant(CycleId(1), VariantId(1))
     layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id).files_dir.mkdir(parents=True)
     return layout, variant
@@ -106,13 +110,13 @@ def test_aggregate_empty_plugin_dir_errors(tmp_path):
 def test_aggregate_values_propagated(tmp_path):
     _write_plugin(tmp_path, "hit-rate", {
         "dim": "hit-rate",
-        "values": [{"cache": "dash", "size": 16, "hit_rate": 0.61}],
+        "values": [{"cache": "stub", "size": 16, "hit_rate": 0.61}],
         "summary": 0.61,
         "higher_is_better": True,
     })
     fv = _aggregate("v001", tmp_path)
     [dim] = fv["dimensions"]
-    assert dim["values"] == [{"cache": "dash", "size": 16, "hit_rate": 0.61}]
+    assert dim["values"] == [{"cache": "stub", "size": 16, "hit_rate": 0.61}]
 
 
 def test_aggregate_rejects_nan_summary(tmp_path):

@@ -1,0 +1,22 @@
+{
+  "variant": "baseline",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "cache": "lru",
+          "size": 16,
+          "hit_rate": 0.0
+        },
+        {
+          "cache": "lru",
+          "size": 32,
+          "hit_rate": 0.0
+        }
+      ],
+      "summary": 0.0,
+      "higher_is_better": true
+    }
+  ]
+}

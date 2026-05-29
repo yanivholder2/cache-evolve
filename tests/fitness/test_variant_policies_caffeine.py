@@ -24,17 +24,20 @@ from evolve.config import load_configs
 from evolve.fitness.caffeine_simulator import (
 	HARDCODED_SIZE,
 	HARDCODED_TRACE,
-	TARGET,
 	CaffeineSimulatorError,
 	_parse_csv,
 	_write_gradle_logs,
 )
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout, SourcesLayout
+from evolve.subject import load_subject
 from evolve.variant.build import compile_cdylib
+
+from _support import configured_subject
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures"
+SUBJECT = configured_subject(REPO_ROOT)
 
 # One policy per family: recency (with movement), frequency, insertion-order.
 POLICIES = ["ClassicLRU", "Lfu", "Fifo"]
@@ -42,9 +45,9 @@ POLICIES = ["ClassicLRU", "Lfu", "Fifo"]
 
 def _stage_variant(tmp_path: Path) -> tuple[Layout, CycleVariant]:
 	variant = CycleVariant(CycleId(1), VariantId(1))
-	layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out")
+	layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out", subject=SUBJECT)
 	layout.repo_root.mkdir(parents=True, exist_ok=True)
-	real = SourcesLayout(root=REPO_ROOT)
+	real = SourcesLayout(root=REPO_ROOT, subject=SUBJECT)
 	layout.sources.subject_dir.parent.mkdir(parents=True, exist_ok=True)
 	layout.sources.subject_dir.symlink_to(real.subject_dir)
 	layout.sources.framework_crate_dir.symlink_to(real.root / "framework-rs")
@@ -71,14 +74,19 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 		raise CaffeineSimulatorError(f"cdylib build failed: {exception}") from exception
 
 	try:
+		caffeine = load_subject(layout.sources.subject_dir).caffeine
 		try:
 			run_result = caffeine_runner.run(
-				target=TARGET,
 				library_path=cdylib_path.parent,
 				trace=HARDCODED_TRACE,
 				size=HARDCODED_SIZE,
 				policies=[p.lower() for p in POLICIES],
 				timeout_s=cfg.simulator.timeout_s,
+				config_prefix=caffeine.config_prefix,
+				policy_spec_name=caffeine.policy_spec_name,
+				geometry=caffeine.geometry,
+				policy_key=caffeine.policy_key,
+				supports_log_path=caffeine.supports_log_path,
 				debug_mode=0,
 				log_path=caffeine_out.rust_logs_dir,
 				output_dir=caffeine_out.root,
@@ -111,5 +119,5 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 			f"policy={policy} hit_rate={row.hit_rate} outside (0, 1]"
 		)
 
-	rust_logs = list(caffeine_out.rust_logs_dir.glob("dash_*.log"))
+	rust_logs = list(caffeine_out.rust_logs_dir.glob(f"{load_subject(layout.sources.subject_dir).cdylib_name}_*.log"))
 	assert rust_logs, f"no rust JNI log under {caffeine_out.rust_logs_dir}"

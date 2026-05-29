@@ -53,12 +53,10 @@ Each cycle ends with `cycle <NNNN> complete — sealed at <path> (cohort=N)`.
 
 ### Baseline and per-cycle grounding
 
-`inputs/subjects/dash/baseline/` is a checked-in permanent research baseline. It mirrors a variant's on-disk shape:
+Each subject carries a checked-in permanent research baseline under `inputs/subjects/<name>/baseline/`. The baseline implementation is the subject crate's own source; the baseline directory holds its measured grounding:
 
 ```
-inputs/subjects/dash/baseline/
-  impl/segment.rs           # baseline Segment implementation
-  impl/manifest.toml        # name, eviction policy, ordinal
+inputs/subjects/<name>/baseline/
   eval/fitness-vector.json  # measured fitness, produced by measure_baseline.py
   insight.md                # short prose describing the baseline
 ```

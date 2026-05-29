@@ -11,6 +11,8 @@ from evolve.hypothesis import parser
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import Baseline, CycleVariant, Layout
 
+from _support import STUB_SUBJECT_NAME
+
 
 def _write(tmp_path: Path, body: str) -> Path:
     p = tmp_path / "H01.md"
@@ -93,9 +95,9 @@ def test_parse_no_claim_raises(tmp_path):
 
 def test_baseline_resolves_to_baseline_root(tmp_path):
     repo_root = tmp_path / "repo"
-    baseline_dir = repo_root / "inputs" / "subjects" / "dash" / "baseline"
+    baseline_dir = repo_root / "inputs" / "subjects" / STUB_SUBJECT_NAME / "baseline"
     baseline_dir.mkdir(parents=True)
-    layout = Layout(repo_root=repo_root, outputs_root=tmp_path / "outputs")
+    layout = Layout(repo_root=repo_root, outputs_root=tmp_path / "outputs", subject=STUB_SUBJECT_NAME)
     assert Baseline().resolve(layout).root == baseline_dir
 
 
@@ -103,7 +105,7 @@ def test_cycle_variant_resolves_to_variant_dir(tmp_path):
     outputs_root = tmp_path / "outputs"
     variant_dir = outputs_root / "cycles" / "0002" / "variants" / "v003"
     variant_dir.mkdir(parents=True)
-    layout = Layout(repo_root=tmp_path / "evolve", outputs_root=outputs_root)
+    layout = Layout(repo_root=tmp_path / "evolve", outputs_root=outputs_root, subject=STUB_SUBJECT_NAME)
     assert CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3)).resolve(layout).root == variant_dir
 
 

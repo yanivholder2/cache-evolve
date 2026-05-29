@@ -18,8 +18,10 @@ from evolve.identifiers import CycleId, HypothesisId, VariantId
 from evolve.paths import CycleLayout, Layout, SourcesLayout
 
 from _stubs import StubLLMAdapter
+from _support import configured_subject
 
 REPO_SRC = Path(__file__).parent.parent.parent
+SUBJECT = configured_subject(REPO_SRC)
 
 PARALLEL_COHORT_SIZE = 4
 IMPLEMENTER_SLEEP_SECONDS = 1
@@ -42,7 +44,7 @@ def _setup_repo(tmp_path: Path) -> Path:
 
 
 def _layout(repo_root: Path) -> Layout:
-    return Layout(repo_root=repo_root, outputs_root=repo_root / "outputs")
+    return Layout(repo_root=repo_root, outputs_root=repo_root / "outputs", subject=SUBJECT)
 
 
 def _run_cycle(

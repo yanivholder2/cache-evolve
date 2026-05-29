@@ -1,0 +1,38 @@
+[package]
+name = "lru_cache"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "lru_cache"
+crate-type = ["cdylib", "lib"]
+
+[features]
+test-utils = ["proptest"]
+
+[dependencies]
+framework = { path = "../../../framework-rs" }
+jni = "0.20.0"
+log = "0.4"
+simplelog = "0.11"
+chrono = "0.4"
+proptest = { version = "1", optional = true }
+
+[dev-dependencies]
+rand = "0.8.5"
+proptest = "1"
+framework = { path = "../../../framework-rs", features = ["test-suite"] }
+
+[[test]]
+name = "invariant_gate"
+path = "tests/invariant_gate.rs"
+required-features = ["test-utils"]
+
+[[test]]
+name = "contract_gate"
+path = "tests/contract_gate.rs"
+
+[[test]]
+name = "universal_invariant_gate"
+path = "tests/universal_invariant_gate.rs"

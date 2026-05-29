@@ -24,6 +24,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
+name = "associative_cache"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "framework",
+ "jni",
+ "log",
+ "proptest",
+ "rand 0.8.5",
+ "simplelog",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -326,6 +339,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "lru_cache"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "framework",
+ "jni",
+ "log",
+ "proptest",
+ "rand 0.8.5",
+ "simplelog",
 ]
 
 [[package]]

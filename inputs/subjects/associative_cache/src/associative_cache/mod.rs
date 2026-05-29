@@ -8,7 +8,7 @@ use log::{debug, info};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 
-mod associative_cache_bucket;
+pub mod associative_cache_bucket;
 pub mod associative_cache_jni;
 pub mod associative_cache_settings;
 
@@ -70,6 +70,20 @@ where
 	fn get_mut_bucket(&mut self, key: &K) -> &mut AssociativeCacheBucket<K, V> {
 		let bucket_index = get_index(key, self.buckets.len());
 		&mut self.buckets[bucket_index]
+	}
+}
+
+impl<K, V> framework::Cache<K, V> for AssociativeCache<K, V>
+where
+	K: Hash + Eq + Copy + Debug,
+	V: Eq + Copy + Debug,
+{
+	fn put(&mut self, key: K, value: V) {
+		AssociativeCache::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		AssociativeCache::get_and_update_item(self, key)
 	}
 }
 

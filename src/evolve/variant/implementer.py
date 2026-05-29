@@ -38,7 +38,7 @@ def _write_task_md(
         f"- Parent files/:         {parent_dir.files_dir}\n"
         f"- Parent fitness-vector: {parent_dir.fitness_vector_json}\n"
         f"- Parent insight.md:     {parent_dir.insight_md}\n"
-        f"- Subject src/:          {layout.sources.dash_src}\n"
+        f"- Subject src/:          {layout.sources.subject_src}\n"
         f"- Subject manifest:      {layout.sources.subject_manifest}\n\n"
         f"## Authoring scope\n\n"
         f"{authoring_scope}\n\n"
@@ -74,7 +74,7 @@ def implement_variant(
     adapter.run(
         agent_name=AGENT_NAME,
         workspace=files_dir,
-        readable_roots=[hypothesis_file, parent_dir.root, layout.sources.dash_src, layout.sources.subject_dir],
+        readable_roots=[hypothesis_file, parent_dir.root, layout.sources.subject_src, layout.sources.subject_dir],
         allow_edits=True,
     )
 
@@ -84,6 +84,24 @@ def implement_variant(
         # baseline, so treat "agent wrote nothing" as a failure.
         raise FileNotFoundError(
             f"adapter produced no overlay files under {files_dir}"
+        )
+
+    # The manifest's contract-protected files are the fixed seam between the
+    # Rust cache and the Caffeine Java side: the JNI entry points and the
+    # factory that constructs the cache. Their function signatures and exported
+    # symbol names are a binding contract — if a variant changes them, Caffeine
+    # still loads the library but silently fails to call into the cache, so
+    # every request misses. No authoring scope (not even full-autonomy) may
+    # touch them.
+    protected = sorted(
+        str(p.relative_to(files_dir))
+        for p in overlay_files
+        if p.relative_to(files_dir) in subject.protected_files
+    )
+    if protected:
+        raise ValueError(
+            f"variant wrote contract-protected files (the fixed JNI/factory seam "
+            f"between the cache and Caffeine, writable by no scope): {protected}"
         )
 
     if authoring_scope is AuthoringScope.EXTENSION_POINTS:
