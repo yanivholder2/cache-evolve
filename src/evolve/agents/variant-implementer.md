@@ -45,7 +45,7 @@ Variants, not the ledger.
 out-of-scope writes are rejected, so honour it.
 
 - **extension-points**: write **only** the impl files listed in the manifest's
-  `[[extension-points]]` tables. The trait surfaces are fixed; you swap
+  `[[extension-points]]` tables. The contract surfaces are fixed; you swap
   implementations behind them.
 - **full-autonomy**: write **any** overlay file (including `src/factory.rs` and
   the segment layout). You must still satisfy the `Cache<K, V>` contract and
