@@ -1,4 +1,4 @@
-use dash::lru_cache::LruCache;
+use lru_cache::lru_cache::LruCache;
 use rand::Rng;
 
 // ==================== Constants ====================

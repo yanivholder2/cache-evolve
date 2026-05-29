@@ -14,6 +14,7 @@ from evolve.fitness.caffeine_simulator import CaffeineSimulatorError, simulate_v
 from evolve.fitness.plugins import hit_rate, metadata_size, per_op_time
 from evolve.fitness.plugins._common import PluginError
 from evolve.paths import Layout, Variant
+from evolve.subject import load_subject
 
 log = logging.getLogger(__name__)
 
@@ -44,11 +45,19 @@ def compute_fitness(
         log.error("[%s] caffeine simulator failed: %s", variant, exception)
         raise FitnessError(f"caffeine simulator failed for {variant}: {exception}") from exception
 
+    subject = load_subject(layout.sources.subject_dir)
     plugins = {
         "hit-rate": lambda: hit_rate.compute(results=caffeine_results),
-        "per-op-time": lambda: per_op_time.compute(repo_root=layout.repo_root, target_dir=target_dir),
-        "metadata-size": lambda: metadata_size.compute(repo_root=repo_root, target_dir=target_dir),
     }
+    if subject.bench is not None:
+        plugins["per-op-time"] = lambda: per_op_time.compute(layout=layout, target_dir=target_dir)
+    if subject.metadata is not None:
+        plugins["metadata-size"] = lambda: metadata_size.compute(
+            repo_root=repo_root,
+            package=subject.name,
+            binary_name=subject.metadata.binary_name,
+            target_dir=target_dir,
+        )
     for name, fn in plugins.items():
         log.debug("[%s] plugin %s", variant, name)
         try:

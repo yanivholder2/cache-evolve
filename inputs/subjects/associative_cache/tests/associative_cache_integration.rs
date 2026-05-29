@@ -1,9 +1,9 @@
 mod common;
 
+use associative_cache::associative_cache::associative_cache_settings::AssociativeCacheSettings;
+use associative_cache::associative_cache::AssociativeCache;
+use associative_cache::shared::eviction_policy::EvictionPolicyKind;
 use common::find_keys_for_index;
-use dash::associative_cache::associative_cache_settings::AssociativeCacheSettings;
-use dash::associative_cache::AssociativeCache;
-use dash::shared::eviction_policy::EvictionPolicyKind;
 use rand::Rng;
 use std::thread;
 use std::time::Duration;

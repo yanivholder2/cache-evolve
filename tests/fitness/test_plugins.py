@@ -6,8 +6,13 @@ import pytest
 
 from evolve.fitness.caffeine_simulator import CaffeineResult, CaffeineResults
 from evolve.fitness.plugins import hit_rate, metadata_size, per_op_time
+from evolve.paths import Layout
+from evolve.subject import load_subject
+
+from _support import configured_subject
 
 REPO_ROOT = Path(__file__).parent.parent.parent
+SUBJECT = configured_subject(REPO_ROOT)
 
 
 def _assert_shape(data, expected_dim):
@@ -53,7 +58,8 @@ def test_hit_rate_plugin_rejects_empty_results():
 
 
 def test_per_op_time_plugin_shape():
-    data = per_op_time.compute(repo_root=REPO_ROOT)
+    layout = Layout(repo_root=REPO_ROOT, outputs_root=REPO_ROOT / "outputs", subject=SUBJECT)
+    data = per_op_time.compute(layout=layout)
     _assert_shape(data, "per-op-time")
     assert data["higher_is_better"] is False
     if data["values"]:
@@ -62,7 +68,11 @@ def test_per_op_time_plugin_shape():
 
 
 def test_metadata_size_plugin_shape():
-    data = metadata_size.compute(repo_root=REPO_ROOT)
+    layout = Layout(repo_root=REPO_ROOT, outputs_root=REPO_ROOT / "outputs", subject=SUBJECT)
+    subject = load_subject(layout.sources.subject_dir)
+    data = metadata_size.compute(
+        repo_root=REPO_ROOT, package=subject.name, binary_name=subject.metadata.binary_name
+    )
     _assert_shape(data, "metadata-size")
     assert data["higher_is_better"] is False
     assert data["summary"] > 0

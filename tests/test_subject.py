@@ -17,12 +17,14 @@ from evolve.subject import (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DASH_SUBJECT = REPO_ROOT / "inputs" / "subjects" / "dash"
+ASSOCIATIVE_CACHE_SUBJECT = REPO_ROOT / "inputs" / "subjects" / "associative_cache"
 
 
 def _write_valid_subject(root: Path) -> Path:
     """Materialise a minimal valid subject tree at ``root`` and return it."""
     (root / "src" / "policy").mkdir(parents=True)
     (root / "src" / "policy" / "ep.rs").write_text("// stub\n")
+    (root / "src" / "policy" / "jni.rs").write_text("// jni\n")
     (root / "docs").mkdir()
     (root / "docs" / "context.md").write_text("ctx\n")
     (root / "docs" / "insight.md").write_text("ins\n")
@@ -42,6 +44,14 @@ def _write_valid_subject(root: Path) -> Path:
         'impl-files = ["src/policy/ep.rs"]\n'
         'description = "policy seam"\n'
         '\n'
+        '[contract]\n'
+        'protected-files = ["src/policy/jni.rs"]\n'
+        '\n'
+        '[caffeine]\n'
+        'config-prefix = "caffeine.simulator.stub"\n'
+        'policy-spec-name = "stub.StubRust"\n'
+        'supports-log-path = false\n'
+        '\n'
         '[docs]\n'
         'context = "docs/context.md"\n'
         'insight = "docs/insight.md"\n'
@@ -60,9 +70,36 @@ def test_loads_real_manifest():
     assert subject.crate_path == Path(".")
     assert subject.cdylib_name == "dash"
     assert len(subject.extension_points) == 2
+    assert subject.protected_files == (Path("src/dash/jni.rs"), Path("src/factory.rs"))
     assert subject.docs.context == Path("CONTEXT.md")
     assert subject.docs.insight == Path("baseline/insight.md")
     assert subject.evaluation.fitness_vector == Path("baseline/eval/fitness-vector.json")
+    assert subject.caffeine.config_prefix == "caffeine.simulator.dash"
+    assert subject.caffeine.policy_spec_name == "dash.DashRust"
+    assert subject.caffeine.policy_key == "evictionPolicies"
+    assert subject.caffeine.supports_log_path is True
+    assert subject.caffeine.geometry == {
+        "numOfNormalBuckets": 2,
+        "numOfStashBuckets": 6,
+        "bucketSize": 64,
+    }
+    assert subject.bench is not None
+    assert subject.bench.binary_name == "dash-bench"
+
+
+def test_associative_cache_geometry_is_list_valued():
+    # numOfBuckets is read Java-side via getDoubleList, so the manifest declares
+    # it as a list; the loader must preserve that shape.
+    subject = load_subject(ASSOCIATIVE_CACHE_SUBJECT)
+    assert subject.caffeine.geometry == {"numOfBuckets": [2]}
+
+
+def test_list_geometry_must_be_non_empty_integers(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + '\n[caffeine.geometry]\nnumOfBuckets = []\n')
+    with pytest.raises(SubjectManifestError, match=r"geometry.numOfBuckets.*non-empty integers"):
+        load_subject(root)
 
 
 def test_extension_points_carry_trait_and_impl_files():
@@ -250,16 +287,46 @@ def test_unknown_field_in_subject_table_is_rejected(tmp_path: Path):
 
 def test_missing_required_top_level_table_is_rejected(tmp_path: Path):
     _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    # Drop the [contract] table entirely; it is now a required top-level table.
     _rewrite_manifest(
         tmp_path,
-        '[subject]\n'
-        'name = "stub"\n'
-        'crate-path = "."\n'
-        'cdylib-name = "stub"\n'
-        # no [[extension-points]], no [docs], no [evaluation]
+        text.replace('[contract]\nprotected-files = ["src/policy/jni.rs"]\n\n', ""),
     )
-    with pytest.raises(SubjectManifestError, match="extension-points"):
+    with pytest.raises(SubjectManifestError, match="contract"):
         load_subject(tmp_path)
+
+
+def test_missing_caffeine_table_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace(
+            '[caffeine]\n'
+            'config-prefix = "caffeine.simulator.stub"\n'
+            'policy-spec-name = "stub.StubRust"\n'
+            'supports-log-path = false\n'
+            '\n',
+            "",
+        ),
+    )
+    with pytest.raises(SubjectManifestError, match="caffeine"):
+        load_subject(tmp_path)
+
+
+def test_bench_is_optional_and_absent_by_default(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    assert load_subject(tmp_path).bench is None
+
+
+def test_bench_table_parsed_when_present(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + '\n[bench]\nbinary-name = "stub-bench"\n')
+    bench = load_subject(tmp_path).bench
+    assert bench is not None
+    assert bench.binary_name == "stub-bench"
 
 
 def test_parent_traversal_in_crate_path_is_rejected(tmp_path: Path):
@@ -321,16 +388,21 @@ def test_cdylib_name_resolves_package_name_when_no_lib_table(tmp_path: Path):
     load_subject(tmp_path)
 
 
-def test_empty_extension_points_array_is_rejected(tmp_path: Path):
-    _write_valid_subject(tmp_path)
+def _write_zero_ep_manifest(root: Path) -> None:
     _rewrite_manifest(
-        tmp_path,
-        'extension-points = []\n'
-        '\n'
+        root,
         '[subject]\n'
         'name = "stub"\n'
         'crate-path = "."\n'
         'cdylib-name = "stub"\n'
+        '\n'
+        '[contract]\n'
+        'protected-files = ["src/policy/jni.rs"]\n'
+        '\n'
+        '[caffeine]\n'
+        'config-prefix = "caffeine.simulator.stub"\n'
+        'policy-spec-name = "stub.StubRust"\n'
+        'supports-log-path = false\n'
         '\n'
         '[docs]\n'
         'context = "docs/context.md"\n'
@@ -339,7 +411,95 @@ def test_empty_extension_points_array_is_rejected(tmp_path: Path):
         '[evaluation]\n'
         'fitness-vector = "eval/fitness.json"\n',
     )
-    with pytest.raises(SubjectManifestError, match=r"extension-points.*non-empty"):
+
+
+def test_absent_extension_points_loads_with_empty_tuple(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _write_zero_ep_manifest(tmp_path)
+    subject = load_subject(tmp_path)
+    assert subject.extension_points == ()
+    assert subject.ep_scope_whitelist == frozenset()
+
+
+def test_empty_extension_points_array_loads_with_empty_tuple(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _write_zero_ep_manifest(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, "extension-points = []\n\n" + text)
+    subject = load_subject(tmp_path)
+    assert subject.extension_points == ()
+    assert subject.ep_scope_whitelist == frozenset()
+
+
+def test_contract_protected_files_parsed(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    subject = load_subject(tmp_path)
+    assert subject.protected_files == (Path("src/policy/jni.rs"),)
+
+
+def test_missing_contract_table_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace('[contract]\nprotected-files = ["src/policy/jni.rs"]\n\n', ""),
+    )
+    with pytest.raises(SubjectManifestError, match=r"contract"):
+        load_subject(tmp_path)
+
+
+def test_missing_protected_files_key_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace('protected-files = ["src/policy/jni.rs"]', ""),
+    )
+    with pytest.raises(SubjectManifestError, match=r"contract.*protected-files"):
+        load_subject(tmp_path)
+
+
+def test_empty_protected_files_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace('protected-files = ["src/policy/jni.rs"]', "protected-files = []"),
+    )
+    with pytest.raises(SubjectManifestError, match=r"protected-files.*non-empty"):
+        load_subject(tmp_path)
+
+
+def test_nonexistent_protected_file_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace('"src/policy/jni.rs"', '"src/policy/missing.rs"'),
+    )
+    with pytest.raises(SubjectManifestError, match=r"protected-files.*missing\.rs"):
+        load_subject(tmp_path)
+
+
+def test_absolute_protected_file_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace('"src/policy/jni.rs"', '"/etc/passwd"'),
+    )
+    with pytest.raises(SubjectManifestError, match=r"absolute"):
+        load_subject(tmp_path)
+
+
+def test_parent_traversal_in_protected_file_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace('"src/policy/jni.rs"', '"../outside.rs"'),
+    )
+    with pytest.raises(SubjectManifestError, match=r"protected-files.*escape"):
         load_subject(tmp_path)
 
 

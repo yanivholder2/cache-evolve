@@ -1,5 +1,5 @@
 use super::LruCache;
-use crate::shared::logging;
+use crate::logging;
 
 use jni::{objects::JClass, sys::jlong, JNIEnv};
 use log::{info, trace};

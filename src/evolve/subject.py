@@ -1,6 +1,6 @@
 """Subject-manifest schema and loader.
 
-A subject (e.g. ``dash``) declares its identity, extension points, and key
+A subject declares its identity, extension points, Caffeine wiring, and key
 file locations in ``manifest.toml`` at its root. This module parses that
 manifest into a frozen ``Subject`` dataclass that the rest of the evolve
 framework consumes.
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -38,14 +39,65 @@ class Evaluation:
 
 
 @dataclass(frozen=True)
+class CaffeineConfig:
+    """How the Caffeine simulator drives this subject's policy.
+
+    Declarative wiring read from the manifest `[caffeine]` table; the gradle
+    command builder (`scripts.caffeine_runner`) consumes these fields without
+    knowing any subject by name. `geometry` maps a Caffeine config-key suffix
+    (under `config_prefix`) to its fixed value; subjects sized solely by
+    `--maximumSize` (e.g. lru) leave it empty. A value may be an int (the Java
+    settings read it via `getLong`/`getInt`) or a list of ints (read via a
+    `get*List`, e.g. associative_cache's `numOfBuckets`); the command builder
+    emits scalars as `key=value` and lists in indexed `key.0=…` form.
+    `policy_key` is the config key holding the eviction-policy list, or None
+    when the subject has none.
+    """
+
+    config_prefix: str
+    policy_spec_name: str
+    geometry: dict[str, int | list[int]]
+    policy_key: str | None
+    supports_log_path: bool
+
+    def as_runner_kwargs(self) -> dict:
+        """The caffeine-runner wiring kwargs (config_prefix, policy_spec_name, geometry, policy_key, supports_log_path)."""
+        return {
+            "config_prefix": self.config_prefix,
+            "policy_spec_name": self.policy_spec_name,
+            "geometry": self.geometry,
+            "policy_key": self.policy_key,
+            "supports_log_path": self.supports_log_path,
+        }
+
+
+@dataclass(frozen=True)
+class Bench:
+    """The subject's standalone microbench crate (per-op-time fitness)."""
+
+    binary_name: str
+
+
+@dataclass(frozen=True)
+class Metadata:
+    """The subject's metadata-size measurement binary (metadata-size fitness)."""
+
+    binary_name: str
+
+
+@dataclass(frozen=True)
 class Subject:
     subject_dir: Path
     name: str
     crate_path: Path
     cdylib_name: str
     extension_points: tuple[ExtensionPoint, ...]
+    protected_files: tuple[Path, ...]
+    caffeine: CaffeineConfig
     docs: Docs
     evaluation: Evaluation
+    bench: Bench | None
+    metadata: Metadata | None
 
     @property
     def ep_scope_whitelist(self) -> frozenset[Path]:
@@ -56,11 +108,15 @@ class Subject:
         return {ep.name: ep.description for ep in self.extension_points}
 
 
-_ALLOWED_TOP = {"subject", "extension-points", "docs", "evaluation"}
+_ALLOWED_TOP = {"subject", "extension-points", "contract", "caffeine", "docs", "evaluation", "bench", "metadata"}
 _ALLOWED_SUBJECT = {"name", "crate-path", "cdylib-name"}
 _ALLOWED_EP = {"name", "trait", "impl-files", "description"}
+_ALLOWED_CONTRACT = {"protected-files"}
+_ALLOWED_CAFFEINE = {"config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry"}
 _ALLOWED_DOCS = {"context", "insight"}
 _ALLOWED_EVAL = {"fitness-vector"}
+_ALLOWED_BENCH = {"binary-name"}
+_ALLOWED_METADATA = {"binary-name"}
 
 
 def _require(table: dict, key: str, where: str) -> Any:
@@ -95,6 +151,10 @@ def _check_exists(subject_dir: Path, rel_path: Path, where: str) -> None:
         raise SubjectManifestError(f"{where}: file not found at {rel_path}")
 
 
+# Cached: a subject dir is the immutable baseline source for the duration of a
+# run, so its manifest never changes mid-process and reparsing on every hot-path
+# call is wasted work.
+@lru_cache(maxsize=None)
 def load_subject(subject_dir: Path) -> Subject:
     manifest_path = subject_dir / "manifest.toml"
     if not manifest_path.is_file():
@@ -107,15 +167,19 @@ def load_subject(subject_dir: Path) -> Subject:
             f"manifest.toml: invalid TOML: {exception}"
         ) from exception
 
-    for key in ("subject", "extension-points", "docs", "evaluation"):
+    for key in ("subject", "contract", "caffeine", "docs", "evaluation"):
         if key not in data:
             raise SubjectManifestError(f"manifest.toml: missing required table {key!r}")
     _reject_unknown(data, _ALLOWED_TOP, "manifest.toml")
 
     subject_table = data["subject"]
-    ep_tables = data["extension-points"]
+    ep_tables = data.get("extension-points", [])
+    contract_table = data["contract"]
+    caffeine_table = data["caffeine"]
     docs_table = data["docs"]
     eval_table = data["evaluation"]
+    bench_table = data.get("bench")
+    metadata_table = data.get("metadata")
 
     _reject_unknown(subject_table, _ALLOWED_SUBJECT, "subject")
     name = _require(subject_table, "name", "subject")
@@ -133,9 +197,9 @@ def load_subject(subject_dir: Path) -> Subject:
             f"subject.cdylib-name: {cdylib_name!r} does not match Cargo.toml lib name {cargo_lib_name!r}"
         )
 
-    if not isinstance(ep_tables, list) or not ep_tables:
+    if not isinstance(ep_tables, list):
         raise SubjectManifestError(
-            "extension-points: must be a non-empty array of tables"
+            "extension-points: must be an array of tables"
         )
     extension_points = tuple(
         _load_extension_point(ep, i, subject_dir) for i, ep in enumerate(ep_tables)
@@ -148,6 +212,20 @@ def load_subject(subject_dir: Path) -> Subject:
             )
         seen[ep.name] = i
 
+    _reject_unknown(contract_table, _ALLOWED_CONTRACT, "contract")
+    protected_raw = _require(contract_table, "protected-files", "contract")
+    if not isinstance(protected_raw, list):
+        raise SubjectManifestError(
+            f"contract.protected-files: must be a list of strings, got {type(protected_raw).__name__}"
+        )
+    if not protected_raw:
+        raise SubjectManifestError("contract.protected-files: must be non-empty")
+    protected_files: list[Path] = []
+    for raw in protected_raw:
+        path = _check_relative(raw, "contract.protected-files")
+        _check_exists(subject_dir, path, "contract.protected-files")
+        protected_files.append(path)
+
     _reject_unknown(docs_table, _ALLOWED_DOCS, "docs")
     context_raw = _require(docs_table, "context", "docs")
     insight_raw = _require(docs_table, "insight", "docs")
@@ -157,11 +235,16 @@ def load_subject(subject_dir: Path) -> Subject:
     _check_exists(subject_dir, insight, "docs.insight")
     docs = Docs(context=context, insight=insight)
 
+    caffeine = _load_caffeine(caffeine_table)
+
     _reject_unknown(eval_table, _ALLOWED_EVAL, "evaluation")
     fv_raw = _require(eval_table, "fitness-vector", "evaluation")
     fv = _check_relative(fv_raw, "evaluation.fitness-vector")
     _check_exists(subject_dir, fv, "evaluation.fitness-vector")
     evaluation = Evaluation(fitness_vector=fv)
+
+    bench = _load_bench(bench_table)
+    metadata = _load_metadata(metadata_table)
 
     return Subject(
         subject_dir=subject_dir,
@@ -169,9 +252,70 @@ def load_subject(subject_dir: Path) -> Subject:
         crate_path=crate_path,
         cdylib_name=cdylib_name,
         extension_points=extension_points,
+        protected_files=tuple(protected_files),
+        caffeine=caffeine,
         docs=docs,
         evaluation=evaluation,
+        bench=bench,
+        metadata=metadata,
     )
+
+
+def _load_caffeine(table: dict) -> CaffeineConfig:
+    _reject_unknown(table, _ALLOWED_CAFFEINE, "caffeine")
+    config_prefix = _require(table, "config-prefix", "caffeine")
+    policy_spec_name = _require(table, "policy-spec-name", "caffeine")
+    supports_log_path = _require(table, "supports-log-path", "caffeine")
+    for field_name, value in (("config-prefix", config_prefix), ("policy-spec-name", policy_spec_name)):
+        if not isinstance(value, str) or not value:
+            raise SubjectManifestError(f"caffeine.{field_name}: must be a non-empty string")
+    if not isinstance(supports_log_path, bool):
+        raise SubjectManifestError("caffeine.supports-log-path: must be a boolean")
+    policy_key = table.get("policy-key")
+    if policy_key is not None and (not isinstance(policy_key, str) or not policy_key):
+        raise SubjectManifestError("caffeine.policy-key: must be a non-empty string when present")
+    geometry_raw = table.get("geometry", {})
+    if not isinstance(geometry_raw, dict):
+        raise SubjectManifestError(
+            f"caffeine.geometry: must be a table, got {type(geometry_raw).__name__}"
+        )
+    geometry: dict[str, int | list[int]] = {}
+    for key, value in geometry_raw.items():
+        if isinstance(value, list):
+            if not value or any(not isinstance(item, int) or isinstance(item, bool) for item in value):
+                raise SubjectManifestError(f"caffeine.geometry.{key}: list must be non-empty integers")
+            geometry[key] = list(value)
+        elif isinstance(value, int) and not isinstance(value, bool):
+            geometry[key] = value
+        else:
+            raise SubjectManifestError(f"caffeine.geometry.{key}: must be an integer or a list of integers")
+    return CaffeineConfig(
+        config_prefix=config_prefix,
+        policy_spec_name=policy_spec_name,
+        geometry=geometry,
+        policy_key=policy_key,
+        supports_log_path=supports_log_path,
+    )
+
+
+def _load_bench(table: dict | None) -> Bench | None:
+    if table is None:
+        return None
+    _reject_unknown(table, _ALLOWED_BENCH, "bench")
+    binary_name = _require(table, "binary-name", "bench")
+    if not isinstance(binary_name, str) or not binary_name:
+        raise SubjectManifestError("bench.binary-name: must be a non-empty string")
+    return Bench(binary_name=binary_name)
+
+
+def _load_metadata(table: dict | None) -> Metadata | None:
+    if table is None:
+        return None
+    _reject_unknown(table, _ALLOWED_METADATA, "metadata")
+    binary_name = _require(table, "binary-name", "metadata")
+    if not isinstance(binary_name, str) or not binary_name:
+        raise SubjectManifestError("metadata.binary-name: must be a non-empty string")
+    return Metadata(binary_name=binary_name)
 
 
 def _load_extension_point(ep: dict, index: int, subject_dir: Path) -> ExtensionPoint:

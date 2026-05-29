@@ -42,7 +42,7 @@ def _write_cold_start_task_md(hypotheses_num: int, layout: Layout) -> None:
         f"Every hypothesis in this cycle MUST cite `baseline` as its parent variant. "
         f"No other parent variant is valid in cycle {COLD_START_CYCLE}.\n\n"
         f"## Read for context\n\n"
-        f"- {layout.sources.dash_src} — subject Rust source. The code your hypotheses propose to overlay.\n"
+        f"- {layout.sources.subject_src} — subject Rust source. The code your hypotheses propose to overlay.\n"
         f"- {layout.sources.subject_manifest} — subject manifest (extension points, baseline insight, fitness vector path).\n"
         f"- {baseline_layout.fitness_vector_json} — baseline's measured fitness vector. Numeric anchor your hypotheses target dimensions of.\n"
         f"- {baseline_layout.insight_md} — short prose describing what the baseline does.\n"
@@ -117,7 +117,7 @@ def write_hypotheses(
     adapter.run(
         agent_name=AGENT_NAME,
         workspace=hypotheses_dir,
-        readable_roots=[layout.outputs_root, layout.sources.dash_src, layout.sources.subject_dir],
+        readable_roots=[layout.outputs_root, layout.sources.subject_src, layout.sources.subject_dir],
         allow_edits=True,
     )
 

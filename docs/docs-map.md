@@ -25,23 +25,29 @@ Index of reference docs. Paths are relative to the repo root. Read on demand; do
 
 ### [CONTEXT.md](../CONTEXT.md)
 
+Framework (evolve) vocabulary — subject-agnostic. Per-subject terms live in each subject's own glossary (below).
+
 * Language
-  * Cache structure
-  * Strategies and variants
-  * Item lifecycle and movement
-  * Domain verbs (API level)
-  * Policy vocabulary
-* Relationships
-* Framework vocabulary (evolve)
+  * Roles and subjects
+  * Cycle and cohort
+  * Action space and extension points
+  * Correctness gates
+  * Insights and ledger
+  * Evaluation
+  * Architectural principles
 * Flagged ambiguities
 
-**Read when** encountering unfamiliar domain terms or before any cache-structure change.
+**Read when** encountering unfamiliar framework terms or before changing cycles, gates, scopes, manifests, or fitness.
 
-### [inputs/subjects/dash/CONTEXT.md](../inputs/subjects/dash/CONTEXT.md)
+### Subject glossaries — `inputs/subjects/<name>/CONTEXT.md`
 
-Dash subject-specific domain glossary.
+Each Subject carries its own domain glossary:
 
-**Read when** working on the dash crate.
+* [dash](../inputs/subjects/dash/CONTEXT.md) — multi-segment associative cache with bucket migration.
+* [associative_cache](../inputs/subjects/associative_cache/CONTEXT.md) — N-way associative baseline.
+* [lru_cache](../inputs/subjects/lru_cache/CONTEXT.md) — classic LRU baseline.
+
+**Read when** working on a specific subject crate.
 
 ### [docs/research-proposal.tex](research-proposal.tex)
 
@@ -86,6 +92,13 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 * Consequences
 
 **Read when** working on variant storage, the build harness, or how Variant edits are materialised.
+
+### [0007 — Standalone subject crates](adr/0007-standalone-subject-crates.md)
+
+* Considered options
+* Consequences
+
+**Read when** adding a Subject, touching `caffeine_runner.py`/manifest wiring, or wondering why `src/shared/` is duplicated per subject.
 
 ## Conventions
 

@@ -22,17 +22,21 @@ from evolve.fitness.caffeine_simulator import (
 from evolve.fitness.plugins import hit_rate
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout, SourcesLayout, VariantDir
+from evolve.subject import load_subject
+
+from _support import configured_subject
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures"
+SUBJECT = configured_subject(REPO_ROOT)
 
 VARIANT = CycleVariant(CycleId(1), VariantId(1))
 
 
 def _stage_good(tmp_path: Path) -> tuple[Layout, CycleVariant]:
-    layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out")
+    layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out", subject=SUBJECT)
     layout.repo_root.mkdir(parents=True, exist_ok=True)
-    real = SourcesLayout(root=REPO_ROOT)
+    real = SourcesLayout(root=REPO_ROOT, subject=SUBJECT)
     layout.sources.subject_dir.parent.mkdir(parents=True, exist_ok=True)
     layout.sources.subject_dir.symlink_to(real.subject_dir)
     layout.sources.framework_crate_dir.symlink_to(real.root / "framework-rs")
@@ -72,5 +76,6 @@ def test_hit_rate_caffeine_end_to_end(tmp_path):
     assert caffeine_out.hit_rate_csv(HARDCODED_SIZE).is_file()
     assert caffeine_out.gradle_stdout_log.is_file()
     assert caffeine_out.gradle_stderr_log.is_file()
-    rust_logs = list(caffeine_out.rust_logs_dir.glob("dash_*.log"))
+    cdylib_name = load_subject(layout.sources.subject_dir).cdylib_name
+    rust_logs = list(caffeine_out.rust_logs_dir.glob(f"{cdylib_name}_*.log"))
     assert rust_logs, f"no rust JNI log under {caffeine_out.rust_logs_dir}"

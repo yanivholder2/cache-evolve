@@ -1,0 +1,40 @@
+[subject]
+name = "associative_cache"
+crate-path = "."
+cdylib-name = "associative_cache"
+
+[[extension-points]]
+name = "eviction-policy"
+trait = "associative_cache::shared::eviction_policy::EvictionPolicy"
+impl-files = ["src/shared/eviction_policy.rs"]
+description = "Algorithm choosing which item to evict from a bucket"
+
+[[extension-points]]
+name = "bucket"
+trait = "associative_cache::shared::traits::Bucket"
+impl-files = ["src/associative_cache/associative_cache_bucket.rs"]
+description = "Container for items within the cache"
+
+[contract]
+protected-files = ["src/associative_cache/associative_cache_jni.rs", "src/factory.rs"]
+
+[caffeine]
+config-prefix = "caffeine.simulator.associativeCache"
+policy-spec-name = "associative.AssociativeCacheRust"
+policy-key = "policy"
+supports-log-path = false
+
+# numOfBuckets is read Java-side via getDoubleList, so it must be a list even
+# though we sweep a single value. See AssociativeCacheRustPolicy.numOfBuckets().
+[caffeine.geometry]
+numOfBuckets = [2]
+
+[metadata]
+binary-name = "evolve-metadata-size"
+
+[docs]
+context = "CONTEXT.md"
+insight = "baseline/insight.md"
+
+[evaluation]
+fitness-vector = "baseline/eval/fitness-vector.json"

@@ -6,7 +6,6 @@
       "Bash(gradlew*)",
       "Bash(pytest*)",
       "Bash(.venv/bin/python -m pytest*)",
-      "Skill(sim)",
       "Skill(full-validation)"
     ],
     "additionalDirectories": [

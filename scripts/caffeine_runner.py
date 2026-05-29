@@ -1,7 +1,9 @@
 """Caffeine simulator invocation core.
 
-Library + CLI for invoking `gradlew simulator:simulate` against the
-consolidated Dash policy (`dash`). Owns invocation only; parsing is each
+Library + CLI for invoking `gradlew simulator:simulate` against a subject's
+Caffeine policy. Subject-agnostic: the per-subject wiring (config prefix,
+policy spec name, geometry, policy-list key) is passed in by the caller, which
+reads it from the subject manifest. Owns invocation only; parsing is each
 caller's concern.
 
 See docs/caffeine-simulator.md for the full invocation reference.
@@ -18,12 +20,6 @@ from pathlib import Path
 
 
 DEFAULT_CAFFEINE_DIR = Path.home() / "projects" / "caffeine"
-
-# Geometry defaults (used when caller does not override). Match the
-# dash block in application.conf: 1 × (2+6) × 64 = 512.
-DEFAULT_NUM_OF_NORMAL_BUCKETS = 2
-DEFAULT_NUM_OF_STASH_BUCKETS = 6
-DEFAULT_BUCKET_SIZE = 64
 
 STDERR_TAIL_LINES = 40
 DEFAULT_TIMEOUT_S = 600
@@ -42,41 +38,30 @@ class RunResult:
     stderr: str
 
 
-@dataclass(frozen=True)
-class TargetSpec:
-    """Per-target wiring: cdylib name, policy class, config-key prefix."""
-
-    name: str
-    cdylib_basename: str
-    config_prefix: str
-    policy_key: str          # config key holding the eviction-policy list (e.g. "evictionPolicies")
-    policy_spec_name: str    # value for caffeine.simulator.policies.0
-
-
-TARGETS: dict[str, TargetSpec] = {
-    "dash": TargetSpec(
-        name="dash",
-        cdylib_basename="dash",
-        config_prefix="caffeine.simulator.dash",
-        policy_key="evictionPolicies",
-        policy_spec_name="dash.DashRust",
-    ),
-}
-
-
 @dataclass
 class Invocation:
-    """Single gradlew simulator:simulate invocation."""
+    """Single gradlew simulator:simulate invocation.
 
-    target: TargetSpec
+    The `config_prefix`, `policy_spec_name`, `geometry`, `policy_key`, and
+    `supports_log_path` fields are the subject's Caffeine wiring (read from its
+    manifest by the caller). `geometry` maps each config-key suffix (under
+    `config_prefix`) to its value; an empty map means the subject is sized
+    solely by `--maximumSize`. A scalar value is emitted as `key=value`; a list
+    value is emitted in indexed `key.0=…` form, matching a Java `get*List` read.
+    `policy_key` is the config key holding the eviction-policy list, or None
+    when the subject declares no policy list.
+    """
+
     library_path: Path
     trace: str
     sizes: list[int]
     policies: list[str]
     output_dir: Path
-    num_of_normal_buckets: int = DEFAULT_NUM_OF_NORMAL_BUCKETS
-    num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS
-    bucket_size: int = DEFAULT_BUCKET_SIZE
+    config_prefix: str
+    policy_spec_name: str
+    geometry: dict[str, int | list[int]]
+    policy_key: str | None
+    supports_log_path: bool
     debug_mode: int = 0
     log_path: Path | None = None
     title: str | None = None
@@ -93,7 +78,7 @@ class Invocation:
             f"-Djava.library.path={self.library_path}",
             *self.extra_jvm_args,
         ))
-        prefix = self.target.config_prefix
+        prefix = self.config_prefix
         cmd: list[str] = [
             str(self.caffeine_dir / gradlew),
             "-p", str(self.caffeine_dir),
@@ -104,15 +89,19 @@ class Invocation:
             f"-PjvmArgs={jvm_args}",
             "-Dcaffeine.simulator.trace.source=files",
             f"-Dcaffeine.simulator.files.paths.0={self.trace}",
-            f"-Dcaffeine.simulator.policies.0={self.target.policy_spec_name}",
-            f"-D{prefix}.numOfNormalBuckets={self.num_of_normal_buckets}",
-            f"-D{prefix}.numOfStashBuckets={self.num_of_stash_buckets}",
-            f"-D{prefix}.bucketSize={self.bucket_size}",
-            f"-D{prefix}.debugMode={self.debug_mode}",
+            f"-Dcaffeine.simulator.policies.0={self.policy_spec_name}",
         ]
-        for i, policy in enumerate(self.policies):
-            cmd.append(f"-D{prefix}.{self.target.policy_key}.{i}={policy}")
-        if self.log_path is not None:
+        for config_key, value in self.geometry.items():
+            if isinstance(value, list):
+                for i, item in enumerate(value):
+                    cmd.append(f"-D{prefix}.{config_key}.{i}={item}")
+            else:
+                cmd.append(f"-D{prefix}.{config_key}={value}")
+        cmd.append(f"-D{prefix}.debugMode={self.debug_mode}")
+        if self.policy_key is not None:
+            for i, policy in enumerate(self.policies):
+                cmd.append(f"-D{prefix}.{self.policy_key}.{i}={policy}")
+        if self.supports_log_path and self.log_path is not None:
             cmd.append(f"-D{prefix}.logPath={self.log_path}")
         return cmd
 
@@ -154,16 +143,17 @@ def _invoke(invocation: Invocation, *, timeout_s: int) -> RunResult:
 
 def run(
     *,
-    target: str,
     library_path: Path,
     trace: str,
     size: int,
     policies: list[str],
     timeout_s: int,
     output_dir: Path,
-    num_of_normal_buckets: int = DEFAULT_NUM_OF_NORMAL_BUCKETS,
-    num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS,
-    bucket_size: int = DEFAULT_BUCKET_SIZE,
+    config_prefix: str,
+    policy_spec_name: str,
+    geometry: dict[str, int | list[int]],
+    policy_key: str | None,
+    supports_log_path: bool,
     debug_mode: int = 0,
     log_path: Path | None = None,
     caffeine_dir: Path = DEFAULT_CAFFEINE_DIR,
@@ -171,15 +161,16 @@ def run(
     """Single trace × single size."""
 
     return simulate(
-        target=target,
         library_path=library_path,
         trace=trace,
         sizes=[size],
         policies=policies,
         timeout_s=timeout_s,
-        num_of_normal_buckets=num_of_normal_buckets,
-        num_of_stash_buckets=num_of_stash_buckets,
-        bucket_size=bucket_size,
+        config_prefix=config_prefix,
+        policy_spec_name=policy_spec_name,
+        geometry=geometry,
+        policy_key=policy_key,
+        supports_log_path=supports_log_path,
         debug_mode=debug_mode,
         log_path=log_path,
         output_dir=output_dir,
@@ -189,37 +180,37 @@ def run(
 
 def simulate(
     *,
-    target: str,
     library_path: Path,
     trace: str,
     sizes: list[int],
     policies: list[str],
     timeout_s: int,
     output_dir: Path,
-    num_of_normal_buckets: int = DEFAULT_NUM_OF_NORMAL_BUCKETS,
-    num_of_stash_buckets: int = DEFAULT_NUM_OF_STASH_BUCKETS,
-    bucket_size: int = DEFAULT_BUCKET_SIZE,
+    config_prefix: str,
+    policy_spec_name: str,
+    geometry: dict[str, int | list[int]],
+    policy_key: str | None,
+    supports_log_path: bool,
     debug_mode: int = 0,
     log_path: Path | None = None,
     caffeine_dir: Path = DEFAULT_CAFFEINE_DIR,
 ) -> RunResult:
     """Single trace × multiple sizes."""
 
-    if target not in TARGETS:
-        raise CaffeineError(f"unknown target {target!r}; expected one of {sorted(TARGETS)}")
     if not sizes:
         raise CaffeineError("simulate(): sizes must be non-empty")
     if not policies:
         raise CaffeineError("simulate(): policies must be non-empty")
     invocation = Invocation(
-        target=TARGETS[target],
         library_path=library_path,
         trace=trace,
         sizes=list(sizes),
         policies=list(policies),
-        num_of_normal_buckets=num_of_normal_buckets,
-        num_of_stash_buckets=num_of_stash_buckets,
-        bucket_size=bucket_size,
+        config_prefix=config_prefix,
+        policy_spec_name=policy_spec_name,
+        geometry=dict(geometry),
+        policy_key=policy_key,
+        supports_log_path=supports_log_path,
         debug_mode=debug_mode,
         log_path=log_path,
         output_dir=output_dir,
@@ -234,20 +225,18 @@ def simulate(
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="caffeine_runner.py",
-        description="Invoke the Caffeine simulator with the Dash / DashVariant policy.",
+        description="Invoke the Caffeine simulator against a subject's policy.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
     def add_common(p: argparse.ArgumentParser) -> None:
-        p.add_argument("--target", choices=sorted(TARGETS), default="dash")
+        p.add_argument("--subject-dir", type=Path, required=True,
+                       help="Subject directory containing manifest.toml (source of the Caffeine wiring).")
         p.add_argument("--library-path", type=Path, required=True,
-                       help="Dir containing the cdylib (dash.dll / libdash.so / libdash.dylib).")
+                       help="Dir containing the subject's cdylib.")
         p.add_argument("--trace", required=True, help="<format>:<path> (e.g. lirs:multi1.trace.gz)")
         p.add_argument("--policies", required=True,
                        help="Comma-separated eviction policies (e.g. classiclru,lfu).")
-        p.add_argument("--normal-buckets", type=int, default=DEFAULT_NUM_OF_NORMAL_BUCKETS)
-        p.add_argument("--stash-buckets", type=int, default=DEFAULT_NUM_OF_STASH_BUCKETS)
-        p.add_argument("--bucket-size", type=int, default=DEFAULT_BUCKET_SIZE)
         p.add_argument("--debug-mode", type=int, default=0)
         p.add_argument("--log-path", type=Path, default=None,
                        help="Override the cdylib's rust-logs dir.")
@@ -268,22 +257,28 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _load_caffeine_kwargs(subject_dir: Path) -> dict:
+    """Read the subject manifest's Caffeine wiring as `simulate()` kwargs."""
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    from evolve.subject import load_subject  # noqa: E402
+
+    return load_subject(subject_dir).caffeine.as_runner_kwargs()
+
+
 def _main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     policies = [p.strip() for p in args.policies.split(",") if p.strip()]
     common_kwargs = dict(
-        target=args.target,
         library_path=args.library_path,
         trace=args.trace,
         policies=policies,
         timeout_s=args.timeout_s,
-        num_of_normal_buckets=args.normal_buckets,
-        num_of_stash_buckets=args.stash_buckets,
-        bucket_size=args.bucket_size,
         debug_mode=args.debug_mode,
         log_path=args.log_path,
         output_dir=args.output_dir,
         caffeine_dir=args.caffeine_dir,
+        **_load_caffeine_kwargs(args.subject_dir),
     )
     try:
         if args.command == "run":

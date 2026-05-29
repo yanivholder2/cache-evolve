@@ -40,6 +40,7 @@ class FrameworkConfig:
     digest_cycles: int
     max_workers: int
     authoring_scope: AuthoringScope
+    subject: str
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,7 @@ def load_configs(
     simulator_timeout_s: int | None = None,
     max_workers: int | None = None,
     authoring_scope: AuthoringScope | str | None = None,
+    subject: str | None = None,
 ) -> Configs:
     """Build `Configs` from `<repo_root>/config.toml`, with optional overrides
     taking precedence per field. Raises `ConfigError` for missing or invalid
@@ -87,6 +89,7 @@ def load_configs(
         digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
         max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
         authoring_scope=_resolve_authoring_scope(authoring_scope, framework_defaults),
+        subject=_resolve_subject(subject, framework_defaults, repo_root),
     )
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),
@@ -139,6 +142,23 @@ def _resolve_authoring_scope(override: AuthoringScope | str | None, defaults: di
             f"--authoring-scope must be one of {[scope.value for scope in AuthoringScope]}, got: {value!r}"
         )
     return AuthoringScope(value)
+
+
+def _resolve_subject(override: str | None, defaults: dict, repo_root: Path) -> str:
+    value = str(_resolve(override, defaults, "subject", "--subject", "framework"))
+    if not value:
+        raise ConfigError("--subject must be a non-empty string")
+    subjects_dir = repo_root / "inputs" / "subjects"
+    available = (
+        sorted(p.name for p in subjects_dir.iterdir() if (p / "manifest.toml").is_file())
+        if subjects_dir.is_dir()
+        else []
+    )
+    if value not in available:
+        raise ConfigError(
+            f"--subject {value!r} not found under {subjects_dir}; available subjects: {available}"
+        )
+    return value
 
 
 def _resolve_log_level(override: str | None, defaults: dict) -> str:

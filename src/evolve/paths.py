@@ -14,20 +14,21 @@ BASELINE_STR = "baseline"
 
 log = logging.getLogger("paths")
 
-_CDYLIB_FILENAMES = {
-    "linux": "libdash.so",
-    "win32": "dash.dll",
-    "darwin": "libdash.dylib",
+_CDYLIB_FILENAME_FORMATS = {
+    "linux": "lib{name}.so",
+    "win32": "{name}.dll",
+    "darwin": "lib{name}.dylib",
 }
 
 
-def cdylib_filename(platform: str) -> str:
+def cdylib_filename(platform: str, cdylib_name: str) -> str:
     try:
-        return _CDYLIB_FILENAMES[platform]
+        template = _CDYLIB_FILENAME_FORMATS[platform]
     except KeyError:
         raise RuntimeError(
-            f"unsupported platform {platform!r}; supported: {sorted(_CDYLIB_FILENAMES)}"
+            f"unsupported platform {platform!r}; supported: {sorted(_CDYLIB_FILENAME_FORMATS)}"
         ) from None
+    return template.format(name=cdylib_name)
 
 
 @dataclass(frozen=True)
@@ -110,6 +111,7 @@ class CargoWorkspace:
     they no longer need the artifacts."""
 
     root: Path
+    cdylib_name: str
 
     @property
     def cargo_toml(self) -> Path:
@@ -117,7 +119,7 @@ class CargoWorkspace:
 
     @property
     def cdylib(self) -> Path:
-        return self.root / "target" / "release" / cdylib_filename(sys.platform)
+        return self.root / "target" / "release" / cdylib_filename(sys.platform, self.cdylib_name)
 
 
 @dataclass(frozen=True)
@@ -180,9 +182,16 @@ class CycleLayout:
 
 @dataclass(frozen=True)
 class SourcesLayout:
-    """Paths in the read-only evolve sources subtree."""
+    """Paths in the read-only evolve sources subtree.
+
+    `subject` may be None for callers that need only subject-independent paths
+    (config.toml, agent prompts, the framework crate). Subject-scoped paths
+    (`subject_dir` and everything derived from it) raise if `subject` is unset,
+    so a missing subject fails loudly instead of silently defaulting.
+    """
 
     root: Path
+    subject: str | None = None
 
     @property
     def config_toml(self) -> Path:
@@ -190,7 +199,9 @@ class SourcesLayout:
 
     @property
     def subject_dir(self) -> Path:
-        return self.root / "inputs" / "subjects" / "dash"
+        if self.subject is None:
+            raise ValueError("SourcesLayout.subject is not set; this path requires a selected subject")
+        return self.root / "inputs" / "subjects" / self.subject
 
     @property
     def agents_dir(self) -> Path:
@@ -211,7 +222,7 @@ class SourcesLayout:
         return self.subject_dir / "bench"
 
     @property
-    def dash_src(self) -> Path:
+    def subject_src(self) -> Path:
         return self.subject_dir / "src"
 
     @property
@@ -274,10 +285,11 @@ class Layout:
 
     repo_root: Path
     outputs_root: Path
+    subject: str | None = None
 
     @property
     def sources(self) -> SourcesLayout:
-        return SourcesLayout(root=self.repo_root)
+        return SourcesLayout(root=self.repo_root, subject=self.subject)
 
     @property
     def outputs(self) -> OutputsLayout:

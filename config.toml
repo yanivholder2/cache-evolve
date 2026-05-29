@@ -2,6 +2,9 @@
 # Flags on the `evolve` CLI override these values.
 
 [framework]
+# Subject under evolution (--subject). Names a dir under inputs/subjects/.
+subject = "dash"
+
 # Number of cycles to run sequentially (--cycles).
 cycles = 1
 

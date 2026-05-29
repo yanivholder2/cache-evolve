@@ -1,0 +1,23 @@
+[subject]
+name = "lru_cache"
+crate-path = "."
+cdylib-name = "lru_cache"
+
+# No extension points: LruCache's only knob is capacity. Variants operate in
+# Full-autonomy scope only (they may rewrite the impl, never the JNI ABI).
+
+[contract]
+protected-files = ["src/lru_cache/lru_cache_jni.rs"]
+
+# Sized solely by --maximumSize, so no tunable geometry and no policy list.
+[caffeine]
+config-prefix = "caffeine.simulator.lruRust"
+policy-spec-name = "lrurust.LruRust"
+supports-log-path = false
+
+[docs]
+context = "CONTEXT.md"
+insight = "baseline/insight.md"
+
+[evaluation]
+fitness-vector = "baseline/eval/fitness-vector.json"

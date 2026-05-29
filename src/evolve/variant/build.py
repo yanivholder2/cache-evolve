@@ -14,6 +14,7 @@ from tempfile import mkdtemp
 
 from evolve._io import append_utf8, read_utf8, write_utf8
 from evolve.paths import Layout, Variant, CargoWorkspace
+from evolve.subject import load_subject
 
 log = logging.getLogger("build")
 
@@ -68,6 +69,7 @@ def prepare_variant_workspace(
 
     variant_dir = variant.resolve(layout)
     subject_dir = layout.sources.subject_dir
+    subject = load_subject(subject_dir)
     framework_crate_dir = layout.sources.framework_crate_dir
 
     def _ignore_build_cache(directory: str, names: list[str]) -> set[str]:
@@ -95,7 +97,7 @@ def prepare_variant_workspace(
         raise
 
     log.debug("workspace=%s subject=%s repo_root=%s", root, subject_dir, repo_root)
-    return CargoWorkspace(root=root)
+    return CargoWorkspace(root=root, cdylib_name=subject.cdylib_name)
 
 
 def _append_rejection(rejection_md: Path, variant: Variant, cargo_output: str) -> None:

@@ -16,6 +16,8 @@ from evolve.cycle.cross_cycle_insight_writer import (
 from evolve.identifiers import CycleId
 from evolve.paths import Layout
 
+from _support import STUB_SUBJECT_NAME
+
 
 OUTPUT_BODY = "# Cross-Cycle Insights\n\nstub\n"
 
@@ -24,7 +26,7 @@ def _layout(tmp_path: Path) -> Layout:
     evolve_root = tmp_path / "evolve"
     outputs_root = evolve_root / "outputs"
     outputs_root.mkdir(parents=True)
-    return Layout(repo_root=evolve_root, outputs_root=outputs_root)
+    return Layout(repo_root=evolve_root, outputs_root=outputs_root, subject=STUB_SUBJECT_NAME)
 
 
 def _seed_ledger(ledger: Path, rows: list[tuple[str, str]]) -> None:

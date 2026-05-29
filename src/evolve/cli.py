@@ -35,6 +35,7 @@ from evolve.hypothesis.writer import write_hypotheses
 from evolve.identifiers import CYCLE_ID_WIDTH, CycleId, HypothesisId, VariantId
 from evolve._io import read_utf8
 from evolve.paths import CycleLayout, CycleVariant, CycleVariantDir, Layout
+from evolve.subject import Subject, load_subject
 from evolve.variant.gate_check import run_gates
 from evolve.variant import implementer as _implementer
 from evolve.variant.variant_insight_writer import write_insight
@@ -46,6 +47,15 @@ def die(msg: str) -> NoReturn:
     log.error(msg)
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+def _require_scope_supported(subject: Subject, authoring_scope: AuthoringScope) -> None:
+    """A subject with no extension points cannot be evolved under extension-points scope."""
+    if authoring_scope is AuthoringScope.EXTENSION_POINTS and not subject.extension_points:
+        die(
+            f"subject {subject.name!r} declares no extension points, so authoring scope "
+            f"'extension-points' would reject every variant; rerun with --authoring-scope full-autonomy"
+        )
 
 
 @contextmanager
@@ -334,6 +344,10 @@ def run_cycle(
 ) -> None:
     """Run a single evolve cycle end-to-end."""
 
+    _require_scope_supported(
+        load_subject(layout.sources.subject_dir), cfg.framework.authoring_scope
+    )
+
     cohort_size = cfg.framework.cohort_size
     timings: dict[str, float] = {}
     cycle_started = time.monotonic()
@@ -419,6 +433,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         prog="evolve",
         description="Run one or more evolve research cycles. Flags override config.toml.",
     )
+    parser.add_argument("--subject", type=str, default=None,
+                        help="Subject under evolution (dir under inputs/subjects/).")
     parser.add_argument("--cycles", type=int, default=None,
                         help="Number of cycles to run sequentially.")
     parser.add_argument("--cohort-size", type=int, default=None,
@@ -455,12 +471,13 @@ def main(argv: list[str] | None = None) -> None:
             simulator_timeout_s=args.simulator_timeout_s,
             max_workers=args.max_workers,
             authoring_scope=args.authoring_scope,
+            subject=args.subject,
         )
     except ConfigError as exception:
         die(str(exception))
 
     adapter = ADAPTER_REGISTRY[cfg.framework.ai_agent_tool]()
-    layout = Layout(repo_root=repo_root, outputs_root=cfg.framework.outputs_root)
+    layout = Layout(repo_root=repo_root, outputs_root=cfg.framework.outputs_root, subject=cfg.framework.subject)
 
     _log.setup(None, level=cfg.framework.log_level)
     log.debug("repo_root=%s", repo_root)

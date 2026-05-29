@@ -124,6 +124,20 @@ where
 	}
 }
 
+impl<K, V> framework::Cache<K, V> for LruCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	fn put(&mut self, key: K, value: V) {
+		LruCache::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		LruCache::get(self, key)
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;

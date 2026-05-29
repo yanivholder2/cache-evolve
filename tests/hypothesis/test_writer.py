@@ -17,12 +17,18 @@ from evolve.identifiers import CycleId, HypothesisId
 from evolve.paths import Layout, SourcesLayout
 
 from _stubs import StubLLMAdapter
+from _support import configured_subject
+
+REPO_SRC = Path(__file__).parent.parent.parent
+# `_copy_real_evolve` runs a real cycle against the configured subject; the
+# non-slow tests only need a stable subject name for the task.md paths they
+# emit (write_hypotheses never reads the subject tree), so the same value
+# serves both.
+SUBJECT = configured_subject(REPO_SRC)
 
 
 def _layout(evolve: Path) -> Layout:
-    return Layout(repo_root=evolve, outputs_root=evolve / "outputs")
-
-REPO_SRC = Path(__file__).parent.parent.parent
+    return Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=SUBJECT)
 
 
 def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard: bool = False) -> Path:
@@ -146,7 +152,7 @@ def test_hypotheses_writer_passes_outputs_and_subject_as_readable_roots(tmp_path
     body = read_utf8(capture)
     layout = _layout(evolve)
     assert str(layout.outputs_root) in body
-    assert str(layout.sources.dash_src) in body
+    assert str(layout.sources.subject_src) in body
     assert str(layout.sources.subject_dir) in body
 
 

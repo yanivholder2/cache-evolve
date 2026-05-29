@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pytest
@@ -12,19 +11,16 @@ from evolve.identifiers import CycleId, HypothesisId, VariantId
 from evolve.paths import Layout
 from evolve.variant.variant_insight_writer import AGENT_NAME, write_insight
 
+from _support import STUB_SUBJECT_NAME
+
 REPO_SRC = Path(__file__).parent.parent.parent
 
 
 def _setup_evolve(tmp_path: Path) -> Path:
+    # write_insight only emits subject-scoped baseline paths into task.md (it
+    # never reads the subject tree), so a bare outputs dir plus a stub subject
+    # name is enough.
     dst = tmp_path / "repo"
-    shutil.copytree(
-        REPO_SRC,
-        dst,
-        ignore=shutil.ignore_patterns(
-            ".venv", ".git", "target", "outputs", "traces",
-            "__pycache__", "*.pyc",
-        ),
-    )
     (dst / "outputs" / "cycles").mkdir(parents=True)
     return dst
 
@@ -67,7 +63,7 @@ class _SilentAdapter:
 
 def test_task_md_lists_current_parent_and_hypothesis_paths(tmp_path):
     evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=STUB_SUBJECT_NAME)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
     variant_dir.root.mkdir(parents=True)
@@ -93,7 +89,7 @@ def test_task_md_lists_current_parent_and_hypothesis_paths(tmp_path):
 
 def test_readable_roots_matches_spec(tmp_path):
     evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=STUB_SUBJECT_NAME)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
     variant_dir.root.mkdir(parents=True)
@@ -116,7 +112,7 @@ def test_readable_roots_matches_spec(tmp_path):
 
 def test_missing_insight_md_raises(tmp_path):
     evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=STUB_SUBJECT_NAME)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
     variant_dir.root.mkdir(parents=True)
@@ -130,7 +126,7 @@ def test_missing_insight_md_raises(tmp_path):
 
 def test_past_cycle_variant_parent_resolves(tmp_path):
     evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=STUB_SUBJECT_NAME)
 
     past_variant_dir = layout.outputs.cycle(CycleId(1)).variant(VariantId(1))
     past_variant_dir.root.mkdir(parents=True)
@@ -155,7 +151,7 @@ def test_past_cycle_variant_parent_resolves(tmp_path):
 
 def test_success_path_returns_none(tmp_path):
     evolve = _setup_evolve(tmp_path)
-    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs")
+    layout = Layout(repo_root=evolve, outputs_root=evolve / "outputs", subject=STUB_SUBJECT_NAME)
     cycle_layout = layout.outputs.cycle(CycleId(1))
     variant_dir = cycle_layout.variant(VariantId(1))
     variant_dir.root.mkdir(parents=True)

@@ -1,11 +1,20 @@
+//! JNI surface for the Caffeine `AssociativeCacheRustPolicy`.
+//!
+//! Holds a `Box<dyn framework::Cache<i64, i64>>` constructed via the
+//! subject-owned `factory::make_cache`. Variants overlay `src/factory.rs` to
+//! substitute their cache; the JNI symbols stay the same.
+
 use super::associative_cache_settings::AssociativeCacheSettings;
-use super::AssociativeCache;
+use crate::factory::make_cache;
 use crate::shared::logging;
 
 use jni::{objects::JClass, sys::jlong, JNIEnv};
 use log::{info, trace};
 
-type AssociativeCacheTy = AssociativeCache<i64, i64>;
+type CacheTy = Box<dyn framework::Cache<i64, i64>>;
+
+const NULL_CACHE_PTR: jlong = 0;
+const MISS_SENTINEL: jlong = -1;
 
 #[no_mangle]
 pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_associative_AssociativeCacheRustPolicy_associativeInitCache(
@@ -22,13 +31,11 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 		eviction_policy,
 	) else {
 		eprintln!("ERROR: assoc_jni.init invalid args: num_of_buckets={num_of_buckets}, bucket_size={bucket_size}, eviction_policy={eviction_policy}");
-		return 0;
+		return NULL_CACHE_PTR;
 	};
 
 	logging::init_file_logger("associative", debug_mode as usize);
-	let Some(cache) = AssociativeCacheTy::try_new(settings) else {
-		return 0;
-	};
+	let cache: CacheTy = make_cache(&settings);
 	let cache_ptr = Box::into_raw(Box::new(cache)) as jlong;
 	info!("associativeInitCache: ptr={cache_ptr} settings={settings:?}");
 	cache_ptr
@@ -41,15 +48,15 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	cache_ptr: jlong,
 	key: jlong,
 ) -> jlong {
-	if cache_ptr == 0 {
-		return -1;
+	if cache_ptr == NULL_CACHE_PTR {
+		return MISS_SENTINEL;
 	}
-	let cache = unsafe { &mut *(cache_ptr as *mut AssociativeCacheTy) };
-	let res = cache.get_and_update_item(&key);
-	match res {
+	// SAFETY: Java caller guarantees single-threaded access per cache pointer.
+	let cache = unsafe { &mut *(cache_ptr as *mut CacheTy) };
+	match cache.get(&key) {
 		None => {
 			trace!("associativeGetFromCacheIfPresent: ptr={cache_ptr} key={key} miss");
-			-1
+			MISS_SENTINEL
 		}
 		Some(value) => {
 			trace!("associativeGetFromCacheIfPresent: ptr={cache_ptr} key={key} hit");
@@ -66,10 +73,11 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	key: jlong,
 	value: jlong,
 ) {
-	if cache_ptr == 0 {
+	if cache_ptr == NULL_CACHE_PTR {
 		return;
 	}
-	let cache = unsafe { &mut *(cache_ptr as *mut AssociativeCacheTy) };
+	// SAFETY: Java caller guarantees single-threaded access per cache pointer.
+	let cache = unsafe { &mut *(cache_ptr as *mut CacheTy) };
 	cache.put(key, value);
 	trace!("associativePutToCache: ptr={cache_ptr} key={key} value={value}");
 }
@@ -80,9 +88,10 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 	_class: JClass,
 	cache_ptr: jlong,
 ) {
-	if cache_ptr == 0 {
+	if cache_ptr == NULL_CACHE_PTR {
 		return;
 	}
 	info!("associativeDropCache: ptr={cache_ptr}");
-	unsafe { drop(Box::from_raw(cache_ptr as *mut AssociativeCacheTy)) };
+	// SAFETY: Java caller calls dropCache exactly once per pointer.
+	unsafe { drop(Box::from_raw(cache_ptr as *mut CacheTy)) };
 }
