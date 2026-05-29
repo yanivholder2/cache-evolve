@@ -22,7 +22,7 @@ class SubjectManifestError(ValueError):
 @dataclass(frozen=True)
 class ExtensionPoint:
     name: str
-    trait: str
+    contract: str
     impl_files: tuple[Path, ...]
     description: str
 
@@ -110,7 +110,7 @@ class Subject:
 
 _ALLOWED_TOP = {"subject", "extension-points", "contract", "caffeine", "docs", "evaluation", "bench", "metadata"}
 _ALLOWED_SUBJECT = {"name", "crate-path", "cdylib-name"}
-_ALLOWED_EP = {"name", "trait", "impl-files", "description"}
+_ALLOWED_EP = {"name", "contract", "impl-files", "description"}
 _ALLOWED_CONTRACT = {"protected-files"}
 _ALLOWED_CAFFEINE = {"config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry"}
 _ALLOWED_DOCS = {"context", "insight"}
@@ -322,7 +322,7 @@ def _load_extension_point(ep: dict, index: int, subject_dir: Path) -> ExtensionP
     where = f"extension-points[{index}]"
     _reject_unknown(ep, _ALLOWED_EP, where)
     name = _require(ep, "name", where)
-    trait = _require(ep, "trait", where)
+    contract = _require(ep, "contract", where)
     impl_files_raw = _require(ep, "impl-files", where)
     description = _require(ep, "description", where)
     if not isinstance(description, str) or not description:
@@ -340,7 +340,7 @@ def _load_extension_point(ep: dict, index: int, subject_dir: Path) -> ExtensionP
             raise SubjectManifestError(f"{where}.impl-files: file not found at {path}")
         impl_files.append(path)
     return ExtensionPoint(
-        name=name, trait=trait, impl_files=tuple(impl_files), description=description
+        name=name, contract=contract, impl_files=tuple(impl_files), description=description
     )
 
 

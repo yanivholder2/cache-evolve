@@ -40,7 +40,7 @@ def _write_valid_subject(root: Path) -> Path:
         '\n'
         '[[extension-points]]\n'
         'name = "policy"\n'
-        'trait = "stub::policy::Policy"\n'
+        'contract = "stub::policy::Policy"\n'
         'impl-files = ["src/policy/ep.rs"]\n'
         'description = "policy seam"\n'
         '\n'
@@ -69,7 +69,7 @@ def test_loads_real_manifest():
     assert subject.name == "dash"
     assert subject.crate_path == Path(".")
     assert subject.cdylib_name == "dash"
-    assert len(subject.extension_points) == 2
+    assert len(subject.extension_points) == 3
     assert subject.protected_files == (Path("src/dash/jni.rs"), Path("src/factory.rs"))
     assert subject.docs.context == Path("CONTEXT.md")
     assert subject.docs.insight == Path("baseline/insight.md")
@@ -102,18 +102,22 @@ def test_list_geometry_must_be_non_empty_integers(tmp_path: Path):
         load_subject(root)
 
 
-def test_extension_points_carry_trait_and_impl_files():
+def test_extension_points_carry_contract_and_impl_files():
     subject = load_subject(DASH_SUBJECT)
     by_name = {ep.name: ep for ep in subject.extension_points}
 
     eviction = by_name["eviction-policy"]
-    assert eviction.trait == "dash::shared::traits::EvictionPolicy"
+    assert eviction.contract == "dash::shared::traits::EvictionPolicy"
     assert eviction.impl_files == (Path("src/shared/eviction_policy.rs"),)
     assert eviction.description == "Algorithm choosing which item to evict from a bucket"
 
     bucket = by_name["bucket"]
-    assert bucket.trait == "dash::shared::traits::Bucket"
+    assert bucket.contract == "dash::shared::traits::Bucket"
     assert bucket.impl_files == (Path("src/dash/dash_bucket.rs"),)
+
+    item = by_name["item"]
+    assert item.contract == "dash::shared::item::Item"
+    assert Path("src/shared/item.rs") in item.impl_files
 
 
 def test_ep_scope_whitelist_is_union_of_impl_files():
@@ -123,6 +127,7 @@ def test_ep_scope_whitelist_is_union_of_impl_files():
         {
             Path("src/shared/eviction_policy.rs"),
             Path("src/dash/dash_bucket.rs"),
+            Path("src/shared/item.rs"),
         }
     )
 
@@ -136,7 +141,7 @@ def test_whitelist_dedupes_overlapping_impl_files(tmp_path: Path):
         text
         + '\n[[extension-points]]\n'
           'name = "policy2"\n'
-          'trait = "stub::policy::Policy2"\n'
+          'contract = "stub::policy::Policy2"\n'
           'impl-files = ["src/policy/ep.rs", "src/policy/ep2.rs"]\n'
           'description = "overlaps with policy"\n',
     )
@@ -172,7 +177,7 @@ def test_missing_manifest_file_is_rejected(tmp_path: Path):
         ('crate-path = "."', r"subject.*crate-path"),
         ('cdylib-name = "stub"', r"subject.*cdylib-name"),
         ('name = "policy"', r"extension-points\[0\].*name"),
-        ('trait = "stub::policy::Policy"', r"extension-points\[0\].*trait"),
+        ('contract = "stub::policy::Policy"', r"extension-points\[0\].*contract"),
         ('impl-files = ["src/policy/ep.rs"]', r"extension-points\[0\].*impl-files"),
         ('description = "policy seam"', r"extension-points\[0\].*description"),
         ('context = "docs/context.md"', r"docs.*context"),
@@ -240,7 +245,7 @@ def test_duplicate_extension_point_names_are_rejected(tmp_path: Path):
         text
         + '\n[[extension-points]]\n'
           'name = "policy"\n'
-          'trait = "stub::policy::Policy2"\n'
+          'contract = "stub::policy::Policy2"\n'
           'impl-files = ["src/policy/ep2.rs"]\n'
           'description = "dup"\n',
     )
@@ -537,4 +542,9 @@ def test_axis_descriptions_map_name_to_description():
     assert subject.axis_descriptions == {
         "eviction-policy": "Algorithm choosing which item to evict from a bucket",
         "bucket": "Container for items within a segment",
+        "item": (
+            "Storage unit a bucket holds; its layout and metadata co-evolve with the "
+            "eviction policy that reads them. Keep Item::new(key, value) constructible "
+            "and the key/value fields present."
+        ),
     }

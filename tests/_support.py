@@ -70,7 +70,7 @@ def write_stub_subject(subject_dir: Path) -> StubSubject:
         "\n"
         "[[extension-points]]\n"
         'name = "policy"\n'
-        'trait = "stub::policy::Policy"\n'
+        'contract = "stub::policy::Policy"\n'
         f'impl-files = ["{extension_point_file.as_posix()}"]\n'
         'description = "policy seam"\n'
         "\n"

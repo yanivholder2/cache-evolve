@@ -19,7 +19,7 @@ Variants, not the ledger.
      assignment. Apply only those changes against the subject. The first
      non-empty line of the preamble is the testable claim.
    - **Subject manifest (`manifest.toml`)** — the `[[extension-points]]`
-     tables describe each axis (eviction policy, bucket, …) and list the impl
+     tables describe each axis (eviction policy, bucket, item, …) and list the impl
      files that realise it. In extension-points scope those impl files are
      your write-whitelist; in both scopes the descriptions orient you.
    - **Parent variant's `files/` overlay** — the files the parent variant
@@ -45,7 +45,7 @@ Variants, not the ledger.
 out-of-scope writes are rejected, so honour it.
 
 - **extension-points**: write **only** the impl files listed in the manifest's
-  `[[extension-points]]` tables. The trait surfaces are fixed; you swap
+  `[[extension-points]]` tables. The contract surfaces are fixed; you swap
   implementations behind them.
 - **full-autonomy**: write **any** overlay file (including `src/factory.rs` and
   the segment layout). You must still satisfy the `Cache<K, V>` contract and

@@ -5,15 +5,21 @@ cdylib-name = "dash"
 
 [[extension-points]]
 name = "eviction-policy"
-trait = "dash::shared::traits::EvictionPolicy"
+contract = "dash::shared::traits::EvictionPolicy"
 impl-files = ["src/shared/eviction_policy.rs"]
 description = "Algorithm choosing which item to evict from a bucket"
 
 [[extension-points]]
 name = "bucket"
-trait = "dash::shared::traits::Bucket"
+contract = "dash::shared::traits::Bucket"
 impl-files = ["src/dash/dash_bucket.rs"]
 description = "Container for items within a segment"
+
+[[extension-points]]
+name = "item"
+contract = "dash::shared::item::Item"
+impl-files = ["src/shared/item.rs"]
+description = "Storage unit a bucket holds; its layout and metadata co-evolve with the eviction policy that reads them. Keep Item::new(key, value) constructible and the key/value fields present."
 
 [contract]
 protected-files = ["src/dash/jni.rs", "src/factory.rs"]

@@ -7,7 +7,7 @@
 
 use super::{SegmentCore, Slot};
 use crate::shared::item::Item;
-use crate::shared::traits::bucket::{Bucket, InsertPosition};
+use crate::shared::traits::bucket::InsertPosition;
 use crate::shared::utils::get_index;
 use log::debug;
 use std::fmt::Debug;
@@ -16,8 +16,8 @@ use std::hash::Hash;
 /// Moves `item` into its target bucket. Any evicted item flows through the tier cascade.
 pub(crate) fn promote_to_target<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	let target_idx = get_index(&item.key, core.segment_size);
 	let Some(evicted) = core.put_at(Slot::Target, insert_pos, item) else {
@@ -29,8 +29,8 @@ where
 /// Moves `item` into its probing bucket. Any evicted item flows through the tier cascade.
 pub(crate) fn promote_to_probing<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	let target_idx = get_index(&item.key, core.segment_size);
 	let probing_idx = (target_idx + 1) % core.segment_size;
@@ -49,8 +49,8 @@ fn demote_from_normal_bucket<K, V>(
 	source_idx: usize,
 	insert_pos: InsertPosition,
 ) where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	let true_target = get_index(&item.key, core.segment_size);
 	if true_target == source_idx {
@@ -82,8 +82,8 @@ pub(crate) fn promotion_get<'a, K, V>(
 	insert_pos: InsertPosition,
 ) -> Option<&'a Item<K, V>>
 where
-	K: Hash + Eq + Copy + Debug,
-	V: Eq + Copy + Debug,
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
 {
 	let stash_idx = get_index(key, core.stash_size);
 	let target_idx = get_index(key, core.segment_size);
@@ -131,7 +131,6 @@ mod tests {
 	use super::*;
 	use crate::dash::segments::{PromotionColdSegment, Segment};
 	use crate::shared::eviction_policy::EvictionPolicyKind;
-	use crate::shared::traits::bucket::Bucket;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
 
 	/// An item evicted from its probing bucket must cascade to its true target

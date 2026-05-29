@@ -31,6 +31,17 @@ where
 	}
 }
 
+pub fn new_bucket<K, V>(
+	max_size: usize,
+	eviction_policy: Box<dyn EvictionPolicy<K, V>>,
+) -> Box<dyn Bucket<K, V>>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	Box::new(DashBucket::new(max_size, eviction_policy))
+}
+
 impl<K, V> Bucket<K, V> for DashBucket<K, V>
 where
 	K: Hash + Eq + Copy + Debug,
