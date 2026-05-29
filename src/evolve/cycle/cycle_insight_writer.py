@@ -16,7 +16,7 @@ from evolve.paths import CycleLayout, CycleVariantDir
 AGENT_NAME = "cycle-insight-writer"
 REQUIRED_OUTPUTS = ("cycle-insight.md",)
 
-log = logging.getLogger("cycle-insight-writer")
+log = logging.getLogger(__name__)
 
 
 def _format_list(items: list[str]) -> str:

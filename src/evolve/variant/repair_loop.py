@@ -22,7 +22,7 @@ from evolve.paths import CycleVariant, Layout
 from evolve.variant import implementer as _implementer
 from evolve.variant.gates import GatesResult, run_gates
 
-log = logging.getLogger("repair-loop")
+log = logging.getLogger(__name__)
 
 
 class VariantStepFailed(Exception):

@@ -28,7 +28,7 @@ from evolve.paths import CaffeineOutputDir, Layout, Variant
 from evolve.subject import load_subject
 from evolve.variant.build import compile_cdylib
 
-log = logging.getLogger("fitness.caffeine")
+log = logging.getLogger(__name__)
 
 # Issue-85 hardcoded fitness point. #83 replaces these with a trace suite.
 HARDCODED_TRACE = "lirs:multi1.trace.gz"

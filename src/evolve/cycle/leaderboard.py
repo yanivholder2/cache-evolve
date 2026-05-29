@@ -11,7 +11,7 @@ from evolve._io import read_utf8, write_utf8
 from evolve.identifiers import CYCLE_ID_WIDTH, CycleId
 from evolve.paths import OutputsLayout
 
-log = logging.getLogger("leaderboard")
+log = logging.getLogger(__name__)
 
 
 class LeaderboardError(Exception):

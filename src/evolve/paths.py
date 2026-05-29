@@ -13,7 +13,7 @@ from evolve.identifiers import CycleId, HypothesisId, VariantId
 BASELINE_STR = "baseline"
 ATTEMPT_ID_WIDTH = 2
 
-log = logging.getLogger("paths")
+log = logging.getLogger(__name__)
 
 _CDYLIB_FILENAME_FORMATS = {
     "linux": "lib{name}.so",

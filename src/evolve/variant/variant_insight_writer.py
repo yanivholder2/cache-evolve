@@ -15,7 +15,7 @@ from evolve.paths import CycleVariantDir, Layout
 
 AGENT_NAME = "variant-insight-writer"
 
-log = logging.getLogger("variant-insight-writer")
+log = logging.getLogger(__name__)
 
 
 def _write_task_md(

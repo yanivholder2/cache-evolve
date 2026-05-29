@@ -14,7 +14,7 @@ from typing import Any, TextIO
 from evolve.llm.base_adapter import LLMAdapter, write_timeline
 from evolve.llm.token_usage import Usage
 
-log = logging.getLogger("llm-adapter.antigravity-sdk")
+log = logging.getLogger(__name__)
 
 
 def _format_args(args: Any) -> str:

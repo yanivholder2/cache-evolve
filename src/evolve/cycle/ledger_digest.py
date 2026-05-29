@@ -8,7 +8,7 @@ from pathlib import Path
 
 from evolve._io import read_utf8
 
-log = logging.getLogger("ledger-digest")
+log = logging.getLogger(__name__)
 
 
 def digest_prior_cycles(ledger: Path, n: int) -> str:

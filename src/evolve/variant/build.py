@@ -15,7 +15,7 @@ from evolve._io import read_utf8, write_utf8
 from evolve.paths import Layout, Variant, CargoWorkspace
 from evolve.subject import load_subject
 
-log = logging.getLogger("build")
+log = logging.getLogger(__name__)
 
 
 def _rewrite_framework_path(cargo_toml: Path, framework_crate_dir: Path) -> None:
