@@ -24,6 +24,7 @@ def _write_config(
         'log_level = "DEBUG"',
         "digest_cycles = 3",
         "max_workers = 0",
+        "implementation_attempts = 3",
     ]
     if authoring_scope is not None:
         lines.append(f'authoring_scope = "{authoring_scope}"')

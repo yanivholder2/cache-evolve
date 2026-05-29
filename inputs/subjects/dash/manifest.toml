@@ -21,6 +21,11 @@ contract = "dash::shared::item::Item"
 impl-files = ["src/shared/item.rs"]
 description = "Storage unit a bucket holds; its layout and metadata co-evolve with the eviction policy that reads them. Keep Item::new(key, value) constructible and the key/value fields present."
 
+[[gates]]
+name = "invariant gate"
+test = "invariant_gate"
+marker = "invariant gate violated: P[1-5] [a-z_]+"
+
 [contract]
 protected-files = ["src/dash/jni.rs", "src/factory.rs"]
 

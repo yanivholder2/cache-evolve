@@ -45,9 +45,9 @@ def _stage(tmp_path: Path, fixture_name: str | None) -> tuple[Layout, CycleVaria
     layout.sources.framework_crate_dir.symlink_to(REPO_ROOT / "framework-rs")
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
     if fixture_name is None:
-        variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
+        variant_dir.overlay_dir.mkdir(parents=True, exist_ok=True)
     else:
-        shutil.copytree(FIXTURES_DIR / fixture_name / "files", variant_dir.files_dir)
+        shutil.copytree(FIXTURES_DIR / fixture_name / "files", variant_dir.overlay_dir)
     return layout, VARIANT
 
 

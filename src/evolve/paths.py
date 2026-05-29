@@ -11,6 +11,7 @@ from typing import Union
 from evolve.identifiers import CycleId, HypothesisId, VariantId
 
 BASELINE_STR = "baseline"
+ATTEMPT_ID_WIDTH = 2
 
 log = logging.getLogger("paths")
 
@@ -62,14 +63,14 @@ class VariantDir:
     matters.
 
     Variants are overlay-by-path: source overrides live under
-    `files/<path-within-subject>`. An empty/missing `files/` means "no overlay"
-    (used by the baseline)."""
+    `overlay/<path-within-subject>`. An empty/missing `overlay/` means "no
+    overlay" (used by the baseline)."""
 
     root: Path
 
     @property
-    def files_dir(self) -> Path:
-        return self.root / "files"
+    def overlay_dir(self) -> Path:
+        return self.root / "overlay"
 
     @property
     def task_md(self) -> Path:
@@ -97,7 +98,8 @@ class VariantDir:
 
     @property
     def caffeine_dir(self) -> CaffeineOutputDir:
-        return CaffeineOutputDir(root=self.root / "caffeine")
+        # Shared eval substrate, alongside the fitness artifacts under eval/.
+        return CaffeineOutputDir(root=self.eval_dir / "caffeine")
 
 
 @dataclass(frozen=True)
@@ -105,7 +107,7 @@ class CargoWorkspace:
     """A subject-copy cargo workspace prepared for one variant build.
 
     Materialised by `evolve.variant.build.prepare_variant_workspace`: a fresh
-    tempdir containing a full copy of the subject crate, the variant's `files/`
+    tempdir containing a full copy of the subject crate, the variant's `overlay/`
     overlay applied, and the `framework` path dependency rewritten to an
     absolute path. Callers own the lifecycle and must `shutil.rmtree(root)` once
     they no longer need the artifacts."""
@@ -123,13 +125,54 @@ class CargoWorkspace:
 
 
 @dataclass(frozen=True)
+class AttemptDir(VariantDir):
+    """One implementation attempt of a cycle variant
+    (cycles/<id>/variants/v<NNN>/attempts/NN). Holds the per-attempt overlay,
+    `task.md`, and the agent log. Per-variant artifacts (rejection.md, eval/,
+    insight.md) live at the variant root, not here."""
+
+
+@dataclass(frozen=True)
 class CycleVariantDir(VariantDir):
     """A concrete cycle variant (cycles/<id>/variants/v<NNN>); `root.name`
-    must parse as a `VariantId`."""
+    must parse as a `VariantId`.
+
+    The overlay and `task.md` are per-attempt: a cycle variant materialises
+    one or more attempts under `attempts/NN/`, and `overlay_dir`/`task_md`
+    resolve to the latest one. Everything else (eval/, rejection.md,
+    insight.md) is evaluated once and stays at the variant root."""
 
     @property
     def variant_id(self) -> VariantId:
         return VariantId.from_str(self.root.name)
+
+    @property
+    def attempts_dir(self) -> Path:
+        return self.root / "attempts"
+
+    def attempt(self, n: int) -> AttemptDir:
+        return AttemptDir(root=self.attempts_dir / f"{n:0{ATTEMPT_ID_WIDTH}d}")
+
+    @property
+    def latest_attempt(self) -> AttemptDir:
+        """The highest-numbered existing attempt, or attempt 1 if none exist."""
+        if self.attempts_dir.is_dir():
+            numbered = [
+                int(p.name)
+                for p in self.attempts_dir.iterdir()
+                if p.is_dir() and p.name.isdigit()
+            ]
+            if numbered:
+                return self.attempt(max(numbered))
+        return self.attempt(1)
+
+    @property
+    def overlay_dir(self) -> Path:
+        return self.latest_attempt.overlay_dir
+
+    @property
+    def task_md(self) -> Path:
+        return self.latest_attempt.task_md
 
 
 @dataclass(frozen=True)
@@ -176,8 +219,22 @@ class CycleLayout:
     def variant_template(self) -> VariantDir:
         """Prose-only variant directory whose `root` ends in the literal
         placeholder `v<NNN>`. Use to document where variant artefacts will
-        live without binding to a concrete variant id."""
+        live without binding to a concrete variant id.
+
+        Note: `overlay_dir` on this template is wrong for cycle variants — a
+        cycle variant's overlay is per-attempt. Use `variant_overlay_template`
+        for the overlay path; root-level artefacts (`fitness_vector_json`,
+        `insight_md`) are correct here."""
         return VariantDir(root=self.variants_dir / "v<NNN>")
+
+    @property
+    def variant_overlay_template(self) -> Path:
+        """Prose-only overlay path for a cycle variant, carrying the literal
+        placeholders `v<NNN>` (variant) and `<NN>` (attempt). A cycle variant's
+        overlay lives under its `attempts/<NN>/overlay`, one per attempt — not
+        a flat `v<NNN>/overlay` (that layout is only the baseline/prose
+        template)."""
+        return self.variant_template.root / "attempts" / "<NN>" / "overlay"
 
 
 @dataclass(frozen=True)

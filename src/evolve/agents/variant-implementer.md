@@ -13,7 +13,7 @@ Variants, not the ledger.
 1. Read `$OUTPUT_DIR/../task.md` for your assignment — it states your variant
    id, the parent-variant identifier and directory, the hypothesis-file path,
    the subject manifest path, the active **authoring scope**, and the paths to
-   context files. (`$OUTPUT_DIR` is the variant's `files/` overlay dir.)
+   context files. (`$OUTPUT_DIR` is the attempt's `overlay/` dir.)
 2. Read the files listed in `task.md`:
    - **Hypothesis file** — the `## Changes` section is your concrete
      assignment. Apply only those changes against the subject. The first
@@ -22,7 +22,7 @@ Variants, not the ledger.
      tables describe each axis (eviction policy, bucket, item, …) and list the impl
      files that realise it. In extension-points scope those impl files are
      your write-whitelist; in both scopes the descriptions orient you.
-   - **Parent variant's `files/` overlay** — the files the parent variant
+   - **Parent variant's `overlay/`** — the files the parent variant
      overlaid (may be empty for baseline-parented variants).
    - **Subject `src/`** — the canonical Rust source you are overlaying.
      `src/factory.rs` exports `make_cache` (the cache constructor) and is the
@@ -33,10 +33,10 @@ Variants, not the ledger.
      are deliberate refinements rather than blind rewrites.
 3. Write your overlay under `$OUTPUT_DIR/<path-within-subject>/<file>`. At
    build time the harness copytrees the whole subject crate, then copies each
-   file in `files/` onto the workspace at its relative path. Examples:
-   - To replace the cache constructor: `files/src/factory.rs`.
+   file in `overlay/` onto the workspace at its relative path. Examples:
+   - To replace the cache constructor: `overlay/src/factory.rs`.
    - To replace a segment implementation:
-     `files/src/dash/segments/promotion_cold_segment.rs`.
+     `overlay/src/dash/segments/promotion_cold_segment.rs`.
    - Variants may add new files; deletions are not supported.
 
 ## Authoring scope
@@ -78,7 +78,7 @@ after a get-miss); never re-insert a key that is already present.
 
 ## Constraints
 
-- **Write only under `$OUTPUT_DIR` (the `files/` dir), within the active
+- **Write only under `$OUTPUT_DIR` (the `overlay/` dir), within the active
   scope.** Do not touch `src/`, the cycle dir, the ledger, sibling Variants, or
   any other path.
 - **Apply only the `## Changes` diff.** Your variant is an experiment isolating
@@ -106,3 +106,19 @@ after a get-miss); never re-insert a key that is already present.
 
 Rejection is logged with the failing gate and compiler output. Do not retry
 inside this invocation; the framework decides whether to spawn a repair attempt.
+
+## Repair turn
+
+When a previous attempt's overlay was rejected, `task.md` carries a
+`## Failing gate` section: the failing gate's name, its test scaffold under
+`inputs/subjects/<subject>/tests/<test>.rs`, the previous attempt's `overlay/`
+dir, and the latest rejection entry (gate, failing invariant, error output).
+You are fixing that previous overlay, not starting over:
+
+1. Re-read the named gate's test scaffold to understand exactly what it asserts.
+2. Read the previous attempt's `overlay/` — that is the parent you are repairing.
+3. Diagnose the cited failure from the rejection entry, then write a corrected
+   overlay under your own `$OUTPUT_DIR`.
+
+The hypothesis is still your assignment: repair the failure while keeping the
+`## Changes` faithful. Do not abandon the hypothesis to make the gate pass.

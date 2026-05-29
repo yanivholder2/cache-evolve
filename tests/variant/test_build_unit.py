@@ -60,22 +60,22 @@ def test_rewrite_framework_path_missing_dep_raises(tmp_path):
 
 
 def test_apply_overlay_copies_files_at_relative_paths(tmp_path):
-    files_dir = tmp_path / "files"
+    overlay_dir = tmp_path / "overlay"
     workspace = tmp_path / "workspace"
-    (files_dir / "src" / "deep").mkdir(parents=True)
-    (files_dir / "src" / "factory.rs").write_text("// overlay")
-    (files_dir / "src" / "deep" / "nested.rs").write_text("// nested")
+    (overlay_dir / "src" / "deep").mkdir(parents=True)
+    (overlay_dir / "src" / "factory.rs").write_text("// overlay")
+    (overlay_dir / "src" / "deep" / "nested.rs").write_text("// nested")
     workspace.mkdir()
     (workspace / "src").mkdir()
     (workspace / "src" / "factory.rs").write_text("// baseline")  # to be overwritten
 
-    _apply_overlay(files_dir, workspace)
+    _apply_overlay(overlay_dir, workspace)
 
     assert (workspace / "src" / "factory.rs").read_text() == "// overlay"
     assert (workspace / "src" / "deep" / "nested.rs").read_text() == "// nested"
 
 
-def test_apply_overlay_noop_when_files_dir_missing(tmp_path):
+def test_apply_overlay_noop_when_overlay_dir_missing(tmp_path):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     _apply_overlay(tmp_path / "absent", workspace)  # must not raise

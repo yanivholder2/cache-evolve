@@ -1,5 +1,5 @@
 """Variant build harness: materialise a self-contained cargo workspace for a
-variant by overlaying its `files/` tree on a copy of the subject crate, so
+variant by overlaying its `overlay/` tree on a copy of the subject crate, so
 `cargo build`/`cargo test` can run from any cwd."""
 
 from __future__ import annotations
@@ -8,11 +8,10 @@ import logging
 import re
 import shutil
 import subprocess
-from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import mkdtemp
 
-from evolve._io import append_utf8, read_utf8, write_utf8
+from evolve._io import read_utf8, write_utf8
 from evolve.paths import Layout, Variant, CargoWorkspace
 from evolve.subject import load_subject
 
@@ -41,17 +40,17 @@ def _rewrite_framework_path(cargo_toml: Path, framework_crate_dir: Path) -> None
     write_utf8(cargo_toml, new_text)
 
 
-def _apply_overlay(files_dir: Path, workspace_root: Path) -> None:
-    """Copy every file under `files_dir` onto `workspace_root` at the matching
-    relative path. Missing/empty `files_dir` is a no-op, meaning "no overlay"
+def _apply_overlay(overlay_dir: Path, workspace_root: Path) -> None:
+    """Copy every file under `overlay_dir` onto `workspace_root` at the matching
+    relative path. Missing/empty `overlay_dir` is a no-op, meaning "no overlay"
     (a baseline-equivalent build)."""
 
-    if not files_dir.is_dir():
+    if not overlay_dir.is_dir():
         return
-    for src in files_dir.rglob("*"):
+    for src in overlay_dir.rglob("*"):
         if not src.is_file():
             continue
-        rel = src.relative_to(files_dir)
+        rel = src.relative_to(overlay_dir)
         dst = workspace_root / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(src, dst)
@@ -64,7 +63,7 @@ def prepare_variant_workspace(
     repo_root: Path,
 ) -> CargoWorkspace:
     """Materialise a cargo workspace for `variant`: subject copytree → overlay
-    `files/` → rewrite the framework dep path to absolute. Returns a `CargoWorkspace`
+    `overlay/` → rewrite the framework dep path to absolute. Returns a `CargoWorkspace`
     rooted at a fresh tempdir; the caller owns cleanup."""
 
     variant_dir = variant.resolve(layout)
@@ -85,7 +84,7 @@ def prepare_variant_workspace(
     try:
         # mkdtemp already created root, so copytree must merge into it.
         shutil.copytree(subject_dir, root, dirs_exist_ok=True, ignore=_ignore_build_cache)
-        _apply_overlay(variant_dir.files_dir, root)
+        _apply_overlay(variant_dir.overlay_dir, root)
         _rewrite_framework_path(root / "Cargo.toml", framework_crate_dir)
     except BaseException:
         shutil.rmtree(
@@ -100,19 +99,6 @@ def prepare_variant_workspace(
     return CargoWorkspace(root=root, cdylib_name=subject.cdylib_name)
 
 
-def _append_rejection(rejection_md: Path, variant: Variant, cargo_output: str) -> None:
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    entry = (
-        f"\n## {ts} — variant={variant}\n\n"
-        f"**Gate**: build gate\n"
-        f"**Error**:\n"
-        f"```\n{cargo_output}\n```\n"
-        f"---\n"
-    )
-    rejection_md.parent.mkdir(parents=True, exist_ok=True)
-    append_utf8(rejection_md, entry)
-
-
 def compile_for_gates(
     variant: Variant,
     *,
@@ -123,11 +109,11 @@ def compile_for_gates(
     against it. Returns the workspace (caller owns cleanup).
 
     Raises:
-        subprocess.CalledProcessError: cargo build failed (rejection appended
-            to the variant's rejection.md, workspace removed).
+        subprocess.CalledProcessError: cargo build failed (build output on the
+            exception's stdout/stderr, workspace removed). The build gate turns
+            this into a rejection entry.
     """
 
-    rejection_md = variant.resolve(layout).rejection_md
     workspace = prepare_variant_workspace(variant, layout=layout, repo_root=repo_root)
     try:
         log.info("build gate: compiling variant %s ...", variant)
@@ -141,8 +127,6 @@ def compile_for_gates(
         )
         if proc.returncode != 0:
             log.info("build gate: FAILED")
-            _append_rejection(rejection_md, variant, proc.stdout + proc.stderr)
-            log.info("rejection logged to %s", rejection_md)
             raise subprocess.CalledProcessError(
                 proc.returncode, proc.args, proc.stdout, proc.stderr
             )

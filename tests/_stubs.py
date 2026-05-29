@@ -75,12 +75,10 @@ class StubLLMAdapter:
             )
 
     def _write_variant(self, workspace: Path) -> None:
-        # `workspace` is the variant's `files/` overlay dir. The empty overlay
-        # ("no changes vs. subject") is a legal variant — the build harness
-        # treats a missing/empty `files/` as a no-op. A sentinel keeps the dir
-        # detectable so downstream "did the adapter produce anything?" checks
-        # succeed.
-        write_utf8(workspace / ".overlay", "")
+        # `workspace` is the attempt dir; the agent writes its overlay under
+        # `overlay/`. A sentinel file keeps the overlay detectable so the
+        # implementer's "did the adapter produce anything?" check succeeds.
+        write_utf8(workspace / "overlay" / ".overlay", "")
 
     def _capture(self, agent_name, workspace, readable_roots, allow_edits):
         task_md = ""

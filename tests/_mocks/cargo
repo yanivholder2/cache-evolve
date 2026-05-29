@@ -2,9 +2,10 @@
 # Mock cargo for evolve gate-script tests.
 #
 # Handles the cargo invocations made by src/evolve/variant/build.py and
-# src/evolve/variant/gate_check.py (variant workspace `cargo build --tests`
-# and `cargo test --test {contract_gate,invariant_gate}`) by scanning the
-# overlaid workspace for marker comments — no real Rust compilation runs:
+# src/evolve/variant/gates/ (variant workspace `cargo build --tests`
+# and `cargo test --test {contract_gate,universal_invariant_gate,invariant_gate}`)
+# by scanning the overlaid workspace for marker comments — no real Rust
+# compilation runs:
 #
 #   // MOCK_CARGO: build_gate_fail                            -> `cargo build --tests` fails
 #   // MOCK_CARGO: contract_gate_fail                         -> `cargo test --test contract_gate` fails

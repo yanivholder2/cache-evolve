@@ -38,7 +38,7 @@ def _stage_baseline(tmp_path: Path, subject: str) -> Layout:
     layout.sources.framework_crate_dir.symlink_to(real.root / "framework-rs")
     shutil.copy(real.config_toml, layout.sources.config_toml)
     # Empty overlay -> the baseline crate builds unchanged.
-    layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id).files_dir.mkdir(parents=True, exist_ok=True)
+    layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id).overlay_dir.mkdir(parents=True, exist_ok=True)
     return layout
 
 

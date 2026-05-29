@@ -42,9 +42,9 @@ def _stage_good(tmp_path: Path) -> tuple[Layout, CycleVariant]:
     layout.sources.framework_crate_dir.symlink_to(real.root / "framework-rs")
     shutil.copy(real.config_toml, layout.sources.config_toml)
     variant_dir = layout.outputs.cycle(VARIANT.cycle_id).variant(VARIANT.variant_id)
-    # `good` fixture overlay is empty — files_dir is created empty so the
+    # `good` fixture overlay is empty — overlay_dir is created empty so the
     # rest of the variant tree matches what a real cycle would produce.
-    variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
+    variant_dir.overlay_dir.mkdir(parents=True, exist_ok=True)
     return layout, VARIANT
 
 

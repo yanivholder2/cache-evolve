@@ -6,6 +6,11 @@ cdylib-name = "lru_cache"
 # No extension points: LruCache's only knob is capacity. Variants operate in
 # Full-autonomy scope only (they may rewrite the impl, never the JNI ABI).
 
+[[gates]]
+name = "invariant gate"
+test = "invariant_gate"
+marker = "invariant gate violated: P[1-3] [a-z_]+"
+
 [contract]
 protected-files = ["src/lru_cache/lru_cache_jni.rs"]
 

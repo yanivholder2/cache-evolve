@@ -28,7 +28,8 @@ _TEST_CFG = Configs(
     framework=FrameworkConfig(
         cycles=1, cohort_size=1, ai_agent_tool="claude-sdk",
         outputs_root=Path("/tmp"), log_level="DEBUG", digest_cycles=3,
-        max_workers=0, authoring_scope="extension-points", subject=SUBJECT,
+        max_workers=0, implementation_attempts=3,
+        authoring_scope="extension-points", subject=SUBJECT,
     ),
     simulator=SimulatorConfig(timeout_s=600),
 )
@@ -40,7 +41,7 @@ def _stage(tmp_path: Path) -> tuple[Layout, CycleVariant]:
 
     layout = Layout(repo_root=REPO_ROOT, outputs_root=tmp_path / "out", subject=SUBJECT)
     variant = CycleVariant(CycleId(1), VariantId(1))
-    layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id).files_dir.mkdir(parents=True)
+    layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id).overlay_dir.mkdir(parents=True)
     return layout, variant
 
 
