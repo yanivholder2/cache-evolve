@@ -72,7 +72,7 @@ def _write_continuation_task_md(hypotheses_num: int, cycle_id: CycleId, layout: 
         f"## Read for context\n\n"
         f"### Previous cycle ({prev_cycle_id})\n\n"
         f"- {prev_cycle_layout.variants_dir} — every variant directory `v<NNN>/` under this path. For each variant read:\n"
-        f"  - {prev_variant_template.files_dir} — the variant's overlay (subject files it replaced).\n"
+        f"  - {prev_cycle_layout.variant_overlay_template} — the variant's overlay (subject files it replaced); read its latest attempt.\n"
         f"  - {prev_variant_template.fitness_vector_json} — its measured fitness vector.\n"
         f"  - {prev_variant_template.insight_md} — one-line fitness summary.\n"
         f"- {prev_cycle_layout.winners_json} — Pareto front + per-variant fitness vectors for the cycle.\n"

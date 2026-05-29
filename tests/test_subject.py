@@ -253,6 +253,23 @@ def test_duplicate_extension_point_names_are_rejected(tmp_path: Path):
         load_subject(tmp_path)
 
 
+def test_duplicate_gate_names_are_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text
+        + '\n[[gates]]\n'
+          'name = "invariant gate"\n'
+          'test = "invariant_gate"\n'
+        + '\n[[gates]]\n'
+          'name = "invariant gate"\n'
+          'test = "invariant_gate_2"\n',
+    )
+    with pytest.raises(SubjectManifestError, match=r"gates: duplicate name.*invariant gate"):
+        load_subject(tmp_path)
+
+
 def test_empty_impl_files_is_rejected(tmp_path: Path):
     _write_valid_subject(tmp_path)
     text = (tmp_path / "manifest.toml").read_text()

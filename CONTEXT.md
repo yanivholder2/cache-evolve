@@ -108,9 +108,12 @@ only by the Cache contract and the invariant suite.
 _Avoid_: Open scope, free scope.
 
 **Overlay**:
-A Variant's edits stored as a `files/` tree mirroring the Subject, holding only
-added or modified files. The build harness copies the Subject tree and overlays
-these on top — no deletions. Also "overlay-by-path".
+A Variant's edits stored as an `overlay/` tree mirroring the Subject, holding
+only added or modified files. The build harness copies the Subject tree and
+overlays these on top — no deletions. A cycle Variant's overlay lives under
+`attempts/NN/overlay/` (one per Variant attempt); the baseline and the `v<NNN>`
+template keep a flat `overlay/`. Eval artifacts (fitness, Caffeine output) live
+under the Variant root's `eval/`. Also "overlay-by-path".
 _Avoid_: Patch, diff, fork.
 
 ### Correctness gates
@@ -148,8 +151,13 @@ fitness numbers.
 _Avoid_: Review, opinion.
 
 **Self-repair sub-loop**:
-Bounded retry loop inside the smoke gate; the AI re-implements a Variant
-when the smoke-log review flags a likely bug. Same Variant ID across attempts.
+Bounded re-implementation loop: when a gate rejects a Variant, the implementer
+is re-invoked with the failing gate's rejection embedded in the next attempt's
+task, up to `implementation_attempts` total attempts (initial + repairs). Any
+gate failure triggers it — build, contract, universal invariant, or a subject
+invariant gate. Same Variant ID across attempts; only the final attempt's state
+enters the leaderboard. On exhaustion the Variant seals with reason
+`gate:<name> (N/M attempts)`.
 _Avoid_: Fix loop, retry chain.
 
 **Rejection log**:

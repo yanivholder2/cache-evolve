@@ -39,6 +39,7 @@ class FrameworkConfig:
     log_level: str
     digest_cycles: int
     max_workers: int
+    implementation_attempts: int
     authoring_scope: AuthoringScope
     subject: str
 
@@ -88,6 +89,7 @@ def load_configs(
         log_level=_resolve_log_level(log_level, framework_defaults),
         digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
         max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
+        implementation_attempts=_resolve_positive_int(None, framework_defaults, "implementation_attempts", None, "framework"),
         authoring_scope=_resolve_authoring_scope(authoring_scope, framework_defaults),
         subject=_resolve_subject(subject, framework_defaults, repo_root),
     )

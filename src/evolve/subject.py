@@ -28,6 +28,19 @@ class ExtensionPoint:
 
 
 @dataclass(frozen=True)
+class SubjectGate:
+    """A subject-declared correctness gate, run after the framework gates.
+
+    `test` names the `cargo test --test <test>` target under the subject's
+    `tests/`. `marker` is an optional regex matched against the failing test's
+    output to name the violated invariant in rejection.md."""
+
+    name: str
+    test: str
+    marker: str | None
+
+
+@dataclass(frozen=True)
 class Docs:
     context: Path
     insight: Path
@@ -92,6 +105,7 @@ class Subject:
     crate_path: Path
     cdylib_name: str
     extension_points: tuple[ExtensionPoint, ...]
+    gates: tuple[SubjectGate, ...]
     protected_files: tuple[Path, ...]
     caffeine: CaffeineConfig
     docs: Docs
@@ -108,9 +122,10 @@ class Subject:
         return {ep.name: ep.description for ep in self.extension_points}
 
 
-_ALLOWED_TOP = {"subject", "extension-points", "contract", "caffeine", "docs", "evaluation", "bench", "metadata"}
+_ALLOWED_TOP = {"subject", "extension-points", "gates", "contract", "caffeine", "docs", "evaluation", "bench", "metadata"}
 _ALLOWED_SUBJECT = {"name", "crate-path", "cdylib-name"}
 _ALLOWED_EP = {"name", "contract", "impl-files", "description"}
+_ALLOWED_GATES = {"name", "test", "marker"}
 _ALLOWED_CONTRACT = {"protected-files"}
 _ALLOWED_CAFFEINE = {"config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry"}
 _ALLOWED_DOCS = {"context", "insight"}
@@ -174,6 +189,7 @@ def load_subject(subject_dir: Path) -> Subject:
 
     subject_table = data["subject"]
     ep_tables = data.get("extension-points", [])
+    gate_tables = data.get("gates", [])
     contract_table = data["contract"]
     caffeine_table = data["caffeine"]
     docs_table = data["docs"]
@@ -211,6 +227,17 @@ def load_subject(subject_dir: Path) -> Subject:
                 f"extension-points: duplicate name {ep.name!r} at indices {seen[ep.name]} and {i}"
             )
         seen[ep.name] = i
+
+    if not isinstance(gate_tables, list):
+        raise SubjectManifestError("gates: must be an array of tables")
+    gates = tuple(_load_gate(gate, i) for i, gate in enumerate(gate_tables))
+    gate_seen: dict[str, int] = {}
+    for i, gate in enumerate(gates):
+        if gate.name in gate_seen:
+            raise SubjectManifestError(
+                f"gates: duplicate name {gate.name!r} at indices {gate_seen[gate.name]} and {i}"
+            )
+        gate_seen[gate.name] = i
 
     _reject_unknown(contract_table, _ALLOWED_CONTRACT, "contract")
     protected_raw = _require(contract_table, "protected-files", "contract")
@@ -252,6 +279,7 @@ def load_subject(subject_dir: Path) -> Subject:
         crate_path=crate_path,
         cdylib_name=cdylib_name,
         extension_points=extension_points,
+        gates=gates,
         protected_files=tuple(protected_files),
         caffeine=caffeine,
         docs=docs,
@@ -342,6 +370,20 @@ def _load_extension_point(ep: dict, index: int, subject_dir: Path) -> ExtensionP
     return ExtensionPoint(
         name=name, contract=contract, impl_files=tuple(impl_files), description=description
     )
+
+
+def _load_gate(gate: dict, index: int) -> SubjectGate:
+    where = f"gates[{index}]"
+    _reject_unknown(gate, _ALLOWED_GATES, where)
+    name = _require(gate, "name", where)
+    test = _require(gate, "test", where)
+    for field_name, value in (("name", name), ("test", test)):
+        if not isinstance(value, str) or not value:
+            raise SubjectManifestError(f"{where}.{field_name}: must be a non-empty string")
+    marker = gate.get("marker")
+    if marker is not None and (not isinstance(marker, str) or not marker):
+        raise SubjectManifestError(f"{where}.marker: must be a non-empty string when present")
+    return SubjectGate(name=name, test=test, marker=marker)
 
 
 def _read_cargo_lib_name(cargo_toml_path: Path) -> str:

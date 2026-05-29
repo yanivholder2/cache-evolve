@@ -97,11 +97,12 @@ def test_cohort_produces_n_variants(shared_cohort_run):
     assert variants == ["v001", "v002", "v003"]
     for i in (1, 2, 3):
         variant_dir = shared_cohort_run.cycle_layout.variant(VariantId(i))
-        # Overlay-by-path: every variant ships a `files/` directory, even when
-        # the overlay is empty (baseline-equivalent). The stub adapter writes
-        # a `.overlay` sentinel so the dir is non-empty.
-        assert variant_dir.files_dir.is_dir()
-        assert any(variant_dir.files_dir.iterdir())
+        # Overlay-by-path: every variant ships an `overlay/` directory (under
+        # its latest attempt), even when the overlay is empty
+        # (baseline-equivalent). The stub adapter writes a `.overlay` sentinel
+        # so the dir is non-empty.
+        assert variant_dir.overlay_dir.is_dir()
+        assert any(variant_dir.overlay_dir.iterdir())
         assert variant_dir.fitness_vector_json.is_file()
         assert variant_dir.insight_md.is_file()
 
@@ -127,8 +128,8 @@ def test_variant_implementer_invoked_in_parallel(tmp_path, monkeypatch):
         time.sleep(IMPLEMENTER_SLEEP_SECONDS)
         # Empty-but-non-vanishing overlay is enough for the cycle to proceed
         # to the gate stage (which the real cargo would then run).
-        variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
-        (variant_dir.files_dir / ".overlay").write_text("")
+        variant_dir.overlay_dir.mkdir(parents=True, exist_ok=True)
+        (variant_dir.overlay_dir / ".overlay").write_text("")
         write_utf8(stamp_dir / f"{variant_dir.variant_id}.end", f"{time.time()}")
 
     monkeypatch.setattr("evolve.variant.implementer.implement_variant", sleep_implementer)
@@ -181,7 +182,7 @@ def test_variant_implementer_agent_markdown_exists():
     body = read_utf8(agent_md)
     lower = body.lower()
     assert "hypothesis" in lower
-    assert "files/" in body
+    assert "overlay/" in body
     assert "factory.rs" in body
     assert "task.md" in lower
     assert "manifest" in lower

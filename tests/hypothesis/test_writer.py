@@ -259,6 +259,27 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
         assert path.name in task_md, f"{path.name} missing from task.md"
 
 
+def test_continuation_task_md_points_at_per_attempt_overlay(tmp_path):
+    # A cycle variant's overlay lives under attempts/<NN>/overlay, not a flat
+    # v<NNN>/overlay; the task.md must send the next hypothesizer to the real
+    # location or it reads nothing.
+    evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, CycleId(1))
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(2),
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+    )
+    task_md = read_utf8(capture)
+    prev = _layout(evolve).outputs.cycle(CycleId(1))
+    assert str(prev.variant_overlay_template) in task_md
+    assert "attempts/<NN>/overlay" in task_md
+    # The flat (wrong) overlay path must not be advertised.
+    assert str(prev.variant_template.overlay_dir) not in task_md
+
+
 def test_continuation_task_md_lists_baseline_as_valid_parent_variant(tmp_path):
     evolve = _setup_evolve(tmp_path)
     _stage_prev_cycle(evolve, CycleId(1))

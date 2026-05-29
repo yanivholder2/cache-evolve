@@ -54,7 +54,7 @@ def _stage_variant(tmp_path: Path) -> tuple[Layout, CycleVariant]:
 	shutil.copy(real.config_toml, layout.sources.config_toml)
 	variant_dir = layout.outputs.cycle(variant.cycle_id).variant(variant.variant_id)
 	# Empty overlay (the `good` fixture's shape) — baseline-equivalent build.
-	variant_dir.files_dir.mkdir(parents=True, exist_ok=True)
+	variant_dir.overlay_dir.mkdir(parents=True, exist_ok=True)
 	return layout, variant
 
 

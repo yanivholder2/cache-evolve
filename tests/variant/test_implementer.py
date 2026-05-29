@@ -137,7 +137,7 @@ def test_malformed_hypothesis_aborts_before_adapter(tmp_path):
 
 
 class _WritingAdapter:
-    """Adapter that writes a fixed set of overlay files (relative to files/)."""
+    """Adapter that writes a fixed set of overlay files (relative to overlay/)."""
 
     def __init__(self, rel_paths: list[str]) -> None:
         self.rel_paths = rel_paths
@@ -147,19 +147,19 @@ class _WritingAdapter:
 
     def run(self, agent_name, workspace, *, readable_roots, allow_edits) -> None:
         for rel in self.rel_paths:
-            target = workspace / rel
+            target = workspace / "overlay" / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             write_utf8(target, "// stub\n")
 
 
 class _EmptySubdirAdapter:
-    """Adapter that creates only an empty subdirectory — no files."""
+    """Adapter that creates only an empty subdirectory in the overlay — no files."""
 
     def identity(self) -> str:
         return "EmptySubdirAdapter"
 
     def run(self, agent_name, workspace, *, readable_roots, allow_edits) -> None:
-        (workspace / "src").mkdir(parents=True, exist_ok=True)
+        (workspace / "overlay" / "src").mkdir(parents=True, exist_ok=True)
 
 
 def _prepare(tmp_path: Path):
@@ -179,7 +179,7 @@ def test_extension_points_scope_allows_whitelisted_file(tmp_path):
         adapter=_WritingAdapter([stub.extension_point_file.as_posix()]),
         authoring_scope=AuthoringScope.EXTENSION_POINTS,
     )
-    assert (variant_dir.files_dir / stub.extension_point_file).is_file()
+    assert (variant_dir.overlay_dir / stub.extension_point_file).is_file()
 
 
 def test_extension_points_scope_rejects_non_whitelisted_file(tmp_path):
@@ -199,7 +199,7 @@ def test_full_autonomy_scope_allows_any_non_protected_file(tmp_path):
         adapter=_WritingAdapter([stub.free_file.as_posix()]),
         authoring_scope=AuthoringScope.FULL_AUTONOMY,
     )
-    assert (variant_dir.files_dir / stub.free_file).is_file()
+    assert (variant_dir.overlay_dir / stub.free_file).is_file()
 
 
 def test_full_autonomy_scope_rejects_protected_file(tmp_path):

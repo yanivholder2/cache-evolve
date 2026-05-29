@@ -33,6 +33,11 @@ digest_cycles = 3
 # 0 means: match cohort_size.
 max_workers = 0
 
+# Total variant-implementation attempts per variant: the initial attempt plus
+# self-repair retries on a gate failure (so 3 = 1 initial + up to 2 repairs).
+# Each attempt is preserved under the variant's attempts/NN/ directory.
+implementation_attempts = 3
+
 # Write surface the variant-implementer agent may author (--authoring-scope).
 # "extension-points": only impl files listed in the subject manifest's
 # [[extension-points]] tables. "full-autonomy": any overlay file, still bound by
