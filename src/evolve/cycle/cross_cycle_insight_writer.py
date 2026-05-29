@@ -18,7 +18,7 @@ AGENT_NAME = "cross-cycle-insight-writer"
 OUTPUT_FILENAME = "cross-cycle-insights.md"
 WORKSPACE_NAME = "cross-cycle"
 
-log = logging.getLogger(AGENT_NAME)
+log = logging.getLogger(__name__)
 
 
 SECTION_TEMPLATE = (

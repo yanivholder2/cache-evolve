@@ -15,7 +15,7 @@ AGENT_NAME = "hypotheses-writer"
 HYPOTHESIS_FILE_RE = re.compile(rf"H\d{{{HYPOTHESIS_ID_WIDTH}}}\.md")
 COLD_START_CYCLE = CycleId.cold_start()
 
-log = logging.getLogger("hypotheses-writer")
+log = logging.getLogger(__name__)
 
 
 def _task_md_header(cycle_id: CycleId, hypotheses_num: int, hypotheses_dir: Path, *, title_suffix: str = "") -> str:

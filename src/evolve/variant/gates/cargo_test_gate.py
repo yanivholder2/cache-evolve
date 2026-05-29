@@ -18,7 +18,7 @@ from typing import Any
 from evolve.paths import CargoWorkspace, Layout, Variant
 from evolve.variant.gates._protocol import GateOutcome
 
-log = logging.getLogger("gate-check")
+log = logging.getLogger(__name__)
 
 
 def _run_cargo_test(workspace: CargoWorkspace, test_name: str) -> subprocess.CompletedProcess:

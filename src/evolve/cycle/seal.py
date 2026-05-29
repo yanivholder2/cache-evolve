@@ -14,7 +14,7 @@ from pathlib import Path
 from evolve._io import write_utf8
 from evolve.paths import CycleLayout
 
-log = logging.getLogger("seal")
+log = logging.getLogger(__name__)
 
 # u+w | g+w | o+w — the bits stripped when sealing a cycle directory.
 WRITE_BITS = 0o222

@@ -22,7 +22,7 @@ from evolve.paths import SourcesLayout
 
 _SOURCES = SourcesLayout(root=Path(__file__).resolve().parents[3])
 
-log = logging.getLogger("llm-adapter")
+log = logging.getLogger(__name__)
 
 
 class LLMAdapter:

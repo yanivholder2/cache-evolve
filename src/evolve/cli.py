@@ -39,7 +39,9 @@ from evolve.subject import Subject, load_subject
 from evolve.variant.repair_loop import VariantStepFailed, implement_with_repair
 from evolve.variant.variant_insight_writer import write_insight
 
-log = logging.getLogger("evolve")
+# Explicit name (not __name__): this module runs as "__main__" under
+# `python -m evolve.cli`, which would escape the "evolve" logging namespace.
+log = logging.getLogger("evolve.cli")
 
 
 def die(msg: str) -> NoReturn:

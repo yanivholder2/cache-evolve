@@ -25,7 +25,7 @@ from evolve.variant.gates import CargoTestGate, build_gate_list
 
 AGENT_NAME = "variant-implementer"
 
-log = logging.getLogger("variant-implementer")
+log = logging.getLogger(__name__)
 
 
 def _latest_rejection_entry(rejection_md: Path) -> str | None:

@@ -11,7 +11,7 @@ from evolve._io import read_utf8
 from evolve.identifiers import CYCLE_ID_WIDTH, VARIANT_ID_WIDTH, CycleId, VariantId
 from evolve.paths import BASELINE_STR, Baseline, CycleVariant, Variant
 
-log = logging.getLogger("hypothesis-parser")
+log = logging.getLogger(__name__)
 
 _PARENT_CYCLE_RE = re.compile(
     rf"^cycle/(\d{{{CYCLE_ID_WIDTH}}})/v(\d{{{VARIANT_ID_WIDTH}}})$"

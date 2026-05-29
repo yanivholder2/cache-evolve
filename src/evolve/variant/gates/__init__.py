@@ -24,7 +24,7 @@ from evolve.variant.gates._protocol import Gate, GateOutcome
 from evolve.variant.gates.build_gate import BuildGate
 from evolve.variant.gates.cargo_test_gate import CargoTestGate
 
-log = logging.getLogger("gate-check")
+log = logging.getLogger(__name__)
 
 # Universal (U#) invariants are framework-owned and apply to every subject.
 # Per-subject (P#) invariants live in each subject's manifest `[[gates]]`.
