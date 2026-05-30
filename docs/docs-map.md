@@ -136,9 +136,3 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 * Branch protection
 
 **Read when** reviewing or creating a PR.
-
-### [docs/agents/triage-labels.md](agents/triage-labels.md)
-
-Canonical triage role → label mapping.
-
-**Read when** labelling issues or running the triage skill.

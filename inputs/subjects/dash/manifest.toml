@@ -52,3 +52,5 @@ insight = "baseline/insight.md"
 
 [evaluation]
 fitness-vector = "baseline/eval/fitness-vector.json"
+traces = ["lirs:multi1.trace.gz"]
+sizes = [512]

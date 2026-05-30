@@ -58,6 +58,8 @@ def _write_valid_subject(root: Path) -> Path:
         '\n'
         '[evaluation]\n'
         'fitness-vector = "eval/fitness.json"\n'
+        'traces = ["lirs:multi1.trace.gz"]\n'
+        'sizes = [512]\n'
     )
     return root
 
@@ -74,6 +76,8 @@ def test_loads_real_manifest():
     assert subject.docs.context == Path("CONTEXT.md")
     assert subject.docs.insight == Path("baseline/insight.md")
     assert subject.evaluation.fitness_vector == Path("baseline/eval/fitness-vector.json")
+    assert subject.evaluation.traces == ("lirs:multi1.trace.gz",)
+    assert subject.evaluation.sizes == (512,)
     assert subject.caffeine.config_prefix == "caffeine.simulator.dash"
     assert subject.caffeine.policy_spec_name == "dash.DashRust"
     assert subject.caffeine.policy_key == "evictionPolicies"
@@ -183,6 +187,8 @@ def test_missing_manifest_file_is_rejected(tmp_path: Path):
         ('context = "docs/context.md"', r"docs.*context"),
         ('insight = "docs/insight.md"', r"docs.*insight"),
         ('fitness-vector = "eval/fitness.json"', r"evaluation.*fitness-vector"),
+        ('traces = ["lirs:multi1.trace.gz"]', r"evaluation.*traces"),
+        ('sizes = [512]', r"evaluation.*sizes"),
     ],
 )
 def test_missing_required_field_within_table_is_rejected(
@@ -226,6 +232,81 @@ def test_nonexistent_fitness_vector_is_rejected(tmp_path: Path):
     text = (tmp_path / "manifest.toml").read_text()
     _rewrite_manifest(tmp_path, text.replace("eval/fitness.json", "eval/nope.json"))
     with pytest.raises(SubjectManifestError, match=r"evaluation.*fitness-vector.*nope\.json"):
+        load_subject(tmp_path)
+
+
+def test_evaluation_grid_parsed():
+    subject = load_subject(ASSOCIATIVE_CACHE_SUBJECT)
+    assert subject.evaluation.traces == ("lirs:multi1.trace.gz",)
+    assert subject.evaluation.sizes == (512,)
+
+
+def test_multi_point_grid_parsed(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text.replace('traces = ["lirs:multi1.trace.gz"]', 'traces = ["lirs:multi1.trace.gz", "arc:p1.trace"]')
+            .replace("sizes = [512]", "sizes = [256, 512, 1024]"),
+    )
+    grid = load_subject(tmp_path).evaluation
+    assert grid.traces == ("lirs:multi1.trace.gz", "arc:p1.trace")
+    assert grid.sizes == (256, 512, 1024)
+
+
+def test_empty_traces_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text.replace('traces = ["lirs:multi1.trace.gz"]', "traces = []"))
+    with pytest.raises(SubjectManifestError, match=r"evaluation.traces.*non-empty"):
+        load_subject(tmp_path)
+
+
+def test_trace_without_format_prefix_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text.replace('"lirs:multi1.trace.gz"', '"multi1.trace.gz"'))
+    with pytest.raises(SubjectManifestError, match=r"evaluation.traces.*format.*path"):
+        load_subject(tmp_path)
+
+
+def test_non_string_trace_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text.replace('traces = ["lirs:multi1.trace.gz"]', "traces = [1]"))
+    with pytest.raises(SubjectManifestError, match=r"evaluation.traces"):
+        load_subject(tmp_path)
+
+
+def test_empty_sizes_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text.replace("sizes = [512]", "sizes = []"))
+    with pytest.raises(SubjectManifestError, match=r"evaluation.sizes.*non-empty"):
+        load_subject(tmp_path)
+
+
+def test_non_positive_size_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text.replace("sizes = [512]", "sizes = [0]"))
+    with pytest.raises(SubjectManifestError, match=r"evaluation.sizes.*positive"):
+        load_subject(tmp_path)
+
+
+def test_non_integer_size_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text.replace("sizes = [512]", "sizes = [512.5]"))
+    with pytest.raises(SubjectManifestError, match=r"evaluation.sizes.*positive integer"):
+        load_subject(tmp_path)
+
+
+def test_duplicate_size_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text.replace("sizes = [512]", "sizes = [512, 512]"))
+    with pytest.raises(SubjectManifestError, match=r"evaluation.sizes.*duplicate"):
         load_subject(tmp_path)
 
 
@@ -431,7 +512,9 @@ def _write_zero_ep_manifest(root: Path) -> None:
         'insight = "docs/insight.md"\n'
         '\n'
         '[evaluation]\n'
-        'fitness-vector = "eval/fitness.json"\n',
+        'fitness-vector = "eval/fitness.json"\n'
+        'traces = ["lirs:multi1.trace.gz"]\n'
+        'sizes = [512]\n',
     )
 
 

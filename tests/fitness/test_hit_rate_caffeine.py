@@ -14,11 +14,7 @@ import pytest
 
 from evolve.config import load_configs
 from evolve.fitness._contract import validate_plugin_dict
-from evolve.fitness.caffeine_simulator import (
-    HARDCODED_SIZE,
-    HARDCODED_TRACE,
-    simulate_variant,
-)
+from evolve.fitness.caffeine_simulator import simulate_variant
 from evolve.fitness.plugins import hit_rate
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout, SourcesLayout, VariantDir
@@ -52,12 +48,15 @@ def _stage_good(tmp_path: Path) -> tuple[Layout, CycleVariant]:
 def test_hit_rate_caffeine_end_to_end(tmp_path):
     layout, variant = _stage_good(tmp_path)
     cfg = load_configs(layout.repo_root)
+    grid = load_subject(layout.sources.subject_dir).evaluation
+    [expected_trace] = grid.traces
+    [expected_size] = grid.sizes
     results = simulate_variant(variant, layout=layout, repo_root=REPO_ROOT, cfg=cfg)
 
     assert results.results, "caffeine produced no results"
     [single] = results.results
-    assert single.trace == HARDCODED_TRACE
-    assert single.size == HARDCODED_SIZE
+    assert single.trace == expected_trace
+    assert single.size == expected_size
     assert single.requests > 0
     assert 0.0 < single.hit_rate <= 1.0
 
@@ -67,13 +66,13 @@ def test_hit_rate_caffeine_end_to_end(tmp_path):
     assert record["higher_is_better"] is True
     assert record["summary"] > 0
     assert record["values"] == [{
-        "trace": HARDCODED_TRACE,
-        "size": HARDCODED_SIZE,
+        "trace": expected_trace,
+        "size": expected_size,
         "hit_rate": single.hit_rate,
     }]
 
     caffeine_out = variant.resolve(layout).caffeine_dir
-    assert caffeine_out.hit_rate_csv(HARDCODED_SIZE).is_file()
+    assert caffeine_out.hit_rate_csv(expected_size).is_file()
     assert caffeine_out.gradle_stdout_log.is_file()
     assert caffeine_out.gradle_stderr_log.is_file()
     cdylib_name = load_subject(layout.sources.subject_dir).cdylib_name

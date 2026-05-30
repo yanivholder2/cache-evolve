@@ -90,6 +90,8 @@ def write_stub_subject(subject_dir: Path) -> StubSubject:
         "\n"
         "[evaluation]\n"
         'fitness-vector = "baseline/eval/fitness-vector.json"\n'
+        'traces = ["lirs:multi1.trace.gz"]\n'
+        "sizes = [512]\n"
         "\n"
         "[bench]\n"
         'binary-name = "stub-bench"\n',

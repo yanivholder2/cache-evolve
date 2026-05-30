@@ -12,7 +12,7 @@ from pathlib import Path
 
 from evolve.config import load_configs
 from evolve.fitness.runner import compute_fitness
-from evolve.variant.gate_check import run_gates
+from evolve.variant.gates import run_gates
 from evolve.paths import Baseline, Layout
 
 
@@ -22,7 +22,11 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parent.parent
 
     cfg = load_configs(repo_root)
-    layout = Layout(repo_root=repo_root, outputs_root=repo_root / "outputs")
+    layout = Layout(
+        repo_root=repo_root,
+        outputs_root=cfg.framework.outputs_root,
+        subject=cfg.framework.subject,
+    )
     baseline = layout.sources.baseline
 
     # Baseline is the subject as-is (empty overlay); the subject manifest
@@ -32,8 +36,8 @@ def main() -> None:
             f"{layout.sources.subject_manifest} not found - check out the subject crate"
         )
 
-    baseline.files_dir.mkdir(parents=True, exist_ok=True)
-    baseline.fitness_dir.mkdir(parents=True, exist_ok=True)
+    # Empty overlay -> the baseline crate builds unchanged.
+    baseline.overlay_dir.mkdir(parents=True, exist_ok=True)
     variant = Baseline()
 
     logging.info("measuring baseline at %s", baseline.root)
