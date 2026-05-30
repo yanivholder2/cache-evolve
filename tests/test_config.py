@@ -14,7 +14,6 @@ def _write_config(
     *,
     authoring_scope: str | None = "extension-points",
     subject: str | None = "dash",
-    per_op_time_repeats: int | None = 5,
 ) -> Path:
     lines = [
         "[framework]",
@@ -27,8 +26,6 @@ def _write_config(
         "max_workers = 0",
         "implementation_attempts = 3",
     ]
-    if per_op_time_repeats is not None:
-        lines.append(f"per_op_time_repeats = {per_op_time_repeats}")
     if authoring_scope is not None:
         lines.append(f'authoring_scope = "{authoring_scope}"')
     if subject is not None:
@@ -83,16 +80,4 @@ def test_subject_flag_overrides_config(tmp_path: Path):
 def test_subject_absent_raises(tmp_path: Path):
     _write_config(tmp_path, subject=None)
     with pytest.raises(ConfigError, match="subject"):
-        load_configs(tmp_path)
-
-
-def test_per_op_time_repeats_resolves_from_config(tmp_path: Path):
-    _write_config(tmp_path, per_op_time_repeats=7)
-    configs = load_configs(tmp_path)
-    assert configs.framework.per_op_time_repeats == 7
-
-
-def test_per_op_time_repeats_absent_raises(tmp_path: Path):
-    _write_config(tmp_path, per_op_time_repeats=None)
-    with pytest.raises(ConfigError, match="per_op_time_repeats"):
         load_configs(tmp_path)

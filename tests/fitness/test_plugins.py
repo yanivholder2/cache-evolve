@@ -1,5 +1,6 @@
 """Tests for fitness plugin output shape."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -57,60 +58,39 @@ def test_hit_rate_plugin_rejects_empty_results():
         hit_rate.compute(results=CaffeineResults(results=[]))
 
 
-def _per_op_run(p50_get, p99_get, p50_put, p99_put, summary):
-    """A single per-op-time run record matching the plugin contract."""
-    return {
+def test_per_op_time_plugin_shape(monkeypatch, tmp_path):
+    # No subject currently declares [bench], so stub the subject the plugin loads
+    # and the bench build/run; the plugin only forwards the validated record.
+    layout = Layout(repo_root=REPO_ROOT, outputs_root=REPO_ROOT / "outputs", subject=SUBJECT)
+
+    class _Bench:
+        binary_name = "dash-bench"
+
+    class _Subject:
+        name = "dash"
+        bench = _Bench()
+
+    record = {
         "dim": "per-op-time",
         "values": [
-            {"op": "get", "p50_ns": p50_get, "p99_ns": p99_get},
-            {"op": "put", "p50_ns": p50_put, "p99_ns": p99_put},
+            {"op": "get", "p50_ns": 10, "p99_ns": 20},
+            {"op": "put", "p50_ns": 100, "p99_ns": 200},
         ],
-        "summary": summary,
+        "summary": 5.0,
         "higher_is_better": False,
     }
-
-
-def test_per_op_time_aggregates_median_and_spread(monkeypatch):
-    layout = Layout(repo_root=REPO_ROOT, outputs_root=REPO_ROOT / "outputs", subject=SUBJECT)
+    monkeypatch.setattr(per_op_time, "load_subject", lambda *_a, **_kw: _Subject())
     monkeypatch.setattr(per_op_time, "cargo_build", lambda *_a, **_kw: None)
-    monkeypatch.setattr(per_op_time, "_resolve_target_dir", lambda *_a, **_kw: Path("/tmp"))
+    monkeypatch.setattr(per_op_time, "_resolve_target_dir", lambda *_a, **_kw: tmp_path)
+    monkeypatch.setattr(per_op_time.subprocess, "run", lambda *_a, **_kw: None)
+    monkeypatch.setattr(per_op_time, "read_utf8", lambda *_a, **_kw: json.dumps(record))
 
-    runs = [
-        _per_op_run(10, 20, 100, 200, 5.0),
-        _per_op_run(14, 24, 110, 210, 9.0),
-        _per_op_run(12, 22, 105, 205, 7.0),
-    ]
-    scripted = iter(runs)
-    monkeypatch.setattr(per_op_time, "_run_once", lambda *_a, **_kw: next(scripted))
-
-    data = per_op_time.compute(layout=layout, repeats=3)
+    data = per_op_time.compute(layout=layout)
     _assert_shape(data, "per-op-time")
     assert data["higher_is_better"] is False
-    assert data["summary"] == pytest.approx(7.0)  # median of 5, 9, 7
-
-    get = next(v for v in data["values"] if v["op"] == "get")
-    assert get["p50_ns"] == pytest.approx(12)  # median of 10, 14, 12
-    assert get["p99_ns"] == pytest.approx(22)
-    assert get["p50_ns_spread"] == [10, 14]
-    assert get["p99_ns_spread"] == [20, 24]
-
-    put = next(v for v in data["values"] if v["op"] == "put")
-    assert put["p50_ns"] == pytest.approx(105)
-    assert put["p50_ns_spread"] == [100, 110]
-
-
-def test_per_op_time_single_repeat(monkeypatch):
-    layout = Layout(repo_root=REPO_ROOT, outputs_root=REPO_ROOT / "outputs", subject=SUBJECT)
-    monkeypatch.setattr(per_op_time, "cargo_build", lambda *_a, **_kw: None)
-    monkeypatch.setattr(per_op_time, "_resolve_target_dir", lambda *_a, **_kw: Path("/tmp"))
-    monkeypatch.setattr(per_op_time, "_run_once", lambda *_a, **_kw: _per_op_run(10, 20, 100, 200, 5.0))
-
-    data = per_op_time.compute(layout=layout, repeats=1)
     get = next(v for v in data["values"] if v["op"] == "get")
     assert get["p50_ns"] == 10
-    assert get["p50_ns_spread"] == [10, 10]
-    assert get["p99_ns_spread"] == [20, 20]
-    assert data["summary"] == pytest.approx(5.0)
+    assert get["p99_ns"] == 20
 
 
 def test_metadata_size_builds_against_overlay(monkeypatch, tmp_path):
