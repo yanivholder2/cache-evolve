@@ -68,6 +68,22 @@ def parse(path: Path) -> Hypothesis:
     return Hypothesis(claim=claim, parent_variant=parent_variant, changes=changes)
 
 
+def referenced_files(changes: str, suffixes: frozenset[str]) -> frozenset[str]:
+    """Source-file tokens named in the ``## Changes`` prose whose extension is in
+    `suffixes` (each dotted, e.g. ``".rs"``).
+
+    Returns the tokens exactly as written — bare basenames (``item.rs``) or paths
+    (``src/dash/item.rs``). The caller maps these onto its authoring scope; the
+    extractor stays subject-agnostic by taking the extensions to look for rather
+    than assuming a language."""
+
+    if not suffixes:
+        return frozenset()
+    exts = "|".join(re.escape(suffix.lstrip(".")) for suffix in sorted(suffixes))
+    pattern = re.compile(rf"[\w./-]*[\w-]\.(?:{exts})\b")
+    return frozenset(match.group(0) for match in pattern.finditer(changes))
+
+
 def _parse_parent_variant(line: str) -> Variant:
     if line == BASELINE_STR:
         return Baseline()

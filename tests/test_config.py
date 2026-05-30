@@ -14,6 +14,7 @@ def _write_config(
     *,
     authoring_scope: str | None = "extension-points",
     subject: str | None = "dash",
+    hypothesis_attempts: int | None = 3,
 ) -> Path:
     lines = [
         "[framework]",
@@ -26,6 +27,8 @@ def _write_config(
         "max_workers = 0",
         "implementation_attempts = 3",
     ]
+    if hypothesis_attempts is not None:
+        lines.append(f"hypothesis_attempts = {hypothesis_attempts}")
     if authoring_scope is not None:
         lines.append(f'authoring_scope = "{authoring_scope}"')
     if subject is not None:
@@ -80,4 +83,16 @@ def test_subject_flag_overrides_config(tmp_path: Path):
 def test_subject_absent_raises(tmp_path: Path):
     _write_config(tmp_path, subject=None)
     with pytest.raises(ConfigError, match="subject"):
+        load_configs(tmp_path)
+
+
+def test_hypothesis_attempts_resolves_from_config(tmp_path: Path):
+    _write_config(tmp_path, hypothesis_attempts=5)
+    configs = load_configs(tmp_path)
+    assert configs.framework.hypothesis_attempts == 5
+
+
+def test_hypothesis_attempts_absent_raises(tmp_path: Path):
+    _write_config(tmp_path, hypothesis_attempts=None)
+    with pytest.raises(ConfigError, match="hypothesis_attempts"):
         load_configs(tmp_path)
