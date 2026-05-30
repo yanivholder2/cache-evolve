@@ -112,3 +112,39 @@ def test_cycle_variant_resolves_to_variant_dir(tmp_path):
 def test_variant_str_round_trips(tmp_path):
     assert str(Baseline()) == "baseline"
     assert str(CycleVariant(cycle_id=CycleId(2), variant_id=VariantId(3))) == "cycle/0002/v003"
+
+
+_RS = frozenset({".rs"})
+
+
+def test_referenced_files_finds_bare_basename():
+    assert parser.referenced_files("Edit eviction_policy.rs victim choice.", _RS) == {"eviction_policy.rs"}
+
+
+def test_referenced_files_finds_full_path():
+    found = parser.referenced_files("Thread it through src/dash/segments/promotion_logic.rs here.", _RS)
+    assert found == {"src/dash/segments/promotion_logic.rs"}
+
+
+def test_referenced_files_finds_multiple_and_dedupes():
+    found = parser.referenced_files(
+        "Touch item.rs and dash_bucket.rs, then item.rs again.", _RS
+    )
+    assert found == {"item.rs", "dash_bucket.rs"}
+
+
+def test_referenced_files_ignores_non_matching_suffixes():
+    assert parser.referenced_files("See README.md and config.toml.", _RS) == frozenset()
+
+
+def test_referenced_files_no_tokens():
+    assert parser.referenced_files("Raise the hit rate by 0.05 with a smarter victim.", _RS) == frozenset()
+
+
+def test_referenced_files_empty_suffixes_matches_nothing():
+    assert parser.referenced_files("Edit eviction_policy.rs.", frozenset()) == frozenset()
+
+
+def test_referenced_files_honors_given_suffixes():
+    found = parser.referenced_files("Edit build.rs and Cargo.toml.", frozenset({".toml"}))
+    assert found == {"Cargo.toml"}

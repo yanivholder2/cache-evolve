@@ -28,7 +28,7 @@ _TEST_CFG = Configs(
     framework=FrameworkConfig(
         cycles=1, cohort_size=1, ai_agent_tool="claude-sdk",
         outputs_root=Path("/tmp"), log_level="DEBUG", digest_cycles=3,
-        max_workers=0, implementation_attempts=3,
+        max_workers=0, implementation_attempts=3, hypothesis_attempts=3,
         authoring_scope="extension-points", subject=SUBJECT,
     ),
     simulator=SimulatorConfig(timeout_s=600),

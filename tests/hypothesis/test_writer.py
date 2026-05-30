@@ -454,6 +454,102 @@ def test_authoring_scope_section_full_autonomy(tmp_path):
     assert "Any overlay file may be edited" in task_md
 
 
+# The real dash manifest's extension-point impl files: eviction_policy.rs,
+# dash_bucket.rs, item.rs. `promotion_logic.rs` is the canonical out-of-scope
+# file (the run failure these tests guard against).
+
+
+class _ScopeVaryingAdapter:
+    """Hypotheses-writer stub returning a different `## Changes` per call, so the
+    scope-regenerate loop can be driven end to end. Counts its invocations."""
+
+    def __init__(self, change_per_call: list[str]) -> None:
+        self._change_per_call = change_per_call
+        self.calls = 0
+
+    def identity(self) -> str:
+        return "ScopeVaryingAdapter"
+
+    def run(self, agent_name, workspace, *, readable_roots, allow_edits) -> None:
+        change = self._change_per_call[min(self.calls, len(self._change_per_call) - 1)]
+        self.calls += 1
+        for i in (1, 2):
+            write_utf8(
+                workspace / f"H{i:02d}.md",
+                f"# Hypothesis H{i:02d}\n\nclaim {i}\n\n## Parent\n\nbaseline\n\n## Changes\n\n{change}\n",
+            )
+
+
+def test_extension_scope_passes_when_changes_in_scope(tmp_path):
+    evolve = _copy_real_evolve(tmp_path)
+    files = write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(1),
+        adapter=StubLLMAdapter(
+            n_lines=2,
+            changes=["Tighten eviction_policy.rs victim selection.", "Rebalance in dash_bucket.rs."],
+        ),
+        authoring_scope=AuthoringScope.EXTENSION_POINTS,
+        attempts=2,
+    )
+    assert len(files) == 2
+
+
+def test_extension_scope_regenerates_on_out_of_scope_then_succeeds(tmp_path):
+    evolve = _copy_real_evolve(tmp_path)
+    adapter = _ScopeVaryingAdapter(
+        [
+            "Thread InsertPosition through promotion_logic.rs.",  # out of scope
+            "Adjust the candidate index in eviction_policy.rs.",  # back in scope
+        ]
+    )
+    files = write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(1),
+        adapter=adapter,
+        authoring_scope=AuthoringScope.EXTENSION_POINTS,
+        attempts=2,
+    )
+    assert adapter.calls == 2
+    assert len(files) == 2
+    task_md = read_utf8(_layout(evolve).outputs.cycle(CycleId(1)).hypotheses_task_md)
+    assert "## Scope correction" in task_md
+    assert "promotion_logic.rs" in task_md
+
+
+def test_extension_scope_exhaustion_raises(tmp_path):
+    evolve = _copy_real_evolve(tmp_path)
+    adapter = _ScopeVaryingAdapter(["Thread it through promotion_logic.rs."])
+    with pytest.raises(ValueError, match="outside the authoring scope"):
+        write_hypotheses(
+            2,
+            layout=_layout(evolve),
+            cycle_id=CycleId(1),
+            adapter=adapter,
+            authoring_scope=AuthoringScope.EXTENSION_POINTS,
+            attempts=2,
+        )
+    assert adapter.calls == 2
+
+
+def test_full_autonomy_skips_scope_check(tmp_path):
+    evolve = _copy_real_evolve(tmp_path)
+    files = write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(1),
+        adapter=StubLLMAdapter(
+            n_lines=2,
+            changes=["Edit promotion_logic.rs freely.", "Rework segment.rs."],
+        ),
+        authoring_scope=AuthoringScope.FULL_AUTONOMY,
+        attempts=2,
+    )
+    assert len(files) == 2
+
+
 def test_subagent_markdown_states_contract():
     agent_md = SourcesLayout(root=REPO_SRC).agent_prompt("hypotheses-writer")
     assert agent_md.is_file(), f"missing {agent_md}"

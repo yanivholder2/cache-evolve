@@ -384,6 +384,7 @@ def run_cycle(
                 cycle_id=cycle_id,
                 adapter=adapter,
                 authoring_scope=cfg.framework.authoring_scope,
+                attempts=cfg.framework.hypothesis_attempts,
             )
 
         with _phase("per-variant", timings):

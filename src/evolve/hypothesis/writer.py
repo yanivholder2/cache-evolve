@@ -13,7 +13,7 @@ from evolve.hypothesis import parser
 from evolve.llm import LLMAdapter
 from evolve.identifiers import HYPOTHESIS_ID_WIDTH, CycleId
 from evolve.paths import Layout
-from evolve.subject import load_subject
+from evolve.subject import Subject, load_subject
 
 AGENT_NAME = "hypotheses-writer"
 HYPOTHESIS_FILE_RE = re.compile(rf"H\d{{{HYPOTHESIS_ID_WIDTH}}}\.md")
@@ -196,17 +196,23 @@ def write_hypotheses(
     cycle_id: CycleId,
     adapter: LLMAdapter,
     authoring_scope: AuthoringScope | None = None,
+    attempts: int = 1,
 ) -> list[Path]:
     """Produce `hypotheses_num` H<NN>.md files; return their paths.
 
     When `authoring_scope` is given, the task.md states which overlay files the
-    proposer's hypotheses may edit. On a continuation cycle with a non-empty
-    global Pareto front, at least one produced hypothesis must cite a front
-    variant as its parent (anchoring the cohort on the proven best-so-far).
+    proposer's hypotheses may edit. Under the extension-points scope, a produced
+    batch whose `## Changes` names a file outside the writable surface is
+    regenerated (up to `attempts` total) with a corrective directive appended to
+    the task.md — catching the out-of-scope proposal before it costs an
+    implementer call. On a continuation cycle with a non-empty global Pareto
+    front, at least one produced hypothesis must cite a front variant as its
+    parent (anchoring the cohort on the proven best-so-far).
 
     Raises:
-        ValueError: `hypotheses_num` < 1, adapter wrote the wrong file count, or
-            no produced hypothesis anchors on a required global-front variant.
+        ValueError: `hypotheses_num` < 1, adapter wrote the wrong file count,
+            hypotheses still name out-of-scope files after `attempts`, or no
+            produced hypothesis anchors on a required global-front variant.
     """
 
     if hypotheses_num < 1:
@@ -224,13 +230,47 @@ def write_hypotheses(
         champions = _write_continuation_task_md(hypotheses_num, cycle_id, layout, authoring_scope)
     log.debug("wrote task spec: %s", cycle_layout.hypotheses_task_md)
 
-    adapter.run(
-        agent_name=AGENT_NAME,
-        workspace=hypotheses_dir,
-        readable_roots=[layout.outputs_root, layout.sources.subject_src, layout.sources.subject_dir],
-        allow_edits=True,
+    subject = (
+        load_subject(layout.sources.subject_dir)
+        if authoring_scope is AuthoringScope.EXTENSION_POINTS
+        else None
     )
 
+    files: list[Path] = []
+    for attempt in range(1, attempts + 1):
+        adapter.run(
+            agent_name=AGENT_NAME,
+            workspace=hypotheses_dir,
+            readable_roots=[layout.outputs_root, layout.sources.subject_src, layout.sources.subject_dir],
+            allow_edits=True,
+        )
+        files = _collect_hypothesis_files(hypotheses_dir, hypotheses_num)
+        violations = _scope_violations(files, subject, authoring_scope)
+        if not violations:
+            break
+        log.warning(
+            "hypotheses name out-of-scope files on attempt %d of %d: %s",
+            attempt, attempts, violations,
+        )
+        if attempt == attempts:
+            raise ValueError(
+                f"hypotheses still name files outside the authoring scope after {attempts} "
+                f"attempts: {violations}; writable surface: "
+                f"{sorted(str(path) for path in subject.ep_scope_whitelist)}"
+            )
+        write_utf8(
+            cycle_layout.hypotheses_task_md,
+            read_utf8(cycle_layout.hypotheses_task_md) + _scope_correction(violations, subject),
+        )
+    log.info("adapter produced %d hypothesis files in %s", len(files), hypotheses_dir)
+
+    if cycle_id != COLD_START_CYCLE and champions is not None:
+        _enforce_parent_quota(files, champions)
+    return files
+
+
+def _collect_hypothesis_files(hypotheses_dir: Path, hypotheses_num: int) -> list[Path]:
+    """The `hypotheses_num` H<NN>.md files the adapter wrote; raise on any other count."""
     entries = sorted(p for p in hypotheses_dir.iterdir() if p.is_file())
     files = [p for p in entries if HYPOTHESIS_FILE_RE.fullmatch(p.name)]
     if len(files) != hypotheses_num:
@@ -240,11 +280,51 @@ def write_hypotheses(
             f"adapter wrote {len(files)} H<NN>.md files in {hypotheses_dir}, expected {hypotheses_num}; "
             f"matched={[p.name for p in files]}; other_files={other}; agent_log={agent_log}"
         )
-    log.info("adapter produced %d hypothesis files in %s", len(files), hypotheses_dir)
-
-    if cycle_id != COLD_START_CYCLE and champions is not None:
-        _enforce_parent_quota(files, champions)
     return files
+
+
+def _scope_violations(
+    files: list[Path], subject: Subject | None, authoring_scope: AuthoringScope | None
+) -> dict[str, list[str]]:
+    """Per-hypothesis, the out-of-scope source files its `## Changes` names.
+
+    Only the extension-points scope constrains the writable surface, so any other
+    scope yields no violations. A referenced file is out of scope when its
+    basename is not among the extension-point whitelist's. Matching by basename
+    keeps an in-scope proposal from being rejected whether it writes the path in
+    full or bare; the implementer's exact-path check is the backstop."""
+    if authoring_scope is not AuthoringScope.EXTENSION_POINTS or subject is None:
+        return {}
+    whitelist = subject.ep_scope_whitelist
+    allowed = {path.name for path in whitelist}
+    suffixes = frozenset(path.suffix for path in whitelist)
+    violations: dict[str, list[str]] = {}
+    for path in files:
+        referenced = parser.referenced_files(parser.parse(path).changes, suffixes)
+        outside = sorted({token for token in referenced if Path(token).name not in allowed})
+        if outside:
+            violations[path.name] = outside
+    return violations
+
+
+def _scope_correction(violations: dict[str, list[str]], subject: Subject) -> str:
+    """A task.md directive steering regeneration back inside the writable surface."""
+    whitelist = sorted(str(path) for path in subject.ep_scope_whitelist)
+    lines = [
+        "\n## Scope correction\n\n",
+        "The previous attempt named files outside the writable surface. Rewrite "
+        "every hypothesis so its `## Changes` edits only these extension-point "
+        "impl files:\n",
+    ]
+    for path in whitelist:
+        lines.append(f"- {path}\n")
+    lines.append("\nOut-of-scope files named last attempt:\n")
+    for name, outside in sorted(violations.items()):
+        lines.append(f"- {name}: {outside}\n")
+    lines.append(
+        "\nExpress the same idea through one of the in-scope files instead.\n"
+    )
+    return "".join(lines)
 
 
 def _enforce_parent_quota(files: list[Path], champions: dict) -> None:
