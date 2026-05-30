@@ -30,9 +30,6 @@ from evolve.variant.build import compile_cdylib
 
 log = logging.getLogger(__name__)
 
-# Issue-85 hardcoded fitness point. #83 replaces these with a trace suite.
-HARDCODED_TRACE = "lirs:multi1.trace.gz"
-HARDCODED_SIZE = 512
 # Variants no longer declare an eviction policy; the baseline runs ClassicLRU
 # and that's what the simulator drives by default. A variant selects a
 # different policy by overlaying `src/factory.rs`.
@@ -186,7 +183,10 @@ def simulate_variant(
 
     variant_dir = variant.resolve(layout)
     policy_name = DEFAULT_EVICTION_POLICY
-    caffeine = load_subject(layout.sources.subject_dir).caffeine
+    subject = load_subject(layout.sources.subject_dir)
+    caffeine = subject.caffeine
+    traces = subject.evaluation.traces
+    sizes = subject.evaluation.sizes
     debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
 
     caffeine_out = variant_dir.caffeine_dir
@@ -199,27 +199,48 @@ def simulate_variant(
         raise CaffeineSimulatorError(f"cdylib build failed for {variant}: {exception}") from exception
 
     try:
-        log.info("[%s] caffeine simulate trace=%s size=%d policy=%s", variant, HARDCODED_TRACE, HARDCODED_SIZE, policy_name)
-        try:
-            with _CAFFEINE_LOCK:
-                run_result = caffeine_runner.run(
-                    library_path=cdylib_path.parent,
-                    trace=HARDCODED_TRACE,
-                    size=HARDCODED_SIZE,
-                    policies=[policy_name.lower()],
-                    timeout_s=cfg.simulator.timeout_s,
-                    **caffeine.as_runner_kwargs(),
-                    debug_mode=debug_mode,
-                    log_path=caffeine_out.rust_logs_dir,
-                    output_dir=caffeine_out.root,
+        results: list[CaffeineResult] = []
+        gradle_stdout: list[str] = []
+        gradle_stderr: list[str] = []
+        # One native invocation per trace sweeps every size at once, emitting a
+        # hit_rate_<size>.csv per size. Accumulate all (trace, size) points.
+        for trace in traces:
+            log.info(
+                "[%s] caffeine simulate trace=%s sizes=%s policy=%s",
+                variant, trace, list(sizes), policy_name,
+            )
+            try:
+                with _CAFFEINE_LOCK:
+                    run_result = caffeine_runner.simulate(
+                        library_path=cdylib_path.parent,
+                        trace=trace,
+                        sizes=list(sizes),
+                        policies=[policy_name.lower()],
+                        timeout_s=cfg.simulator.timeout_s,
+                        **caffeine.as_runner_kwargs(),
+                        debug_mode=debug_mode,
+                        log_path=caffeine_out.rust_logs_dir,
+                        output_dir=caffeine_out.root,
+                    )
+            except caffeine_runner.CaffeineError as exception:
+                _write_gradle_logs(
+                    caffeine_out,
+                    stdout="\n".join(gradle_stdout),
+                    stderr="\n".join((*gradle_stderr, str(exception))),
                 )
-        except caffeine_runner.CaffeineError as exception:
-            _write_gradle_logs(caffeine_out, stdout="", stderr=str(exception))
-            raise CaffeineSimulatorError(str(exception)) from exception
+                raise CaffeineSimulatorError(str(exception)) from exception
 
-        _write_gradle_logs(caffeine_out, stdout=run_result.stdout, stderr=run_result.stderr)
-        csv_path = _per_size_csv(caffeine_out, HARDCODED_SIZE)
-        results = _parse_csv(csv_path, trace=HARDCODED_TRACE, size=HARDCODED_SIZE)
+            gradle_stdout.append(run_result.stdout)
+            gradle_stderr.append(run_result.stderr)
+            for size in sizes:
+                csv_path = _per_size_csv(caffeine_out, size)
+                results.extend(_parse_csv(csv_path, trace=trace, size=size))
+
+        _write_gradle_logs(
+            caffeine_out,
+            stdout="\n".join(gradle_stdout),
+            stderr="\n".join(gradle_stderr),
+        )
         return CaffeineResults(results=results)
     finally:
         shutil.rmtree(

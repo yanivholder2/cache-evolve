@@ -48,7 +48,17 @@ class Docs:
 
 @dataclass(frozen=True)
 class Evaluation:
+    """How a variant's fitness is measured.
+
+    `fitness_vector` is the committed baseline anchor. `traces` and `sizes`
+    declare the evaluation grid: each trace is a `"<format>:<path>"` string and
+    sizes are cache capacities. The grid is their Cartesian product, scored
+    identically for the baseline anchor and every variant.
+    """
+
     fitness_vector: Path
+    traces: tuple[str, ...]
+    sizes: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -129,7 +139,7 @@ _ALLOWED_GATES = {"name", "test", "marker"}
 _ALLOWED_CONTRACT = {"protected-files"}
 _ALLOWED_CAFFEINE = {"config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry"}
 _ALLOWED_DOCS = {"context", "insight"}
-_ALLOWED_EVAL = {"fitness-vector"}
+_ALLOWED_EVAL = {"fitness-vector", "traces", "sizes"}
 _ALLOWED_BENCH = {"binary-name"}
 _ALLOWED_METADATA = {"binary-name"}
 
@@ -264,11 +274,7 @@ def load_subject(subject_dir: Path) -> Subject:
 
     caffeine = _load_caffeine(caffeine_table)
 
-    _reject_unknown(eval_table, _ALLOWED_EVAL, "evaluation")
-    fv_raw = _require(eval_table, "fitness-vector", "evaluation")
-    fv = _check_relative(fv_raw, "evaluation.fitness-vector")
-    _check_exists(subject_dir, fv, "evaluation.fitness-vector")
-    evaluation = Evaluation(fitness_vector=fv)
+    evaluation = _load_evaluation(eval_table, subject_dir)
 
     bench = _load_bench(bench_table)
     metadata = _load_metadata(metadata_table)
@@ -324,6 +330,40 @@ def _load_caffeine(table: dict) -> CaffeineConfig:
         policy_key=policy_key,
         supports_log_path=supports_log_path,
     )
+
+
+def _load_evaluation(table: dict, subject_dir: Path) -> Evaluation:
+    _reject_unknown(table, _ALLOWED_EVAL, "evaluation")
+    fv_raw = _require(table, "fitness-vector", "evaluation")
+    fv = _check_relative(fv_raw, "evaluation.fitness-vector")
+    _check_exists(subject_dir, fv, "evaluation.fitness-vector")
+
+    traces_raw = _require(table, "traces", "evaluation")
+    if not isinstance(traces_raw, list) or not traces_raw:
+        raise SubjectManifestError("evaluation.traces: must be a non-empty list of strings")
+    traces: list[str] = []
+    for trace in traces_raw:
+        fmt, sep, path = trace.partition(":") if isinstance(trace, str) else ("", "", "")
+        if not isinstance(trace, str) or not sep or not fmt or not path:
+            raise SubjectManifestError(
+                f"evaluation.traces: each entry must be a '<format>:<path>' string, got {trace!r}"
+            )
+        traces.append(trace)
+
+    sizes_raw = _require(table, "sizes", "evaluation")
+    if not isinstance(sizes_raw, list) or not sizes_raw:
+        raise SubjectManifestError("evaluation.sizes: must be a non-empty list of integers")
+    sizes: list[int] = []
+    for size in sizes_raw:
+        if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
+            raise SubjectManifestError(
+                f"evaluation.sizes: each entry must be a positive integer, got {size!r}"
+            )
+        if size in sizes:
+            raise SubjectManifestError(f"evaluation.sizes: duplicate size {size}")
+        sizes.append(size)
+
+    return Evaluation(fitness_vector=fv, traces=tuple(traces), sizes=tuple(sizes))
 
 
 def _load_bench(table: dict | None) -> Bench | None:

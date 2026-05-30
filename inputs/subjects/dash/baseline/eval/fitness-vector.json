@@ -5,27 +5,12 @@
       "dim": "hit-rate",
       "values": [
         {
-          "cache": "assoc",
-          "size": 16,
-          "hit_rate": 0.8775
-        },
-        {
-          "cache": "assoc",
-          "size": 32,
-          "hit_rate": 0.9055
-        },
-        {
-          "cache": "dash",
-          "size": 16,
-          "hit_rate": 0.9655
-        },
-        {
-          "cache": "dash",
-          "size": 32,
-          "hit_rate": 0.929
+          "trace": "lirs:multi1.trace.gz",
+          "size": 512,
+          "hit_rate": 0.4653
         }
       ],
-      "summary": 0.94725,
+      "summary": 0.4653,
       "higher_is_better": true
     },
     {
@@ -34,10 +19,6 @@
         {
           "type": "Item<u64,u64>",
           "bytes": 40
-        },
-        {
-          "type": "AssociativeCache<u64,u64>",
-          "bytes": 24
         },
         {
           "type": "Dash<u64,u64,PromotionColdSegment>",
@@ -52,16 +33,16 @@
       "values": [
         {
           "op": "get",
-          "p50_ns": 30,
-          "p99_ns": 120
+          "p50_ns": 37,
+          "p99_ns": 150
         },
         {
           "op": "put",
-          "p50_ns": 124,
-          "p99_ns": 231
+          "p50_ns": 151,
+          "p99_ns": 245
         }
       ],
-      "summary": 30,
+      "summary": 37,
       "higher_is_better": false
     }
   ]

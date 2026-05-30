@@ -15,11 +15,7 @@ from pathlib import Path
 import pytest
 
 from evolve.config import load_configs
-from evolve.fitness.caffeine_simulator import (
-    HARDCODED_SIZE,
-    HARDCODED_TRACE,
-    simulate_variant,
-)
+from evolve.fitness.caffeine_simulator import simulate_variant
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout, SourcesLayout
 from evolve.subject import load_subject
@@ -51,19 +47,23 @@ def test_subject_caffeine_path_end_to_end(tmp_path, subject):
     cfg = load_configs(layout.repo_root, subject=subject)
     results = simulate_variant(VARIANT, layout=layout, repo_root=REPO_ROOT, cfg=cfg)
 
+    loaded = load_subject(layout.sources.subject_dir)
+    grid = loaded.evaluation
+    [expected_trace] = grid.traces
+    [expected_size] = grid.sizes
+
     assert results.results, f"{subject}: caffeine produced no results"
     [single] = results.results
-    assert single.trace == HARDCODED_TRACE
-    assert single.size == HARDCODED_SIZE
+    assert single.trace == expected_trace
+    assert single.size == expected_size
     assert single.requests > 0, f"{subject}: simulator recorded no requests"
     assert 0.0 < single.hit_rate <= 1.0, f"{subject}: implausible hit rate {single.hit_rate}"
 
     caffeine_out = VARIANT.resolve(layout).caffeine_dir
-    assert caffeine_out.hit_rate_csv(HARDCODED_SIZE).is_file()
+    assert caffeine_out.hit_rate_csv(expected_size).is_file()
 
     # Only subjects that route their JNI log via logPath land it under our
     # caffeine_out; others (assoc, lru) log to the simulator's own default dir.
-    loaded = load_subject(layout.sources.subject_dir)
     if loaded.caffeine.supports_log_path:
         rust_logs = list(caffeine_out.rust_logs_dir.glob(f"{loaded.cdylib_name}_*.log"))
         assert rust_logs, f"{subject}: no rust JNI log under {caffeine_out.rust_logs_dir}"

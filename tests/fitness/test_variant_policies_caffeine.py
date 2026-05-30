@@ -22,8 +22,6 @@ from scripts import caffeine_runner
 
 from evolve.config import load_configs
 from evolve.fitness.caffeine_simulator import (
-	HARDCODED_SIZE,
-	HARDCODED_TRACE,
 	CaffeineSimulatorError,
 	_parse_csv,
 	_write_gradle_logs,
@@ -74,12 +72,15 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 		raise CaffeineSimulatorError(f"cdylib build failed: {exception}") from exception
 
 	try:
-		caffeine = load_subject(layout.sources.subject_dir).caffeine
+		loaded = load_subject(layout.sources.subject_dir)
+		caffeine = loaded.caffeine
+		[expected_trace] = loaded.evaluation.traces
+		[expected_size] = loaded.evaluation.sizes
 		try:
 			run_result = caffeine_runner.run(
 				library_path=cdylib_path.parent,
-				trace=HARDCODED_TRACE,
-				size=HARDCODED_SIZE,
+				trace=expected_trace,
+				size=expected_size,
 				policies=[p.lower() for p in POLICIES],
 				timeout_s=cfg.simulator.timeout_s,
 				config_prefix=caffeine.config_prefix,
@@ -96,9 +97,9 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 			raise
 
 		_write_gradle_logs(caffeine_out, stdout=run_result.stdout, stderr=run_result.stderr)
-		csv_path = caffeine_out.hit_rate_csv(HARDCODED_SIZE)
+		csv_path = caffeine_out.hit_rate_csv(expected_size)
 		assert csv_path.is_file(), f"caffeine did not produce {csv_path}"
-		results = _parse_csv(csv_path, trace=HARDCODED_TRACE, size=HARDCODED_SIZE)
+		results = _parse_csv(csv_path, trace=expected_trace, size=expected_size)
 	finally:
 		shutil.rmtree(workspace.root, ignore_errors=True)
 
@@ -112,8 +113,8 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 			f"policy={policy} not found exactly once in CSV rows {reported}"
 		)
 		row = matches[0]
-		assert row.trace == HARDCODED_TRACE
-		assert row.size == HARDCODED_SIZE
+		assert row.trace == expected_trace
+		assert row.size == expected_size
 		assert row.requests > 0
 		assert 0.0 < row.hit_rate <= 1.0, (
 			f"policy={policy} hit_rate={row.hit_rate} outside (0, 1]"
