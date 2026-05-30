@@ -172,6 +172,56 @@ def test_missing_cycle_insight_md_raises(tmp_path):
         )
 
 
+def test_rejected_variants_section_carries_reason_and_detail(tmp_path):
+    cycle_layout = _cycle_layout(tmp_path, CycleId(1))
+    v1 = _seed_variant(cycle_layout, VariantId(1), "v1")
+    h1 = _seed_hypothesis(cycle_layout, HypothesisId(1), "h1")
+    ledger = tmp_path / "cycles-ledger.jsonl"
+
+    adapter = _RecordingAdapter()
+    write_cycle_insight(
+        cycle_layout,
+        survivors=[v1],
+        pareto_front=["v001"],
+        hypothesis_files=[h1],
+        ledger=ledger,
+        adapter=adapter,
+        digest_cycles=3,
+        rejected=[{
+            "variant_id": "v002",
+            "reason": "implement",
+            "detail": "adapter produced no overlay files under workspace/overlay",
+        }],
+    )
+
+    task_md = adapter.calls[0]["task_md"]
+    assert "## Rejected variants" in task_md
+    assert "v002" in task_md
+    assert "implement" in task_md
+    assert "adapter produced no overlay files under workspace/overlay" in task_md
+
+
+def test_omitting_rejected_yields_no_rejected_section(tmp_path):
+    cycle_layout = _cycle_layout(tmp_path, CycleId(1))
+    v1 = _seed_variant(cycle_layout, VariantId(1), "v1")
+    h1 = _seed_hypothesis(cycle_layout, HypothesisId(1), "h1")
+    ledger = tmp_path / "cycles-ledger.jsonl"
+
+    adapter = _RecordingAdapter()
+    write_cycle_insight(
+        cycle_layout,
+        survivors=[v1],
+        pareto_front=["v001"],
+        hypothesis_files=[h1],
+        ledger=ledger,
+        adapter=adapter,
+        digest_cycles=3,
+    )
+
+    task_md = adapter.calls[0]["task_md"]
+    assert "## Rejected variants" not in task_md
+
+
 def test_no_prior_cycles_yields_no_digest_section_body(tmp_path):
     cycle_layout = _cycle_layout(tmp_path, CycleId(1))
     v1 = _seed_variant(cycle_layout, VariantId(1), "v1")

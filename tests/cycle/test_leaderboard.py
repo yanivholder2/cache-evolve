@@ -145,6 +145,80 @@ def test_dir_without_winners_json_is_skipped(tmp_path):
     assert "0001" not in read_utf8(out)
 
 
+def _write_champions(evolve, champions):
+    write_utf8(OutputsLayout(root=evolve).champions_json, json.dumps(champions))
+
+
+def test_baseline_row_and_global_best_section(tmp_path):
+    fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv})
+    _write_champions(evolve, {
+        "pareto_front": ["baseline", "cycle/0001/v001"],
+        "fitness_vectors": [
+            {"variant": "baseline", "dimensions": [{"dim": "hit-rate", "summary": 0.48, "higher_is_better": True}]},
+            {"variant": "cycle/0001/v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]},
+        ],
+        "best_per_dimension": {"hit-rate": {"variant": "cycle/0001/v001", "summary": 0.65}},
+    })
+    out = tmp_path / "leaderboard.md"
+    regenerate(layout=OutputsLayout(root=evolve), output=out)
+    content = read_utf8(out)
+
+    # (a) baseline row
+    assert "| baseline | baseline | 0.48 |" in content
+    # (b) global best-so-far section
+    assert "## Global best-so-far" in content
+    assert "Pareto front: baseline, cycle/0001/v001" in content
+    assert "- hit-rate: 0.65 held by cycle/0001/v001" in content
+
+
+def test_regression_marker(tmp_path):
+    fv1 = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
+    fv2 = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.40, "higher_is_better": True}]}]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv1, "0002": fv2})
+    _write_champions(evolve, {
+        # cycle/0001/v001 on the front; cycle/0002/v001 dominated, off the front
+        "pareto_front": ["baseline", "cycle/0001/v001"],
+        "fitness_vectors": [
+            {"variant": "baseline", "dimensions": [{"dim": "hit-rate", "summary": 0.48, "higher_is_better": True}]},
+            {"variant": "cycle/0001/v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]},
+        ],
+        "best_per_dimension": {"hit-rate": {"variant": "cycle/0001/v001", "summary": 0.65}},
+    })
+    out = tmp_path / "leaderboard.md"
+    regenerate(layout=OutputsLayout(root=evolve), output=out)
+    content = read_utf8(out)
+
+    # (c) off-front winner marked regressed; on-front winner not marked
+    assert "| 0002 | v001 (regressed) |" in content
+    assert "| 0001 | v001 |" in content
+
+
+def test_malformed_champions_errors(tmp_path):
+    fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv})
+    write_utf8(OutputsLayout(root=evolve).champions_json, "not valid json {{{")
+    with pytest.raises(LeaderboardError, match="malformed champions.json"):
+        regenerate(layout=OutputsLayout(root=evolve))
+
+
+def test_baseline_row_skipped_when_no_baseline_vector(tmp_path):
+    fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
+    evolve = _make_evolve_root(tmp_path, {"0001": fv})
+    _write_champions(evolve, {
+        "pareto_front": ["cycle/0001/v001"],
+        "fitness_vectors": [
+            {"variant": "cycle/0001/v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]},
+        ],
+        "best_per_dimension": {"hit-rate": {"variant": "cycle/0001/v001", "summary": 0.65}},
+    })
+    out = tmp_path / "leaderboard.md"
+    regenerate(layout=OutputsLayout(root=evolve), output=out)
+    content = read_utf8(out)
+    assert "| baseline | baseline" not in content
+    assert "## Global best-so-far" in content
+
+
 def test_non_cycle_subdirs_skipped(tmp_path):
     fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.5, "higher_is_better": True}]}]
     evolve = _make_evolve_root(tmp_path, {"0001": fv})

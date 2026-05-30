@@ -40,11 +40,15 @@ def _run_cycles(repo_root: Path, n: int) -> None:
     # Stub overlay writes a `.overlay` sentinel, not a manifest impl file;
     # full-autonomy keeps it legal so the loop mechanics aren't scope-gated.
     cfg = load_configs(repo_root, cohort_size=COHORT, authoring_scope="full-autonomy")
-    for _ in range(n):
+    for cycle_index in range(1, n + 1):
+        # From cycle 2 on, the prior cycle's variants sit on the global front, so
+        # the parent-anchor quota requires at least one hypothesis to parent on a
+        # non-baseline incumbent; cite the previous cycle's v001.
+        parent_variants = [f"cycle/{cycle_index - 1:04d}/v001"] if cycle_index > 1 else None
         run_cycle(
             layout=_layout(repo_root),
             repo_root=repo_root,
-            adapter=StubLLMAdapter(n_lines=COHORT),
+            adapter=StubLLMAdapter(n_lines=COHORT, parent_variants=parent_variants),
             cfg=cfg,
         )
 

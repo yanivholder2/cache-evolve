@@ -10,7 +10,7 @@ from evolve._io import read_utf8, write_utf8
 from evolve.config import AuthoringScope
 from evolve.identifiers import CycleId, HypothesisId, VariantId
 from evolve.paths import Layout
-from evolve.variant.implementer import implement_variant
+from evolve.variant.implementer import ImplementerRejection, implement_variant
 
 from _stubs import StubLLMAdapter
 from _support import STUB_SUBJECT_NAME, StubSubject, write_stub_subject
@@ -106,7 +106,7 @@ def test_silent_adapter_raises_when_required_outputs_missing(tmp_path):
     hypothesis = cycle_layout.hypothesis_file(HypothesisId(1))
     _write_hypothesis(hypothesis, parent_variant="baseline")
 
-    with pytest.raises(FileNotFoundError, match="adapter produced no overlay files"):
+    with pytest.raises(ImplementerRejection, match="adapter produced no overlay files"):
         implement_variant(
             hypothesis,
             variant_dir,
@@ -184,7 +184,7 @@ def test_extension_points_scope_allows_whitelisted_file(tmp_path):
 
 def test_extension_points_scope_rejects_non_whitelisted_file(tmp_path):
     layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
-    with pytest.raises(ValueError, match="extension-points"):
+    with pytest.raises(ImplementerRejection, match="extension-points"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
             adapter=_WritingAdapter([stub.free_file.as_posix()]),
@@ -204,7 +204,7 @@ def test_full_autonomy_scope_allows_any_non_protected_file(tmp_path):
 
 def test_full_autonomy_scope_rejects_protected_file(tmp_path):
     layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
-    with pytest.raises(ValueError, match="contract-protected"):
+    with pytest.raises(ImplementerRejection, match="contract-protected"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
             adapter=_WritingAdapter([stub.protected_files[1].as_posix()]),
@@ -214,7 +214,7 @@ def test_full_autonomy_scope_rejects_protected_file(tmp_path):
 
 def test_extension_points_scope_rejects_protected_file(tmp_path):
     layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
-    with pytest.raises(ValueError, match="contract-protected"):
+    with pytest.raises(ImplementerRejection, match="contract-protected"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
             adapter=_WritingAdapter([stub.protected_files[0].as_posix()]),
@@ -224,7 +224,7 @@ def test_extension_points_scope_rejects_protected_file(tmp_path):
 
 def test_empty_subdir_overlay_raises(tmp_path):
     layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
-    with pytest.raises(FileNotFoundError, match="adapter produced no overlay files"):
+    with pytest.raises(ImplementerRejection, match="adapter produced no overlay files"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
             adapter=_EmptySubdirAdapter(),

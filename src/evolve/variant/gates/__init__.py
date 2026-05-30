@@ -100,6 +100,19 @@ def _append_entry(rejection_md: Path, body: str) -> None:
     append_utf8(rejection_md, body)
 
 
+def append_rejection(
+    rejection_md: Path,
+    *,
+    variant: Variant,
+    hypothesis: HypothesisId | None,
+    attempt: int,
+    body: str,
+) -> None:
+    """Append a rejection entry (header + `body`) to `rejection_md`, single-sourcing
+    the entry format shared by gate failures and implementer rejections."""
+    _append_entry(rejection_md, _rejection_header(variant, hypothesis, attempt) + body)
+
+
 def run_gates(
     variant: Variant,
     *,
@@ -127,9 +140,12 @@ def run_gates(
             outcomes[gate.name] = outcome
             ctx.update(outcome.shared)
             if not outcome.passed:
-                _append_entry(
+                append_rejection(
                     rejection_md,
-                    _rejection_header(variant, hypothesis, attempt) + outcome.rejection_body,
+                    variant=variant,
+                    hypothesis=hypothesis,
+                    attempt=attempt,
+                    body=outcome.rejection_body,
                 )
                 log.info("%s: FAILED for %s; rejection logged to %s", gate.name, variant, rejection_md)
                 break
@@ -157,6 +173,7 @@ __all__ = [
     "CargoTestGate",
     "FRAMEWORK_GATES",
     "UNIVERSAL_INVARIANT_GATE_MARKER_RE",
+    "append_rejection",
     "build_gate_list",
     "run_gates",
 ]

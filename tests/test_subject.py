@@ -87,8 +87,9 @@ def test_loads_real_manifest():
         "numOfStashBuckets": 6,
         "bucketSize": 64,
     }
-    assert subject.bench is not None
-    assert subject.bench.binary_name == "dash-bench"
+    # dash evolves for hit rate only; it declares neither [bench] nor [metadata].
+    assert subject.bench is None
+    assert subject.metadata is None
 
 
 def test_associative_cache_geometry_is_list_valued():

@@ -23,6 +23,7 @@ from evolve.llm import (
     format_token_totals,
     snapshot_token_totals,
 )
+from evolve.aggregate.champions import write_champions
 from evolve.aggregate.cohort import compute_cohort_pareto, write_winners_json
 from evolve.config import AuthoringScope, Configs, ConfigError, load_configs
 from evolve.cycle.leaderboard import regenerate as regenerate_leaderboard
@@ -36,6 +37,7 @@ from evolve.identifiers import CYCLE_ID_WIDTH, CycleId, HypothesisId, VariantId
 from evolve._io import read_utf8
 from evolve.paths import CycleLayout, CycleVariant, CycleVariantDir, Layout
 from evolve.subject import Subject, load_subject
+from evolve.variant.implementer import _latest_rejection_entry
 from evolve.variant.repair_loop import VariantStepFailed, implement_with_repair
 from evolve.variant.variant_insight_writer import write_insight
 
@@ -98,7 +100,7 @@ def _variant_pipeline_step(name: str, variant_id: VariantId):
         raise
     except Exception as exception:
         log.warning("[%s] %s failed: %s", variant_id, name, exception)
-        raise VariantStepFailed(name) from exception
+        raise VariantStepFailed(name, detail=str(exception)) from exception
     else:
         log.info("[%s] %s done", variant_id, name)
 
@@ -106,12 +108,13 @@ def _variant_pipeline_step(name: str, variant_id: VariantId):
 @dataclass(frozen=True)
 class VariantOutcome:
     """Per-variant result threaded out of the per-variant fan-out for the
-    cycle-level survival summary."""
+    cycle-level survival summary and the cycle-insight writer."""
 
     variant_id: VariantId
     hypothesis_id: HypothesisId
     survived: bool
     reason: str | None  # None iff survived; e.g. "gate:contract gate", "implement"
+    detail: str | None  # underlying cause (gate body, scope path, "no overlay", exception text); None iff survived
 
 
 def _next_cycle_id(cycles_dir: Path) -> CycleId:
@@ -162,8 +165,12 @@ def _run_variant_pipeline(
                 hypothesis_id=hypothesis_id, attempts=attempts,
             )
             if not gates_result:
+                rejection_detail = _latest_rejection_entry(
+                    variant.resolve(layout).rejection_md
+                )
                 raise VariantStepFailed(
-                    f"gate:{gates_result.first_failed_gate} ({attempts}/{attempts} attempts)"
+                    f"gate:{gates_result.first_failed_gate} ({attempts}/{attempts} attempts)",
+                    detail=rejection_detail,
                 )
         with _variant_pipeline_step("fitness", variant_id):
             compute_fitness(variant, layout=layout, repo_root=repo_root, cfg=cfg)
@@ -173,9 +180,12 @@ def _run_variant_pipeline(
                 hypothesis_file,
                 layout=layout, adapter=adapter,
             )
-        return VariantOutcome(variant_id, hypothesis_id, True, None)
+        return VariantOutcome(variant_id, hypothesis_id, True, None, detail=None)
     except VariantStepFailed as exception:
-        return VariantOutcome(variant_id, hypothesis_id, False, exception.reason)
+        return VariantOutcome(
+            variant_id, hypothesis_id, False,
+            reason=exception.reason, detail=exception.detail,
+        )
 
 
 def _run_per_variant(
@@ -220,7 +230,8 @@ def _run_per_variant(
             except Exception as exception:
                 log.warning("[%s] dropped: %s", variant_id, exception)
                 outcomes_by_id[variant_id] = VariantOutcome(
-                    variant_id, HypothesisId(variant_id.value), False, f"dropped:{type(exception).__name__}",
+                    variant_id, HypothesisId(variant_id.value), False,
+                    reason=f"dropped:{type(exception).__name__}", detail=str(exception),
                 )
 
     outcomes = [outcomes_by_id[variant_id] for variant_id in variant_ids]
@@ -248,6 +259,7 @@ def _run_cycle_level(
     cycle_layout: CycleLayout,
     cycle_id: CycleId,
     survivors: list[CycleVariantDir],
+    outcomes: list[VariantOutcome],
     cohort_size: int,
     layout: Layout,
     adapter: LLMAdapter,
@@ -261,6 +273,12 @@ def _run_cycle_level(
     hypothesis_files = [
         cycle_layout.hypothesis_file(HypothesisId(i))
         for i in range(1, cohort_size + 1)
+    ]
+
+    rejected = [
+        {"variant_id": str(o.variant_id), "reason": o.reason, "detail": o.detail}
+        for o in outcomes
+        if not o.survived
     ]
 
     pareto_front, fitness_vectors = compute_cohort_pareto(survivors)
@@ -280,6 +298,7 @@ def _run_cycle_level(
             ledger=layout.outputs.ledger,
             adapter=adapter,
             digest_cycles=cfg.framework.digest_cycles,
+            rejected=rejected,
         )
         winners_future.result()
         log.info("winners.json done")
@@ -299,6 +318,9 @@ def _run_post_cycle_insight(
     layout: Layout,
 ) -> None:
     """Subphase 2: ledger-append AND leaderboard-regen, in parallel."""
+
+    write_champions(layout)
+    log.info("champions.json done")
 
     row = {
         "cycle": str(cycle_id),
@@ -361,6 +383,7 @@ def run_cycle(
                 layout=layout,
                 cycle_id=cycle_id,
                 adapter=adapter,
+                authoring_scope=cfg.framework.authoring_scope,
             )
 
         with _phase("per-variant", timings):
@@ -382,6 +405,7 @@ def run_cycle(
                 cycle_layout=cycle_layout,
                 cycle_id=cycle_id,
                 survivors=survivors,
+                outcomes=outcomes,
                 cohort_size=cohort_size,
                 layout=layout,
                 adapter=adapter,

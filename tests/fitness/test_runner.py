@@ -51,7 +51,19 @@ def _stub_plugins(monkeypatch) -> None:
             return {"dim": dim, "values": [], "summary": 0.0, "higher_is_better": higher_is_better}
         return _compute
 
+    # Stub a subject declaring every optional plugin so the orchestration path
+    # (one JSON per scheduled plugin + aggregation) is covered regardless of any
+    # real subject manifest.
+    class _NamedBinary:
+        binary_name = "stub"
+
+    class _Subject:
+        name = "stub"
+        bench = _NamedBinary()
+        metadata = _NamedBinary()
+
     from evolve.fitness.caffeine_simulator import CaffeineResults
+    monkeypatch.setattr("evolve.fitness.runner.load_subject", lambda *_a, **_kw: _Subject())
     monkeypatch.setattr(
         "evolve.fitness.runner.simulate_variant",
         lambda *_a, **_kw: CaffeineResults(results=[]),

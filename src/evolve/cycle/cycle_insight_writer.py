@@ -31,14 +31,31 @@ def _format_paths(paths: list[Path]) -> str:
     return "\n".join(f"- {p}" for p in paths)
 
 
+def _format_rejected(rejected: list[dict]) -> str:
+    """Render rejected variants as a bullet per variant, with the failure detail
+    on an indented continuation when present."""
+    lines: list[str] = []
+    for entry in rejected:
+        lines.append(f"- {entry['variant_id']} — {entry.get('reason') or '?'}")
+        detail = entry.get("detail")
+        if detail:
+            indented = "\n".join(f"  {line}" for line in detail.splitlines())
+            lines.append(indented)
+    return "\n".join(lines)
+
+
 def _write_task_md(
     cycle_layout: CycleLayout,
     survivors: list[CycleVariantDir],
     pareto_front: list[str],
     hypothesis_files: list[Path],
     digest_body: str,
+    rejected: list[dict] | None,
 ) -> None:
     insight_paths = [s.insight_md for s in survivors]
+    rejected_section = (
+        f"## Rejected variants\n\n{_format_rejected(rejected)}\n\n" if rejected else ""
+    )
     body = (
         f"# Task: cycle-insight-writer\n\n"
         f"Cycle: {cycle_layout.cycle_id}\n"
@@ -51,6 +68,7 @@ def _write_task_md(
         f"{_format_paths(hypothesis_files)}\n\n"
         f"## Prior cycles digest\n\n"
         f"{digest_body}"
+        f"{rejected_section}"
         f"## Write\n\n"
         f"Exactly one file: `cycle-insight.md` in the output dir.\n"
     )
@@ -66,12 +84,17 @@ def write_cycle_insight(
     ledger: Path,
     adapter: LLMAdapter,
     digest_cycles: int,
+    rejected: list[dict] | None = None,
 ) -> None:
-    """Author one cycle's `cycle-insight.md`. Raises on adapter or output failure."""
+    """Author one cycle's `cycle-insight.md`. Raises on adapter or output failure.
+
+    `rejected` carries the rejected variants (variant_id, reason, detail) so the
+    writer can reason about *why* a variant died, not just which survived.
+    """
 
     cycle_layout.root.mkdir(parents=True, exist_ok=True)
     digest_body = digest_prior_cycles(ledger, digest_cycles)
-    _write_task_md(cycle_layout, survivors, pareto_front, hypothesis_files, digest_body)
+    _write_task_md(cycle_layout, survivors, pareto_front, hypothesis_files, digest_body, rejected)
     log.debug("wrote cycle-insight-writer task.md for cycle %s", cycle_layout.cycle_id)
 
     readable_roots: list[Path] = [s.insight_md for s in survivors] + list(hypothesis_files)
