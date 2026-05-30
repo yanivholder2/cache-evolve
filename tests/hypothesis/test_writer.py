@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -11,7 +12,7 @@ import pytest
 
 from evolve.cli import run_cycle
 from evolve._io import read_utf8, write_utf8
-from evolve.config import load_configs
+from evolve.config import AuthoringScope, load_configs
 from evolve.hypothesis.writer import write_hypotheses
 from evolve.identifiers import CycleId, HypothesisId
 from evolve.paths import Layout, SourcesLayout
@@ -320,6 +321,137 @@ def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):
             cycle_id=CycleId(2),
             adapter=StubLLMAdapter(n_lines=2),
         )
+
+
+def _write_champions(evolve: Path, *, pareto_front: list[str], fitness_vectors: list[dict]) -> None:
+    champions = {
+        "pareto_front": pareto_front,
+        "fitness_vectors": fitness_vectors,
+        "best_per_dimension": {},
+    }
+    champions_json = _layout(evolve).outputs.champions_json
+    champions_json.parent.mkdir(parents=True, exist_ok=True)
+    write_utf8(champions_json, json.dumps(champions))
+
+
+def _fitness_vector(variant: str, hit_rate: float) -> dict:
+    return {
+        "variant": variant,
+        "dimensions": [{"dim": "hit_rate", "summary": hit_rate, "higher_is_better": True}],
+    }
+
+
+def test_continuation_injects_incumbents_and_quota(tmp_path):
+    evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, CycleId(1))
+    _write_champions(
+        evolve,
+        pareto_front=["baseline", "cycle/0001/v001"],
+        fitness_vectors=[
+            _fitness_vector("baseline", 0.40),
+            _fitness_vector("cycle/0001/v001", 0.55),
+        ],
+    )
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(2),
+        adapter=StubLLMAdapter(
+            n_lines=2,
+            capture_file=capture,
+            parent_variants=["cycle/0001/v001", "baseline"],
+        ),
+    )
+    task_md = read_utf8(capture)
+    assert "Incumbents (global Pareto front)" in task_md
+    assert "cycle/0001/v001: hit_rate=0.55" in task_md
+    assert "MUST cite a global-front variant" in task_md
+
+
+def test_continuation_quota_violation_fails(tmp_path):
+    evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, CycleId(1))
+    _write_champions(
+        evolve,
+        pareto_front=["baseline", "cycle/0001/v001"],
+        fitness_vectors=[
+            _fitness_vector("baseline", 0.40),
+            _fitness_vector("cycle/0001/v001", 0.55),
+        ],
+    )
+    # Both hypotheses parent on baseline; none anchors the non-baseline front.
+    with pytest.raises(ValueError, match="global-front anchor"):
+        write_hypotheses(
+            2,
+            layout=_layout(evolve),
+            cycle_id=CycleId(2),
+            adapter=StubLLMAdapter(n_lines=2, parent_variants=["baseline", "baseline"]),
+        )
+
+
+def test_continuation_quota_satisfied_by_front_anchor(tmp_path):
+    evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, CycleId(1))
+    _write_champions(
+        evolve,
+        pareto_front=["baseline", "cycle/0001/v001"],
+        fitness_vectors=[
+            _fitness_vector("baseline", 0.40),
+            _fitness_vector("cycle/0001/v001", 0.55),
+        ],
+    )
+    files = write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(2),
+        adapter=StubLLMAdapter(n_lines=2, parent_variants=["cycle/0001/v001", "baseline"]),
+    )
+    assert len(files) == 2
+
+
+def test_continuation_no_champions_skips_quota(tmp_path):
+    # No champions.json: enforcement is skipped so a pure-baseline cohort passes.
+    evolve = _setup_evolve(tmp_path)
+    _stage_prev_cycle(evolve, CycleId(1))
+    files = write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(2),
+        adapter=StubLLMAdapter(n_lines=2, parent_variants=["baseline", "baseline"]),
+    )
+    assert len(files) == 2
+
+
+def test_authoring_scope_section_lists_extension_points(tmp_path):
+    evolve = _copy_real_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(1),
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+        authoring_scope=AuthoringScope.EXTENSION_POINTS,
+    )
+    task_md = read_utf8(capture)
+    assert "## Authoring scope" in task_md
+    assert "extension-point impl files" in task_md
+    assert "writable by no scope" in task_md
+
+
+def test_authoring_scope_section_full_autonomy(tmp_path):
+    evolve = _copy_real_evolve(tmp_path)
+    capture = tmp_path / "argv-capture.txt"
+    write_hypotheses(
+        2,
+        layout=_layout(evolve),
+        cycle_id=CycleId(1),
+        adapter=StubLLMAdapter(n_lines=2, capture_file=capture),
+        authoring_scope=AuthoringScope.FULL_AUTONOMY,
+    )
+    task_md = read_utf8(capture)
+    assert "## Authoring scope" in task_md
+    assert "Any overlay file may be edited" in task_md
 
 
 def test_subagent_markdown_states_contract():

@@ -38,6 +38,11 @@ max_workers = 0
 # Each attempt is preserved under the variant's attempts/NN/ directory.
 implementation_attempts = 3
 
+# Times the per-op-time microbench is re-run per variant; the plugin reports
+# the median p50/p99 and the spread so sub-noise deltas do not decide the
+# Pareto front.
+per_op_time_repeats = 5
+
 # Write surface the variant-implementer agent may author (--authoring-scope).
 # "extension-points": only impl files listed in the subject manifest's
 # [[extension-points]] tables. "full-autonomy": any overlay file, still bound by

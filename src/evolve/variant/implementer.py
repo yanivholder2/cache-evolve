@@ -28,6 +28,17 @@ AGENT_NAME = "variant-implementer"
 log = logging.getLogger(__name__)
 
 
+class ImplementerRejection(Exception):
+    """A correctable implementer-side rejection of an attempt's overlay (empty
+    overlay, out-of-scope write, or protected-file write). `guidance` is the
+    corrective instruction surfaced into the next repair attempt's task.md."""
+
+    def __init__(self, summary: str, guidance: str) -> None:
+        super().__init__(summary)
+        self.summary = summary
+        self.guidance = guidance
+
+
 def _latest_rejection_entry(rejection_md: Path) -> str | None:
     """The text of the most recent `## …` entry in rejection.md, or None."""
     if not rejection_md.is_file():
@@ -165,8 +176,10 @@ def implement_variant(
     if not overlay_files:
         # An empty overlay would build but be indistinguishable from the
         # baseline, so treat "agent wrote nothing" as a failure.
-        raise FileNotFoundError(
-            f"adapter produced no overlay files under {overlay_dir}"
+        raise ImplementerRejection(
+            f"adapter produced no overlay files under {overlay_dir}",
+            "Write at least one changed subject file under overlay/; an empty "
+            "overlay is indistinguishable from the baseline.",
         )
 
     # The manifest's contract-protected files are the fixed seam between the
@@ -182,9 +195,11 @@ def implement_variant(
         if p.relative_to(overlay_dir) in subject.protected_files
     )
     if protected:
-        raise ValueError(
+        raise ImplementerRejection(
             f"variant wrote contract-protected files (the fixed JNI/factory seam "
-            f"between the cache and Caffeine, writable by no scope): {protected}"
+            f"between the cache and Caffeine, writable by no scope): {protected}",
+            f"Remove the contract-protected files from the overlay: {protected}. "
+            "No scope may edit them.",
         )
 
     if authoring_scope is AuthoringScope.EXTENSION_POINTS:
@@ -195,9 +210,12 @@ def implement_variant(
             if p.relative_to(overlay_dir) not in whitelist
         )
         if outside:
-            raise ValueError(
+            raise ImplementerRejection(
                 f"authoring scope '{AuthoringScope.EXTENSION_POINTS}' permits writing only the manifest "
-                f"extension-point impl files; variant wrote outside that set: {outside}"
+                f"extension-point impl files; variant wrote outside that set: {outside}",
+                f"Move the change into a permitted extension-point impl file: "
+                f"{sorted(str(path) for path in whitelist)}. Remove out-of-scope "
+                f"files: {outside}.",
             )
 
     log.info("variant materialized at %s", overlay_dir)

@@ -189,5 +189,88 @@ def test_implementer_crash_hard_fails_without_retry(tmp_path):
         _run(layout, variant, hypothesis_file, adapter, attempts=3)
 
     assert exc_info.value.reason == "implement"
+    # The crash detail carries the adapter's exception text for the insight writer.
+    assert "adapter crashed" in exc_info.value.detail
     # A crash is not a gate failure: the loop must not retry.
     assert adapter.calls == 1
+
+
+# Sentinels steering _OverlayAdapter per attempt. EMPTY writes no overlay file;
+# OUT_OF_SCOPE writes a non-extension-point dash file (illegal under
+# EXTENSION_POINTS); any other value is written verbatim to OVERLAY_REL.
+EMPTY = "__empty__"
+OUT_OF_SCOPE = "__out_of_scope__"
+OUT_OF_SCOPE_REL = "src/dash/segments/promotion_logic.rs"
+
+
+class _OverlayAdapter:
+    """Like _ScriptedAdapter but can also write nothing (empty overlay) or write
+    to an out-of-scope path, to exercise implementer-rejection repair."""
+
+    def __init__(self, bodies: list[str]) -> None:
+        self.bodies = bodies
+        self.calls = 0
+
+    def identity(self) -> str:
+        return "OverlayAdapter"
+
+    def run(self, agent_name, workspace, *, readable_roots, allow_edits) -> None:
+        body = self.bodies[self.calls]
+        self.calls += 1
+        if body == EMPTY:
+            return
+        rel = OUT_OF_SCOPE_REL if body == OUT_OF_SCOPE else OVERLAY_REL
+        content = GOOD if body == OUT_OF_SCOPE else body
+        target = workspace / "overlay" / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        write_utf8(target, content)
+
+
+def test_empty_overlay_then_pass_repairs(tmp_path):
+    layout, variant, hypothesis_file = _setup(tmp_path)
+    adapter = _OverlayAdapter([EMPTY, GOOD])
+
+    result = _run(layout, variant, hypothesis_file, adapter, attempts=3)
+
+    assert result.all_passed
+    assert adapter.calls == 2
+    content = read_utf8(variant.resolve(layout).rejection_md)
+    assert "**Stage**: implement" in content
+    assert content.count("attempt=") == 1
+    assert "attempt=1" in content
+
+
+def test_out_of_scope_write_then_pass_repairs(tmp_path):
+    layout, variant, hypothesis_file = _setup(tmp_path)
+    adapter = _OverlayAdapter([OUT_OF_SCOPE, GOOD])
+
+    result = implement_with_repair(
+        variant,
+        hypothesis_file,
+        layout=layout,
+        repo_root=REPO_ROOT,
+        adapter=adapter,
+        authoring_scope=AuthoringScope.EXTENSION_POINTS,
+        hypothesis_id=HypothesisId(1),
+        attempts=3,
+    )
+
+    assert result.all_passed
+    assert adapter.calls == 2
+    content = read_utf8(variant.resolve(layout).rejection_md)
+    assert "**Stage**: implement" in content
+    assert OUT_OF_SCOPE_REL in content
+
+
+def test_empty_overlay_all_attempts_fails_after_budget(tmp_path):
+    layout, variant, hypothesis_file = _setup(tmp_path)
+    adapter = _OverlayAdapter([EMPTY, EMPTY, EMPTY])
+
+    with pytest.raises(VariantStepFailed) as exc_info:
+        _run(layout, variant, hypothesis_file, adapter, attempts=3)
+
+    # A rejection, not a bare crash: the reason carries the implement summary.
+    assert exc_info.value.reason.startswith("implement")
+    # The detail carries the rejection guidance for the insight writer.
+    assert exc_info.value.detail
+    assert adapter.calls == 3

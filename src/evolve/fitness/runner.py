@@ -50,13 +50,15 @@ def compute_fitness(
         "hit-rate": lambda: hit_rate.compute(results=caffeine_results),
     }
     if subject.bench is not None:
-        plugins["per-op-time"] = lambda: per_op_time.compute(layout=layout, target_dir=target_dir)
+        plugins["per-op-time"] = lambda: per_op_time.compute(
+            layout=layout, target_dir=target_dir, repeats=cfg.framework.per_op_time_repeats
+        )
     if subject.metadata is not None:
         plugins["metadata-size"] = lambda: metadata_size.compute(
+            variant=variant,
+            layout=layout,
             repo_root=repo_root,
-            package=subject.name,
             binary_name=subject.metadata.binary_name,
-            target_dir=target_dir,
         )
     for name, fn in plugins.items():
         log.debug("[%s] plugin %s", variant, name)

@@ -314,6 +314,10 @@ class OutputsLayout:
         return self.root / "leaderboard.md"
 
     @property
+    def champions_json(self) -> Path:
+        return self.root / "champions.json"
+
+    @property
     def cross_cycle_insights_md(self) -> Path:
         return self.root / "cross-cycle-insights.md"
 
