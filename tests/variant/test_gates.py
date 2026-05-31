@@ -4,6 +4,14 @@ Cargo is mocked via tests/_mocks/cargo — the shim short-circuits build/test
 calls based on markers in the variant source so gate logic runs end-to-end
 without paying for real Rust compilation.
 
+Tests carrying `@pytest.mark.real_cargo` also run in the opt-in real-cargo lane
+(`pytest --real-cargo tests/variant/test_gates.py`), which drops the shim so the
+real Rust gate harnesses are exercised against the fixtures. Their fixtures
+(`good`, `broken`, `bad-invariant`) carry genuine Rust, so the assertions hold
+under both the shim and real cargo. The `bad-subject-invariant` fixture is a
+shim-only marker (its overlay touches only `factory.rs`, which the structural
+`invariant_gate` harness never runs through), so that test stays out of the lane.
+
 Each test stages a fixture into a Layout-shaped scratch dir so the gate code
 exercises the same `Variant.resolve(layout)` path as production.
 """
@@ -74,6 +82,7 @@ def test_build_gate_list_rejects_subject_gate_colliding_with_framework_name():
         build_gate_list(subject)
 
 
+@pytest.mark.real_cargo
 def test_build_good_fixture_returns_workspace(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     workspace = compile_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
@@ -81,17 +90,20 @@ def test_build_good_fixture_returns_workspace(tmp_path):
     shutil.rmtree(workspace.root, ignore_errors=True)
 
 
+@pytest.mark.real_cargo
 def test_build_broken_fixture_raises(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     with pytest.raises(subprocess.CalledProcessError):
         compile_for_gates(variant, layout=layout, repo_root=REPO_ROOT)
 
 
+@pytest.mark.real_cargo
 def test_gate_check_good_fixture_passes(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     assert run_gates(variant, layout=layout, repo_root=REPO_ROOT)
 
 
+@pytest.mark.real_cargo
 def test_gate_check_good_fixture_produces_no_rejection_entry(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT)
@@ -99,11 +111,13 @@ def test_gate_check_good_fixture_produces_no_rejection_entry(tmp_path):
     assert not rejection_md.is_file() or read_utf8(rejection_md).strip() == ""
 
 
+@pytest.mark.real_cargo
 def test_gate_check_broken_fixture_fails(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     assert not run_gates(variant, layout=layout, repo_root=REPO_ROOT)
 
 
+@pytest.mark.real_cargo
 def test_gate_check_broken_fixture_logs_structured_build_entry(tmp_path):
     layout, variant = _stage(tmp_path, "broken")
     result = run_gates(variant, layout=layout, repo_root=REPO_ROOT)
@@ -114,6 +128,7 @@ def test_gate_check_broken_fixture_logs_structured_build_entry(tmp_path):
     assert "attempt=1" in content
 
 
+@pytest.mark.real_cargo
 def test_gate_check_bad_invariant_fixture_fails_universal_invariant_gate(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
     result = run_gates(variant, layout=layout, repo_root=REPO_ROOT)
@@ -127,6 +142,7 @@ def test_gate_check_bad_invariant_fixture_fails_universal_invariant_gate(tmp_pat
     assert result.first_failed_gate == "universal invariant gate"
 
 
+@pytest.mark.real_cargo
 def test_gate_check_bad_invariant_fixture_logs_failing_invariant(tmp_path):
     layout, variant = _stage(tmp_path, "bad-invariant")
     run_gates(variant, layout=layout, repo_root=REPO_ROOT)
@@ -152,6 +168,7 @@ def test_gate_check_subject_invariant_gate_fails(tmp_path):
     assert re.search(r"\*\*Failing invariant\*\*: P[1-5] [a-z_]+", content)
 
 
+@pytest.mark.real_cargo
 def test_gate_check_good_fixture_passes_all_gates(tmp_path):
     layout, variant = _stage(tmp_path, "good")
     result = run_gates(variant, layout=layout, repo_root=REPO_ROOT)

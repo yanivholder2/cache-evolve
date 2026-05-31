@@ -26,4 +26,5 @@ testpaths = ["tests"]
 markers = [
     "slow: end-to-end test that drives a real cargo build",
     "caffeine_needed: end-to-end test that requires ~/projects/caffeine and a JDK; never run in CI",
+    "real_cargo: gate test that also runs in the opt-in real-cargo lane (--real-cargo)",
 ]

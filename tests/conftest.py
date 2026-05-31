@@ -28,6 +28,14 @@ def pytest_addoption(parser):
         default=False,
         help="run tests marked `caffeine_needed` (require ~/projects/caffeine)",
     )
+    parser.addoption(
+        "--real-cargo",
+        action="store_true",
+        default=False,
+        help="run only tests marked `real_cargo` against real cargo: drops the "
+        "PATH shim and shares one CARGO_TARGET_DIR for the session "
+        "(e.g. `pytest --real-cargo tests/variant/test_gates.py`)",
+    )
 
 
 def pytest_configure(config):
@@ -39,11 +47,24 @@ def pytest_configure(config):
         "caffeine_needed: end-to-end test that requires ~/projects/caffeine "
         "and a working JDK; invoke explicitly with --caffeine-needed, never in CI",
     )
+    config.addinivalue_line(
+        "markers",
+        "real_cargo: gate test that also runs in the opt-in real-cargo lane "
+        "(--real-cargo drops the shim and runs only these against real cargo)",
+    )
     if config.getoption("--slow") and config.getoption("--caffeine-needed"):
         raise pytest.UsageError(
             "--slow and --caffeine-needed cannot be combined: slow tests "
             "assume the caffeine stub is active, which --caffeine-needed disables. "
             "Run each marker in a separate invocation."
+        )
+    if config.getoption("--real-cargo") and (
+        config.getoption("--slow") or config.getoption("--caffeine-needed")
+    ):
+        raise pytest.UsageError(
+            "--real-cargo cannot be combined with --slow or --caffeine-needed: "
+            "it drops the cargo shim and runs only real_cargo-marked tests. "
+            "Run each lane in a separate invocation."
         )
 
 
@@ -58,6 +79,16 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "caffeine_needed" in item.keywords:
                 item.add_marker(skip_caffeine)
+    if config.getoption("--real-cargo"):
+        # The real-cargo lane drops the shim session-wide, so any unmarked test
+        # that shells out to cargo would hit a real build it isn't written for.
+        # Restrict the run to the real_cargo-marked gate tests.
+        skip_not_real_cargo = pytest.mark.skip(
+            reason="--real-cargo runs only real_cargo-marked tests"
+        )
+        for item in items:
+            if "real_cargo" not in item.keywords:
+                item.add_marker(skip_not_real_cargo)
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +100,26 @@ def _reset_adapter_token_totals():
 
 
 @pytest.fixture(autouse=True, scope="session")
-def mock_cargo_on_path():
+def mock_cargo_on_path(request, tmp_path_factory):
+    """Keep the fast suite off real cargo by prepending the `tests/_mocks` shim
+    to PATH for the session.
+
+    With `--real-cargo` the shim is dropped so the gate tests exercise the real
+    Rust harnesses, and one `CARGO_TARGET_DIR` is shared across the session so
+    every variant workspace reuses the same compiled framework/deps instead of
+    rebuilding them per test. Build/test subprocesses in `evolve.variant` inherit
+    `os.environ`, so setting it here is enough. Invoke the lane with e.g.
+    `uv run pytest --real-cargo tests/variant/test_gates.py`."""
+    if request.config.getoption("--real-cargo"):
+        original = os.environ.get("CARGO_TARGET_DIR")
+        target_dir = tmp_path_factory.mktemp("real-cargo-target")
+        os.environ["CARGO_TARGET_DIR"] = str(target_dir)
+        yield None
+        if original is None:
+            del os.environ["CARGO_TARGET_DIR"]
+        else:
+            os.environ["CARGO_TARGET_DIR"] = original
+        return
     original = os.environ.get("PATH", "")
     os.environ["PATH"] = f"{MOCKS_DIR}{os.pathsep}{original}"
     yield MOCKS_DIR

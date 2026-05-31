@@ -93,6 +93,16 @@ A session-scoped fixture puts `tests/_mocks/` first on `PATH` so the fast suite 
 
 `--slow` and `--caffeine-needed` cannot be combined: slow tests assume the caffeine stub is active, which `--caffeine-needed` disables. Passing both aborts collection.
 
+### Real-cargo gate lane
+
+The gate tests in `tests/variant/test_gates.py` carry the `real_cargo` marker. By default they run in the fast suite against the shim. The opt-in `--real-cargo` lane drops the shim and runs only `real_cargo`-marked tests against real `cargo`, so the real Rust gate harnesses (`contract_gate`, `universal_invariant_gate`, `invariant_gate`) are exercised against the fixtures:
+
+```bash
+uv run pytest --real-cargo tests/variant/test_gates.py
+```
+
+It shares one `CARGO_TARGET_DIR` across the session so dependency builds amortise. The lane is off in CI and cannot be combined with `--slow` or `--caffeine-needed`.
+
 ## License
 
 Released under the [MIT License](LICENSE).
