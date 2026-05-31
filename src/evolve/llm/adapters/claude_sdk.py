@@ -12,6 +12,28 @@ from evolve.llm.base_adapter import LLMAdapter, write_timeline
 from evolve.llm.token_usage import Usage
 
 
+class Model(StrEnum):
+    OPUS_4_7 = "claude-opus-4-7"
+    SONNET_4_6 = "claude-sonnet-4-6"
+    HAIKU_4_5 = "claude-haiku-4-5-20251001"
+
+
+MODEL = Model.OPUS_4_7
+
+READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
+WRITE_TOOLS = ["Write", "Edit"]
+
+# Tools whose input carries a filesystem path that must stay inside `workspace`.
+# Map: tool name -> input key holding the path.
+PATH_INPUT_KEYS = {
+    "Read": "file_path",
+    "Write": "file_path",
+    "Edit": "file_path",
+    "Glob": "path",
+    "Grep": "path",
+}
+
+
 def _format_args(args: Any) -> str:
     try:
         return "```json\n" + json.dumps(args, indent=2, ensure_ascii=False) + "\n```"
@@ -42,26 +64,6 @@ def _usage_from_result(message: Any) -> Usage | None:
     return usage or None
 
 
-class Model(StrEnum):
-    OPUS_4_7 = "claude-opus-4-7"
-    SONNET_4_6 = "claude-sonnet-4-6"
-    HAIKU_4_5 = "claude-haiku-4-5-20251001"
-
-
-MODEL = Model.HAIKU_4_5
-
-READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
-WRITE_TOOLS = ["Write", "Edit"]
-
-# Tools whose input carries a filesystem path that must stay inside `workspace`.
-# Map: tool name -> input key holding the path.
-PATH_INPUT_KEYS = {
-    "Read": "file_path",
-    "Write": "file_path",
-    "Edit": "file_path",
-    "Glob": "path",
-    "Grep": "path",
-}
 
 
 class ClaudeSdkAdapter(LLMAdapter):

@@ -122,8 +122,8 @@ def test_referenced_files_finds_bare_basename():
 
 
 def test_referenced_files_finds_full_path():
-    found = parser.referenced_files("Thread it through src/dash/segments/promotion_logic.rs here.", _RS)
-    assert found == {"src/dash/segments/promotion_logic.rs"}
+    found = parser.referenced_files("Thread it through src/dash/segments/dash_segment.rs here.", _RS)
+    assert found == {"src/dash/segments/dash_segment.rs"}
 
 
 def test_referenced_files_finds_multiple_and_dedupes():

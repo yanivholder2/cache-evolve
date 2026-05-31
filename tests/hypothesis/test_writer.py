@@ -455,8 +455,10 @@ def test_authoring_scope_section_full_autonomy(tmp_path):
 
 
 # The real dash manifest's extension-point impl files: eviction_policy.rs,
-# dash_bucket.rs, item.rs. `promotion_logic.rs` is the canonical out-of-scope
-# file (the run failure these tests guard against).
+# dash_bucket.rs, item.rs, dash_segment.rs. `src/dash/segments/mod.rs` (home of
+# SegmentCore) is the canonical out-of-scope file — a non-extension-point source
+# the writer must steer changes away from (the run failure these tests guard
+# against).
 
 
 class _ScopeVaryingAdapter:
@@ -500,7 +502,7 @@ def test_extension_scope_regenerates_on_out_of_scope_then_succeeds(tmp_path):
     evolve = _copy_real_evolve(tmp_path)
     adapter = _ScopeVaryingAdapter(
         [
-            "Thread InsertPosition through promotion_logic.rs.",  # out of scope
+            "Thread InsertPosition through src/dash/segments/mod.rs.",  # out of scope
             "Adjust the candidate index in eviction_policy.rs.",  # back in scope
         ]
     )
@@ -516,12 +518,12 @@ def test_extension_scope_regenerates_on_out_of_scope_then_succeeds(tmp_path):
     assert len(files) == 2
     task_md = read_utf8(_layout(evolve).outputs.cycle(CycleId(1)).hypotheses_task_md)
     assert "## Scope correction" in task_md
-    assert "promotion_logic.rs" in task_md
+    assert "src/dash/segments/mod.rs" in task_md
 
 
 def test_extension_scope_exhaustion_raises(tmp_path):
     evolve = _copy_real_evolve(tmp_path)
-    adapter = _ScopeVaryingAdapter(["Thread it through promotion_logic.rs."])
+    adapter = _ScopeVaryingAdapter(["Thread it through src/dash/segments/mod.rs."])
     with pytest.raises(ValueError, match="outside the authoring scope"):
         write_hypotheses(
             2,
@@ -542,7 +544,7 @@ def test_full_autonomy_skips_scope_check(tmp_path):
         cycle_id=CycleId(1),
         adapter=StubLLMAdapter(
             n_lines=2,
-            changes=["Edit promotion_logic.rs freely.", "Rework segment.rs."],
+            changes=["Edit src/dash/segments/mod.rs freely.", "Rework segment.rs."],
         ),
         authoring_scope=AuthoringScope.FULL_AUTONOMY,
         attempts=2,

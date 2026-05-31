@@ -6,7 +6,7 @@
 subject = "dash"
 
 # Number of cycles to run sequentially (--cycles).
-cycles = 1
+cycles = 3
 
 # Variants proposed and evaluated per cycle (--cohort-size).
 cohort_size = 3

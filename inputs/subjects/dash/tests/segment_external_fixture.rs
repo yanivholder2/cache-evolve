@@ -1,11 +1,11 @@
 // External fixture proving `Segment` is a genuine Level 3 extension point.
 //
 // `MinimalSegment` lives entirely outside `src/` and is compiled against the
-// crate's public API only. It wraps `PromotionColdSegment` as a minimal but
+// crate's public API only. It wraps `DashSegment` as a minimal but
 // valid delegation: every implementation axiom (put→stash, get→promotion) is
 // exercised through the trait surface with no access to crate internals.
 use dash::dash::dash_settings::DashSettings;
-use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
+use dash::dash::segments::{DashSegment, Segment, SegmentCore};
 use dash::dash::Dash;
 use dash::shared::eviction_policy::EvictionPolicyKind;
 use dash::shared::item::Item;
@@ -21,7 +21,7 @@ where
     K: Hash + Eq + Copy + Debug + 'static,
     V: Eq + Copy + Debug + 'static,
 {
-    inner: PromotionColdSegment<K, V>,
+    inner: DashSegment<K, V>,
 }
 
 impl<K, V> MinimalSegment<K, V>
@@ -31,7 +31,7 @@ where
 {
     fn new(settings: &DashSettings) -> Self {
         Self {
-            inner: PromotionColdSegment::new(settings),
+            inner: DashSegment::new(settings),
         }
     }
 }

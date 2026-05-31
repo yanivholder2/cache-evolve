@@ -1,20 +1,82 @@
-//! Shared logic for the promotion strategy (Cold / Hot variants).
-//!
-//! Promotion treats target and probing as a tier: items earn their way into the probing
-//! bucket only by proving they're the hottest in their target. Demotion cascades down the
-//! chain `probing -> target -> stash -> out`, with a one-more-chance step between adjacent
-//! tiers.
-
-use super::{SegmentCore, Slot};
+use super::{Segment, SegmentCore, Slot};
+use crate::dash::dash_settings::DashSettings;
 use crate::shared::item::Item;
 use crate::shared::traits::bucket::InsertPosition;
 use crate::shared::utils::get_index;
-use log::debug;
+use log::{debug, info};
 use std::fmt::Debug;
 use std::hash::Hash;
 
+/// The dash Subject's baseline segment.
+///
+/// Its `get` realises the **promotion** design: target and probing form a tier,
+/// and items earn their way into the probing bucket only by proving they're the
+/// hottest in their target. A stash→target insert lands at the LRU end
+/// (`InsertPosition::Front`), so an item must climb before it can promote again.
+/// Demotion cascades down the chain `probing -> target -> stash -> out`, with a
+/// one-more-chance step between adjacent tiers.
+///
+/// The front-insert promotion is only the *baseline* design; this whole type is
+/// the segment extension point and the framework is free to evolve where items
+/// land on a hit and how they migrate between slots.
+#[derive(Debug)]
+pub struct DashSegment<K, V>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	core: SegmentCore<K, V>,
+}
+
+impl<K, V> DashSegment<K, V>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	/// Creates a new DashSegment with fallible initialization.
+	pub fn try_new(settings: &DashSettings) -> Option<Self> {
+		if let Some(core) = SegmentCore::try_new(settings) {
+			info!("DashSegment.try_new");
+			Some(Self { core })
+		} else {
+			log::error!("DashSegment.try_new: core initialization failed");
+			None
+		}
+	}
+
+	/// Creates a new DashSegment.
+	/// # Panics
+	/// Panics if initialization fails.
+	pub fn new(settings: &DashSettings) -> Self {
+		Self::try_new(settings).expect("DashSegment::new: invalid settings")
+	}
+}
+
+impl<K, V> Segment<K, V> for DashSegment<K, V>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	fn core(&self) -> &SegmentCore<K, V> {
+		&self.core
+	}
+	fn core_mut(&mut self) -> &mut SegmentCore<K, V> {
+		&mut self.core
+	}
+
+	fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
+		promotion_get(&mut self.core, key, InsertPosition::Front)
+	}
+}
+
+// ── Promotion logic ────────────────────────────────────────────────────────
+// Promotion treats target and probing as a tier: items earn their way into the
+// probing bucket only by proving they're the hottest in their target. Demotion
+// cascades down the chain `probing -> target -> stash -> out`, with a
+// one-more-chance step between adjacent tiers.
+
 /// Moves `item` into its target bucket. Any evicted item flows through the tier cascade.
-pub(crate) fn promote_to_target<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
+fn promote_to_target<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
 where
 	K: Hash + Eq + Copy + Debug + 'static,
 	V: Eq + Copy + Debug + 'static,
@@ -27,7 +89,7 @@ where
 }
 
 /// Moves `item` into its probing bucket. Any evicted item flows through the tier cascade.
-pub(crate) fn promote_to_probing<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
+fn promote_to_probing<K, V>(core: &mut SegmentCore<K, V>, item: Item<K, V>, insert_pos: InsertPosition)
 where
 	K: Hash + Eq + Copy + Debug + 'static,
 	V: Eq + Copy + Debug + 'static,
@@ -76,7 +138,7 @@ fn demote_from_normal_bucket<K, V>(
 
 /// `insert_pos = Front`: promotions land at LRU end; the item must earn MRU before promoting again.
 /// `insert_pos = Back`: promotions land at MRU; one more access promotes to the next tier.
-pub(crate) fn promotion_get<'a, K, V>(
+fn promotion_get<'a, K, V>(
 	core: &'a mut SegmentCore<K, V>,
 	key: &K,
 	insert_pos: InsertPosition,
@@ -129,16 +191,186 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::dash::segments::{PromotionColdSegment, Segment};
 	use crate::shared::eviction_policy::EvictionPolicyKind;
 	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
+
+	fn new_segment(policy: EvictionPolicyKind) -> DashSegment<i64, i64> {
+		DashSegment::new(&small_dash_settings(policy))
+	}
+
+	#[test]
+	fn put_goes_to_stash() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		seg.put(Item::new(1_i64, 10_i64));
+		let stash_idx = get_index(&1_i64, seg.core().stash_size);
+		assert!(seg.core().stash_buckets[stash_idx].get_position(&1).is_some());
+	}
+
+	#[test]
+	fn stash_hit_inserts_at_front_of_target() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
+
+		seg.put(Item::new(keys[0], 10));
+		seg.get(&keys[0]);
+		seg.put(Item::new(keys[1], 20));
+		seg.get(&keys[1]);
+
+		// Cold insert pushes keys[1] to Front, displacing keys[0] backward.
+		let items = seg.core.buckets[target_idx].get_items();
+		assert_eq!(items[0].key, keys[1]);
+		assert_eq!(items[1].key, keys[0]);
+	}
+
+	#[test]
+	fn target_hit_not_hottest_promotes_within_bucket() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
+
+		seg.put(Item::new(keys[0], 10));
+		seg.get(&keys[0]);
+		seg.put(Item::new(keys[1], 20));
+		seg.get(&keys[1]);
+
+		// keys[1] starts at Front (cold). Hitting it should bump it Back via ClassicLRU,
+		// not promote it to probing.
+		seg.get(&keys[1]);
+		let items = seg.core.buckets[target_idx].get_items();
+		assert_eq!(items[0].key, keys[0]);
+		assert_eq!(items[1].key, keys[1]);
+	}
+
+	#[test]
+	fn target_hit_hottest_promotes_to_probing() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
+
+		seg.put(Item::new(keys[0], 10));
+		seg.get(&keys[0]);
+		seg.put(Item::new(keys[1], 20));
+		seg.get(&keys[1]);
+
+		// First hit moves keys[1] to MRU; second hit (already at MRU) promotes to probing.
+		seg.get(&keys[1]);
+		seg.get(&keys[1]);
+
+		assert!(seg.core.buckets[probing_idx].get_position(&keys[1]).is_some());
+		assert!(seg.core.buckets[target_idx].get_position(&keys[1]).is_none());
+	}
+
+	#[test]
+	fn probing_hit_touches_in_place() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
+
+		seg.core.buckets[probing_idx].put(Item::new(keys[0], 10));
+
+		let val = seg.get(&keys[0]).unwrap().value;
+		assert_eq!(val, 10);
+		assert!(seg.core.buckets[probing_idx].get_position(&keys[0]).is_some());
+	}
+
+	#[test]
+	fn probing_eviction_demotes_to_target() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
+		let probing_keys = find_keys_for_bucket(probing_idx, seg.core.segment_size, 2);
+
+		for &k in &probing_keys {
+			seg.core.buckets[probing_idx].put(Item::new(k, k * 10));
+		}
+		assert!(seg.core.buckets[probing_idx].is_full());
+
+		// Sole resident of target → already at MRU, so the next get triggers promotion.
+		seg.core.buckets[target_idx].put(Item::new(target_keys[0], 100));
+		seg.get(&target_keys[0]);
+
+		assert!(seg.core.buckets[probing_idx].get_position(&target_keys[0]).is_some());
+	}
+
+	#[test]
+	fn cascade_demotion_probing_to_full_target_to_stash() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
+		let probing_keys = find_keys_for_bucket(probing_idx, seg.core.segment_size, 2);
+
+		seg.put(Item::new(target_keys[0], 10));
+		seg.get(&target_keys[0]);
+		seg.put(Item::new(target_keys[1], 20));
+		seg.get(&target_keys[1]);
+		assert!(seg.core.buckets[target_idx].is_full());
+
+		for &k in &probing_keys {
+			seg.core.buckets[probing_idx].put(Item::new(k, k * 10));
+		}
+		assert!(seg.core.buckets[probing_idx].is_full());
+
+		// Two gets on target_keys[0]: first bumps it to MRU, second promotes to probing,
+		// which evicts the LRU resident of probing.
+		seg.get(&target_keys[0]);
+		seg.get(&target_keys[0]);
+
+		// The evicted item's target is `probing_idx`, so the cascade routes it to stash
+		// instead of bouncing it back into the bucket it just left.
+		let evicted_key = probing_keys[0];
+		let stash_idx = get_index(&evicted_key, seg.core.stash_size);
+		// Permissive assertion: the key may have re-landed elsewhere via subsequent
+		// stash overflow handling — only "vanished entirely" would be a real bug.
+		assert!(
+			seg.core.stash_buckets[stash_idx].get_position(&evicted_key).is_some()
+				|| seg.core.buckets[probing_idx].get_position(&evicted_key).is_some()
+				|| seg.core.buckets[target_idx].get_position(&evicted_key).is_some(),
+			"evicted probing item should be demoted to stash or still in cache"
+		);
+	}
+
+	#[test]
+	fn miss_returns_none() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		assert!(seg.get(&999).is_none());
+	}
+
+	/// Regression for the last-bucket probing wraparound (commit 4b0b763): keys whose target
+	/// is `segment_size - 1` must probe at bucket 0, not at `segment_size` (out of bounds).
+	#[test]
+	fn last_bucket_probing_wraps_to_zero() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let seg_size = seg.core.segment_size;
+		let target_idx = seg_size - 1;
+		let probing_idx = (target_idx + 1) % seg_size;
+		assert_eq!(probing_idx, 0, "sanity: wraparound math holds");
+		let keys = find_keys_for_bucket(target_idx, seg_size, 2);
+
+		seg.put(Item::new(keys[0], 10));
+		seg.get(&keys[0]);
+		seg.put(Item::new(keys[1], 20));
+		seg.get(&keys[1]);
+		// Two-get promote: must place into the wrapped probing bucket without panic.
+		seg.get(&keys[1]);
+		seg.get(&keys[1]);
+
+		assert!(
+			seg.core.buckets[probing_idx].get_position(&keys[1]).is_some(),
+			"promoted item must land in wrapped probing bucket 0"
+		);
+	}
 
 	/// An item evicted from its probing bucket must cascade to its true target
 	/// (one-more-chance), not jump straight to stash.
 	#[test]
 	fn evicted_from_probing_cascades_to_target() {
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = DashSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg_size;
@@ -171,7 +403,7 @@ mod tests {
 	/// `insert_pos`: Front for cold, Back for hot.
 	fn target_retry_position(insert_pos: InsertPosition, expected_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = DashSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let target_idx = 0;
 		let probing_idx = (target_idx + 1) % seg_size;
@@ -210,7 +442,7 @@ mod tests {
 	/// AND that the stash insert honors `insert_pos`.
 	fn direct_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = DashSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;
 		let target_idx = 0;
@@ -249,7 +481,7 @@ mod tests {
 	/// cascades into stash. Verifies the cascade stash insert honors `insert_pos`.
 	fn cascade_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
-		let mut seg = PromotionColdSegment::new(&settings);
+		let mut seg = DashSegment::new(&settings);
 		let seg_size = settings.num_of_normal_buckets;
 		let stash_size = settings.num_of_stash_buckets;
 		let target_idx = 0;

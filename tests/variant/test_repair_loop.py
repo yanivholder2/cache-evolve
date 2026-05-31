@@ -200,7 +200,7 @@ def test_implementer_crash_hard_fails_without_retry(tmp_path):
 # EXTENSION_POINTS); any other value is written verbatim to OVERLAY_REL.
 EMPTY = "__empty__"
 OUT_OF_SCOPE = "__out_of_scope__"
-OUT_OF_SCOPE_REL = "src/dash/segments/promotion_logic.rs"
+OUT_OF_SCOPE_REL = "src/dash/segments/mod.rs"
 
 
 class _OverlayAdapter:
