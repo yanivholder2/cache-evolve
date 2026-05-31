@@ -113,13 +113,13 @@ mod tests {
 	use super::*;
 	use crate::shared::eviction_policy::EvictionPolicyKind;
 	use crate::test_utils::small_dash_settings;
-	use segments::PromotionColdSegment;
+	use segments::DashSegment;
 
 	#[test]
 	fn put_then_get() {
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-			PromotionColdSegment::new(&settings)
+			DashSegment::new(&settings)
 		});
 		cache.put(1_i64, 10_i64);
 		assert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);
@@ -129,7 +129,7 @@ mod tests {
 	fn miss_returns_none() {
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-			PromotionColdSegment::new(&settings)
+			DashSegment::new(&settings)
 		});
 		assert!(cache.get_and_update_item(&42_i64).is_none());
 	}
@@ -137,8 +137,8 @@ mod tests {
 	#[test]
 	fn try_new_rejects_zero_segments() {
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
-		let res = Dash::<i64, i64, PromotionColdSegment<i64, i64>>::try_new(0, || {
-			PromotionColdSegment::try_new(&settings)
+		let res = Dash::<i64, i64, DashSegment<i64, i64>>::try_new(0, || {
+			DashSegment::try_new(&settings)
 		});
 		assert!(res.is_none());
 	}
@@ -148,7 +148,7 @@ mod tests {
 		use framework::Cache;
 		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
 		let mut cache: Dash<i64, i64, _> = Dash::new(settings.num_of_segments, || {
-			PromotionColdSegment::new(&settings)
+			DashSegment::new(&settings)
 		});
 		Cache::put(&mut cache, 1_i64, 10_i64);
 		assert_eq!(Cache::get(&mut cache, &1_i64), Some(&10_i64));

@@ -2,11 +2,10 @@
 
 You author one Variant of the cache for the evolve research loop. A Variant
 is a **whole cache**, not a single file: the framework calls in only through
-the `Cache<K, V>` trait, `Segment` is the single generic seam, and every other
-axis (eviction policy, bucket, …) is a trait object below it. The orchestrator
-spawns one invocation per Variant in a cohort, in parallel. You see only your
-own Hypothesis and its declared parent variant — not the cohort, not peer
-Variants, not the ledger.
+the `Cache<K, V>` trait, and each extension point the subject manifest declares
+is a swappable seam beneath it. The orchestrator spawns one invocation per
+Variant in a cohort, in parallel. You see only your own Hypothesis and its
+declared parent variant — not the cohort, not peer Variants, not the ledger.
 
 ## Workflow
 
@@ -19,15 +18,15 @@ Variants, not the ledger.
      assignment. Apply only those changes against the subject. The first
      non-empty line of the preamble is the testable claim.
    - **Subject manifest (`manifest.toml`)** — the `[[extension-points]]`
-     tables describe each axis (eviction policy, bucket, item, …) and list the impl
+     tables describe each axis the subject exposes and list the impl
      files that realise it. In extension-points scope those impl files are
      your write-whitelist; in both scopes the descriptions orient you.
    - **Parent variant's `overlay/`** — the files the parent variant
      overlaid (may be empty for baseline-parented variants).
-   - **Subject `src/`** — the canonical Rust source you are overlaying.
+   - **Subject `src/`** — the canonical source you are overlaying.
      `src/factory.rs` exports `make_cache` (the cache constructor) and is the
-     typical seam for cache-level changes; segment-, bucket-, or policy-level
-     changes overlay the corresponding subject files.
+     typical seam for cache-level changes; finer-grained changes overlay the
+     corresponding extension-point impl files named in the manifest.
    - **Parent variant's `fitness-vector.json`** and **`insight.md`** when
      present — context on what the parent variant achieves, so your changes
      are deliberate refinements rather than blind rewrites.
@@ -35,8 +34,8 @@ Variants, not the ledger.
    build time the harness copytrees the whole subject crate, then copies each
    file in `overlay/` onto the workspace at its relative path. Examples:
    - To replace the cache constructor: `overlay/src/factory.rs`.
-   - To replace a segment implementation:
-     `overlay/src/dash/segments/promotion_cold_segment.rs`.
+   - To replace an extension-point implementation: the impl file named in the
+     manifest, e.g. `overlay/<impl-file-path>`.
    - Variants may add new files; deletions are not supported.
 
 ## Authoring scope
@@ -49,8 +48,7 @@ out-of-scope writes are rejected, so honour it.
   implementations behind them.
 - **full-autonomy**: write **any** overlay file (including `src/factory.rs` and
   the segment layout). You must still satisfy the `Cache<K, V>` contract and
-  the subject's invariant suite — including subject-structural invariants such
-  as dash's promotion/cold segment.
+  the subject's invariant suite — including the subject's structural invariants.
 
 Read access is unrestricted in both scopes; scope constrains only what you
 **write**.
@@ -72,7 +70,8 @@ The overlay must compile and pass all four gates, in order:
 
 The contract you implement is the `Cache<K, V>` trait plus the subject's
 `Invariants` suite. `src/factory.rs` exports
-`pub fn make_cache(settings: &DashSettings) -> Box<dyn framework::Cache<i64, i64>>`.
+`make_cache(settings: &<SubjectSettings>) -> Box<dyn framework::Cache<i64, i64>>`,
+where `<SubjectSettings>` is the subject's own settings type.
 `Cache::put` is only ever called for a **non-resident** key (the cache puts
 after a get-miss); never re-insert a key that is already present.
 

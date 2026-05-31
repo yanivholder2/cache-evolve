@@ -1,4 +1,4 @@
-use crate::dash::segments::{PromotionColdSegment, Segment};
+use crate::dash::segments::{DashSegment, Segment};
 use crate::dash::Dash;
 use crate::test_utils::baseline_dash_settings;
 use proptest::collection::vec;
@@ -13,7 +13,7 @@ pub struct DashInvariants;
 impl framework::Invariants for DashInvariants {
 	fn run_invariant_suite() -> Result<(), String> {
 		let settings = baseline_dash_settings();
-		run_invariant_suite(|| PromotionColdSegment::new(&settings))
+		run_invariant_suite(|| DashSegment::new(&settings))
 	}
 }
 

@@ -71,7 +71,7 @@ def test_loads_real_manifest():
     assert subject.name == "dash"
     assert subject.crate_path == Path(".")
     assert subject.cdylib_name == "dash"
-    assert len(subject.extension_points) == 3
+    assert len(subject.extension_points) == 4
     assert subject.protected_files == (Path("src/dash/jni.rs"), Path("src/factory.rs"))
     assert subject.docs.context == Path("CONTEXT.md")
     assert subject.docs.insight == Path("baseline/insight.md")
@@ -133,6 +133,7 @@ def test_ep_scope_whitelist_is_union_of_impl_files():
             Path("src/shared/eviction_policy.rs"),
             Path("src/dash/dash_bucket.rs"),
             Path("src/shared/item.rs"),
+            Path("src/dash/segments/dash_segment.rs"),
         }
     )
 
@@ -647,5 +648,10 @@ def test_axis_descriptions_map_name_to_description():
             "Storage unit a bucket holds; its layout and metadata co-evolve with the "
             "eviction policy that reads them. Keep Item::new(key, value) constructible "
             "and the key/value fields present."
+        ),
+        "segment": (
+            "The segment's get-time strategy: where items land on a hit and how they "
+            "migrate between the stash, target, and probing slots. Implements the "
+            "Segment trait over the shared SegmentCore."
         ),
     }

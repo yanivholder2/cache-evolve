@@ -14,7 +14,7 @@
 // is run with the same command. Non-zero exit = invariant-gate failure; the
 // failing invariant name is recorded in `rejection.md`.
 
-use dash::dash::segments::{PromotionColdSegment, Segment, SegmentCore};
+use dash::dash::segments::{DashSegment, Segment, SegmentCore};
 use dash::dash::Dash;
 use dash::get_index;
 use dash::shared::item::Item;
@@ -99,7 +99,7 @@ fn single_eviction_per_put_negative_fixture() {
 fn stash_terminal_negative_fixture() {
 	let s = baseline_dash_settings();
 	let mut cache: Dash<i64, i64, _> =
-		Dash::new(1, || PromotionColdSegment::new(&s));
+		Dash::new(1, || DashSegment::new(&s));
 	// Place a key that hashes to bucket 2 into bucket 0 — contains_key will
 	// return false (searches stash, bucket 2, bucket 3), while the item is
 	// physically present. A buggy get that searched all buckets would return
@@ -125,13 +125,13 @@ fn stash_terminal_negative_fixture() {
 #[cfg(feature = "test-utils")]
 mod harness_tests {
 	use super::baseline_dash_settings;
-	use dash::dash::segments::PromotionColdSegment;
+	use dash::dash::segments::DashSegment;
 	use dash::test_utils::run_invariant_suite;
 
 	#[test]
-	fn promotion_cold_passes_all_invariants() {
+	fn dash_segment_passes_all_invariants() {
 		let s = baseline_dash_settings();
-		run_invariant_suite(|| PromotionColdSegment::new(&s)).unwrap();
+		run_invariant_suite(|| DashSegment::new(&s)).unwrap();
 	}
 
 	#[test]

@@ -1,8 +1,11 @@
 //! JNI surface for the Caffeine `DashRustPolicy`.
 //!
 //! Holds a `Box<dyn framework::Cache<i64, i64>>` constructed via the
-//! subject-owned `factory::make_cache`. Variants overlay `src/factory.rs` to
-//! substitute their cache; the JNI symbols stay the same.
+//! subject-owned `factory::make_cache`. This file and `src/factory.rs` are the
+//! contract-protected seam between the cache and Caffeine; variants cannot
+//! overlay them. A variant changes cache behavior by overlaying the manifest
+//! extension points (segment, bucket, item, eviction-policy); the JNI symbols
+//! stay the same.
 
 use crate::dash::dash_settings::DashSettings;
 use crate::factory::make_cache;

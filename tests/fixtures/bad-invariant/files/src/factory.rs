@@ -7,16 +7,16 @@
 // catches (U1). Under real cargo this is a genuine failure, not just a mock.
 
 use crate::dash::dash_settings::DashSettings;
-use crate::dash::segments::PromotionColdSegment;
+use crate::dash::segments::DashSegment;
 use crate::dash::segments::Segment;
 use crate::dash::Dash;
 use crate::get_index;
 use crate::shared::item::Item;
 
 pub fn make_cache(settings: &DashSettings) -> Box<dyn framework::Cache<i64, i64>> {
-	let mut cache = Dash::<i64, i64, PromotionColdSegment<i64, i64>>::new(
+	let mut cache = Dash::<i64, i64, DashSegment<i64, i64>>::new(
 		settings.num_of_segments,
-		|| PromotionColdSegment::new(settings),
+		|| DashSegment::new(settings),
 	);
 	let n = settings.num_of_normal_buckets;
 	// A key the universal gate sweeps (0..64) but never puts. Plant it in its own

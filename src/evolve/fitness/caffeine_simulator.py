@@ -31,8 +31,9 @@ from evolve.variant.build import compile_cdylib
 log = logging.getLogger(__name__)
 
 # Variants no longer declare an eviction policy; the baseline runs ClassicLRU
-# and that's what the simulator drives by default. A variant selects a
-# different policy by overlaying `src/factory.rs`.
+# and that's what the simulator drives. A variant changes policy behavior by
+# overlaying the eviction-policy extension point (src/shared/eviction_policy.rs),
+# not by selecting a different policy here; factory.rs is contract-protected.
 DEFAULT_EVICTION_POLICY = "ClassicLRU"
 
 _CAFFEINE_LOCK = threading.Lock()

@@ -19,7 +19,13 @@ Independent partition of the Dash; each segment owns its own normal buckets and 
 _Avoid_: Shard, partition
 
 **SegmentCore**:
-Shared state (normal buckets + stash buckets) inside every segment variant.
+Shared state (normal buckets + stash buckets) inside every Segment implementation.
+
+**DashSegment**:
+The baseline Segment implementation; its `get` realises the Promotion strategy.
+The type names the evolvable segment seam, not a fixed strategy — the framework
+may change its `get`/migration design freely.
+_Avoid_: PromotionColdSegment, Cold segment
 
 **Bucket**:
 Fixed-capacity ordered collection of items within a segment.
@@ -52,10 +58,11 @@ _Avoid_: Probe bucket, neighbor
 ### Strategy
 
 **Promotion strategy**:
-The sole baseline strategy. Items earn their way into the probing bucket only
-after proving they're the hottest in their target. Realised by
-`PromotionColdSegment`: a stash→target insert lands at the LRU end, so an item
-must climb before it can be promoted further.
+The baseline design of `DashSegment`. Items earn their way into the probing
+bucket only after proving they're the hottest in their target: a stash→target
+insert lands at the LRU end (front-insert), so an item must climb before it can
+be promoted further. This is only the seed design — the framework is free to
+evolve where items land on a hit and how they migrate between slots.
 _Avoid_: Position-based LRU, tiered strategy
 
 ### Item lifecycle and movement
@@ -162,7 +169,7 @@ _Avoid_: Bottom, front
 
 - **"Target"** — in code, this is both a noun for "the home bucket of a key" (use **Target bucket** or `Slot::Target`) and an adjective in policy discussion. Prefer **Target bucket** / `Slot::Target` when the domain meaning is intended; avoid bare "target."
 - **"Bucket"** — unqualified "bucket" is ambiguous between stash and normal. Use **Normal bucket** or **Stash bucket** when precision matters. `Slot` makes the intent explicit at call sites.
-- **"Hot"** — now only an adjective for a frequently-accessed item. Prefer **Hottest item** for the concept. (The former **Hot variant** segment was dropped; `PromotionColdSegment` is the sole baseline.)
+- **"Hot"** — now only an adjective for a frequently-accessed item. Prefer **Hottest item** for the concept. (The former **Hot variant** segment was dropped; `DashSegment` is the sole baseline.)
 - **"Insert"** vs **"Put"** — now unified: the primitive is **Put** (`SegmentCore::put(slot, item)`). Avoid **Insert** as a verb except when referring to `InsertPosition` (the enum used by `Bucket::put_at`).
 - **"Demote"** — strictly means a step down the promotion **Demotion chain** (`probing → target → stash`); the evicted item drops one tier, never re-promotes.
 - **"Promotion"** — overloaded: strategy name (**Promotion strategy**) and the act of moving an item up a tier. Prefer **Promotion strategy** when the strategy is meant and the bare verb **Promote** when the action is meant.
