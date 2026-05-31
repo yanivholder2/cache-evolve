@@ -66,3 +66,7 @@ Defaults for every setting live in [`config.toml`](config.toml) — edit it to c
 ## License
 
 Released under the [MIT License](LICENSE).
+
+## Acknowledgements
+
+Built as part of a master's thesis at the Technion — Israel Institute of Technology, under Prof. Roy Friedman.
