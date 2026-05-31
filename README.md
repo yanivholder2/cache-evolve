@@ -1,10 +1,14 @@
 # Evolve
 
-Research framework that drives the cache-experiment loop. It runs **cycles** of cache-policy evolution: each cycle proposes a **cohort** of hypotheses, generates one Rust variant per hypothesis, runs correctness gates (build gate, contract gate, invariant gate) plus fitness plugins (e.g. hit-rate), writes one LLM-authored Variant insight per surviving Variant, writes one Cycle insight summarising the cohort, computes a Pareto front, and appends one row to the immutable ledger.
+Research framework that drives a cache-policy evolution loop. It runs **cycles**: each cycle proposes a **cohort** of hypotheses, generates one code variant per hypothesis, puts each variant through correctness **gates** and **fitness** scoring, records an insight per surviving variant and a summary insight per cycle, computes a Pareto front, and appends one row to an immutable ledger.
 
-Subagents handle judgment work (hypothesize, implement, write variant insight, write cycle insight) via in-process adapters. Library modules under `src/evolve/` handle everything deterministic — scaffolding, gates, scoring, sealing, ledger/leaderboard maintenance. Everything a run writes lands under `outputs/` (gitignored): cycle artifacts at `outputs/cycles/NNNN/` (sealed once complete), plus `outputs/cycles-ledger.jsonl` and `outputs/leaderboard.md` as the persistent across-cycle views.
+Subagents handle the judgment work (hypothesize, implement, write insights) through a pluggable AI-agent backend. Deterministic library code handles everything else — scaffolding, gates, scoring, sealing, and the ledger/leaderboard. Everything a run writes lands under a read-write outputs directory (gitignored); the repo itself stays unchanged.
 
-## Environment Setup
+For the concepts, the end-to-end flow, the simulator setup, and per-subject details, see the **[project wiki](../../wiki)**.
+
+## Environment setup
+
+### With uv (recommended)
 
 Dependencies are managed by [uv](https://github.com/astral-sh/uv) and installed into a local `.venv/`:
 
@@ -12,86 +16,52 @@ Dependencies are managed by [uv](https://github.com/astral-sh/uv) and installed 
 uv sync
 ```
 
-This creates `.venv/` and installs the project (declared in `pyproject.toml`).
+This creates `.venv/` and installs the project declared in `pyproject.toml`.
+
+### Without uv
+
+Any standard virtual environment works:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -e .
+```
+
+The first run prompts you to select an AI-agent backend if one isn't configured — see [Configuration](#configuration).
 
 ## Usage
 
-Framework entry point is the `evolve` console script (installed by `uv sync`):
+The framework entry point is the `evolve` console script:
 
 ```bash
-uv run evolve [flags]
+uv run evolve            # with uv
+evolve                   # inside an activated venv
 ```
 
-Equivalent: `uv run python -m evolve.cli [flags]` (or `.venv/bin/python -m evolve.cli`).
+Equivalent: `python -m evolve.cli`.
 
-Flags (defaults sourced from [`config.toml`](config.toml); flags override per-run):
-
-| Flag                      | Config key                | Purpose                                                                        |
-| ------------------------- | ------------------------- | ------------------------------------------------------------------------------ |
-| `--cycles N`              | `framework.cycles`        | Number of cycles to run sequentially. Aborts on first failure.                 |
-| `--cohort-size N`         | `framework.cohort_size`   | Number of variants per cycle.                                                  |
-| `--ai-agent-tool <name>`  | `framework.ai_agent_tool` | AI agent backend to drive subagents. Choices: `antigravity-sdk`, `claude-sdk`. |
-| `--outputs-root <path>`   | —                         | Read-write dir for cycles, ledger, and logs (default: `outputs/`).             |
-| `--log-level <level>`     | `framework.log_level`     | Log verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.         |
-| `--simulator-timeout-s N` | `simulator.timeout_s`     | Per-variant simulator invocation timeout (seconds). Surfaces as `FitnessError`.|
-| `--max-workers N`         | `framework.max_workers`   | Worker threads for per-variant fan-out (0 = match cohort size).                |
-
-Examples:
+Run with `--help` to see every flag and what it does:
 
 ```bash
-# Single cycle, defaults from config.toml
-uv run evolve
-
-# Three cycles, cohort of 4
-uv run evolve --cycles 3 --cohort-size 4
-
-# Override AI agent tool for one run
-uv run evolve --ai-agent-tool antigravity-sdk
+evolve --help
 ```
 
-Each cycle ends with `cycle <NNNN> complete — sealed at <path> (cohort=N)`.
-
-### Baseline and per-cycle grounding
-
-Each subject carries a checked-in permanent research baseline under `inputs/subjects/<name>/baseline/`. The baseline implementation is the subject crate's own source; the baseline directory holds its measured grounding:
-
-```
-inputs/subjects/<name>/baseline/
-  eval/fitness-vector.json  # measured fitness, produced by measure_baseline.py
-  insight.md                # short prose describing the baseline
-```
-
-### Measuring the baseline
-
-`fitness-vector.json` is a checked-in artefact. Re-measure (and commit the diff) whenever bench config or fitness plugins change:
+Flags override the defaults; defaults live in [`config.toml`](config.toml), which documents every setting inline. A couple of examples:
 
 ```bash
-uv run python scripts/measure_baseline.py
+# Single cycle
+evolve --cycles 1
+
+# Three cycles, cohort of four
+evolve --cycles 3 --cohort-size 4
 ```
 
-### Configuration
+Each cycle ends with a `cycle <NNNN> complete` line naming the sealed cycle directory.
 
-Defaults for every flag live in [`config.toml`](config.toml) under `[framework]`. Edit the file to change defaults persistently; pass the corresponding flag to override on a single run. Precedence: **flag > `config.toml`** — if neither is set, the run aborts.
+## Configuration
 
-## Testing
-
-Tests live in `tests/`. Run from the repo root:
-
-```bash
-# Fast suite
-uv run pytest
-```
-
-Markers (defined in `tests/conftest.py`):
-
-| Marker            | Skipped by default unless  | Use for                                                         |
-| ----------------- | -------------------------- | --------------------------------------------------------------- |
-| `slow`            | `--slow` passed            | End-to-end tests that drive a real `cargo` build.               |
-| `caffeine_needed` | `--caffeine-needed` passed | Tests requiring ~/projects/caffeine and a JDK. Never run in CI. |
-
-A session-scoped fixture puts `tests/_mocks/` first on `PATH` so the fast suite never invokes a real `cargo`.
-
-`--slow` and `--caffeine-needed` cannot be combined: slow tests assume the caffeine stub is active, which `--caffeine-needed` disables. Passing both aborts collection.
+Defaults for every setting live in [`config.toml`](config.toml) — edit it to change them persistently, or pass the matching flag to override on a single run. Precedence is **flag > `config.toml`**: a setting with no flag and no config value (for example, the AI-agent backend, which has no default) aborts the run with an instructive message rather than guessing.
 
 ## License
 
