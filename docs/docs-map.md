@@ -6,14 +6,23 @@ Index of reference docs. Paths are relative to the repo root. Read on demand; do
 
 ### [README.md](../README.md)
 
-* Environment setup
-* Usage (flags, examples)
-* Baseline and per-cycle grounding
-* Measuring the baseline
-* Configuration
-* Testing
+* Environment setup (with and without uv)
+* Usage (defers to `evolve --help` + `config.toml`)
+* Configuration (flag > config.toml precedence)
 
-**Read when** running the evolve framework, configuring a cycle, or running its test suite.
+**Read when** installing or running the evolve framework. Public-facing orientation only; concepts, flow, simulator setup, baseline, and per-subject detail live in the wiki.
+
+### [wiki/](../wiki) — published GitHub wiki source
+
+User-facing guide (single source of truth, mirrored to the GitHub wiki):
+
+* Home — install → configure → run → read outputs, with the cycle flowchart
+* Concepts — cycle, cohort, gates, fitness, Pareto, ledger
+* Evaluation and Fitness — fitness plugins, the simulator seam, Caffeine
+* Baseline — measuring a subject's grounding
+* Subjects — what a subject is and how to select one
+
+**Read when** editing user-facing docs. Publishing to the GitHub wiki is gated on the repo being public (see the wiki publish issue).
 
 ### [src/evolve/agents/README.md](../src/evolve/agents/README.md)
 
