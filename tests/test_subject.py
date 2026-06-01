@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,29 @@ DASH_SUBJECT = REPO_ROOT / "inputs" / "subjects" / "dash"
 ASSOCIATIVE_CACHE_SUBJECT = REPO_ROOT / "inputs" / "subjects" / "associative_cache"
 
 
+def _write_baseline(root: Path, grid: list[tuple[str, int]]) -> None:
+    """Write a baseline fitness vector whose hit-rate grid matches ``grid``."""
+    (root / "eval" / "fitness.json").write_text(
+        json.dumps(
+            {
+                "variant": "baseline",
+                "dimensions": [
+                    {
+                        "dim": "hit-rate",
+                        "values": [
+                            {"trace": trace, "size": size, "hit_rate": 0.5}
+                            for trace, size in grid
+                        ],
+                        "summary": 0.5,
+                        "higher_is_better": True,
+                    }
+                ],
+            }
+        )
+        + "\n"
+    )
+
+
 def _write_valid_subject(root: Path) -> Path:
     """Materialise a minimal valid subject tree at ``root`` and return it."""
     (root / "src" / "policy").mkdir(parents=True)
@@ -29,7 +53,7 @@ def _write_valid_subject(root: Path) -> Path:
     (root / "docs" / "context.md").write_text("ctx\n")
     (root / "docs" / "insight.md").write_text("ins\n")
     (root / "eval").mkdir()
-    (root / "eval" / "fitness.json").write_text("{}\n")
+    _write_baseline(root, [("lirs:multi1.trace.gz", 512)])
     (root / "Cargo.toml").write_text("[package]\nname = \"stub\"\n")
     manifest = root / "manifest.toml"
     manifest.write_text(
@@ -251,6 +275,14 @@ def test_multi_point_grid_parsed(tmp_path: Path):
         text.replace('traces = ["lirs:multi1.trace.gz"]', 'traces = ["lirs:multi1.trace.gz", "arc:p1.trace"]')
             .replace("sizes = [512]", "sizes = [256, 512, 1024]"),
     )
+    _write_baseline(
+        tmp_path,
+        [
+            (trace, size)
+            for trace in ("lirs:multi1.trace.gz", "arc:p1.trace")
+            for size in (256, 512, 1024)
+        ],
+    )
     grid = load_subject(tmp_path).evaluation
     assert grid.traces == ("lirs:multi1.trace.gz", "arc:p1.trace")
     assert grid.sizes == (256, 512, 1024)
@@ -309,6 +341,43 @@ def test_duplicate_size_is_rejected(tmp_path: Path):
     text = (tmp_path / "manifest.toml").read_text()
     _rewrite_manifest(tmp_path, text.replace("sizes = [512]", "sizes = [512, 512]"))
     with pytest.raises(SubjectManifestError, match=r"evaluation.sizes.*duplicate"):
+        load_subject(tmp_path)
+
+
+def test_baseline_grid_mismatch_is_rejected(tmp_path: Path):
+    # A stale/stub anchor (wrong sizes, and keyed by `cache` not `trace`) must
+    # be caught at load time before it poisons the global champions/leaderboard.
+    _write_valid_subject(tmp_path)
+    (tmp_path / "eval" / "fitness.json").write_text(
+        json.dumps(
+            {
+                "variant": "baseline",
+                "dimensions": [
+                    {
+                        "dim": "hit-rate",
+                        "values": [{"cache": "lru", "size": 16, "hit_rate": 0.0}],
+                        "summary": 0.0,
+                        "higher_is_better": True,
+                    }
+                ],
+            }
+        )
+    )
+    with pytest.raises(SubjectManifestError, match=r"hit-rate.*trace.*size|grid.*does not match"):
+        load_subject(tmp_path)
+
+
+def test_baseline_missing_hit_rate_dimension_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    (tmp_path / "eval" / "fitness.json").write_text(json.dumps({"dimensions": []}))
+    with pytest.raises(SubjectManifestError, match=r"missing the 'hit-rate' dimension"):
+        load_subject(tmp_path)
+
+
+def test_baseline_malformed_json_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    (tmp_path / "eval" / "fitness.json").write_text("not json {{{")
+    with pytest.raises(SubjectManifestError, match=r"cannot read baseline fitness vector"):
         load_subject(tmp_path)
 
 

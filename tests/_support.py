@@ -58,7 +58,14 @@ def write_stub_subject(subject_dir: Path) -> StubSubject:
     (subject_dir / "baseline").mkdir(parents=True, exist_ok=True)
     (subject_dir / "baseline" / "insight.md").write_text("ins\n", encoding="utf-8")
     (subject_dir / "baseline" / "eval").mkdir(parents=True, exist_ok=True)
-    (subject_dir / "baseline" / "eval" / "fitness-vector.json").write_text("{}\n", encoding="utf-8")
+    # Baseline anchor on the same (trace, size) grid the manifest declares, so
+    # it passes the subject loader's baseline-grid validation.
+    (subject_dir / "baseline" / "eval" / "fitness-vector.json").write_text(
+        '{"variant": "baseline", "dimensions": [{"dim": "hit-rate", '
+        '"values": [{"trace": "lirs:multi1.trace.gz", "size": 512, "hit_rate": 0.5}], '
+        '"summary": 0.5, "higher_is_better": true}]}\n',
+        encoding="utf-8",
+    )
     (subject_dir / "Cargo.toml").write_text(
         f'[package]\nname = "{STUB_SUBJECT_NAME}"\n', encoding="utf-8"
     )

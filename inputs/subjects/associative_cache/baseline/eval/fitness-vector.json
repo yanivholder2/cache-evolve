@@ -5,17 +5,12 @@
       "dim": "hit-rate",
       "values": [
         {
-          "cache": "assoc",
-          "size": 16,
-          "hit_rate": 0.8775
-        },
-        {
-          "cache": "assoc",
-          "size": 32,
-          "hit_rate": 0.9055
+          "trace": "lirs:multi1.trace.gz",
+          "size": 512,
+          "hit_rate": 0.46619999999999995
         }
       ],
-      "summary": 0.8915,
+      "summary": 0.4662,
       "higher_is_better": true
     },
     {

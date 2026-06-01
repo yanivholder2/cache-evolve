@@ -8,6 +8,7 @@ framework consumes.
 
 from __future__ import annotations
 
+import json
 import tomllib
 from dataclasses import dataclass
 from functools import lru_cache
@@ -363,7 +364,55 @@ def _load_evaluation(table: dict, subject_dir: Path) -> Evaluation:
             raise SubjectManifestError(f"evaluation.sizes: duplicate size {size}")
         sizes.append(size)
 
+    _validate_baseline_grid(subject_dir, fv, traces, sizes)
     return Evaluation(fitness_vector=fv, traces=tuple(traces), sizes=tuple(sizes))
+
+
+def _validate_baseline_grid(
+    subject_dir: Path, fitness_vector: Path, traces: list[str], sizes: list[int]
+) -> None:
+    """The committed baseline anchor must be scored on the same (trace, size)
+    grid as live variants, or the global champions and leaderboard silently
+    compare incomparable numbers. Catch a stale or stub anchor at load time."""
+
+    where = "evaluation.fitness-vector"
+    try:
+        data = json.loads((subject_dir / fitness_vector).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exception:
+        raise SubjectManifestError(
+            f"{where}: cannot read baseline fitness vector at {fitness_vector}: {exception}"
+        ) from exception
+
+    dimensions = data.get("dimensions") if isinstance(data, dict) else None
+    if not isinstance(dimensions, list):
+        raise SubjectManifestError(f"{where}: baseline fitness vector has no 'dimensions' list")
+    hit_rate = next(
+        (d for d in dimensions if isinstance(d, dict) and d.get("dim") == "hit-rate"), None
+    )
+    if hit_rate is None:
+        raise SubjectManifestError(
+            f"{where}: baseline fitness vector is missing the 'hit-rate' dimension"
+        )
+    values = hit_rate.get("values")
+    if not isinstance(values, list):
+        raise SubjectManifestError(f"{where}: baseline 'hit-rate' dimension has no 'values' list")
+
+    measured: set[tuple[str, int]] = set()
+    for entry in values:
+        if not isinstance(entry, dict) or "trace" not in entry or "size" not in entry:
+            raise SubjectManifestError(
+                f"{where}: each baseline 'hit-rate' value must carry 'trace' and 'size' keys "
+                f"matching the evaluation grid, got {entry!r}; re-measure with "
+                f"scripts/measure_baseline.py"
+            )
+        measured.add((entry["trace"], entry["size"]))
+
+    expected = {(trace, size) for trace in traces for size in sizes}
+    if measured != expected:
+        raise SubjectManifestError(
+            f"{where}: baseline 'hit-rate' grid {sorted(measured)} does not match the declared "
+            f"evaluation grid {sorted(expected)}; re-measure with scripts/measure_baseline.py"
+        )
 
 
 def _load_bench(table: dict | None) -> Bench | None:

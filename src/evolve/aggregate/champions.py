@@ -3,7 +3,8 @@
 Unlike the cohort-local `winners.json` (best of one cycle's survivors), this
 unions every evaluated variant across all cycles with the baseline, re-labels
 each fitness vector with a globally-unique id, and recomputes the Pareto front
-over that union. Recomputed after every cycle so regressions stay visible."""
+over that union. Recomputed after every cycle so dominated variants stay
+visible alongside the standing champions."""
 
 from __future__ import annotations
 

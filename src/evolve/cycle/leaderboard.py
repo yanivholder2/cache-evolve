@@ -130,7 +130,10 @@ def _mark_variant(name: str, row_cycle: str, pareto_front: set, champions: Optio
         return name
     global_id = f"cycle/{row_cycle}/{name}"
     if global_id not in pareto_front:
-        return f"{name} (regressed)"
+        # Off the current global front means dominated by some champion, not
+        # necessarily worse than its own parent or the baseline; "dominated"
+        # avoids implying a regression that was never measured.
+        return f"{name} (dominated)"
     return name
 
 

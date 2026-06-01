@@ -172,7 +172,7 @@ def test_baseline_row_and_global_best_section(tmp_path):
     assert "- hit-rate: 0.65 held by cycle/0001/v001" in content
 
 
-def test_regression_marker(tmp_path):
+def test_dominated_marker(tmp_path):
     fv1 = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
     fv2 = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.40, "higher_is_better": True}]}]
     evolve = _make_evolve_root(tmp_path, {"0001": fv1, "0002": fv2})
@@ -189,8 +189,8 @@ def test_regression_marker(tmp_path):
     regenerate(layout=OutputsLayout(root=evolve), output=out)
     content = read_utf8(out)
 
-    # (c) off-front winner marked regressed; on-front winner not marked
-    assert "| 0002 | v001 (regressed) |" in content
+    # (c) off-front winner marked dominated; on-front winner not marked
+    assert "| 0002 | v001 (dominated) |" in content
     assert "| 0001 | v001 |" in content
 
 
