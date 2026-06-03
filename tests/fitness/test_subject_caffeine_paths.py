@@ -21,7 +21,7 @@ from evolve.paths import CycleVariant, Layout, SourcesLayout
 from evolve.subject import load_subject
 
 REPO_ROOT = Path(__file__).parent.parent.parent
-SUBJECTS = ["dash", "associative_cache", "lru_cache"]
+SUBJECTS = ["dash", "associative_cache", "lru_cache", "s3_fifo"]
 VARIANT = CycleVariant(CycleId(1), VariantId(1))
 
 
