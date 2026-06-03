@@ -21,7 +21,6 @@ def _write_config(
         "cycles = 1",
         "cohort_size = 3",
         'ai_agent_tool = "claude-sdk"',
-        'outputs_root = "outputs/run"',
         'log_level = "DEBUG"',
         "digest_cycles = 3",
         "max_workers = 0",
@@ -84,6 +83,14 @@ def test_subject_absent_raises(tmp_path: Path):
     _write_config(tmp_path, subject=None)
     with pytest.raises(ConfigError, match="subject"):
         load_configs(tmp_path)
+
+
+def test_outputs_root_is_subject_prefixed_under_repo_outputs(tmp_path: Path):
+    _write_config(tmp_path, subject="lru_cache")
+    configs = load_configs(tmp_path)
+    outputs_root = configs.framework.outputs_root
+    assert outputs_root.parent == (tmp_path / "outputs").resolve()
+    assert outputs_root.name.startswith("lru_cache_")
 
 
 def test_hypothesis_attempts_resolves_from_config(tmp_path: Path):

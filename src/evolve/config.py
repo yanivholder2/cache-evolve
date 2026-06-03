@@ -11,7 +11,6 @@ import tomllib
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from functools import lru_cache
 from pathlib import Path
 
 from evolve._log import LOG_LEVELS
@@ -62,7 +61,6 @@ def load_configs(
     cycles: int | None = None,
     cohort_size: int | None = None,
     ai_agent_tool: str | None = None,
-    outputs_root: Path | None = None,
     log_level: str | None = None,
     simulator_timeout_s: int | None = None,
     max_workers: int | None = None,
@@ -82,18 +80,19 @@ def load_configs(
     framework_defaults = data.get("framework", {})
     simulator_defaults = data.get("simulator", {})
 
+    resolved_subject = _resolve_subject(subject, framework_defaults, repo_root)
     framework = FrameworkConfig(
         cycles=_resolve_positive_int(cycles, framework_defaults, "cycles", "--cycles", "framework"),
         cohort_size=_resolve_positive_int(cohort_size, framework_defaults, "cohort_size", "--cohort-size", "framework"),
         ai_agent_tool=_resolve_ai_agent_tool(ai_agent_tool, framework_defaults),
-        outputs_root=_resolve_outputs_root(outputs_root, framework_defaults, repo_root),
+        outputs_root=(repo_root / "outputs" / f"{resolved_subject}_{_timestamp()}").resolve(),
         log_level=_resolve_log_level(log_level, framework_defaults),
         digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
         max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
         implementation_attempts=_resolve_positive_int(None, framework_defaults, "implementation_attempts", None, "framework"),
         hypothesis_attempts=_resolve_positive_int(None, framework_defaults, "hypothesis_attempts", None, "framework"),
         authoring_scope=_resolve_authoring_scope(authoring_scope, framework_defaults),
-        subject=_resolve_subject(subject, framework_defaults, repo_root),
+        subject=resolved_subject,
     )
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),
@@ -172,19 +171,6 @@ def _resolve_log_level(override: str | None, defaults: dict) -> str:
     return value
 
 
-def _resolve_outputs_root(override: Path | None, defaults: dict, repo_root: Path) -> Path:
-    if override is not None:
-        raw = str(override)
-    else:
-        raw = str(_resolve(None, defaults, "outputs_root", "--outputs-root", "framework"))
-        raw = raw.format(timestamp=_timestamp())
-    path = Path(raw)
-    if not path.is_absolute():
-        path = repo_root / path
-    return path.resolve()
-
-
-@lru_cache(maxsize=1)
 def _timestamp() -> str:
     now = datetime.now()
     return now.strftime("%Y-%m-%d_%H-%M-%S-") + f"{now.microsecond // 1000:03d}"

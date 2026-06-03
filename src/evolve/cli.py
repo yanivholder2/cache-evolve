@@ -457,8 +457,6 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         help="Variants per cycle.")
     parser.add_argument("--ai-agent-tool", choices=sorted(ADAPTER_REGISTRY), default=None,
                         help="AI agent CLI to drive subagents.")
-    parser.add_argument("--outputs-root", type=Path, default=None,
-                        help="Read-write working dir for cycles, ledger, and logs.")
     parser.add_argument("--log-level", choices=LOG_LEVELS, default=None,
                         type=str.upper,
                         help="Log level for stderr + cycle log file.")
@@ -482,7 +480,6 @@ def main(argv: list[str] | None = None) -> None:
             cycles=args.cycles,
             cohort_size=args.cohort_size,
             ai_agent_tool=args.ai_agent_tool,
-            outputs_root=args.outputs_root,
             log_level=args.log_level,
             simulator_timeout_s=args.simulator_timeout_s,
             max_workers=args.max_workers,
