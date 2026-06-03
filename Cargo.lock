@@ -697,6 +697,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tiny_lfu"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "framework",
+ "jni",
+ "log",
+ "proptest",
+ "rand 0.8.5",
+ "simplelog",
+]
+
+[[package]]
 name = "unarray"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
