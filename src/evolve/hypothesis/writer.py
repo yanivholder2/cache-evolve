@@ -66,13 +66,13 @@ def _load_cross_cycle_winners(layout: Layout) -> dict | None:
 
 
 def _incumbents_section(cross_cycle_winners: dict) -> str:
-    """The global Pareto front as measured anchors plus a hard parent quota."""
+    """The cross-cycle Winners as measured anchors plus a hard parent quota."""
     front = cross_cycle_winners["winners"]
     by_variant = {
         fitness_vector["variant"]: fitness_vector
         for fitness_vector in cross_cycle_winners["fitness_vectors"]
     }
-    lines = ["## Incumbents (global Pareto front)\n\n"]
+    lines = ["## Incumbents (cross-cycle winners)\n\n"]
     for variant_id in front:
         fitness_vector = by_variant.get(variant_id)
         if fitness_vector is None:
@@ -85,7 +85,7 @@ def _incumbents_section(cross_cycle_winners: dict) -> str:
         lines.append(f"- {variant_id}: {summaries}\n")
     non_baseline = [variant_id for variant_id in front if variant_id != "baseline"]
     quota = (
-        "At least one of the hypotheses MUST cite a global-front variant above as "
+        "At least one of the hypotheses MUST cite a cross-cycle winner above as "
         "its `## Parent`."
     )
     if non_baseline:
@@ -159,11 +159,11 @@ def _write_continuation_task_md(
         f"variant `cycle/<NNNN>/v<NNN>` from any prior cycle (1..{prev_cycle_id.value}). "
     )
     if has_front:
-        body += "Aim for distinct strategies — near-duplicates collapse the cohort's Pareto front.\n\n"
+        body += "Aim for distinct strategies — near-duplicates collapse the cohort's winners.\n\n"
     else:
         body += (
             "Prefer refining recent winners or diversifying from recent losers; aim for "
-            "distinct strategies — near-duplicates collapse the cohort's Pareto front.\n\n"
+            "distinct strategies — near-duplicates collapse the cohort's winners.\n\n"
         )
     if authoring_scope is not None:
         body += _authoring_scope_section(authoring_scope, layout)
@@ -176,11 +176,11 @@ def _write_continuation_task_md(
         f"  - {prev_cycle_layout.variant_overlay_template} — the variant's overlay (subject files it replaced); read its latest attempt.\n"
         f"  - {prev_variant_template.fitness_vector_json} — its measured fitness vector.\n"
         f"  - {prev_variant_template.insight_md} — one-line fitness summary.\n"
-        f"- {prev_cycle_layout.cycle_winners_json} — Pareto front + per-variant fitness vectors for the cycle.\n"
+        f"- {prev_cycle_layout.cycle_winners_json} — Winners + per-variant fitness vectors for the cycle.\n"
         f"- {prev_cycle_layout.cycle_insight_md} — cycle-level summary.\n\n"
         f"### Cross-cycle history\n\n"
-        f"- {layout.outputs.leaderboard_md} — current Pareto-front variants and fitness summaries across all cycles.\n"
-        f"- {layout.outputs.ledger} — one JSON row per completed cycle (cohort size, Pareto front, insights).\n"
+        f"- {layout.outputs.leaderboard_md} — current winner variants and fitness summaries across all cycles.\n"
+        f"- {layout.outputs.ledger} — one JSON row per completed cycle (cohort size, winners, insights).\n"
         f"- {layout.outputs.cross_cycle_insights_md} — long-running narrative of what has been learned across cycles. Read if present.\n\n"
         f"### Baseline\n\n"
         f"- {layout.sources.baseline.root} — the permanent baseline (always a valid parent variant).\n"
@@ -205,14 +205,14 @@ def write_hypotheses(
     batch whose `## Changes` names a file outside the writable surface is
     regenerated (up to `attempts` total) with a corrective directive appended to
     the task.md — catching the out-of-scope proposal before it costs an
-    implementer call. On a continuation cycle with a non-empty global Pareto
-    front, at least one produced hypothesis must cite a front variant as its
+    implementer call. On a continuation cycle with non-empty cross-cycle
+    winners, at least one produced hypothesis must cite a winner variant as its
     parent (anchoring the cohort on the proven best-so-far).
 
     Raises:
         ValueError: `hypotheses_num` < 1, adapter wrote the wrong file count,
             hypotheses still name out-of-scope files after `attempts`, or no
-            produced hypothesis anchors on a required global-front variant.
+            produced hypothesis anchors on a required winner variant.
     """
 
     if hypotheses_num < 1:
@@ -328,14 +328,14 @@ def _scope_correction(violations: dict[str, list[str]], subject: Subject) -> str
 
 
 def _enforce_parent_quota(files: list[Path], cross_cycle_winners: dict) -> None:
-    """At least one produced hypothesis must parent on a required global-front
-    anchor: the non-baseline incumbents when any exist, else the full front."""
+    """At least one produced hypothesis must parent on a required winner anchor:
+    the non-baseline incumbents when any exist, else the full winner set."""
     front = cross_cycle_winners["winners"]
     non_baseline = {variant_id for variant_id in front if variant_id != "baseline"}
     required_anchors = non_baseline if non_baseline else set(front)
     parents = [str(parser.parse(path).parent_variant) for path in files]
     if not any(parent in required_anchors for parent in parents):
         raise ValueError(
-            f"no produced hypothesis cites a required global-front anchor; "
+            f"no produced hypothesis cites a required winner anchor; "
             f"parents seen={parents}; required anchors={sorted(required_anchors)}"
         )

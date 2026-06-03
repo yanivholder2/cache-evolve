@@ -1,8 +1,21 @@
-"""Computes the Pareto front of variants from their fitness vectors."""
+"""The `pareto` selector: Winners are the Pareto front of the fitness vectors.
+
+A variant **dominates** another when it is at least as good on every dimension
+and strictly better on one; the front is the set nothing else dominates.
+Scale-invariant, so it needs no normalization and computes no scalar score —
+`select` returns empty `scores`.
+"""
 
 from __future__ import annotations
 
 import math
+
+from evolve.aggregate.selectors.base import (
+    SelectionResult,
+    Selector,
+    SelectorConfigError,
+    project,
+)
 
 
 def _score(dim: dict) -> float:
@@ -50,3 +63,28 @@ def compute_pareto_front(fitness_vectors: list) -> list:
     return front
 
 
+class ParetoSelector(Selector):
+    """Selects the Pareto front; computes no scalar score."""
+
+    def __init__(self, dimensions: tuple[str, ...]) -> None:
+        self._dimensions = dimensions
+
+    @classmethod
+    def from_config(
+        cls,
+        *,
+        winners_count: int,
+        dimensions: tuple[str, ...],
+        weights: dict[str, float] | None,
+    ) -> "ParetoSelector":
+        if weights is not None:
+            raise SelectorConfigError(
+                "selection.weights must be absent under method 'pareto'; weights "
+                "apply only to the 'weighted' method"
+            )
+        return cls(dimensions=dimensions)
+
+    def select(self, fitness_vectors: list[dict]) -> SelectionResult:
+        projected = project(fitness_vectors, self._dimensions)
+        front = compute_pareto_front(projected)
+        return SelectionResult(winners=front, scores={})

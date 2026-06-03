@@ -66,8 +66,8 @@ def _render(cycles_data: list, cross_cycle_winners: Optional[dict] = None) -> st
                     all_dims.append(d["dim"])
 
     if all_dims:
-        header = "| Cycle | Variants | " + " | ".join(all_dims) + " |"
-        sep = "| --- | --- | " + " | ".join(["---"] * len(all_dims)) + " |"
+        header = "| Cycle | Variants | " + " | ".join(all_dims) + " | Score |"
+        sep = "| --- | --- | " + " | ".join(["---"] * len(all_dims)) + " | --- |"
     else:
         header = "| Cycle | Variants |"
         sep = "| --- | --- |"
@@ -84,7 +84,7 @@ def _render(cycles_data: list, cross_cycle_winners: Optional[dict] = None) -> st
                     None,
                 )
                 scores.append(f"{summary:.3g}" if summary is not None else "—")
-            lines.append("| baseline | baseline | " + " | ".join(scores) + " |")
+            lines.append("| baseline | baseline | " + " | ".join(scores) + " | — |")
         else:
             lines.append("| baseline | baseline |")
 
@@ -108,7 +108,10 @@ def _render(cycles_data: list, cross_cycle_winners: Optional[dict] = None) -> st
                         if d["dim"] == dim:
                             vals.append(f"{d['summary']:.3g}")
                 scores.append(", ".join(vals) if vals else "—")
-            lines.append(f"| {row['cycle']} | {variant_names} | " + " | ".join(scores) + " |")
+            score_col = _score_column(fvs, row.get("scores", {}))
+            lines.append(
+                f"| {row['cycle']} | {variant_names} | " + " | ".join(scores) + f" | {score_col} |"
+            )
         else:
             lines.append(f"| {row['cycle']} | {variant_names} |")
 
@@ -116,7 +119,7 @@ def _render(cycles_data: list, cross_cycle_winners: Optional[dict] = None) -> st
 
     if cross_cycle_winners:
         lines.append("## Global best-so-far\n")
-        lines.append("Pareto front: " + ", ".join(cross_cycle_winners["winners"]))
+        lines.append("Winners: " + ", ".join(cross_cycle_winners["winners"]))
         lines.append("")
         for dim, best in cross_cycle_winners.get("best_per_dimension", {}).items():
             lines.append(f"- {dim}: {best['summary']:.3g} held by {best['variant']}")
@@ -125,15 +128,27 @@ def _render(cycles_data: list, cross_cycle_winners: Optional[dict] = None) -> st
     return "\n".join(lines)
 
 
+def _score_column(fvs: list, scores: dict) -> str:
+    """The cohort-local selection score per variant, comma-joined in `fvs` order.
+
+    Empty under the pareto method (which computes no scalar), rendered as a single
+    em dash so the column still aligns."""
+    if not scores:
+        return "—"
+    return ", ".join(
+        f"{scores[fv['variant']]:.3g}" if fv["variant"] in scores else "—" for fv in fvs
+    )
+
+
 def _mark_variant(name: str, row_cycle: str, winners: set, cross_cycle_winners: Optional[dict]) -> str:
     if cross_cycle_winners is None:
         return name
     global_id = f"cycle/{row_cycle}/{name}"
-    if global_id not in winners:
-        # Off the current global front means dominated by some cross-cycle winner, not
-        # necessarily worse than its own parent or the baseline; "dominated"
-        # avoids implying a regression that was never measured.
-        return f"{name} (dominated)"
+    # The score column alone can't flag Winners (pareto leaves scores empty), so
+    # mark the cross-cycle Winners explicitly. Off-front variants stay unmarked —
+    # not labelled a regression that was never measured against their own parent.
+    if global_id in winners:
+        return f"{name} (winner)"
     return name
 
 
@@ -152,9 +167,11 @@ def regenerate(*, layout: OutputsLayout, output: Path | None = None) -> str:
         cycle_winners = _load_winners(layout, cycle_id)
         fvs = cycle_winners.get("fitness_vectors", []) if cycle_winners else []
         winners = cycle_winners.get("winners", []) if cycle_winners else []
+        scores = cycle_winners.get("scores", {}) if cycle_winners else {}
         cycles_data.append({
             "cycle": str(cycle_id),
             "winners": winners,
+            "scores": scores,
             "fitness_vectors": fvs,
         })
 

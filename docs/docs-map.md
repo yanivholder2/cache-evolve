@@ -109,6 +109,14 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** adding a Subject, touching `caffeine_runner.py`/manifest wiring, or wondering why `src/shared/` is duplicated per subject.
 
+### [0008 — Pluggable selection seam](adr/0008-pluggable-selection-seam.md)
+
+* Return contract (`SelectionResult`)
+* Considered options (the seam; normalization for `weighted`)
+* Consequences
+
+**Read when** adding or changing a Selection method, touching `aggregate/selectors/`, the `[fitness]`/`[selection]` config, or how Winners and scores are computed.
+
 ## Conventions
 
 ### [docs/CONVENTIONS.md](CONVENTIONS.md)

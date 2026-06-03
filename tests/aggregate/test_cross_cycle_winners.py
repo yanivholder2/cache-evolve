@@ -4,8 +4,13 @@ import json
 
 from evolve._io import read_utf8, write_json
 from evolve.aggregate.cross_cycle_winners import compute_cross_cycle_winners, write_cross_cycle_winners
+from evolve.aggregate.selectors import ParetoSelector, WeightedSelector
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import Layout
+
+
+def _pareto(*dims) -> ParetoSelector:
+    return ParetoSelector(dimensions=tuple(dims))
 
 
 def _vec(variant, *dims):
@@ -41,8 +46,8 @@ def _write_variant(layout, cycle_id, variant_id, fitness_vector):
 
 def test_empty_returns_empty_structure(tmp_path):
     layout = _make_layout(tmp_path)
-    data = compute_cross_cycle_winners(layout)
-    assert data == {"winners": [], "fitness_vectors": [], "best_per_dimension": {}}
+    data = compute_cross_cycle_winners(layout, _pareto("hit-rate"))
+    assert data == {"winners": [], "scores": {}, "fitness_vectors": [], "best_per_dimension": {}}
 
 
 def test_union_across_baseline_and_cycles(tmp_path):
@@ -60,7 +65,7 @@ def test_union_across_baseline_and_cycles(tmp_path):
         _vec("v001", ("hit-rate", 0.40, True), ("per-op-time", 10, False)),
     )
 
-    data = compute_cross_cycle_winners(layout)
+    data = compute_cross_cycle_winners(layout, _pareto("hit-rate", "per-op-time"))
 
     labels = [fv["variant"] for fv in data["fitness_vectors"]]
     # Globally-unique ids; baseline first.
@@ -92,7 +97,7 @@ def test_dominated_baseline_excluded_from_front(tmp_path):
         _vec("v001", ("hit-rate", 0.60, True), ("per-op-time", 20, False)),
     )
 
-    data = compute_cross_cycle_winners(layout)
+    data = compute_cross_cycle_winners(layout, _pareto("hit-rate", "per-op-time"))
     assert data["winners"] == ["cycle/0001/v001"]
 
 
@@ -105,7 +110,7 @@ def test_variant_without_fitness_vector_skipped(tmp_path):
     # v002 dir exists but has no fitness-vector.json.
     (layout.outputs.cycle(CycleId(1)).variant(VariantId(2)).root).mkdir(parents=True)
 
-    data = compute_cross_cycle_winners(layout)
+    data = compute_cross_cycle_winners(layout, _pareto("hit-rate"))
     labels = [fv["variant"] for fv in data["fitness_vectors"]]
     assert labels == ["cycle/0001/v001"]
 
@@ -120,7 +125,7 @@ def test_non_variant_dirs_ignored(tmp_path):
     (layout.outputs.cycle(CycleId(1)).variants_dir / "hypotheses").mkdir(parents=True)
     (layout.outputs.cycles_dir / "not-a-cycle").mkdir(parents=True)
 
-    data = compute_cross_cycle_winners(layout)
+    data = compute_cross_cycle_winners(layout, _pareto("hit-rate"))
     labels = [fv["variant"] for fv in data["fitness_vectors"]]
     assert labels == ["cycle/0001/v001"]
 
@@ -130,8 +135,26 @@ def test_write_cross_cycle_winners_writes_file(tmp_path):
     _write_baseline(layout, _vec("baseline", ("hit-rate", 0.48, True)))
     layout.outputs.root.mkdir(parents=True, exist_ok=True)
 
-    returned = write_cross_cycle_winners(layout)
+    returned = write_cross_cycle_winners(layout, _pareto("hit-rate"))
 
     on_disk = json.loads(read_utf8(layout.outputs.cross_cycle_winners_json))
     assert on_disk == returned
     assert on_disk["winners"] == ["baseline"]
+    assert on_disk["scores"] == {}
+
+
+def test_weighted_selector_top_k_and_scores(tmp_path):
+    layout = _make_layout(tmp_path)
+    _write_baseline(layout, _vec("baseline", ("hit-rate", 0.40, True)))
+    _write_variant(layout, CycleId(1), VariantId(1), _vec("v001", ("hit-rate", 0.90, True)))
+    _write_variant(layout, CycleId(1), VariantId(2), _vec("v002", ("hit-rate", 0.60, True)))
+
+    selector = WeightedSelector(winners_count=2, weights={"hit-rate": 1.0})
+    data = compute_cross_cycle_winners(layout, selector)
+
+    # top-2 by hit-rate over {0.40, 0.90, 0.60}.
+    assert data["winners"] == ["cycle/0001/v001", "cycle/0001/v002"]
+    # scores cover every variant (min-max: v001=1.0, baseline=0.0).
+    assert set(data["scores"]) == {"baseline", "cycle/0001/v001", "cycle/0001/v002"}
+    assert data["scores"]["cycle/0001/v001"] == 1.0
+    assert data["scores"]["baseline"] == 0.0

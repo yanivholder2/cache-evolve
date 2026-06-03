@@ -60,7 +60,7 @@ def _write_task_md(
         f"# Task: cycle-insight-writer\n\n"
         f"Cycle: {cycle_layout.cycle_id}\n"
         f"Output dir: {cycle_layout.root}\n\n"
-        f"## Pareto front\n\n"
+        f"## Winners\n\n"
         f"{_format_list(winners)}\n\n"
         f"## Variant insights\n\n"
         f"{_format_paths(insight_paths)}\n\n"

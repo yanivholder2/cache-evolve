@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from typing import Callable
 
 from evolve._io import read_utf8, write_json
 from evolve.config import Configs
@@ -46,12 +47,16 @@ def compute_fitness(
         raise FitnessError(f"caffeine simulator failed for {variant}: {exception}") from exception
 
     subject = load_subject(layout.sources.subject_dir)
-    plugins = {
-        "hit-rate": lambda: hit_rate.compute(results=caffeine_results),
-    }
-    if subject.bench is not None:
+    # Capability (an active dimension's subject can measure it) is enforced once at
+    # the boundary by cli._validate_active_dimensions; the runner trusts it and just
+    # builds a plugin per active dimension.
+    active = set(cfg.fitness.dimensions)
+    plugins: dict[str, Callable[[], dict]] = {}
+    if "hit-rate" in active:
+        plugins["hit-rate"] = lambda: hit_rate.compute(results=caffeine_results)
+    if "per-op-time" in active:
         plugins["per-op-time"] = lambda: per_op_time.compute(layout=layout, target_dir=target_dir)
-    if subject.metadata is not None:
+    if "metadata-size" in active:
         plugins["metadata-size"] = lambda: metadata_size.compute(
             variant=variant,
             layout=layout,

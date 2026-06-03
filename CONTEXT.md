@@ -207,11 +207,34 @@ fitness is never a single scalar.
 _Avoid_: Score, fitness value (singular implies scalar).
 
 **Winners**:
-A Cycle's selected Variants — typically several, not one. A Variant
-**dominates** another when it is at least as good on every dimension and
-strictly better on one; the Winners are the set nothing else dominates (the
-**Pareto front**).
+A Cycle's selected Variants — typically several, not one — chosen by the run's
+**Selection method**. Under the default `pareto` method a Variant **dominates**
+another when it is at least as good on every dimension and strictly better on
+one, and the Winners are the set nothing else dominates (the **Pareto front**).
+Under the `weighted` method the Winners are the top-N by **Score**.
 _Avoid_: Best variant (singular implies one winner).
+
+**Selection method**:
+The pluggable rule that turns a cohort's Fitness vectors into Winners, resolved
+by name from the selector registry and configured under `[selection]` in
+`config.toml`. Two built-ins: `pareto` (the Pareto front; the default) and
+`weighted` (top-N by Score). One method serves both the cohort-local and the
+cross-cycle stage.
+_Avoid_: Selection strategy, ranking, objective.
+
+**Weights**:
+Per-dimension multipliers the `weighted` Selection method applies to the
+min–max-normalized Fitness dimensions before summing them into a Score. Keys
+must match the active Fitness dimensions exactly; absent under `pareto`.
+_Avoid_: Coefficients, priorities.
+
+**Score**:
+The scalar a Selection method assigns a Variant — under `weighted`, the weighted
+sum of its min–max-normalized dimensions. Cohort/union-relative, so it ranks
+within one selection but is not comparable across selections. The `pareto`
+method computes no Score.
+_Avoid_: Fitness (Fitness is the multi-dimensional measurement; a Score is the
+scalar a method derives from it), fitness value.
 
 **Cross-cycle winners**:
 The Winners recomputed over every Variant evaluated across all Cycles plus the

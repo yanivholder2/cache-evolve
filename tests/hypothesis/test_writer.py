@@ -364,9 +364,9 @@ def test_continuation_injects_incumbents_and_quota(tmp_path):
         ),
     )
     task_md = read_utf8(capture)
-    assert "Incumbents (global Pareto front)" in task_md
+    assert "Incumbents (cross-cycle winners)" in task_md
     assert "cycle/0001/v001: hit_rate=0.55" in task_md
-    assert "MUST cite a global-front variant" in task_md
+    assert "MUST cite a cross-cycle winner" in task_md
 
 
 def test_continuation_quota_violation_fails(tmp_path):
@@ -381,7 +381,7 @@ def test_continuation_quota_violation_fails(tmp_path):
         ],
     )
     # Both hypotheses parent on baseline; none anchors the non-baseline front.
-    with pytest.raises(ValueError, match="global-front anchor"):
+    with pytest.raises(ValueError, match="winner anchor"):
         write_hypotheses(
             2,
             layout=_layout(evolve),
