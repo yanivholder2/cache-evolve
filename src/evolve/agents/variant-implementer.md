@@ -47,7 +47,7 @@ out-of-scope writes are rejected, so honour it.
   `[[extension-points]]` tables. The contract surfaces are fixed; you swap
   implementations behind them.
 - **full-autonomy**: write **any** overlay file (including `src/factory.rs` and
-  the segment layout). You must still satisfy the `Cache<K, V>` contract and
+  the subject's internal layout). You must still satisfy the `Cache<K, V>` contract and
   the subject's invariant suite — including the subject's structural invariants.
 
 Read access is unrestricted in both scopes; scope constrains only what you
