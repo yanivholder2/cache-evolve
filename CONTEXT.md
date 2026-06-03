@@ -197,7 +197,7 @@ Traces visible to the AI during evaluation.
 _Avoid_: Training set, dev set.
 
 **Held-out suite**:
-Additional traces hidden from the AI; run only on Pareto-front Variants to
+Additional traces hidden from the AI; run only on the Cycle's Winners to
 catch overfitting to the Development suite.
 _Avoid_: Test set, validation set.
 
@@ -206,10 +206,18 @@ Multi-dimensional measurement of a Variant's quality. Plural by design —
 fitness is never a single scalar.
 _Avoid_: Score, fitness value (singular implies scalar).
 
-**Pareto front**:
-The set of non-dominated Variants in a Cycle's Fitness vectors. The Cycle's
-winners — typically several, not one.
-_Avoid_: Leaderboard, top-K.
+**Winners**:
+A Cycle's selected Variants — typically several, not one. A Variant
+**dominates** another when it is at least as good on every dimension and
+strictly better on one; the Winners are the set nothing else dominates (the
+**Pareto front**).
+_Avoid_: Best variant (singular implies one winner).
+
+**Cross-cycle winners**:
+The Winners recomputed over every Variant evaluated across all Cycles plus the
+baseline — the global best-so-far, refreshed each Cycle. Persisted to
+`cross-cycle-winners.json`; per-Cycle Winners live in `cycle-winners.json`.
+_Avoid_: Champions.
 
 ### Architectural principles
 

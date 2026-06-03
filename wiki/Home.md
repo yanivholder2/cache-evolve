@@ -13,14 +13,14 @@ flowchart LR
     BL["Baseline<br/>(subject as-is,<br/>already measured)"] --> C1["Cycle 1"]
     C1 --> C2["Cycle 2"]
     C2 --> CN["Cycle N"]
-    C1 -. champions + insights .-> C2
-    C2 -. champions + insights .-> CN
-    CN --> OUT["Champions, ledger,<br/>insights"]
+    C1 -. winners + insights .-> C2
+    C2 -. winners + insights .-> CN
+    CN --> OUT["Cross-cycle winners, ledger,<br/>insights"]
 ```
 
 Two things carry across the dashed arrows and make this a *search* rather than N independent experiments:
 
-- **Champions** — the best variants found so far. From cycle 2 onward, the agent is required to build at least one new idea on a current champion, so the search keeps *exploiting* what already works instead of starting over each time.
+- **Cross-cycle winners** — the best variants found so far. From cycle 2 onward, the agent is required to build at least one new idea on a current cross-cycle winner, so the search keeps *exploiting* what already works instead of starting over each time.
 - **Insights** — the agent's own prose notes on what it learned, so later cycles reason with the history of earlier ones.
 
 Cycles run strictly one after another, and a cycle that fails outright aborts the whole run.
@@ -33,15 +33,15 @@ A cycle moves through phases. The AI agent does the *judgment* phases — propos
 flowchart TD
     P1["1. Propose<br/>agent writes a cohort of hypotheses"] --> P2["2. Build<br/>turn each hypothesis into a vetted variant"]
     P2 --> P3["3. Simulate<br/>run each survivor through the cache simulator and score it"]
-    P3 --> P4["4. Rank<br/>Pareto front over survivors; update global champions"]
+    P3 --> P4["4. Rank<br/>Pareto front over survivors; update cross-cycle winners"]
     P4 --> P5["5. Record<br/>insights, ledger row, leaderboard"]
     P5 --> P6["6. Seal<br/>cycle made permanently read-only"]
 ```
 
-1. **Propose.** The agent writes a [cohort](Concepts#cohort) of [hypotheses](Concepts#hypothesis) — distinct ideas for improving the cache, one per intended candidate. On continuation cycles at least one must extend a current champion.
+1. **Propose.** The agent writes a [cohort](Concepts#cohort) of [hypotheses](Concepts#hypothesis) — distinct ideas for improving the cache, one per intended candidate. On continuation cycles at least one must extend a current cross-cycle winner.
 2. **Build.** Each hypothesis is turned into a [variant](Concepts#variant): the agent writes the code and the framework puts it through the correctness [gates](Concepts#gates). Variants that can't be made correct are dropped without sinking the cycle.
 3. **Simulate.** Each surviving variant is run through the cache simulator — its native library is built and replayed against the configured traces and cache sizes — and the raw metrics are scored into a [fitness](Concepts#fitness) vector. See [Evaluation and Fitness](Evaluation-and-Fitness). (Build and simulate aren't two cohort-wide passes: each variant is built, gated, and simulated together, in parallel with the others — see [the per-variant pipeline](#the-per-variant-pipeline).)
-4. **Rank.** Because performance is multi-dimensional, "best" is a [Pareto front](Concepts#pareto-front-and-champions), not a single winner. The framework computes the front over this cycle's survivors, then folds them into the global champions across all cycles so far.
+4. **Rank.** Because performance is multi-dimensional, "best" is a [Pareto front](Concepts#winners-and-the-pareto-front), not a single winner. The framework computes the front over this cycle's survivors, then folds them into the cross-cycle winners across all cycles so far.
 5. **Record.** The agent writes a per-variant insight and a cohort summary; the framework appends one immutable row to the ledger and regenerates the leaderboard.
 6. **Seal.** The cycle's directory is finalized and made read-only, so a finished cycle is a permanent record that nothing later can alter.
 
@@ -78,12 +78,12 @@ cycles/
         rejection.md          why an attempt was rejected, if any
         eval/                 fitness results, incl. fitness-vector.json
         insight.md            the agent's per-variant insight
-    winners.json              the cohort's Pareto front
+    cycle-winners.json        the cycle's winners (Pareto front)
     cycle-insight.md          the agent's cohort summary
     SEALED                    marker; the cycle is now read-only
 cycles-ledger.jsonl           append-only, one row per cycle
 leaderboard.md                regenerated every cycle
-champions.json                global Pareto champions across all cycles
+cross-cycle-winners.json      the cross-cycle winners across all cycles
 cross-cycle-insights.md       the agent's narrative across cycles
 ```
 

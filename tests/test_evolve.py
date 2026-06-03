@@ -67,7 +67,7 @@ def test_evolve_produces_sealed_cycle(tmp_path):
     cycle_layout = _layout(repo_root).outputs.cycle(CycleId(1))
     assert cycle_layout.root.is_dir()
     assert cycle_layout.cycle_insight_md.is_file()
-    assert cycle_layout.winners_json.is_file()
+    assert cycle_layout.cycle_winners_json.is_file()
 
     variant_dir = cycle_layout.variant(VariantId(1))
     assert variant_dir.root.is_dir()

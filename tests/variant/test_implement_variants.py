@@ -161,17 +161,17 @@ def test_each_variant_flows_through_real_gates(shared_cohort_run):
         dims = {d["dim"] for d in fv["dimensions"]}
         assert dims == expected_dims, f"v{i:03d} dimensions {dims} != {expected_dims}"
 
-    winners = json.loads(read_utf8(shared_cohort_run.cycle_layout.winners_json))
+    winners = json.loads(read_utf8(shared_cohort_run.cycle_layout.cycle_winners_json))
     assert {fv["variant"] for fv in winners["fitness_vectors"]} == {"v001", "v002", "v003"}
 
 
 @pytest.mark.slow
 def test_winners_pareto_front_spans_cohort(shared_cohort_run):
-    winners = json.loads(read_utf8(shared_cohort_run.cycle_layout.winners_json))
+    winners = json.loads(read_utf8(shared_cohort_run.cycle_layout.cycle_winners_json))
     assert len(winners["fitness_vectors"]) == 3
     fv_ids = sorted(fv["variant"] for fv in winners["fitness_vectors"])
     assert fv_ids == ["v001", "v002", "v003"]
-    front = winners["pareto_front"]
+    front = winners["winners"]
     assert 1 <= len(front) <= 3
     assert set(front).issubset({"v001", "v002", "v003"})
 
@@ -205,8 +205,8 @@ def test_failing_variant_implementer_aborts_cycle(tmp_path, monkeypatch):
 
     # Both jobs ran — failures aren't short-circuited.
     assert sorted(invoked) == ["H01.md", "H02.md"]
-    # Cycle never completed → no winners.json.
-    assert not _layout(repo_root).outputs.cycle(CycleId(1)).winners_json.exists()
+    # Cycle never completed → no cycle-winners.json.
+    assert not _layout(repo_root).outputs.cycle(CycleId(1)).cycle_winners_json.exists()
 
 
 @pytest.mark.slow

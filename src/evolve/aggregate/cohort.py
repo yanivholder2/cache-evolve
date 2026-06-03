@@ -13,30 +13,30 @@ from evolve.aggregate.pareto import compute_pareto_front
 log = logging.getLogger(__name__)
 
 
-def compute_cohort_pareto(
+def compute_cycle_winners(
     variant_dirs: list[CycleVariantDir],
 ) -> tuple[list[str], list[dict]]:
-    """Return (pareto_front, fitness_vectors) for the cohort."""
+    """Return (winners, fitness_vectors) for the cohort."""
 
     fitness_vectors = _collect_fitness_vectors(variant_dirs)
-    pareto_front = compute_pareto_front(fitness_vectors)
-    log.info("pareto front: %s", pareto_front)
-    return pareto_front, fitness_vectors
+    winners = compute_pareto_front(fitness_vectors)
+    log.info("pareto front: %s", winners)
+    return winners, fitness_vectors
 
 
-def write_winners_json(
+def write_cycle_winners_json(
     cycle_layout: CycleLayout,
     cycle_id: CycleId,
-    pareto_front: list[str],
+    winners: list[str],
     fitness_vectors: list[dict],
 ) -> None:
-    """Write the cohort's `winners.json` file."""
+    """Write the cohort's `cycle-winners.json` file."""
 
     write_json(
-        cycle_layout.winners_json,
+        cycle_layout.cycle_winners_json,
         {
             "cycle": str(cycle_id),
-            "pareto_front": pareto_front,
+            "winners": winners,
             "fitness_vectors": fitness_vectors,
         },
     )

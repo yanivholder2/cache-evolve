@@ -198,8 +198,8 @@ class CycleLayout:
         return self.root / "variants"
 
     @property
-    def winners_json(self) -> Path:
-        return self.root / "winners.json"
+    def cycle_winners_json(self) -> Path:
+        return self.root / "cycle-winners.json"
 
     @property
     def cycle_insight_md(self) -> Path:
@@ -314,8 +314,8 @@ class OutputsLayout:
         return self.root / "leaderboard.md"
 
     @property
-    def champions_json(self) -> Path:
-        return self.root / "champions.json"
+    def cross_cycle_winners_json(self) -> Path:
+        return self.root / "cross-cycle-winners.json"
 
     @property
     def cross_cycle_insights_md(self) -> Path:

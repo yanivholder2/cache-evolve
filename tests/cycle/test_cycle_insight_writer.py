@@ -84,7 +84,7 @@ def test_task_md_contains_pareto_insights_and_hypotheses(tmp_path):
     write_cycle_insight(
         cycle_layout,
         survivors=[v1, v2],
-        pareto_front=["v002", "v001"],
+        winners=["v002", "v001"],
         hypothesis_files=[h1, h2],
         ledger=ledger,
         adapter=adapter,
@@ -111,7 +111,7 @@ def test_task_md_inlines_digest_body(tmp_path):
     write_cycle_insight(
         cycle_layout,
         survivors=[v1],
-        pareto_front=["v001"],
+        winners=["v001"],
         hypothesis_files=[h1],
         ledger=ledger,
         adapter=adapter,
@@ -135,7 +135,7 @@ def test_readable_roots_are_insights_and_hypotheses_only(tmp_path):
     write_cycle_insight(
         cycle_layout,
         survivors=[v1, v2],
-        pareto_front=["v001", "v002"],
+        winners=["v001", "v002"],
         hypothesis_files=[h1, h2],
         ledger=ledger,
         adapter=adapter,
@@ -164,7 +164,7 @@ def test_missing_cycle_insight_md_raises(tmp_path):
         write_cycle_insight(
             cycle_layout,
             survivors=[v1],
-            pareto_front=["v001"],
+            winners=["v001"],
             hypothesis_files=[h1],
             ledger=ledger,
             adapter=_SilentAdapter(),
@@ -182,7 +182,7 @@ def test_rejected_variants_section_carries_reason_and_detail(tmp_path):
     write_cycle_insight(
         cycle_layout,
         survivors=[v1],
-        pareto_front=["v001"],
+        winners=["v001"],
         hypothesis_files=[h1],
         ledger=ledger,
         adapter=adapter,
@@ -211,7 +211,7 @@ def test_omitting_rejected_yields_no_rejected_section(tmp_path):
     write_cycle_insight(
         cycle_layout,
         survivors=[v1],
-        pareto_front=["v001"],
+        winners=["v001"],
         hypothesis_files=[h1],
         ledger=ledger,
         adapter=adapter,
@@ -232,7 +232,7 @@ def test_no_prior_cycles_yields_no_digest_section_body(tmp_path):
     write_cycle_insight(
         cycle_layout,
         survivors=[v1],
-        pareto_front=["v001"],
+        winners=["v001"],
         hypothesis_files=[h1],
         ledger=ledger,
         adapter=adapter,

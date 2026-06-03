@@ -1,10 +1,10 @@
-"""Global cross-cycle Pareto champions.
+"""Cross-cycle winners: the global front across all cycles.
 
-Unlike the cohort-local `winners.json` (best of one cycle's survivors), this
+Unlike the cohort-local `cycle-winners.json` (best of one cycle's survivors), this
 unions every evaluated variant across all cycles with the baseline, re-labels
 each fitness vector with a globally-unique id, and recomputes the Pareto front
 over that union. Recomputed after every cycle so dominated variants stay
-visible alongside the standing champions."""
+visible alongside the standing winners."""
 
 from __future__ import annotations
 
@@ -19,31 +19,31 @@ from evolve.paths import Baseline, CycleLayout, CycleVariant, Layout
 log = logging.getLogger(__name__)
 
 
-def compute_champions(layout: Layout) -> dict:
+def compute_cross_cycle_winners(layout: Layout) -> dict:
     """Union all evaluated variants with the baseline and compute the global front."""
 
     vectors = _collect_global_vectors(layout)
     if not vectors:
-        return {"pareto_front": [], "fitness_vectors": [], "best_per_dimension": {}}
+        return {"winners": [], "fitness_vectors": [], "best_per_dimension": {}}
 
-    pareto_front = compute_pareto_front(vectors)
+    winners = compute_pareto_front(vectors)
     best_per_dimension = _best_per_dimension(vectors)
     return {
-        "pareto_front": pareto_front,
+        "winners": winners,
         "fitness_vectors": vectors,
         "best_per_dimension": best_per_dimension,
     }
 
 
-def write_champions(layout: Layout) -> dict:
-    """Compute and persist the global champions artifact."""
+def write_cross_cycle_winners(layout: Layout) -> dict:
+    """Compute and persist the global cross_cycle_winners artifact."""
 
-    data = compute_champions(layout)
-    write_json(layout.outputs.champions_json, data)
+    data = compute_cross_cycle_winners(layout)
+    write_json(layout.outputs.cross_cycle_winners_json, data)
     log.info(
-        "global champions: %d variants, front=%s",
+        "global cross_cycle_winners: %d variants, front=%s",
         len(data["fitness_vectors"]),
-        data["pareto_front"],
+        data["winners"],
     )
     return data
 

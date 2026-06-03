@@ -23,8 +23,8 @@ from evolve.llm import (
     format_token_totals,
     snapshot_token_totals,
 )
-from evolve.aggregate.champions import write_champions
-from evolve.aggregate.cohort import compute_cohort_pareto, write_winners_json
+from evolve.aggregate.cross_cycle_winners import write_cross_cycle_winners
+from evolve.aggregate.cohort import compute_cycle_winners, write_cycle_winners_json
 from evolve.config import AuthoringScope, Configs, ConfigError, load_configs
 from evolve.cycle.leaderboard import regenerate as regenerate_leaderboard
 from evolve.cycle.ledger_append import append_row
@@ -265,9 +265,9 @@ def _run_cycle_level(
     adapter: LLMAdapter,
     cfg: Configs,
 ) -> tuple[list[str], str]:
-    """Subphase 1: pareto + winners.json AND cycle-insight-writer, in parallel.
+    """Subphase 1: pareto + cycle-winners.json AND cycle-insight-writer, in parallel.
 
-    Returns (pareto_front, cycle_insight_body).
+    Returns (winners, cycle_insight_body).
     """
 
     hypothesis_files = [
@@ -281,19 +281,19 @@ def _run_cycle_level(
         if not o.survived
     ]
 
-    pareto_front, fitness_vectors = compute_cohort_pareto(survivors)
+    winners, fitness_vectors = compute_cycle_winners(survivors)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         winners_future = pool.submit(
             _named_thread, "winners",
-            write_winners_json, cycle_layout, cycle_id, pareto_front, fitness_vectors,
+            write_cycle_winners_json, cycle_layout, cycle_id, winners, fitness_vectors,
         )
         cycle_insight_future = pool.submit(
             _named_thread, "cycle_insight",
             write_cycle_insight,
             cycle_layout,
             survivors,
-            pareto_front,
+            winners,
             hypothesis_files=hypothesis_files,
             ledger=layout.outputs.ledger,
             adapter=adapter,
@@ -301,32 +301,32 @@ def _run_cycle_level(
             rejected=rejected,
         )
         winners_future.result()
-        log.info("winners.json done")
+        log.info("cycle-winners.json done")
         cycle_insight_future.result()
         log.info("cycle-insight-writer done")
 
     cycle_insight = read_utf8(cycle_layout.cycle_insight_md)
-    return pareto_front, cycle_insight
+    return winners, cycle_insight
 
 
 def _run_post_cycle_insight(
     *,
     cycle_id: CycleId,
     cohort_size: int,
-    pareto_front: list[str],
+    winners: list[str],
     cycle_insight: str,
     layout: Layout,
 ) -> None:
     """Subphase 2: ledger-append AND leaderboard-regen, in parallel."""
 
-    write_champions(layout)
-    log.info("champions.json done")
+    write_cross_cycle_winners(layout)
+    log.info("cross-cycle-winners.json done")
 
     row = {
         "cycle": str(cycle_id),
         "cycle_dir": layout.cycle_ledger_path(cycle_id),
         "cohort_size": cohort_size,
-        "pareto_front": pareto_front,
+        "winners": winners,
         "cycle_insight": cycle_insight,
     }
     log.debug("ledger row keys: %s", sorted(row))
@@ -402,7 +402,7 @@ def run_cycle(
                 die(f"no variants survived in cycle {cycle_id}")
 
         with _phase("cycle-level", timings):
-            pareto_front, cycle_insight = _run_cycle_level(
+            winners, cycle_insight = _run_cycle_level(
                 cycle_layout=cycle_layout,
                 cycle_id=cycle_id,
                 survivors=survivors,
@@ -412,11 +412,11 @@ def run_cycle(
                 adapter=adapter,
                 cfg=cfg,
             )
-            log.info("cycle %s pareto front: %s", cycle_id, pareto_front)
+            log.info("cycle %s pareto front: %s", cycle_id, winners)
             _run_post_cycle_insight(
                 cycle_id=cycle_id,
                 cohort_size=cohort_size,
-                pareto_front=pareto_front,
+                winners=winners,
                 cycle_insight=cycle_insight,
                 layout=layout,
             )

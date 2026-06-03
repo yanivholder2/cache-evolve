@@ -346,7 +346,7 @@ def test_duplicate_size_is_rejected(tmp_path: Path):
 
 def test_baseline_grid_mismatch_is_rejected(tmp_path: Path):
     # A stale/stub anchor (wrong sizes, and keyed by `cache` not `trace`) must
-    # be caught at load time before it poisons the global champions/leaderboard.
+    # be caught at load time before it poisons the global cross_cycle_winners/leaderboard.
     _write_valid_subject(tmp_path)
     (tmp_path / "eval" / "fitness.json").write_text(
         json.dumps(
