@@ -9,10 +9,12 @@ from evolve.llm.token_usage import (
 )
 from evolve.llm.adapters.antigravity_sdk import AntigravitySdkAdapter
 from evolve.llm.adapters.claude_sdk import ClaudeSdkAdapter
+from evolve.llm.adapters.ollama_local import OllamaLocalAdapter
 
 ADAPTER_REGISTRY: dict[str, type[LLMAdapter]] = {
     "antigravity-sdk": AntigravitySdkAdapter,
     "claude-sdk": ClaudeSdkAdapter,
+    "ollama-local": OllamaLocalAdapter,
 }
 
 __all__ = [

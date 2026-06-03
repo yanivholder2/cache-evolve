@@ -9,6 +9,7 @@ dependencies = [
     "pytest>=7.0",
     "google-antigravity",
     "claude-agent-sdk",
+    "ollama",
 ]
 
 [project.scripts]
