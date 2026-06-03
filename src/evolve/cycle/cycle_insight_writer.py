@@ -47,7 +47,7 @@ def _format_rejected(rejected: list[dict]) -> str:
 def _write_task_md(
     cycle_layout: CycleLayout,
     survivors: list[CycleVariantDir],
-    pareto_front: list[str],
+    winners: list[str],
     hypothesis_files: list[Path],
     digest_body: str,
     rejected: list[dict] | None,
@@ -60,8 +60,8 @@ def _write_task_md(
         f"# Task: cycle-insight-writer\n\n"
         f"Cycle: {cycle_layout.cycle_id}\n"
         f"Output dir: {cycle_layout.root}\n\n"
-        f"## Pareto front\n\n"
-        f"{_format_list(pareto_front)}\n\n"
+        f"## Winners\n\n"
+        f"{_format_list(winners)}\n\n"
         f"## Variant insights\n\n"
         f"{_format_paths(insight_paths)}\n\n"
         f"## Hypotheses (this cycle)\n\n"
@@ -78,7 +78,7 @@ def _write_task_md(
 def write_cycle_insight(
     cycle_layout: CycleLayout,
     survivors: list[CycleVariantDir],
-    pareto_front: list[str],
+    winners: list[str],
     *,
     hypothesis_files: list[Path],
     ledger: Path,
@@ -94,7 +94,7 @@ def write_cycle_insight(
 
     cycle_layout.root.mkdir(parents=True, exist_ok=True)
     digest_body = digest_prior_cycles(ledger, digest_cycles)
-    _write_task_md(cycle_layout, survivors, pareto_front, hypothesis_files, digest_body, rejected)
+    _write_task_md(cycle_layout, survivors, winners, hypothesis_files, digest_body, rejected)
     log.debug("wrote cycle-insight-writer task.md for cycle %s", cycle_layout.cycle_id)
 
     readable_roots: list[Path] = [s.insight_md for s in survivors] + list(hypothesis_files)

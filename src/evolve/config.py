@@ -14,6 +14,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from evolve._log import LOG_LEVELS
+from evolve.aggregate.selectors import SelectorConfigError, build_selector
 from evolve.llm import ADAPTER_REGISTRY
 from evolve.paths import SourcesLayout
 
@@ -50,9 +51,38 @@ class SimulatorConfig:
 
 
 @dataclass(frozen=True)
+class FitnessConfig:
+    """Which Fitness dimensions are active this run.
+
+    Activation only — capability (which dimensions a subject *can* measure) lives
+    in the Subject manifest. `dimensions` must be a subset of the subject's
+    capable dimensions; the cli boundary cross-checks that against the manifest.
+    """
+
+    dimensions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SelectionConfig:
+    """How Winners are chosen from the active fitness dimensions.
+
+    Pure data: `method` names a key in `SELECTOR_REGISTRY`, `winners_count` is
+    the shared top-k both selection stages clamp to the population, and `weights`
+    is the per-dimension weighting for `weighted` (absent under `pareto`). The
+    selector itself is built from this at the boundary via `build_selector`.
+    """
+
+    method: str
+    winners_count: int
+    weights: dict[str, float] | None
+
+
+@dataclass(frozen=True)
 class Configs:
     framework: FrameworkConfig
     simulator: SimulatorConfig
+    fitness: FitnessConfig
+    selection: SelectionConfig
 
 
 def load_configs(
@@ -79,6 +109,8 @@ def load_configs(
         data = tomllib.load(f)
     framework_defaults = data.get("framework", {})
     simulator_defaults = data.get("simulator", {})
+    fitness_defaults = data.get("fitness", {})
+    selection_defaults = data.get("selection", {})
 
     resolved_subject = _resolve_subject(subject, framework_defaults, repo_root)
     framework = FrameworkConfig(
@@ -97,7 +129,9 @@ def load_configs(
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),
     )
-    return Configs(framework=framework, simulator=simulator)
+    fitness = FitnessConfig(dimensions=_resolve_dimensions(fitness_defaults))
+    selection = _resolve_selection(selection_defaults, fitness.dimensions)
+    return Configs(framework=framework, simulator=simulator, fitness=fitness, selection=selection)
 
 
 def _resolve(override, defaults: dict, key: str, flag: str | None, section: str):
@@ -136,6 +170,53 @@ def _resolve_ai_agent_tool(override: str | None, defaults: dict) -> str:
             f"--ai-agent-tool must be one of {sorted(ADAPTER_REGISTRY)}, got: {value!r}"
         )
     return value
+
+
+def _resolve_dimensions(defaults: dict) -> tuple[str, ...]:
+    value = _resolve(None, defaults, "dimensions", None, "fitness")
+    if not isinstance(value, list) or not value:
+        raise ConfigError("fitness.dimensions must be a non-empty list of strings")
+    if any(not isinstance(dim, str) or not dim for dim in value):
+        raise ConfigError(f"fitness.dimensions must be a list of non-empty strings, got: {value!r}")
+    if len(set(value)) != len(value):
+        raise ConfigError(f"fitness.dimensions must not repeat a dimension, got: {value!r}")
+    return tuple(value)
+
+
+def _resolve_selection(defaults: dict, dimensions: tuple[str, ...]) -> SelectionConfig:
+    method = str(_resolve(None, defaults, "method", None, "selection"))
+    winners_count = _resolve_positive_int(None, defaults, "winners_count", None, "selection")
+    weights = _resolve_weights(defaults)
+    # Build the selector now so any method-specific inconsistency (weights present
+    # under pareto, weight keys not matching the active dimensions, unknown method)
+    # dies at config load rather than mid-run. The instance is discarded; the
+    # boundary rebuilds it from this pure-data SelectionConfig.
+    try:
+        build_selector(
+            method=method, winners_count=winners_count, dimensions=dimensions, weights=weights
+        )
+    except SelectorConfigError as exception:
+        raise ConfigError(str(exception)) from exception
+    return SelectionConfig(method=method, winners_count=winners_count, weights=weights)
+
+
+def _resolve_weights(defaults: dict) -> dict[str, float] | None:
+    if "weights" not in defaults:
+        return None
+    raw = defaults["weights"]
+    if not isinstance(raw, dict) or not raw:
+        raise ConfigError("selection.weights must be a non-empty table of dimension weights")
+    weights: dict[str, float] = {}
+    for key, value in raw.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ConfigError(f"selection.weights.{key} must be a number, got: {value!r}")
+        if value <= 0:
+            # Keys must match dimensions exactly, so a dimension can't be dropped by
+            # omission; a zero weight would silently neutralize a still-measured
+            # dimension and a negative one would invert it. Require positive.
+            raise ConfigError(f"selection.weights.{key} must be a positive number, got: {value!r}")
+        weights[key] = float(value)
+    return weights
 
 
 def _resolve_authoring_scope(override: AuthoringScope | str | None, defaults: dict) -> AuthoringScope:

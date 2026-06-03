@@ -49,7 +49,7 @@ framework — missing or malformed sections cause the cycle to fail fast.
 
 - **Distinct.** Each Hypothesis pursues a different strategy, not a
   rephrasing of the same idea. Near-duplicates collapse the cohort's
-  Pareto front.
+  Winners.
 - **Testable.** A reader should be able to imagine the experiment that
   would confirm or refute the claim.
 - **Grounded.** Every Hypothesis derives from exactly one parent variant

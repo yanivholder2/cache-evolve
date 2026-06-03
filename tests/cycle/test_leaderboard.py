@@ -15,10 +15,10 @@ def _setup_cycle(layout: OutputsLayout, cycle_id: CycleId, variants):
     cycle_layout.root.mkdir(parents=True)
     winners = {
         "cycle": str(cycle_id),
-        "pareto_front": [v["variant"] for v in variants],
+        "winners": [v["variant"] for v in variants],
         "fitness_vectors": variants,
     }
-    write_utf8(cycle_layout.winners_json, json.dumps(winners))
+    write_utf8(cycle_layout.cycle_winners_json, json.dumps(winners))
     return cycle_layout
 
 
@@ -89,9 +89,9 @@ def test_pareto_front_fallback_renders(tmp_path):
     layout = OutputsLayout(root=evolve)
     cycle_layout = layout.cycle(CycleId(1))
     cycle_layout.root.mkdir(parents=True)
-    write_utf8(cycle_layout.winners_json, json.dumps({
+    write_utf8(cycle_layout.cycle_winners_json, json.dumps({
         "cycle": "0001",
-        "pareto_front": ["v007"],
+        "winners": ["v007"],
         "fitness_vectors": [],
     }))
     out = tmp_path / "leaderboard.md"
@@ -104,8 +104,8 @@ def test_malformed_winners_errors(tmp_path):
     layout = OutputsLayout(root=evolve)
     cycle_layout = layout.cycle(CycleId(1))
     cycle_layout.root.mkdir(parents=True)
-    write_utf8(cycle_layout.winners_json, "not valid json {{{")
-    with pytest.raises(LeaderboardError, match="malformed winners.json"):
+    write_utf8(cycle_layout.cycle_winners_json, "not valid json {{{")
+    with pytest.raises(LeaderboardError, match="malformed cycle-winners.json"):
         regenerate(layout=layout)
 
 
@@ -122,7 +122,7 @@ def test_multiple_cycles_all_shown(tmp_path):
 
 
 def test_unsealed_cycle_with_winners_is_included(tmp_path):
-    """Cycle dirs with winners.json but no SEALED marker are still counted."""
+    """Cycle dirs with cycle-winners.json but no SEALED marker are still counted."""
     fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.5, "higher_is_better": True}]}]
     evolve = _make_evolve_root(tmp_path, {"0001": fv})
     # No SEALED marker written.
@@ -145,15 +145,15 @@ def test_dir_without_winners_json_is_skipped(tmp_path):
     assert "0001" not in read_utf8(out)
 
 
-def _write_champions(evolve, champions):
-    write_utf8(OutputsLayout(root=evolve).champions_json, json.dumps(champions))
+def _write_cross_cycle_winners(evolve, cross_cycle_winners):
+    write_utf8(OutputsLayout(root=evolve).cross_cycle_winners_json, json.dumps(cross_cycle_winners))
 
 
 def test_baseline_row_and_global_best_section(tmp_path):
     fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
     evolve = _make_evolve_root(tmp_path, {"0001": fv})
-    _write_champions(evolve, {
-        "pareto_front": ["baseline", "cycle/0001/v001"],
+    _write_cross_cycle_winners(evolve, {
+        "winners": ["baseline", "cycle/0001/v001"],
         "fitness_vectors": [
             {"variant": "baseline", "dimensions": [{"dim": "hit-rate", "summary": 0.48, "higher_is_better": True}]},
             {"variant": "cycle/0001/v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]},
@@ -164,21 +164,21 @@ def test_baseline_row_and_global_best_section(tmp_path):
     regenerate(layout=OutputsLayout(root=evolve), output=out)
     content = read_utf8(out)
 
-    # (a) baseline row
-    assert "| baseline | baseline | 0.48 |" in content
+    # (a) baseline row, with a trailing "—" score column
+    assert "| baseline | baseline | 0.48 | — |" in content
     # (b) global best-so-far section
     assert "## Global best-so-far" in content
-    assert "Pareto front: baseline, cycle/0001/v001" in content
+    assert "Winners: baseline, cycle/0001/v001" in content
     assert "- hit-rate: 0.65 held by cycle/0001/v001" in content
 
 
-def test_dominated_marker(tmp_path):
+def test_winner_marker(tmp_path):
     fv1 = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
     fv2 = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.40, "higher_is_better": True}]}]
     evolve = _make_evolve_root(tmp_path, {"0001": fv1, "0002": fv2})
-    _write_champions(evolve, {
-        # cycle/0001/v001 on the front; cycle/0002/v001 dominated, off the front
-        "pareto_front": ["baseline", "cycle/0001/v001"],
+    _write_cross_cycle_winners(evolve, {
+        # cycle/0001/v001 on the front (a Winner); cycle/0002/v001 off the front
+        "winners": ["baseline", "cycle/0001/v001"],
         "fitness_vectors": [
             {"variant": "baseline", "dimensions": [{"dim": "hit-rate", "summary": 0.48, "higher_is_better": True}]},
             {"variant": "cycle/0001/v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]},
@@ -189,24 +189,44 @@ def test_dominated_marker(tmp_path):
     regenerate(layout=OutputsLayout(root=evolve), output=out)
     content = read_utf8(out)
 
-    # (c) off-front winner marked dominated; on-front winner not marked
-    assert "| 0002 | v001 (dominated) |" in content
-    assert "| 0001 | v001 |" in content
+    # on-front Winner marked; off-front variant unmarked
+    assert "| 0001 | v001 (winner) |" in content
+    assert "| 0002 | v001 |" in content
+    assert "v001 (dominated)" not in content
 
 
-def test_malformed_champions_errors(tmp_path):
+def test_weighted_score_column_rendered(tmp_path):
+    cycle_layout = OutputsLayout(root=tmp_path / "evolve").cycle(CycleId(1))
+    cycle_layout.root.mkdir(parents=True)
+    write_utf8(cycle_layout.cycle_winners_json, json.dumps({
+        "cycle": "0001",
+        "winners": ["v002"],
+        "scores": {"v001": 0.0, "v002": 1.0},
+        "fitness_vectors": [
+            {"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.40, "higher_is_better": True}]},
+            {"variant": "v002", "dimensions": [{"dim": "hit-rate", "summary": 0.90, "higher_is_better": True}]},
+        ],
+    }))
+    out = tmp_path / "leaderboard.md"
+    regenerate(layout=OutputsLayout(root=tmp_path / "evolve"), output=out)
+    content = read_utf8(out)
+    # Score column carries the cohort-local selection scores in variant order.
+    assert "| 0001 | v001, v002 | 0.4, 0.9 | 0, 1 |" in content
+
+
+def test_malformed_cross_cycle_winners_errors(tmp_path):
     fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
     evolve = _make_evolve_root(tmp_path, {"0001": fv})
-    write_utf8(OutputsLayout(root=evolve).champions_json, "not valid json {{{")
-    with pytest.raises(LeaderboardError, match="malformed champions.json"):
+    write_utf8(OutputsLayout(root=evolve).cross_cycle_winners_json, "not valid json {{{")
+    with pytest.raises(LeaderboardError, match="malformed cross-cycle-winners.json"):
         regenerate(layout=OutputsLayout(root=evolve))
 
 
 def test_baseline_row_skipped_when_no_baseline_vector(tmp_path):
     fv = [{"variant": "v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]}]
     evolve = _make_evolve_root(tmp_path, {"0001": fv})
-    _write_champions(evolve, {
-        "pareto_front": ["cycle/0001/v001"],
+    _write_cross_cycle_winners(evolve, {
+        "winners": ["cycle/0001/v001"],
         "fitness_vectors": [
             {"variant": "cycle/0001/v001", "dimensions": [{"dim": "hit-rate", "summary": 0.65, "higher_is_better": True}]},
         ],

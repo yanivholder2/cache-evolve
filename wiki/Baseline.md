@@ -1,6 +1,6 @@
 # Baseline
 
-Every subject carries a checked-in **baseline**: the subject as it stands today, with its measured fitness recorded alongside. The baseline is the anchor that cycle-1 hypotheses ground their expectations in, and the reference point the global champions are compared against.
+Every subject carries a checked-in **baseline**: the subject as it stands today, with its measured fitness recorded alongside. The baseline is the anchor that cycle-1 hypotheses ground their expectations in, and the reference point the cross-cycle winners are compared against.
 
 ## What the baseline is
 

@@ -1,10 +1,10 @@
-"""Global cross-cycle Pareto champions.
+"""Cross-cycle winners: the global front across all cycles.
 
-Unlike the cohort-local `winners.json` (best of one cycle's survivors), this
+Unlike the cohort-local `cycle-winners.json` (best of one cycle's survivors), this
 unions every evaluated variant across all cycles with the baseline, re-labels
-each fitness vector with a globally-unique id, and recomputes the Pareto front
-over that union. Recomputed after every cycle so dominated variants stay
-visible alongside the standing champions."""
+each fitness vector with a globally-unique id, and recomputes the Winners
+over that union via the selection seam. Recomputed after every cycle so
+off-front variants stay visible alongside the standing Winners."""
 
 from __future__ import annotations
 
@@ -12,38 +12,39 @@ import json
 import logging
 
 from evolve._io import read_utf8, write_json
-from evolve.aggregate.pareto import compute_pareto_front
+from evolve.aggregate.selectors import Selector
 from evolve.identifiers import CYCLE_ID_WIDTH, CycleId, VariantId
 from evolve.paths import Baseline, CycleLayout, CycleVariant, Layout
 
 log = logging.getLogger(__name__)
 
 
-def compute_champions(layout: Layout) -> dict:
-    """Union all evaluated variants with the baseline and compute the global front."""
+def compute_cross_cycle_winners(layout: Layout, selector: Selector) -> dict:
+    """Union all evaluated variants with the baseline and select the global Winners."""
 
     vectors = _collect_global_vectors(layout)
     if not vectors:
-        return {"pareto_front": [], "fitness_vectors": [], "best_per_dimension": {}}
+        return {"winners": [], "scores": {}, "fitness_vectors": [], "best_per_dimension": {}}
 
-    pareto_front = compute_pareto_front(vectors)
+    result = selector.select(vectors)
     best_per_dimension = _best_per_dimension(vectors)
     return {
-        "pareto_front": pareto_front,
+        "winners": result.winners,
+        "scores": result.scores,
         "fitness_vectors": vectors,
         "best_per_dimension": best_per_dimension,
     }
 
 
-def write_champions(layout: Layout) -> dict:
-    """Compute and persist the global champions artifact."""
+def write_cross_cycle_winners(layout: Layout, selector: Selector) -> dict:
+    """Compute and persist the global cross_cycle_winners artifact."""
 
-    data = compute_champions(layout)
-    write_json(layout.outputs.champions_json, data)
+    data = compute_cross_cycle_winners(layout, selector)
+    write_json(layout.outputs.cross_cycle_winners_json, data)
     log.info(
-        "global champions: %d variants, front=%s",
+        "global cross_cycle_winners: %d variants, winners=%s",
         len(data["fitness_vectors"]),
-        data["pareto_front"],
+        data["winners"],
     )
     return data
 

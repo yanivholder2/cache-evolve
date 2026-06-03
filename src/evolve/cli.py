@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import json
 import logging
 import re
 import sys
@@ -23,8 +24,9 @@ from evolve.llm import (
     format_token_totals,
     snapshot_token_totals,
 )
-from evolve.aggregate.champions import write_champions
-from evolve.aggregate.cohort import compute_cohort_pareto, write_winners_json
+from evolve.aggregate.cross_cycle_winners import write_cross_cycle_winners
+from evolve.aggregate.cohort import compute_cycle_winners, write_cycle_winners_json
+from evolve.aggregate.selectors import Selector, build_selector
 from evolve.config import AuthoringScope, Configs, ConfigError, load_configs
 from evolve.cycle.leaderboard import regenerate as regenerate_leaderboard
 from evolve.cycle.ledger_append import append_row
@@ -59,6 +61,53 @@ def _require_scope_supported(subject: Subject, authoring_scope: AuthoringScope) 
             f"subject {subject.name!r} declares no extension points, so authoring scope "
             f"'extension-points' would reject every variant; rerun with --authoring-scope full-autonomy"
         )
+
+
+def _validate_active_dimensions(cfg: Configs, subject: Subject, layout: Layout) -> None:
+    """Cross-cutting boundary guard, run once before cycle 0.
+
+    Lives here, not in config.py, because it crosses the framework/subject seam:
+    config.py stays subject-agnostic. Every active fitness dimension must be one
+    the subject can measure (capability declared in its manifest) and must be
+    present in the baseline anchor, or the cross-cycle union and leaderboard
+    would compare incomparable numbers.
+    """
+
+    requires_table = {"per-op-time": "[bench]", "metadata-size": "[metadata]"}
+    capable = {
+        "hit-rate": True,
+        "per-op-time": subject.bench is not None,
+        "metadata-size": subject.metadata is not None,
+    }
+    for dim in cfg.fitness.dimensions:
+        if dim not in capable:
+            die(
+                f"fitness.dimensions: unknown dimension {dim!r}; "
+                f"known dimensions: {sorted(capable)}"
+            )
+        if not capable[dim]:
+            die(
+                f"fitness.dimensions: dimension {dim!r} requires the subject manifest "
+                f"{requires_table[dim]} table, which subject {subject.name!r} does not declare"
+            )
+
+    baseline_dims = _baseline_measured_dimensions(layout)
+    missing = [dim for dim in cfg.fitness.dimensions if dim not in baseline_dims]
+    if missing:
+        die(
+            f"fitness.dimensions {missing} are not measured in the baseline anchor "
+            f"(measured: {sorted(baseline_dims)}); re-measure the baseline with "
+            f"scripts/measure_baseline.py"
+        )
+
+
+def _baseline_measured_dimensions(layout: Layout) -> set[str]:
+    """The dimension names present in the subject's baseline fitness vector."""
+    path = layout.sources.baseline.fitness_vector_json
+    if not path.is_file():
+        die(f"baseline fitness vector not found at {path}")
+    data = json.loads(read_utf8(path))
+    return {dimension["dim"] for dimension in data.get("dimensions", [])}
 
 
 @contextmanager
@@ -263,11 +312,12 @@ def _run_cycle_level(
     cohort_size: int,
     layout: Layout,
     adapter: LLMAdapter,
+    selector: Selector,
     cfg: Configs,
 ) -> tuple[list[str], str]:
-    """Subphase 1: pareto + winners.json AND cycle-insight-writer, in parallel.
+    """Subphase 1: winner selection + cycle-winners.json AND cycle-insight-writer, in parallel.
 
-    Returns (pareto_front, cycle_insight_body).
+    Returns (winners, cycle_insight_body).
     """
 
     hypothesis_files = [
@@ -281,19 +331,19 @@ def _run_cycle_level(
         if not o.survived
     ]
 
-    pareto_front, fitness_vectors = compute_cohort_pareto(survivors)
+    winners, scores, fitness_vectors = compute_cycle_winners(survivors, selector)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         winners_future = pool.submit(
             _named_thread, "winners",
-            write_winners_json, cycle_layout, cycle_id, pareto_front, fitness_vectors,
+            write_cycle_winners_json, cycle_layout, cycle_id, winners, scores, fitness_vectors,
         )
         cycle_insight_future = pool.submit(
             _named_thread, "cycle_insight",
             write_cycle_insight,
             cycle_layout,
             survivors,
-            pareto_front,
+            winners,
             hypothesis_files=hypothesis_files,
             ledger=layout.outputs.ledger,
             adapter=adapter,
@@ -301,32 +351,33 @@ def _run_cycle_level(
             rejected=rejected,
         )
         winners_future.result()
-        log.info("winners.json done")
+        log.info("cycle-winners.json done")
         cycle_insight_future.result()
         log.info("cycle-insight-writer done")
 
     cycle_insight = read_utf8(cycle_layout.cycle_insight_md)
-    return pareto_front, cycle_insight
+    return winners, cycle_insight
 
 
 def _run_post_cycle_insight(
     *,
     cycle_id: CycleId,
     cohort_size: int,
-    pareto_front: list[str],
+    winners: list[str],
     cycle_insight: str,
     layout: Layout,
+    selector: Selector,
 ) -> None:
     """Subphase 2: ledger-append AND leaderboard-regen, in parallel."""
 
-    write_champions(layout)
-    log.info("champions.json done")
+    write_cross_cycle_winners(layout, selector)
+    log.info("cross-cycle-winners.json done")
 
     row = {
         "cycle": str(cycle_id),
         "cycle_dir": layout.cycle_ledger_path(cycle_id),
         "cohort_size": cohort_size,
-        "pareto_front": pareto_front,
+        "winners": winners,
         "cycle_insight": cycle_insight,
     }
     log.debug("ledger row keys: %s", sorted(row))
@@ -359,6 +410,12 @@ def run_cycle(
 
     _require_scope_supported(
         load_subject(layout.sources.subject_dir), cfg.framework.authoring_scope
+    )
+    selector = build_selector(
+        method=cfg.selection.method,
+        winners_count=cfg.selection.winners_count,
+        dimensions=cfg.fitness.dimensions,
+        weights=cfg.selection.weights,
     )
 
     cohort_size = cfg.framework.cohort_size
@@ -402,7 +459,7 @@ def run_cycle(
                 die(f"no variants survived in cycle {cycle_id}")
 
         with _phase("cycle-level", timings):
-            pareto_front, cycle_insight = _run_cycle_level(
+            winners, cycle_insight = _run_cycle_level(
                 cycle_layout=cycle_layout,
                 cycle_id=cycle_id,
                 survivors=survivors,
@@ -410,15 +467,17 @@ def run_cycle(
                 cohort_size=cohort_size,
                 layout=layout,
                 adapter=adapter,
+                selector=selector,
                 cfg=cfg,
             )
-            log.info("cycle %s pareto front: %s", cycle_id, pareto_front)
+            log.info("cycle %s winners: %s", cycle_id, winners)
             _run_post_cycle_insight(
                 cycle_id=cycle_id,
                 cohort_size=cohort_size,
-                pareto_front=pareto_front,
+                winners=winners,
                 cycle_insight=cycle_insight,
                 layout=layout,
+                selector=selector,
             )
 
         with _phase("cross-cycle-insights", timings):
@@ -491,6 +550,7 @@ def main(argv: list[str] | None = None) -> None:
 
     adapter = ADAPTER_REGISTRY[cfg.framework.ai_agent_tool]()
     layout = Layout(repo_root=repo_root, outputs_root=cfg.framework.outputs_root, subject=cfg.framework.subject)
+    _validate_active_dimensions(cfg, load_subject(layout.sources.subject_dir), layout)
 
     _log.setup(None, level=cfg.framework.log_level)
     log.debug("repo_root=%s", repo_root)

@@ -48,7 +48,7 @@ Aggregation produces:
 }
 ```
 
-One `dimensions` entry per plugin. The Pareto machinery ([Concepts](Concepts#pareto-front-and-champions)) consumes the `summary` and `higher_is_better` of each dimension.
+One `dimensions` entry per plugin. The winner-selection machinery ([Concepts](Concepts#winners-and-the-pareto-front)) consumes the `summary` and `higher_is_better` of each dimension.
 
 ### When scoring fails
 

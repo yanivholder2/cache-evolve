@@ -46,3 +46,28 @@ authoring_scope = "extension-points"
 # Per-variant simulator invocation timeout (seconds). Surfaces as
 # FitnessError when exceeded — does not crash the cycle.
 timeout_s = 600
+
+[fitness]
+# Active Fitness dimensions for this run — activation only, not capability.
+# Must be a subset of the dimensions the subject can measure: "hit-rate" is
+# always available; "per-op-time" needs the subject manifest [bench] table;
+# "metadata-size" needs its [metadata] table. The runner measures only these.
+dimensions = ["hit-rate"]
+
+[selection]
+# How Winners are chosen from the fitness vectors. One of the keys in
+# src/evolve/aggregate/selectors/SELECTOR_REGISTRY:
+#   "pareto":   the Pareto front (scale-invariant, computes no scalar score).
+#   "weighted": top-N by a weighted sum of min-max-normalized dimensions
+#               (requires the [selection.weights] table below).
+method = "pareto"
+
+# How many Winners each selection stage keeps (cohort-local and cross-cycle),
+# clamped to the population. The "pareto" method ignores it (the front sets the
+# count); "weighted" keeps this many top-scoring variants.
+winners_count = 3
+
+# Per-dimension weights for the "weighted" method. Keys MUST match
+# fitness.dimensions exactly. Leave the whole table absent under "pareto".
+# [selection.weights]
+# hit-rate = 1.0

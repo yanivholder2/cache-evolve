@@ -6,37 +6,40 @@ import json
 import logging
 
 from evolve._io import read_utf8, write_json
+from evolve.aggregate.selectors import Selector
 from evolve.identifiers import CycleId
 from evolve.paths import CycleLayout, CycleVariantDir
-from evolve.aggregate.pareto import compute_pareto_front
 
 log = logging.getLogger(__name__)
 
 
-def compute_cohort_pareto(
+def compute_cycle_winners(
     variant_dirs: list[CycleVariantDir],
-) -> tuple[list[str], list[dict]]:
-    """Return (pareto_front, fitness_vectors) for the cohort."""
+    selector: Selector,
+) -> tuple[list[str], dict[str, float], list[dict]]:
+    """Return (winners, scores, fitness_vectors) for the cohort."""
 
     fitness_vectors = _collect_fitness_vectors(variant_dirs)
-    pareto_front = compute_pareto_front(fitness_vectors)
-    log.info("pareto front: %s", pareto_front)
-    return pareto_front, fitness_vectors
+    result = selector.select(fitness_vectors)
+    log.info("cycle winners: %s", result.winners)
+    return result.winners, result.scores, fitness_vectors
 
 
-def write_winners_json(
+def write_cycle_winners_json(
     cycle_layout: CycleLayout,
     cycle_id: CycleId,
-    pareto_front: list[str],
+    winners: list[str],
+    scores: dict[str, float],
     fitness_vectors: list[dict],
 ) -> None:
-    """Write the cohort's `winners.json` file."""
+    """Write the cohort's `cycle-winners.json` file."""
 
     write_json(
-        cycle_layout.winners_json,
+        cycle_layout.cycle_winners_json,
         {
             "cycle": str(cycle_id),
-            "pareto_front": pareto_front,
+            "winners": winners,
+            "scores": scores,
             "fitness_vectors": fitness_vectors,
         },
     )

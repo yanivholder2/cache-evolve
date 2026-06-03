@@ -43,8 +43,8 @@ def _setup_evolve(tmp_path: Path, *, with_ledger: bool = False, with_leaderboard
     if with_ledger:
         write_utf8(
             layout.outputs.ledger,
-            '{"cycle":"0001","cohort_size":2,"pareto_front":["v001"]}\n'
-            '{"cycle":"0002","cohort_size":2,"pareto_front":["v001","v002"]}\n',
+            '{"cycle":"0001","cohort_size":2,"winners":["v001"]}\n'
+            '{"cycle":"0002","cohort_size":2,"winners":["v001","v002"]}\n',
         )
     else:
         write_utf8(layout.outputs.ledger, "")
@@ -256,7 +256,7 @@ def test_continuation_task_md_grounds_in_previous_cycle(tmp_path):
     # Anchor on "0001" so a leaked path from a different cycle wouldn't
     # satisfy the filename checks alone.
     assert "0001" in task_md
-    for path in (prev.variants_dir, prev.winners_json, prev.cycle_insight_md):
+    for path in (prev.variants_dir, prev.cycle_winners_json, prev.cycle_insight_md):
         assert path.name in task_md, f"{path.name} missing from task.md"
 
 
@@ -323,15 +323,15 @@ def test_continuation_fails_fast_when_prev_cycle_missing(tmp_path):
         )
 
 
-def _write_champions(evolve: Path, *, pareto_front: list[str], fitness_vectors: list[dict]) -> None:
-    champions = {
-        "pareto_front": pareto_front,
+def _write_cross_cycle_winners(evolve: Path, *, winners: list[str], fitness_vectors: list[dict]) -> None:
+    cross_cycle_winners = {
+        "winners": winners,
         "fitness_vectors": fitness_vectors,
         "best_per_dimension": {},
     }
-    champions_json = _layout(evolve).outputs.champions_json
-    champions_json.parent.mkdir(parents=True, exist_ok=True)
-    write_utf8(champions_json, json.dumps(champions))
+    cross_cycle_winners_json = _layout(evolve).outputs.cross_cycle_winners_json
+    cross_cycle_winners_json.parent.mkdir(parents=True, exist_ok=True)
+    write_utf8(cross_cycle_winners_json, json.dumps(cross_cycle_winners))
 
 
 def _fitness_vector(variant: str, hit_rate: float) -> dict:
@@ -344,9 +344,9 @@ def _fitness_vector(variant: str, hit_rate: float) -> dict:
 def test_continuation_injects_incumbents_and_quota(tmp_path):
     evolve = _setup_evolve(tmp_path)
     _stage_prev_cycle(evolve, CycleId(1))
-    _write_champions(
+    _write_cross_cycle_winners(
         evolve,
-        pareto_front=["baseline", "cycle/0001/v001"],
+        winners=["baseline", "cycle/0001/v001"],
         fitness_vectors=[
             _fitness_vector("baseline", 0.40),
             _fitness_vector("cycle/0001/v001", 0.55),
@@ -364,24 +364,24 @@ def test_continuation_injects_incumbents_and_quota(tmp_path):
         ),
     )
     task_md = read_utf8(capture)
-    assert "Incumbents (global Pareto front)" in task_md
+    assert "Incumbents (cross-cycle winners)" in task_md
     assert "cycle/0001/v001: hit_rate=0.55" in task_md
-    assert "MUST cite a global-front variant" in task_md
+    assert "MUST cite a cross-cycle winner" in task_md
 
 
 def test_continuation_quota_violation_fails(tmp_path):
     evolve = _setup_evolve(tmp_path)
     _stage_prev_cycle(evolve, CycleId(1))
-    _write_champions(
+    _write_cross_cycle_winners(
         evolve,
-        pareto_front=["baseline", "cycle/0001/v001"],
+        winners=["baseline", "cycle/0001/v001"],
         fitness_vectors=[
             _fitness_vector("baseline", 0.40),
             _fitness_vector("cycle/0001/v001", 0.55),
         ],
     )
     # Both hypotheses parent on baseline; none anchors the non-baseline front.
-    with pytest.raises(ValueError, match="global-front anchor"):
+    with pytest.raises(ValueError, match="winner anchor"):
         write_hypotheses(
             2,
             layout=_layout(evolve),
@@ -393,9 +393,9 @@ def test_continuation_quota_violation_fails(tmp_path):
 def test_continuation_quota_satisfied_by_front_anchor(tmp_path):
     evolve = _setup_evolve(tmp_path)
     _stage_prev_cycle(evolve, CycleId(1))
-    _write_champions(
+    _write_cross_cycle_winners(
         evolve,
-        pareto_front=["baseline", "cycle/0001/v001"],
+        winners=["baseline", "cycle/0001/v001"],
         fitness_vectors=[
             _fitness_vector("baseline", 0.40),
             _fitness_vector("cycle/0001/v001", 0.55),
@@ -410,8 +410,8 @@ def test_continuation_quota_satisfied_by_front_anchor(tmp_path):
     assert len(files) == 2
 
 
-def test_continuation_no_champions_skips_quota(tmp_path):
-    # No champions.json: enforcement is skipped so a pure-baseline cohort passes.
+def test_continuation_no_cross_cycle_winners_skips_quota(tmp_path):
+    # No cross-cycle-winners.json: enforcement is skipped so a pure-baseline cohort passes.
     evolve = _setup_evolve(tmp_path)
     _stage_prev_cycle(evolve, CycleId(1))
     files = write_hypotheses(
