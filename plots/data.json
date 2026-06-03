@@ -1,0 +1,419 @@
+{
+    "runs": [
+        {
+            "setup": {
+                "total-cycles": 25,
+                "cohort-size": 5,
+                "fix-attempts": 3,
+                "model-fix": "claude-3.5-sonnet",
+                "model-implement-cache": "o1-preview"
+            },
+            "varients": [
+                {
+                    "is-baseline": true,
+                    "cycle": 1,
+                    "subject-name": "Dash-Associative",
+                    "hit-rate": 0.421,
+                    "total-runtime-seconds": 18.5,
+                    "operations-per-second": 108108,
+                    "max-metadata-size-bytes": 8192,
+                    "max-total-memory-usage-bytes": 104857600,
+                    "eviction-count": 1058000,
+                    "insert-count": 1158000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 2,
+                    "subject-name": "Dash-Associative",
+                    "hit-rate": 0.450,
+                    "total-runtime-seconds": 17.2,
+                    "operations-per-second": 116279,
+                    "max-metadata-size-bytes": 12288,
+                    "max-total-memory-usage-bytes": 104861696,
+                    "eviction-count": 1000000,
+                    "insert-count": 1100000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 5,
+                    "subject-name": "Dash-Associative",
+                    "hit-rate": 0.485,
+                    "total-runtime-seconds": 16.5,
+                    "operations-per-second": 121212,
+                    "max-metadata-size-bytes": 16384,
+                    "max-total-memory-usage-bytes": 104865792,
+                    "eviction-count": 930000,
+                    "insert-count": 1030000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 8,
+                    "subject-name": "Dash-Associative",
+                    "hit-rate": 0.482,
+                    "total-runtime-seconds": 15.1,
+                    "operations-per-second": 132450,
+                    "max-metadata-size-bytes": 14336,
+                    "max-total-memory-usage-bytes": 104863744,
+                    "eviction-count": 936000,
+                    "insert-count": 1036000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 12,
+                    "subject-name": "Dash-Associative",
+                    "hit-rate": 0.520,
+                    "total-runtime-seconds": 15.8,
+                    "operations-per-second": 126582,
+                    "max-metadata-size-bytes": 24576,
+                    "max-total-memory-usage-bytes": 104873984,
+                    "eviction-count": 860000,
+                    "insert-count": 960000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 18,
+                    "subject-name": "Dash-Associative",
+                    "hit-rate": 0.555,
+                    "total-runtime-seconds": 14.9,
+                    "operations-per-second": 134228,
+                    "max-metadata-size-bytes": 28672,
+                    "max-total-memory-usage-bytes": 104878080,
+                    "eviction-count": 790000,
+                    "insert-count": 890000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 25,
+                    "subject-name": "Dash-Associative",
+                    "hit-rate": 0.582,
+                    "total-runtime-seconds": 14.1,
+                    "operations-per-second": 141843,
+                    "max-metadata-size-bytes": 32768,
+                    "max-total-memory-usage-bytes": 104882176,
+                    "eviction-count": 736000,
+                    "insert-count": 836000
+                }
+            ]
+        },
+        {
+            "setup": {
+                "total-cycles": 20,
+                "cohort-size": 8,
+                "fix-attempts": 3,
+                "model-fix": "gemini-1.5-flash",
+                "model-implement-cache": "claude-3.5-sonnet"
+            },
+            "varients": [
+                {
+                    "is-baseline": true,
+                    "cycle": 1,
+                    "subject-name": "S3-FIFO",
+                    "hit-rate": 0.495,
+                    "total-runtime-seconds": 12.1,
+                    "operations-per-second": 165289,
+                    "max-metadata-size-bytes": 45056,
+                    "max-total-memory-usage-bytes": 104894464,
+                    "eviction-count": 910000,
+                    "insert-count": 1010000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 1,
+                    "subject-name": "S3-FIFO",
+                    "hit-rate": 0.492,
+                    "total-runtime-seconds": 11.5,
+                    "operations-per-second": 173913,
+                    "max-metadata-size-bytes": 40960,
+                    "max-total-memory-usage-bytes": 104890368,
+                    "eviction-count": 916000,
+                    "insert-count": 1016000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 4,
+                    "subject-name": "S3-FIFO",
+                    "hit-rate": 0.510,
+                    "total-runtime-seconds": 11.8,
+                    "operations-per-second": 169491,
+                    "max-metadata-size-bytes": 49152,
+                    "max-total-memory-usage-bytes": 104898560,
+                    "eviction-count": 880000,
+                    "insert-count": 980000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 8,
+                    "subject-name": "S3-FIFO",
+                    "hit-rate": 0.525,
+                    "total-runtime-seconds": 11.2,
+                    "operations-per-second": 178571,
+                    "max-metadata-size-bytes": 45056,
+                    "max-total-memory-usage-bytes": 104894464,
+                    "eviction-count": 850000,
+                    "insert-count": 950000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 15,
+                    "subject-name": "S3-FIFO",
+                    "hit-rate": 0.540,
+                    "total-runtime-seconds": 10.9,
+                    "operations-per-second": 183486,
+                    "max-metadata-size-bytes": 45056,
+                    "max-total-memory-usage-bytes": 104894464,
+                    "eviction-count": 820000,
+                    "insert-count": 920000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 20,
+                    "subject-name": "S3-FIFO",
+                    "hit-rate": 0.548,
+                    "total-runtime-seconds": 10.5,
+                    "operations-per-second": 190476,
+                    "max-metadata-size-bytes": 40960,
+                    "max-total-memory-usage-bytes": 104890368,
+                    "eviction-count": 804000,
+                    "insert-count": 904000
+                }
+            ]
+        },
+        {
+            "setup": {
+                "total-cycles": 15,
+                "cohort-size": 5,
+                "fix-attempts": 2,
+                "model-fix": "gemini-1.5-flash",
+                "model-implement-cache": "gemini-1.5-pro"
+            },
+            "varients": [
+                {
+                    "is-baseline": true,
+                    "cycle": 1,
+                    "subject-name": "ARC",
+                    "hit-rate": 0.480,
+                    "total-runtime-seconds": 16.8,
+                    "operations-per-second": 119047,
+                    "max-metadata-size-bytes": 98304,
+                    "max-total-memory-usage-bytes": 104947712,
+                    "eviction-count": 940000,
+                    "insert-count": 1040000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 3,
+                    "subject-name": "ARC",
+                    "hit-rate": 0.485,
+                    "total-runtime-seconds": 15.5,
+                    "operations-per-second": 129032,
+                    "max-metadata-size-bytes": 90112,
+                    "max-total-memory-usage-bytes": 104939520,
+                    "eviction-count": 930000,
+                    "insert-count": 1030000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 7,
+                    "subject-name": "ARC",
+                    "hit-rate": 0.502,
+                    "total-runtime-seconds": 16.1,
+                    "operations-per-second": 124223,
+                    "max-metadata-size-bytes": 106496,
+                    "max-total-memory-usage-bytes": 104955904,
+                    "eviction-count": 896000,
+                    "insert-count": 996000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 11,
+                    "subject-name": "ARC",
+                    "hit-rate": 0.515,
+                    "total-runtime-seconds": 15.2,
+                    "operations-per-second": 131578,
+                    "max-metadata-size-bytes": 98304,
+                    "max-total-memory-usage-bytes": 104947712,
+                    "eviction-count": 870000,
+                    "insert-count": 970000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 15,
+                    "subject-name": "ARC",
+                    "hit-rate": 0.528,
+                    "total-runtime-seconds": 14.8,
+                    "operations-per-second": 135135,
+                    "max-metadata-size-bytes": 102400,
+                    "max-total-memory-usage-bytes": 104951808,
+                    "eviction-count": 844000,
+                    "insert-count": 944000
+                }
+            ]
+        },
+        {
+            "setup": {
+                "total-cycles": 30,
+                "cohort-size": 10,
+                "fix-attempts": 2,
+                "model-fix": "gemini-1.5-flash",
+                "model-implement-cache": "gemini-1.5-flash"
+            },
+            "varients": [
+                {
+                    "is-baseline": true,
+                    "cycle": 1,
+                    "subject-name": "LRU",
+                    "hit-rate": 0.315,
+                    "total-runtime-seconds": 12.3,
+                    "operations-per-second": 162601,
+                    "max-metadata-size-bytes": 4096,
+                    "max-total-memory-usage-bytes": 104853504,
+                    "eviction-count": 1270000,
+                    "insert-count": 1370000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 4,
+                    "subject-name": "LRU",
+                    "hit-rate": 0.340,
+                    "total-runtime-seconds": 12.8,
+                    "operations-per-second": 156250,
+                    "max-metadata-size-bytes": 12288,
+                    "max-total-memory-usage-bytes": 104861696,
+                    "eviction-count": 1220000,
+                    "insert-count": 1320000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 9,
+                    "subject-name": "LRU",
+                    "hit-rate": 0.365,
+                    "total-runtime-seconds": 13.5,
+                    "operations-per-second": 148148,
+                    "max-metadata-size-bytes": 20480,
+                    "max-total-memory-usage-bytes": 104869888,
+                    "eviction-count": 1170000,
+                    "insert-count": 1270000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 16,
+                    "subject-name": "LRU",
+                    "hit-rate": 0.388,
+                    "total-runtime-seconds": 14.2,
+                    "operations-per-second": 140845,
+                    "max-metadata-size-bytes": 28672,
+                    "max-total-memory-usage-bytes": 104878080,
+                    "eviction-count": 1124000,
+                    "insert-count": 1224000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 22,
+                    "subject-name": "LRU",
+                    "hit-rate": 0.405,
+                    "total-runtime-seconds": 14.8,
+                    "operations-per-second": 135135,
+                    "max-metadata-size-bytes": 36864,
+                    "max-total-memory-usage-bytes": 104886272,
+                    "eviction-count": 1090000,
+                    "insert-count": 1190000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 30,
+                    "subject-name": "LRU",
+                    "hit-rate": 0.412,
+                    "total-runtime-seconds": 14.9,
+                    "operations-per-second": 134228,
+                    "max-metadata-size-bytes": 36864,
+                    "max-total-memory-usage-bytes": 104886272,
+                    "eviction-count": 1076000,
+                    "insert-count": 1176000
+                }
+            ]
+        },
+        {
+            "setup": {
+                "total-cycles": 15,
+                "cohort-size": 5,
+                "fix-attempts": 3,
+                "model-fix": "claude-3.5-sonnet",
+                "model-implement-cache": "claude-3.5-sonnet"
+            },
+            "varients": [
+                {
+                    "is-baseline": true,
+                    "cycle": 1,
+                    "subject-name": "W-TinyLFU",
+                    "hit-rate": 0.550,
+                    "total-runtime-seconds": 22.4,
+                    "operations-per-second": 89285,
+                    "max-metadata-size-bytes": 163840,
+                    "max-total-memory-usage-bytes": 105013248,
+                    "eviction-count": 800000,
+                    "insert-count": 900000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 2,
+                    "subject-name": "W-TinyLFU",
+                    "hit-rate": 0.548,
+                    "total-runtime-seconds": 20.1,
+                    "operations-per-second": 99502,
+                    "max-metadata-size-bytes": 131072,
+                    "max-total-memory-usage-bytes": 104980480,
+                    "eviction-count": 804000,
+                    "insert-count": 904000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 5,
+                    "subject-name": "W-TinyLFU",
+                    "hit-rate": 0.565,
+                    "total-runtime-seconds": 21.3,
+                    "operations-per-second": 93896,
+                    "max-metadata-size-bytes": 147456,
+                    "max-total-memory-usage-bytes": 104996864,
+                    "eviction-count": 770000,
+                    "insert-count": 870000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 9,
+                    "subject-name": "W-TinyLFU",
+                    "hit-rate": 0.582,
+                    "total-runtime-seconds": 20.8,
+                    "operations-per-second": 96153,
+                    "max-metadata-size-bytes": 155648,
+                    "max-total-memory-usage-bytes": 105005056,
+                    "eviction-count": 736000,
+                    "insert-count": 836000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 13,
+                    "subject-name": "W-TinyLFU",
+                    "hit-rate": 0.598,
+                    "total-runtime-seconds": 19.5,
+                    "operations-per-second": 102564,
+                    "max-metadata-size-bytes": 139264,
+                    "max-total-memory-usage-bytes": 104988672,
+                    "eviction-count": 704000,
+                    "insert-count": 804000
+                },
+                {
+                    "is-baseline": false,
+                    "cycle": 15,
+                    "subject-name": "W-TinyLFU",
+                    "hit-rate": 0.612,
+                    "total-runtime-seconds": 18.9,
+                    "operations-per-second": 105820,
+                    "max-metadata-size-bytes": 143360,
+                    "max-total-memory-usage-bytes": 104992768,
+                    "eviction-count": 676000,
+                    "insert-count": 776000
+                }
+            ]
+        }
+    ]
+}
