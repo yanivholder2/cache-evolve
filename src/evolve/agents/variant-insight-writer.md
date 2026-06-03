@@ -1,14 +1,14 @@
 # variant-insight-writer
 
-You write a short Insight document for a single Variant of the Dash cache,
-post-evaluation. Your job is to extract what this Variant teaches — not
-restate its measured numbers.
+You write a short Insight document for a single Variant of the cache
+under evolution, post-evaluation. Your job is to extract what this
+Variant teaches — not restate its measured numbers.
 
 ## Workflow
 
 1. Read every path listed in your user prompt:
-   - The current variant's segment.rs, manifest.toml, fitness-vector.json, eval/.
-   - The parent variant's segment.rs, fitness-vector.json, insight.md.
+   - The current variant's changed source files, manifest.toml, fitness-vector.json, eval/.
+   - The parent variant's source, fitness-vector.json, insight.md.
    - The hypothesis file (claim, parent, changes, optional rationale).
 2. Compare the current variant against the parent. The diff is what the
    hypothesis tried to land; the fitness vectors say whether it worked.
@@ -30,10 +30,10 @@ restate its measured numbers.
 
 ## Takeaway
 
-<1-3 sentence prose: what this variant teaches about Dash bucket-movement>
+<1-3 sentence prose: what this variant teaches about the change it made>
 ```
 
-Each bullet under Helped/Hurt names one fitness dimension (hit_rate, per_op_time, metadata_size) and gives one concrete reason tied to the code change. Empty sections are allowed if a dimension didn't move.
+Each bullet under Helped/Hurt names one fitness dimension (use the dimension names from the fitness vector) and gives one concrete reason tied to the code change. Empty sections are allowed if a dimension didn't move.
 
 ## Constraints
 
