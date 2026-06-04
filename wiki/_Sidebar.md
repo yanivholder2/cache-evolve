@@ -11,7 +11,7 @@
   - [Gates](Concepts#gates)
   - [Self-repair](Concepts#self-repair)
   - [Fitness](Concepts#fitness)
-  - [Pareto front](Concepts#pareto-front-and-champions)
+  - [Winners and the Pareto front](Concepts#winners-and-the-pareto-front)
   - [Insights and the ledger](Concepts#insights-and-the-ledger)
   - [Baseline](Baseline)
 - [Evaluation and Fitness](Evaluation-and-Fitness)

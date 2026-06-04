@@ -1,7 +1,7 @@
 # cycle-insight-writer
 
 You write the Cycle Insight: a short prose summary of one cohort of
-Variants for the Dash cache evolution loop. You see only Variant insights
+Variants for the cache evolution loop. You see only Variant insights
 and a digest of prior Cycles — never implementation code or raw simulator
 output.
 
@@ -10,7 +10,7 @@ output.
 1. Read every variant insight listed in your user prompt.
 2. Read the inlined prior-cycles digest in the prompt body (if present).
 3. Identify cohort-level patterns: which strategies clustered, which
-   axes moved together, what the Pareto front shares.
+   axes moved together, what the Winners share.
 4. Write `cycle-insight.md` in the output dir with the structure below.
 
 ## Output format
@@ -20,8 +20,8 @@ output.
 
 ## Cohort outcome
 
-<1-2 sentences: what kinds of changes were tried, what landed on the
-Pareto front>
+<1-2 sentences: what kinds of changes were tried, what landed in the
+Winners>
 
 ## Patterns
 

@@ -8,7 +8,7 @@ The cache implementation under evolution. A subject is a self-contained Rust cra
 
 ## Cycle
 
-One full iteration of the evolution loop. A cycle proposes a cohort, evaluates every variant, records insights, computes a Pareto front, appends a ledger row, and is then *sealed* (finalized and made read-only). Cycles run sequentially; a failing cycle aborts the run.
+One full iteration of the evolution loop. A cycle proposes a cohort, evaluates every variant, records insights, selects its winners (a Pareto front), appends a ledger row, and is then *sealed* (finalized and made read-only). Cycles run sequentially; a failing cycle aborts the run.
 
 ## Cohort
 
@@ -16,7 +16,7 @@ The set of variants produced in a single cycle. `--cohort-size` sets how many. T
 
 ## Hypothesis
 
-A proposed idea for improving the subject, authored by the AI agent at the start of a cycle. Each hypothesis names the change it intends to make. On continuation cycles, at least one hypothesis must build on a current Pareto champion so the search keeps exploiting what already works.
+A proposed idea for improving the subject, authored by the AI agent at the start of a cycle. Each hypothesis names the change it intends to make. On continuation cycles, at least one hypothesis must build on a current cross-cycle winner so the search keeps exploiting what already works.
 
 ## Variant
 
@@ -49,12 +49,12 @@ When a gate (or the implementer's own validation) rejects an attempt, the framew
 
 How a surviving variant is scored. Each variant is run through the cache simulator, and one or more **fitness plugins** turn the raw metrics into named **dimensions** (e.g. hit rate). The per-variant result is a **fitness vector** — a list of dimensions, each with a single comparable summary number and an orientation (higher-is-better or not). See [Evaluation and Fitness](Evaluation-and-Fitness).
 
-## Pareto front and champions
+## Winners and the Pareto front
 
-Because fitness can be multi-dimensional, "best" is not a single number. A variant **dominates** another if it is at least as good on every dimension and strictly better on one. The **Pareto front** is the set of non-dominated variants:
+Because fitness can be multi-dimensional, "best" is not a single number. A variant **dominates** another if it is at least as good on every dimension and strictly better on one. A cycle's **winners** are the set of non-dominated variants — its **Pareto front**:
 
-- The **cohort Pareto front** (`winners.json`) is computed over the survivors of one cycle.
-- The **global champions** (`champions.json`) are the Pareto front over every variant ever evaluated, plus the baseline — recomputed each cycle.
+- The **cycle winners** (`cycle-winners.json`) are computed over the survivors of one cycle.
+- The **cross-cycle winners** (`cross-cycle-winners.json`) are the Pareto front over every variant ever evaluated, plus the baseline — recomputed each cycle.
 
 ## Insights and the ledger
 
@@ -64,7 +64,7 @@ The framework keeps a permanent, append-only record:
 - A **cycle insight** summarizing each cohort.
 - A **cross-cycle insight** narrating progress across cycles.
 - The **ledger** (`cycles-ledger.jsonl`) — one immutable row per cycle.
-- The **leaderboard** (`leaderboard.md`) — regenerated each cycle from the winners and champions.
+- The **leaderboard** (`leaderboard.md`) — regenerated each cycle from the cycle winners and cross-cycle winners.
 
 The append-only design is an explicit architecture decision; see [ADR 0001](https://github.com/yanivholder2/cache-evolve/blob/main/docs/adr/0001-append-only-insight-ledger.md).
 

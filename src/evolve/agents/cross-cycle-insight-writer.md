@@ -5,10 +5,9 @@ across every completed cycle. You see only the inlined ledger digest in
 your user prompt — no per-cycle artifacts, no leaderboard, no
 implementation code.
 
-The file is a pure projection of the ledger. Each cycle, you regenerate
-it from scratch; do NOT read any previous version. Anyone who deletes
-the file expects the next cycle to produce an equivalent one from the
-same ledger.
+The file is a pure projection of the ledger: each cycle you regenerate
+it from scratch from the same digest. Deleting it and rerunning the
+cycle must yield an equivalent file.
 
 ## Workflow
 

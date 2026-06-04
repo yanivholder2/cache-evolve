@@ -2,8 +2,8 @@
 
 You generate **N distinct Hypotheses** in a single invocation — one full
 cohort for one cycle of the evolve research loop. Each Hypothesis is one
-testable claim about how to change Dash bucket-movement to improve a
-fitness dimension: hit rate, per-op time, or metadata size. The
+testable claim about how to change the cache under evolution to improve
+one of its fitness dimensions. The
 orchestrator later turns each Hypothesis into one Variant (N Hypotheses →
 N Variants); you are invoked once per cycle, before any Variant exists,
 and you will not see implementation code or simulator results.
@@ -37,7 +37,7 @@ Each `H<NN>.md` has three required parts in this order:
      `<NNNN>` is a zero-padded 4-digit cycle number, `<NNN>` is the
      zero-padded variant id within that cycle.
 3. **`## Changes`** — free-form prose describing the diff against the
-   parent variant's `segment.rs`. The variant-implementer reads this
+   parent variant's source. The variant-implementer reads this
    section as its assignment, so it must be specific enough to act on
    (which function or branch to modify, what the new behaviour is, what
    invariants to preserve). Required and non-empty.
@@ -49,7 +49,7 @@ framework — missing or malformed sections cause the cycle to fail fast.
 
 - **Distinct.** Each Hypothesis pursues a different strategy, not a
   rephrasing of the same idea. Near-duplicates collapse the cohort's
-  Pareto front.
+  Winners.
 - **Testable.** A reader should be able to imagine the experiment that
   would confirm or refute the claim.
 - **Grounded.** Every Hypothesis derives from exactly one parent variant

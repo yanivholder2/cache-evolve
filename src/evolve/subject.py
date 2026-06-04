@@ -372,7 +372,7 @@ def _validate_baseline_grid(
     subject_dir: Path, fitness_vector: Path, traces: list[str], sizes: list[int]
 ) -> None:
     """The committed baseline anchor must be scored on the same (trace, size)
-    grid as live variants, or the global champions and leaderboard silently
+    grid as live variants, or the global cross_cycle_winners and leaderboard silently
     compare incomparable numbers. Catch a stale or stub anchor at load time."""
 
     where = "evaluation.fitness-vector"

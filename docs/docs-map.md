@@ -17,7 +17,7 @@ Index of reference docs. Paths are relative to the repo root. Read on demand; do
 User-facing guide (single source of truth, mirrored to the GitHub wiki):
 
 * Home — install → configure → run → read outputs, with the cycle flowchart
-* Concepts — cycle, cohort, gates, fitness, Pareto, ledger
+* Concepts — cycle, cohort, gates, fitness, winners, ledger
 * Evaluation and Fitness — fitness plugins, the simulator seam, Caffeine
 * Baseline — measuring a subject's grounding
 * Subjects — what a subject is and how to select one
@@ -108,6 +108,14 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 * Consequences
 
 **Read when** adding a Subject, touching `caffeine_runner.py`/manifest wiring, or wondering why `src/shared/` is duplicated per subject.
+
+### [0008 — Pluggable selection seam](adr/0008-pluggable-selection-seam.md)
+
+* Return contract (`SelectionResult`)
+* Considered options (the seam; normalization for `weighted`)
+* Consequences
+
+**Read when** adding or changing a Selection method, touching `aggregate/selectors/`, the `[fitness]`/`[selection]` config, or how Winners and scores are computed.
 
 ## Conventions
 

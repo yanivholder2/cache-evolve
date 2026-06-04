@@ -12,7 +12,13 @@ from pathlib import Path
 import pytest
 
 from evolve._io import read_utf8, write_utf8
-from evolve.config import Configs, FrameworkConfig, SimulatorConfig
+from evolve.config import (
+    Configs,
+    FitnessConfig,
+    FrameworkConfig,
+    SelectionConfig,
+    SimulatorConfig,
+)
 from evolve.fitness.runner import FitnessError, _aggregate, compute_fitness
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout
@@ -24,15 +30,21 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SUBJECT = configured_subject(REPO_ROOT)
 
 
-_TEST_CFG = Configs(
-    framework=FrameworkConfig(
-        cycles=1, cohort_size=1, ai_agent_tool="claude-sdk",
-        outputs_root=Path("/tmp"), log_level="DEBUG", digest_cycles=3,
-        max_workers=0, implementation_attempts=3, hypothesis_attempts=3,
-        authoring_scope="extension-points", subject=SUBJECT,
-    ),
-    simulator=SimulatorConfig(timeout_s=600),
-)
+def _cfg(dimensions: tuple[str, ...]) -> Configs:
+    return Configs(
+        framework=FrameworkConfig(
+            cycles=1, cohort_size=1, ai_agent_tool="claude-sdk",
+            outputs_root=Path("/tmp"), log_level="DEBUG", digest_cycles=3,
+            max_workers=0, implementation_attempts=3, hypothesis_attempts=3,
+            authoring_scope="extension-points", subject=SUBJECT,
+        ),
+        simulator=SimulatorConfig(timeout_s=600),
+        fitness=FitnessConfig(dimensions=dimensions),
+        selection=SelectionConfig(method="pareto", winners_count=3, weights=None),
+    )
+
+
+_TEST_CFG = _cfg(("hit-rate", "per-op-time", "metadata-size"))
 
 
 def _stage(tmp_path: Path) -> tuple[Layout, CycleVariant]:
@@ -86,6 +98,21 @@ def test_writes_per_plugin_json_and_fitness_vector(tmp_path, monkeypatch):
     fv = json.loads(read_utf8(variant_dir.fitness_vector_json))
     assert fv["variant"] == variant.label
     assert {d["dim"] for d in fv["dimensions"]} == {"hit-rate", "per-op-time", "metadata-size"}
+
+
+def test_inactive_dimensions_are_not_measured(tmp_path, monkeypatch):
+    # Subject is capable of all three dims, but only hit-rate is active.
+    layout, variant = _stage(tmp_path)
+    _stub_plugins(monkeypatch)
+
+    compute_fitness(variant, layout=layout, repo_root=tmp_path, cfg=_cfg(("hit-rate",)))
+
+    variant_dir = variant.resolve(layout)
+    assert (variant_dir.fitness_dir / "hit-rate.json").is_file()
+    assert not (variant_dir.fitness_dir / "per-op-time.json").exists()
+    assert not (variant_dir.fitness_dir / "metadata-size.json").exists()
+    fv = json.loads(read_utf8(variant_dir.fitness_vector_json))
+    assert {d["dim"] for d in fv["dimensions"]} == {"hit-rate"}
 
 
 def _write_plugin(plugin_dir, name, data):
