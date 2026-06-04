@@ -154,5 +154,5 @@ where
 }
 
 fn format_err(invariant: &str, e: TestError<Vec<i64>>) -> String {
-    format!("{invariant}: {e}")
+    format!("invariant gate violated: {invariant}: {e}")
 }

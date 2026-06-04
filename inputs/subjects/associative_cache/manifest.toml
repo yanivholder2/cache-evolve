@@ -32,7 +32,7 @@ supports-log-path = false
 # numOfBuckets is read Java-side via getDoubleList, so it must be a list even
 # though we sweep a single value. See AssociativeCacheRustPolicy.numOfBuckets().
 [caffeine.geometry]
-numOfBuckets = [2]
+numOfBuckets = [128]
 
 [metadata]
 binary-name = "evolve-metadata-size"
@@ -43,5 +43,5 @@ insight = "baseline/insight.md"
 
 [evaluation]
 fitness-vector = "baseline/eval/fitness-vector.json"
-traces = ["lirs:multi1.trace.gz"]
-sizes = [512]
+traces = ["lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz"]
+sizes = [2048]

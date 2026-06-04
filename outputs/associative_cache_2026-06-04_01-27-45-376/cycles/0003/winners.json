@@ -1,0 +1,104 @@
+{
+  "cycle": "0003",
+  "pareto_front": [
+    "v003"
+  ],
+  "fitness_vectors": [
+    {
+      "variant": "v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6614
+            }
+          ],
+          "summary": 0.6614,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7001999999999999
+            }
+          ],
+          "summary": 0.7002,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7234
+            }
+          ],
+          "summary": 0.7234,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        }
+      ]
+    }
+  ]
+}

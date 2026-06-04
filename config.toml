@@ -3,10 +3,10 @@
 
 [framework]
 # Subject under evolution (--subject). Names a dir under inputs/subjects/.
-subject = "dash"
+subject = "associative_cache"
 
 # Number of cycles to run sequentially (--cycles).
-cycles = 3
+cycles = 6
 
 # Variants proposed and evaluated per cycle (--cohort-size).
 cohort_size = 3
@@ -40,7 +40,7 @@ hypothesis_attempts = 3
 # "extension-points": only impl files listed in the subject manifest's
 # [[extension-points]] tables. "full-autonomy": any overlay file, still bound by
 # the Cache<K,V> contract and the subject invariant suite.
-authoring_scope = "extension-points"
+authoring_scope = "full-autonomy"
 
 [simulator]
 # Per-variant simulator invocation timeout (seconds). Surfaces as

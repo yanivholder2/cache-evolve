@@ -5,8 +5,8 @@ rust-logs/
 inputs/subjects/dash/bench/bench.json
 
 # Per-invocation evolve outputs (timestamped subdirs)
-outputs/*
-!outputs/.gitkeep
+#outputs/*
+#!outputs/.gitkeep
 
 # Python venv + build artefacts
 .venv/

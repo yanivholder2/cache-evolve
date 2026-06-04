@@ -1,0 +1,42 @@
+{
+  "cycle": "0001",
+  "pareto_front": [
+    "v003"
+  ],
+  "fitness_vectors": [
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:multi1.trace.gz",
+              "size": 512,
+              "hit_rate": 0.4604
+            }
+          ],
+          "summary": 0.4604,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:multi1.trace.gz",
+              "size": 512,
+              "hit_rate": 0.4648
+            }
+          ],
+          "summary": 0.4648,
+          "higher_is_better": true
+        }
+      ]
+    }
+  ]
+}

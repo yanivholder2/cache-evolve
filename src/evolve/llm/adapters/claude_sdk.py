@@ -18,7 +18,7 @@ class Model(StrEnum):
     HAIKU_4_5 = "claude-haiku-4-5-20251001"
 
 
-MODEL = Model.OPUS_4_7
+MODEL = Model.SONNET_4_6
 
 READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
 WRITE_TOOLS = ["Write", "Edit"]
