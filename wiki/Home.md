@@ -13,15 +13,17 @@ flowchart LR
     BL["Baseline<br/>(subject as-is,<br/>already measured)"] --> C1["Cycle 1"]
     C1 --> C2["Cycle 2"]
     C2 --> CN["Cycle N"]
-    C1 -. winners + insights .-> C2
-    C2 -. winners + insights .-> CN
-    CN --> OUT["Cross-cycle winners, ledger,<br/>insights"]
+    C1 -- appends --> H[("Accumulated history:<br/>cross-cycle winners,<br/>ledger, insights")]
+    C2 -- appends --> H
+    CN -- appends --> H
+    H -. read by .-> C2
+    H -. read by .-> CN
 ```
 
-Two things carry across the dashed arrows and make this a *search* rather than N independent experiments:
+Every cycle appends to one accumulating store — the cross-cycle winners, the ledger, and the insights — and every continuation cycle reads the *whole* store, not just the cycle right before it. That shared, growing history is what makes this a *search* rather than N independent experiments, and it is also the run's final output. Two things in it do the carrying:
 
-- **Cross-cycle winners** — the best variants found so far. From cycle 2 onward, the agent is required to build at least one new idea on a current cross-cycle winner, so the search keeps *exploiting* what already works instead of starting over each time.
-- **Insights** — the agent's own prose notes on what it learned, so later cycles reason with the history of earlier ones.
+- **Cross-cycle winners** — the best variants found so far across all cycles. From cycle 2 onward, the agent is required to build at least one new idea on a current cross-cycle winner, so the search keeps *exploiting* what already works instead of starting over each time.
+- **Insights** — the agent's own prose notes on what it learned, reachable for every prior cycle, so later cycles reason with the history of earlier ones. (A continuation prompt foregrounds the previous cycle but can reach any earlier one — through the ledger, the cross-cycle narrative, and any past variant as a parent.)
 
 Cycles run strictly one after another, and a cycle that fails outright aborts the whole run.
 
