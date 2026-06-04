@@ -486,8 +486,8 @@ def run_cycle(
             except Exception:
                 log.warning("cross-cycle-insight writer failed; cycle proceeds", exc_info=True)
 
-        with _phase("seal", timings):
-            seal_cycle(cycle_dir)
+        # with _phase("seal", timings):
+        #     seal_cycle(cycle_dir)
 
         cycle_elapsed = time.monotonic() - cycle_started
         log.info(
@@ -497,7 +497,7 @@ def run_cycle(
         )
         log.info("cycle %s cumulative tokens: %s", cycle_id, format_token_totals(snapshot_token_totals()))
         log.info("=== cycle %s complete (cohort=%d) ===", cycle_id, cohort_size)
-        print(f"cycle {cycle_id} complete — sealed at {cycle_dir} (cohort={cohort_size})")
+        # print(f"cycle {cycle_id} complete — sealed at {cycle_dir} (cohort={cohort_size})")
     except Exception:
         log.exception("run_cycle failed")
         raise
