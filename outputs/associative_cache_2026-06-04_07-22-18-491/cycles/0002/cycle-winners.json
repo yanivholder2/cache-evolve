@@ -1,0 +1,60 @@
+{
+  "cycle": "0002",
+  "winners": [
+    "v001"
+  ],
+  "scores": {},
+  "fitness_vectors": [
+    {
+      "variant": "v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7412000000000001
+            }
+          ],
+          "summary": 0.7412,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7231000000000001
+            }
+          ],
+          "summary": 0.7231,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6611
+            }
+          ],
+          "summary": 0.6611,
+          "higher_is_better": true
+        }
+      ]
+    }
+  ]
+}
