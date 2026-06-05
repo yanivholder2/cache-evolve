@@ -16,11 +16,13 @@ log = logging.getLogger(__name__)
 def compute_cycle_winners(
     variant_dirs: list[CycleVariantDir],
     selector: Selector,
+    baseline: dict | None,
 ) -> tuple[list[str], dict[str, float], list[dict]]:
-    """Return (winners, scores, fitness_vectors) for the cohort."""
+    """Return (winners, scores, fitness_vectors) for the cohort. `baseline` is the
+    subject's baseline fitness vector — the anchor `weighted` scores against."""
 
     fitness_vectors = _collect_fitness_vectors(variant_dirs)
-    result = selector.select(fitness_vectors)
+    result = selector.select(fitness_vectors, baseline=baseline)
     log.info("cycle winners: %s", result.winners)
     return result.winners, result.scores, fitness_vectors
 

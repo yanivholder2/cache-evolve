@@ -84,7 +84,11 @@ class ParetoSelector(Selector):
             )
         return cls(dimensions=dimensions)
 
-    def select(self, fitness_vectors: list[dict]) -> SelectionResult:
+    def select(
+        self, fitness_vectors: list[dict], *, baseline: dict | None = None
+    ) -> SelectionResult:
+        # Scale-invariant: the front is unchanged by the baseline anchor, so it
+        # is ignored.
         projected = project(fitness_vectors, self._dimensions)
         front = compute_pareto_front(projected)
         return SelectionResult(winners=front, scores={})

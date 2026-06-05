@@ -60,16 +60,19 @@ dimensions = ["hit-rate"]
 # How Winners are chosen from the fitness vectors. One of the keys in
 # src/evolve/aggregate/selectors/SELECTOR_REGISTRY:
 #   "pareto":   the Pareto front (scale-invariant, computes no scalar score).
-#   "weighted": top-N by a weighted sum of min-max-normalized dimensions
+#   "weighted": top-N by weighted percentage improvement over the baseline
+#               anchor; only variants that net-beat the baseline can win
 #               (requires the [selection.weights] table below).
 method = "pareto"
 
 # How many Winners each selection stage keeps (cohort-local and cross-cycle),
 # clamped to the population. The "pareto" method ignores it (the front sets the
-# count); "weighted" keeps this many top-scoring variants.
+# count); "weighted" keeps this many top-scoring variants that beat the baseline.
 winners_count = 3
 
-# Per-dimension weights for the "weighted" method. Keys MUST match
+# Per-dimension weights for the "weighted" method: each dimension's percentage
+# change from the baseline is scaled by its weight, so weights say which
+# dimensions matter more (they should sum to 1). Keys MUST match
 # fitness.dimensions exactly. Leave the whole table absent under "pareto".
 # [selection.weights]
 # hit-rate = 1.0

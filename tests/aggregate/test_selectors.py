@@ -110,59 +110,92 @@ def test_pareto_select_projects_superset_baseline():
 # --- weighted selector --------------------------------------------------------
 
 
-def test_weighted_single_dim_ranks_by_that_dim():
+def test_weighted_scores_percentage_change_from_baseline():
     selector = WeightedSelector(winners_count=2, weights={"hit-rate": 1.0})
-    result = selector.select([
-        _vec("v001", **{"hit-rate": (0.4, True)}),
-        _vec("v002", **{"hit-rate": (0.9, True)}),
-        _vec("v003", **{"hit-rate": (0.6, True)}),
-    ])
-    # min-max over {0.4, 0.9, 0.6}: v002=1.0, v003=0.4, v001=0.0
-    assert result.winners == ["v002", "v003"]
-    assert result.scores["v002"] == pytest.approx(1.0)
-    assert result.scores["v001"] == pytest.approx(0.0)
+    baseline = _vec("baseline", **{"hit-rate": (0.4, True)})
+    result = selector.select(
+        [
+            _vec("v001", **{"hit-rate": (0.9, True)}),  # +125%
+            _vec("v002", **{"hit-rate": (0.6, True)}),  # +50%
+            _vec("v003", **{"hit-rate": (0.3, True)}),  # -25%, regresses
+        ],
+        baseline=baseline,
+    )
+    # Scores are change vs the 0.4 anchor; v003 regressed so the floor drops it.
+    assert result.winners == ["v001", "v002"]
+    assert result.scores["v001"] == pytest.approx(1.25)
+    assert result.scores["v002"] == pytest.approx(0.5)
+    assert result.scores["v003"] == pytest.approx(-0.25)
 
 
-def test_weighted_respects_direction_flip_for_lower_is_better():
-    selector = WeightedSelector(winners_count=1, weights={"per-op-time": 1.0})
-    result = selector.select([
-        _vec("v001", **{"per-op-time": (100.0, False)}),
-        _vec("v002", **{"per-op-time": (10.0, False)}),
-    ])
-    # Lower time is better, so the fastest wins.
-    assert result.winners == ["v002"]
-
-
-def test_weighted_combines_dimensions_by_weight():
-    selector = WeightedSelector(winners_count=1, weights={"hit-rate": 0.9, "per-op-time": 0.1})
-    result = selector.select([
-        # v001: best hit-rate, slowest. v002: worst hit-rate, fastest.
-        _vec("v001", **{"hit-rate": (0.9, True), "per-op-time": (100.0, False)}),
-        _vec("v002", **{"hit-rate": (0.4, True), "per-op-time": (10.0, False)}),
-    ])
-    # hit-rate dominates the weighting, so v001 wins despite being slow.
+def test_weighted_lower_is_better_improvement_is_positive():
+    selector = WeightedSelector(winners_count=2, weights={"per-op-time": 1.0})
+    baseline = _vec("baseline", **{"per-op-time": (50.0, False)})
+    result = selector.select(
+        [
+            _vec("v001", **{"per-op-time": (10.0, False)}),  # faster: +80%
+            _vec("v002", **{"per-op-time": (100.0, False)}),  # slower: -100%
+        ],
+        baseline=baseline,
+    )
+    # Lower time is an improvement (positive change); the slower variant regresses
+    # and is dropped by the floor.
     assert result.winners == ["v001"]
+    assert result.scores["v001"] == pytest.approx(0.8)
+    assert result.scores["v002"] == pytest.approx(-1.0)
 
 
-def test_weighted_degenerate_dimension_contributes_zero():
-    # Every variant ties on the constant dim; it must not divide by a zero spread.
-    selector = WeightedSelector(winners_count=2, weights={"const": 1.0})
-    result = selector.select([
-        _vec("v001", const=(5.0, True)),
-        _vec("v002", const=(5.0, True)),
-    ])
-    assert result.scores == {"v001": 0.0, "v002": 0.0}
-    assert set(result.winners) == {"v001", "v002"}
+def test_weighted_weights_outweigh_a_regression():
+    # The motivating case: a big hit-rate gain outweighs a metadata regression.
+    selector = WeightedSelector(winners_count=1, weights={"hit-rate": 0.75, "metadata": 0.25})
+    baseline = _vec("baseline", **{"hit-rate": (0.4, True), "metadata": (40.0, False)})
+    result = selector.select(
+        [
+            # hit-rate 0.4->0.8 (+100%), metadata 40->80 (lower-is-better, -100%).
+            _vec("v001", **{"hit-rate": (0.8, True), "metadata": (80.0, False)}),
+        ],
+        baseline=baseline,
+    )
+    # 0.75*(+1.0) + 0.25*(-1.0) = +0.5 > 0, so v001 wins despite the regression.
+    assert result.winners == ["v001"]
+    assert result.scores["v001"] == pytest.approx(0.5)
 
 
-def test_weighted_clamps_winners_count_to_population():
+def test_weighted_floor_drops_variants_that_do_not_beat_baseline():
+    selector = WeightedSelector(winners_count=2, weights={"hit-rate": 1.0})
+    baseline = _vec("baseline", **{"hit-rate": (0.5, True)})
+    result = selector.select(
+        [_vec("v001", **{"hit-rate": (0.4, True)})],  # -20%, regresses
+        baseline=baseline,
+    )
+    assert result.winners == []
+    assert result.scores["v001"] == pytest.approx(-0.2)
+
+
+def test_weighted_requires_a_baseline():
+    selector = WeightedSelector(winners_count=1, weights={"hit-rate": 1.0})
+    with pytest.raises(ValueError, match="no baseline"):
+        selector.select([_vec("v001", **{"hit-rate": (0.6, True)})], baseline=None)
+
+
+def test_weighted_non_positive_baseline_dimension_raises():
+    selector = WeightedSelector(winners_count=1, weights={"hit-rate": 1.0})
+    baseline = _vec("baseline", **{"hit-rate": (0.0, True)})
+    with pytest.raises(ValueError, match="must be positive"):
+        selector.select([_vec("v001", **{"hit-rate": (0.6, True)})], baseline=baseline)
+
+
+def test_weighted_clamps_winners_count_to_beaters():
     selector = WeightedSelector(winners_count=10, weights={"hit-rate": 1.0})
-    result = selector.select([_vec("v001", **{"hit-rate": (0.5, True)})])
+    baseline = _vec("baseline", **{"hit-rate": (0.4, True)})
+    result = selector.select(
+        [_vec("v001", **{"hit-rate": (0.5, True)})], baseline=baseline
+    )
     assert result.winners == ["v001"]
 
 
 def test_weighted_empty_returns_empty():
     selector = WeightedSelector(winners_count=3, weights={"hit-rate": 1.0})
-    result = selector.select([])
+    result = selector.select([], baseline=None)
     assert result.winners == []
     assert result.scores == {}

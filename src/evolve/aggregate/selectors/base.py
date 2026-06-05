@@ -52,10 +52,17 @@ class Selector(ABC):
         `pareto`, or weight keys not matching the active dimensions)."""
 
     @abstractmethod
-    def select(self, fitness_vectors: list[dict]) -> SelectionResult:
+    def select(
+        self, fitness_vectors: list[dict], *, baseline: dict | None
+    ) -> SelectionResult:
         """Choose Winners from `fitness_vectors`. Each vector is projected onto
         the active dimensions first, so a baseline anchor measured on a superset
-        of dimensions compares cleanly against variants measured on the subset."""
+        of dimensions compares cleanly against variants measured on the subset.
+
+        `baseline` is the subject's baseline fitness vector — the anchor
+        `weighted` scores percentage change against. `pareto` is scale-invariant
+        and ignores it, so it may be `None` for scale-invariant methods;
+        `weighted` raises when it is missing."""
 
 
 def project(fitness_vectors: list[dict], dimensions: tuple[str, ...]) -> list[dict]:
