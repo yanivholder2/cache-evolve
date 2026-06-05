@@ -322,6 +322,16 @@ class OutputsLayout:
         return self.root / "cross-cycle-insights.md"
 
     @property
+    def config_toml(self) -> Path:
+        """Snapshot of the run's config.toml, copied in at run start."""
+        return self.root / "config.toml"
+
+    @property
+    def manifest_toml(self) -> Path:
+        """Snapshot of the subject's manifest.toml, copied in at run start."""
+        return self.root / "manifest.toml"
+
+    @property
     def target_dir(self) -> Path:
         return self.root / "target"
 
