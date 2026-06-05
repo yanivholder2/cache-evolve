@@ -15,6 +15,16 @@ cohort_size = 3
 # src/evolve/llm/ADAPTER_REGISTRY.
 ai_agent_tool = "claude-sdk"
 
+# Model the chosen adapter drives (--model). Must be one of the selected
+# ai_agent_tool adapter's MODELS enum, else config load fails. Valid sets:
+#   claude-sdk:      claude-opus-4-8, claude-opus-4-7, claude-sonnet-4-6,
+#                    claude-haiku-4-5-20251001
+#   antigravity-sdk: gemini-3-pro-preview, gemini-3-flash-preview,
+#                    gemini-3.1-pro-preview, gemini-3.1-flash-lite,
+#                    gemini-3.5-flash, antigravity-preview-05-2026
+#   ollama-local:    gemma4:e2b, gemma4:e4b, gemma4:26b, gemma4:31b
+model = "claude-opus-4-8"
+
 # Log level for stderr + per-cycle log file (--log-level). One of:
 # DEBUG, INFO, WARNING, ERROR, CRITICAL.
 log_level = "DEBUG"

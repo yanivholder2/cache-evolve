@@ -35,6 +35,7 @@ class FrameworkConfig:
     cycles: int
     cohort_size: int
     ai_agent_tool: str
+    model: str
     outputs_root: Path
     log_level: str
     digest_cycles: int
@@ -91,6 +92,7 @@ def load_configs(
     cycles: int | None = None,
     cohort_size: int | None = None,
     ai_agent_tool: str | None = None,
+    model: str | None = None,
     log_level: str | None = None,
     simulator_timeout_s: int | None = None,
     max_workers: int | None = None,
@@ -113,10 +115,12 @@ def load_configs(
     selection_defaults = data.get("selection", {})
 
     resolved_subject = _resolve_subject(subject, framework_defaults, repo_root)
+    resolved_ai_agent_tool = _resolve_ai_agent_tool(ai_agent_tool, framework_defaults)
     framework = FrameworkConfig(
         cycles=_resolve_positive_int(cycles, framework_defaults, "cycles", "--cycles", "framework"),
         cohort_size=_resolve_positive_int(cohort_size, framework_defaults, "cohort_size", "--cohort-size", "framework"),
-        ai_agent_tool=_resolve_ai_agent_tool(ai_agent_tool, framework_defaults),
+        ai_agent_tool=resolved_ai_agent_tool,
+        model=_resolve_model(model, framework_defaults, resolved_ai_agent_tool),
         outputs_root=(repo_root / "outputs" / f"{resolved_subject}_{_timestamp()}").resolve(),
         log_level=_resolve_log_level(log_level, framework_defaults),
         digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
@@ -168,6 +172,24 @@ def _resolve_ai_agent_tool(override: str | None, defaults: dict) -> str:
     if value not in ADAPTER_REGISTRY:
         raise ConfigError(
             f"--ai-agent-tool must be one of {sorted(ADAPTER_REGISTRY)}, got: {value!r}"
+        )
+    return value
+
+
+def _resolve_model(override: str | None, defaults: dict, ai_agent_tool: str) -> str:
+    """Resolve `framework.model` and reject any model the chosen adapter can't drive.
+
+    The model namespace is per-adapter (each adapter's `MODELS` enum), so the
+    valid set depends on `ai_agent_tool`. Switching tools without switching model
+    dies here rather than mid-run.
+    """
+    value = str(_resolve(override, defaults, "model", "--model", "framework"))
+    models_enum = ADAPTER_REGISTRY[ai_agent_tool].MODELS
+    valid = {member.value for member in models_enum} if models_enum is not None else set()
+    if value not in valid:
+        raise ConfigError(
+            f"framework.model {value!r} is not valid for ai_agent_tool {ai_agent_tool!r}; "
+            f"valid models: {sorted(valid)}"
         )
     return value
 

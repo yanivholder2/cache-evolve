@@ -9,7 +9,7 @@ adapters get for free.
 
 Backend host follows the `OLLAMA_HOST` env var (default `http://localhost:11434`),
 so the same code talks to a local Ollama or a remote GPU box with no code change.
-Swap the served model by editing `MODEL` below.
+Swap the served model via `framework.model` in config.toml (one of `Model` below).
 """
 
 from __future__ import annotations
@@ -35,10 +35,6 @@ class Model(StrEnum):
     GEMMA4_31B = "gemma4:31b"
 
 
-# The one knob for "which Gemma": edit this constant. The agent loop is
-# model-agnostic, so any tool-capable Ollama model id works here too.
-MODEL = Model.GEMMA4_E4B
-
 # Ollama defaults the context window to a few thousand tokens regardless of what
 # the model supports; below ~16K tool calling degrades badly on long prompts.
 NUM_CTX = 16384
@@ -51,7 +47,7 @@ KEEP_ALIVE = "1h"
 # Gemma 4 advertises a `thinking` capability. Enabling it makes the model reason
 # before emitting tool calls (more reliable tool use) and lets us log the reasoning
 # in the timeline, matching the SDK adapters. All `Model` entries support it; flip
-# to False if you point `MODEL` at a non-thinking model.
+# to False if `framework.model` points at a non-thinking model.
 THINK = True
 
 # Hard ceiling on agent turns so a model that never stops calling tools (or loops
@@ -262,8 +258,7 @@ def _accumulate_turn_usage(usage: Usage, response: Any) -> None:
 
 
 class OllamaLocalAdapter(LLMAdapter):
-    def identity(self) -> str:
-        return f"{type(self).__name__}(model={MODEL.value})"
+    MODELS = Model
 
     async def call_llm_and_log(
         self,
@@ -291,7 +286,7 @@ class OllamaLocalAdapter(LLMAdapter):
 
         for _ in range(MAX_TURNS):
             response = await client.chat(
-                model=MODEL.value,
+                model=self.model,
                 messages=messages,
                 tools=schemas,
                 think=THINK,

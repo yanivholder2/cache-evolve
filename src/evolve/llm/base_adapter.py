@@ -8,8 +8,9 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import StrEnum
 from pathlib import Path
-from typing import Iterator, TextIO
+from typing import ClassVar, Iterator, TextIO
 
 from evolve._io import open_utf8_append, open_utf8_write, read_utf8
 from evolve.llm.token_usage import (
@@ -28,9 +29,26 @@ log = logging.getLogger(__name__)
 class LLMAdapter:
     """Backend-agnostic interface for invoking an LLM agent."""
 
+    # Subclasses set this to their `Model` StrEnum — the set of models the
+    # backend can drive. The config boundary reads it to validate `framework.model`
+    # against the chosen adapter. `None` on test doubles that ignore the model.
+    MODELS: ClassVar[type[StrEnum] | None] = None
+
+    def __init__(self, model: str | None = None) -> None:
+        if model is not None and self.MODELS is not None:
+            valid = {member.value for member in self.MODELS}
+            if model not in valid:
+                raise ValueError(
+                    f"{type(self).__name__} does not support model {model!r}; "
+                    f"valid models: {sorted(valid)}"
+                )
+        self.model = model
+
     def identity(self) -> str:
-        """Short string identifying adapter + model. Subclasses override to include model id."""
-        return type(self).__name__
+        """Short string identifying adapter + model."""
+        if self.model is None:
+            return type(self).__name__
+        return f"{type(self).__name__}(model={self.model})"
 
     def run(
         self,
