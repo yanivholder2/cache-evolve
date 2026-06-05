@@ -8,7 +8,7 @@ type S3FifoCache = S3Fifo<i64, i64>;
 const MISS_SENTINEL: jlong = -1;
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoPolicy_initCache(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoRustPolicy_s3FifoInitCache(
 	_env: JNIEnv,
 	_class: JClass,
 	capacity: jlong,
@@ -25,7 +25,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoPolicy_getFromCacheIfPresent(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoRustPolicy_s3FifoGetFromCacheIfPresent(
 	_env: JNIEnv,
 	_class: JClass,
 	cache_ptr: jlong,
@@ -48,7 +48,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoPolicy_putToCache(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoRustPolicy_s3FifoPutToCache(
 	_env: JNIEnv,
 	_class: JClass,
 	cache_ptr: jlong,
@@ -64,7 +64,7 @@ pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoPolicy_dropCache(
+pub extern "system" fn Java_com_github_benmanes_caffeine_cache_simulator_policy_s3fifo_S3FifoRustPolicy_s3FifoDropCache(
 	_env: JNIEnv,
 	_class: JClass,
 	cache_ptr: jlong,

@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
+pub mod s3_fifo_jni;
+
 // Simple S3-FIFO implementation derived from "FIFO Queues are ALL You Need for
 // Cache Eviction" by Juncheng Yang et al. The policy uses a small FIFO admission
 // queue, a main FIFO resident queue, and a ghost queue for recently evicted
