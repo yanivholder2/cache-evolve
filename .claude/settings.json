@@ -21,7 +21,8 @@
       "Skill(full-validation)"
     ],
     "additionalDirectories": [
-      "~/projects/caffeine"
+      "~/projects/caffeine",
+      "/home/user/caffeine"
     ]
   }
 }
