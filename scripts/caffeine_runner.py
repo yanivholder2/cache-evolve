@@ -18,6 +18,26 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _resolve_trace(trace: str) -> str:
+    """Anchor the path part of a ``<format>:<path>`` trace to the repo root.
+
+    A relative path is resolved against the repo root so manifests stay
+    portable across machines (mirrors :func:`_default_caffeine_dir` rather than
+    hardcoding an absolute home directory); an absolute path is left untouched.
+    The ``<format>`` prefix (e.g. ``lirs``) is preserved.
+    """
+
+    fmt, sep, path = trace.partition(":")
+    if not sep or not path:
+        return trace
+    resolved = Path(path).expanduser()
+    if not resolved.is_absolute():
+        resolved = REPO_ROOT / resolved
+    return f"{fmt}:{resolved}"
+
 
 def _default_caffeine_dir() -> Path:
     """Locate the Caffeine checkout without hardcoding an absolute path.
@@ -35,8 +55,7 @@ def _default_caffeine_dir() -> Path:
     override = os.environ.get("CAFFEINE_DIR")
     if override:
         return Path(override).expanduser()
-    repo_root = Path(__file__).resolve().parents[1]
-    return repo_root.parent / "caffeine"
+    return REPO_ROOT.parent / "caffeine"
 
 
 DEFAULT_CAFFEINE_DIR = _default_caffeine_dir()
@@ -108,7 +127,7 @@ class Invocation:
             f"--outputDir={self.output_dir}",
             f"-PjvmArgs={jvm_args}",
             "-Dcaffeine.simulator.trace.source=files",
-            f"-Dcaffeine.simulator.files.paths.0={self.trace}",
+            f"-Dcaffeine.simulator.files.paths.0={_resolve_trace(self.trace)}",
             f"-Dcaffeine.simulator.policies.0={self.policy_spec_name}",
         ]
         for config_key, value in self.geometry.items():

@@ -15,7 +15,7 @@ SEED = 42
 ITEMS = 25000  # distinct keys 0..ITEMS-1 (cache 2048 / 128 buckets = 16-way; ~8.2% coverage)
 EVENTS = 500_000  # number of requests
 SKEW = 0.99  # zipfian exponent; higher = more skewed
-OUT = Path("/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz")
+OUT = Path(__file__).resolve().parents[1] / "inputs/traces/workload-a.trace.gz"
 
 # Cumulative distribution over ranks: P(rank i) is proportional to 1/(i+1)**SKEW
 weights = [1.0 / (i + 1) ** SKEW for i in range(ITEMS)]
