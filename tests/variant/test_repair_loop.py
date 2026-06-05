@@ -19,10 +19,11 @@ from evolve.identifiers import CycleId, HypothesisId, VariantId
 from evolve.paths import CycleVariant, Layout
 from evolve.variant.repair_loop import VariantStepFailed, implement_with_repair
 
-from _support import configured_subject
-
 REPO_ROOT = Path(__file__).parent.parent.parent
-SUBJECT = configured_subject(REPO_ROOT)
+# Pinned to dash, not the swept `config.toml` subject: this suite overlays
+# dash source files and asserts dash's extension-point scope, so it must run
+# against dash whatever subject a run currently selects.
+SUBJECT = "dash"
 
 # Overlay landing spot: a real, non-protected dash source file, so the
 # implementer's full-autonomy scope check passes. mock cargo scans every

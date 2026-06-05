@@ -18,14 +18,14 @@ from evolve.identifiers import CycleId, HypothesisId
 from evolve.paths import Layout, SourcesLayout
 
 from _stubs import StubLLMAdapter
-from _support import configured_subject
 
 REPO_SRC = Path(__file__).parent.parent.parent
-# `_copy_real_evolve` runs a real cycle against the configured subject; the
-# non-slow tests only need a stable subject name for the task.md paths they
-# emit (write_hypotheses never reads the subject tree), so the same value
-# serves both.
-SUBJECT = configured_subject(REPO_SRC)
+# Pinned to dash, not the swept `config.toml` subject: the scope tests assert
+# dash's extension-point whitelist (eviction_policy.rs et al.), so they must
+# run against dash whatever subject a run currently selects. The non-slow
+# tests only need a stable subject name for the task.md paths they emit
+# (write_hypotheses never reads the subject tree), so the same value serves both.
+SUBJECT = "dash"
 
 
 def _layout(evolve: Path) -> Layout:
