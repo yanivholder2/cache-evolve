@@ -70,7 +70,7 @@ Each cycle ends with a `cycle <NNNN> complete` line naming the sealed cycle dire
 
 ### One-shot runs via the `evolve-run` skill
 
-Inside an agent session (Claude Code), the **`evolve-run`** skill kicks off a run from a plain-language description, then reads the whole output folder and reports what happened. Describe the run in natural language — the skill translates it to non-persistent CLI flags and never edits `config.toml`:
+Inside an AI agent session, the **`evolve-run`** skill kicks off a run from a plain-language description, then reads the whole output folder and reports what happened. Describe the run in natural language — the skill translates it to non-persistent CLI flags and never edits `config.toml`:
 
 > evolve dash for 3 cycles, four variants each, full autonomy
 
