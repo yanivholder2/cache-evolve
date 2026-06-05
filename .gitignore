@@ -220,3 +220,7 @@ Cargo.lock
 __pycache__/
 *.pyc
 .pytest_cache/
+# Keep curated runs whole: re-include *.log under paper_outputs (e.g. cycle
+# logs), which the global *.log rule above would otherwise drop. Logs anywhere
+# else stay ignored.
+!outputs/paper_outputs/**/*.log
