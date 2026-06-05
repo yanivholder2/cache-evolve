@@ -31,6 +31,9 @@ where
 			log::error!("AssociativeCache.try_new: validation failed: {}", problems.join(", "));
 			return None;
 		}
+		// Geometry resolution (and its capacity-conservation check) lives in the
+		// contract-protected `factory::make_cache`, which hands us already-resolved
+		// settings; here we just build the buckets the settings describe.
 		info!("AssociativeCache.try_new: settings={settings:?}");
 		let mut buckets = Vec::with_capacity(settings.num_of_buckets);
 		for _ in 0..settings.num_of_buckets {

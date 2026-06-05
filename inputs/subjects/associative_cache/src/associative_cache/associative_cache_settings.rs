@@ -9,6 +9,17 @@ pub struct AssociativeCacheSettings {
 }
 
 impl AssociativeCacheSettings {
+	/// Total slots the layout holds: the budget the geometry seam must conserve.
+	pub fn capacity(&self) -> usize {
+		self.num_of_buckets * self.bucket_size
+	}
+
+	/// Replace the bucket layout with a geometry-resolved split, leaving the
+	/// eviction policy untouched.
+	pub fn with_geometry(&self, num_of_buckets: usize, bucket_size: usize) -> Self {
+		AssociativeCacheSettings { num_of_buckets, bucket_size, ..*self }
+	}
+
 	pub fn validate(&self) -> Result<(), Vec<String>> {
 		let mut problems = Vec::new();
 		if self.num_of_buckets == 0 {

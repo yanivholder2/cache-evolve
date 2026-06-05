@@ -1,9 +1,29 @@
+use crate::dash::dash_settings::DashSettings;
 use crate::dash::segments::{DashSegment, Segment};
 use crate::dash::Dash;
+use crate::shared::eviction_policy::EvictionPolicyKind;
 use crate::test_utils::baseline_dash_settings;
 use proptest::collection::vec;
 use proptest::prelude::*;
 use proptest::test_runner::{TestError, TestRunner};
+
+/// Generates structurally valid `DashSettings` across the topology space, so the
+/// capacity-conservation property is exercised at many budgets — not just the
+/// baseline. Probing needs `num_of_normal_buckets >= 2` and the stash needs
+/// `num_of_stash_buckets >= 1`; `bucket_size` ranges past the swept `bucketSize`
+/// the eval path uses, so a budget-dependent variant geometry is covered.
+fn valid_dash_settings() -> impl Strategy<Value = DashSettings> {
+	(1usize..6, 2usize..8, 1usize..8, 1usize..128).prop_map(
+		|(num_of_segments, num_of_normal_buckets, num_of_stash_buckets, bucket_size)| DashSettings {
+			num_of_segments,
+			num_of_normal_buckets,
+			num_of_stash_buckets,
+			bucket_size,
+			eviction_policy: EvictionPolicyKind::ClassicLRU,
+			debug_mode: 0,
+		},
+	)
+}
 
 /// Invariant entry point for the Dash baseline. Delegates to
 /// [`run_invariant_suite`], which remains public for negative fixtures and
@@ -149,6 +169,26 @@ where
             Ok(())
         })
         .map_err(|e| format_err("P5 stash_terminal", e))?;
+
+    // P6: capacity_conservation — the geometry seam may reshape the topology but
+    // must preserve the total capacity budget and stay structurally valid. Guards
+    // fitness fairness: a variant cannot win by quietly enlarging the cache, and a
+    // geometry that yields an unbuildable topology is rejected here cleanly instead
+    // of panicking deep in segment construction. Drives `factory::resolve_topology`
+    // — the exact resolution the eval path runs — across a range of valid settings,
+    // so a variant whose geometry depends on the budget is checked at many operating
+    // points, not just the baseline.
+    TestRunner::default()
+        .run(&valid_dash_settings(), |settings| {
+            let result = crate::factory::resolve_topology(&settings);
+            prop_assert!(
+                result.is_ok(),
+                "P6 capacity_conservation violated: {}",
+                result.unwrap_err()
+            );
+            Ok(())
+        })
+        .map_err(|e| format!("P6 capacity_conservation: {e}"))?;
 
     Ok(())
 }

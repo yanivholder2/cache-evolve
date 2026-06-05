@@ -1,11 +1,24 @@
 use crate::associative_cache::associative_cache_settings::AssociativeCacheSettings;
 use crate::associative_cache::AssociativeCache;
+use crate::shared::eviction_policy::EvictionPolicyKind;
 use crate::shared::traits::bucket::Bucket;
 use crate::shared::utils::get_index;
 use crate::test_utils::baseline_settings;
 use proptest::collection::vec;
 use proptest::prelude::*;
 use proptest::test_runner::{TestError, TestRunner};
+
+/// Generates valid `AssociativeCacheSettings` across the layout space, so the
+/// capacity-conservation property is exercised at many budgets — not just the
+/// baseline. `bucket_size` ranges past the swept `bucketSize` the eval path uses,
+/// so a budget-dependent variant geometry is covered.
+fn valid_settings() -> impl Strategy<Value = AssociativeCacheSettings> {
+	(1usize..32, 1usize..128).prop_map(|(num_of_buckets, bucket_size)| AssociativeCacheSettings {
+		num_of_buckets,
+		bucket_size,
+		eviction_policy: EvictionPolicyKind::ClassicLRU,
+	})
+}
 
 /// Invariant entry point for the AssociativeCache baseline. Delegates to
 /// [`run_invariant_suite`] with the baseline settings.
@@ -108,6 +121,24 @@ pub fn run_invariant_suite(settings: AssociativeCacheSettings) -> Result<(), Str
 			Ok(())
 		})
 		.map_err(|e| format_err("P3 no_phantom_items", e))?;
+
+	// P4: capacity_conservation — the geometry seam may reshape buckets but must
+	// preserve the total capacity budget and stay structurally valid. Guards
+	// fitness fairness: a variant cannot win by quietly enlarging the cache. Drives
+	// `factory::resolve_geometry` — the exact resolution the eval path runs —
+	// across a range of valid settings, so a variant whose geometry depends on the
+	// budget is checked at many operating points, not just the baseline.
+	TestRunner::default()
+		.run(&valid_settings(), |settings| {
+			let result = crate::factory::resolve_geometry(&settings);
+			prop_assert!(
+				result.is_ok(),
+				"P4 capacity_conservation violated: {}",
+				result.unwrap_err()
+			);
+			Ok(())
+		})
+		.map_err(|e| format!("P4 capacity_conservation: {e}"))?;
 
 	Ok(())
 }

@@ -18,6 +18,7 @@ use dash::dash::segments::{DashSegment, Segment, SegmentCore};
 use dash::dash::Dash;
 use dash::get_index;
 use dash::shared::item::Item;
+use dash::shared::traits::geometry::DashGeometry;
 use dash::test_utils::baseline_dash_settings;
 
 /// Returns the first key in 0..1000 whose target bucket index equals `bucket_idx`.
@@ -115,6 +116,36 @@ fn stash_terminal_negative_fixture() {
 	assert!(
 		cache.get_and_update_item(&ghost_key).is_none(),
 		"fixture: get must return None when contains_key is false (item in wrong bucket)"
+	);
+}
+
+// ── P6: capacity_conservation ─────────────────────────────────────────────────
+
+#[test]
+fn capacity_conservation_holds_for_baseline_geometry() {
+	// The baseline geometry resolves through the same path the eval path uses and
+	// conserves the budget.
+	let s = baseline_dash_settings();
+	let resolved = dash::factory::resolve_topology(&s).expect("baseline geometry must resolve");
+	assert_eq!(resolved.capacity(), s.capacity(), "baseline geometry must conserve the capacity budget");
+}
+
+#[test]
+fn capacity_conservation_detects_inflated_geometry() {
+	// An inflating geometry (extra normal bucket) must be rejected by the
+	// conservation check the eval path and the gate both run — proving the check
+	// itself rejects inflation, not just that the fixture inflates.
+	let s = baseline_dash_settings();
+	let budget = s.capacity();
+	let inflated = s.with_topology(DashGeometry {
+		num_of_segments: s.num_of_segments,
+		num_of_normal_buckets: s.num_of_normal_buckets + 1,
+		num_of_stash_buckets: s.num_of_stash_buckets,
+		bucket_size: s.bucket_size,
+	});
+	assert!(
+		dash::factory::check_conservation(budget, &inflated).is_err(),
+		"conservation check must reject an inflated topology"
 	);
 }
 
