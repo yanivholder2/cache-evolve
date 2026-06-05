@@ -95,22 +95,38 @@ def test_loads_real_manifest():
     assert subject.name == "dash"
     assert subject.crate_path == Path(".")
     assert subject.cdylib_name == "dash"
-    assert len(subject.extension_points) == 4
+    assert {ep.name for ep in subject.extension_points} == {
+        "eviction-policy",
+        "bucket",
+        "item",
+        "segment",
+        "geometry",
+    }
     assert subject.protected_files == (Path("src/dash/jni.rs"), Path("src/factory.rs"))
     assert subject.docs.context == Path("CONTEXT.md")
     assert subject.docs.insight == Path("baseline/insight.md")
     assert subject.evaluation.fitness_vector == Path("baseline/eval/fitness-vector.json")
-    assert subject.evaluation.traces == ("lirs:multi1.trace.gz",)
-    assert subject.evaluation.sizes == (512,)
+    # traces and sizes are operational sweep knobs (tuned per run), so assert
+    # their shape, not specific values — exact grid parsing is covered
+    # hermetically by the fixture-based grid tests below.
+    assert subject.evaluation.traces and all(
+        ":" in trace for trace in subject.evaluation.traces
+    )
+    assert subject.evaluation.sizes and all(
+        isinstance(size, int) and size > 0 for size in subject.evaluation.sizes
+    )
     assert subject.caffeine.config_prefix == "caffeine.simulator.dash"
     assert subject.caffeine.policy_spec_name == "dash.DashRust"
     assert subject.caffeine.policy_key == "evictionPolicies"
     assert subject.caffeine.supports_log_path is True
-    assert subject.caffeine.geometry == {
-        "numOfNormalBuckets": 2,
-        "numOfStashBuckets": 6,
-        "bucketSize": 64,
+    # geometry numbers are the swept baseline topology; assert the key shape the
+    # loader must preserve, not the operational values.
+    assert set(subject.caffeine.geometry) == {
+        "numOfNormalBuckets",
+        "numOfStashBuckets",
+        "bucketSize",
     }
+    assert all(isinstance(value, int) for value in subject.caffeine.geometry.values())
     # dash evolves for hit rate only; it declares neither [bench] nor [metadata].
     assert subject.bench is None
     assert subject.metadata is None
@@ -118,9 +134,14 @@ def test_loads_real_manifest():
 
 def test_associative_cache_geometry_is_list_valued():
     # numOfBuckets is read Java-side via getDoubleList, so the manifest declares
-    # it as a list; the loader must preserve that shape.
+    # it as a list; the loader must preserve that shape. The values are an
+    # operational sweep, so assert the list shape, not the swept numbers.
     subject = load_subject(ASSOCIATIVE_CACHE_SUBJECT)
-    assert subject.caffeine.geometry == {"numOfBuckets": [2]}
+    geometry = subject.caffeine.geometry
+    assert set(geometry) == {"numOfBuckets"}
+    assert isinstance(geometry["numOfBuckets"], list)
+    assert geometry["numOfBuckets"]
+    assert all(isinstance(count, int) for count in geometry["numOfBuckets"])
 
 
 def test_list_geometry_must_be_non_empty_integers(tmp_path: Path):
@@ -158,6 +179,7 @@ def test_ep_scope_whitelist_is_union_of_impl_files():
             Path("src/dash/dash_bucket.rs"),
             Path("src/shared/item.rs"),
             Path("src/dash/segments/dash_segment.rs"),
+            Path("src/shared/geometry.rs"),
         }
     )
 
@@ -262,9 +284,16 @@ def test_nonexistent_fitness_vector_is_rejected(tmp_path: Path):
 
 
 def test_evaluation_grid_parsed():
+    # Smoke-test that the real manifest's evaluation grid loads; traces and sizes
+    # are operational sweep knobs, so assert shape, not values. Exact grid parsing
+    # is covered hermetically by test_multi_point_grid_parsed.
     subject = load_subject(ASSOCIATIVE_CACHE_SUBJECT)
-    assert subject.evaluation.traces == ("lirs:multi1.trace.gz",)
-    assert subject.evaluation.sizes == (512,)
+    assert subject.evaluation.traces and all(
+        ":" in trace for trace in subject.evaluation.traces
+    )
+    assert subject.evaluation.sizes and all(
+        isinstance(size, int) and size > 0 for size in subject.evaluation.sizes
+    )
 
 
 def test_multi_point_grid_parsed(tmp_path: Path):
@@ -722,5 +751,10 @@ def test_axis_descriptions_map_name_to_description():
             "The segment's get-time strategy: where items land on a hit and how they "
             "migrate between the stash, target, and probing slots. Implements the "
             "Segment trait over the shared SegmentCore."
+        ),
+        "geometry": (
+            "Factors the fixed total capacity into segment count, normal/stash "
+            "bucket counts, and bucket size. Reshapes topology only; keeps the "
+            "budget constant."
         ),
     }
