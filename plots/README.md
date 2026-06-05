@@ -24,8 +24,10 @@ Aggregate run outputs into figures.
 
 Each run folder is self-describing: the runner copies `config.toml` and the
 subject's `manifest.toml` into the run dir at start (see
-`_snapshot_run_inputs` in `src/evolve/cli.py`). `build_data.py` reads the run
-setup from that `config.toml` snapshot. Cycle count and cohort size come from
+`snapshot_run_inputs` in `src/evolve/run_snapshot.py`). CLI flags that won over
+config.toml are overlaid onto the `config.toml` snapshot so it reflects the
+values the run actually used. `build_data.py` reads the run setup from that
+`config.toml` snapshot. Cycle count and cohort size come from
 authoritative run artifacts (cycle dirs, ledger) and always win. Runs predating
 the snapshot fall back to those artifacts, with the rest left as `"unknown"` / `-1`.
 

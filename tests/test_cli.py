@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from evolve._io import write_json
-from evolve.cli import _require_scope_supported, _snapshot_run_inputs, _validate_active_dimensions
+from evolve.cli import _require_scope_supported, _validate_active_dimensions
 from evolve.config import (
     AuthoringScope,
     Configs,
@@ -92,16 +92,3 @@ def test_extension_points_scope_allows_subject_with_extension_points():
 
 def test_full_autonomy_scope_allows_subject_without_extension_points():
     _require_scope_supported(_stub_subject(()), AuthoringScope.FULL_AUTONOMY)
-
-
-def test_snapshot_run_inputs_copies_config_and_manifest(tmp_path):
-    layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out", subject="lru_cache")
-    layout.sources.config_toml.parent.mkdir(parents=True, exist_ok=True)
-    layout.sources.config_toml.write_text("cycles = 7\n")
-    layout.sources.subject_manifest.parent.mkdir(parents=True, exist_ok=True)
-    layout.sources.subject_manifest.write_text("[caffeine]\n")
-
-    _snapshot_run_inputs(layout)
-
-    assert layout.outputs.config_toml.read_text() == "cycles = 7\n"
-    assert layout.outputs.manifest_toml.read_text() == "[caffeine]\n"
