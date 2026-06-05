@@ -1,4 +1,5 @@
 use crate::shared::eviction_policy::EvictionPolicyKind;
+use crate::shared::traits::geometry::DashGeometry;
 use log::error;
 
 #[derive(Debug, Clone, Copy)]
@@ -25,6 +26,23 @@ impl Default for DashSettings {
 }
 
 impl DashSettings {
+	/// Total slots the topology holds: the budget the geometry seam must conserve.
+	pub fn capacity(&self) -> usize {
+		self.num_of_segments * (self.num_of_normal_buckets + self.num_of_stash_buckets) * self.bucket_size
+	}
+
+	/// Replace the topology fields with a geometry-resolved layout, leaving the
+	/// eviction policy and debug knobs untouched.
+	pub fn with_topology(&self, geometry: DashGeometry) -> Self {
+		DashSettings {
+			num_of_segments: geometry.num_of_segments,
+			num_of_normal_buckets: geometry.num_of_normal_buckets,
+			num_of_stash_buckets: geometry.num_of_stash_buckets,
+			bucket_size: geometry.bucket_size,
+			..*self
+		}
+	}
+
 	pub fn validate(&self) -> Result<(), Vec<String>> {
 		let mut problems = Vec::new();
 		if self.num_of_segments == 0 {

@@ -59,6 +59,31 @@ fn slot_legality_holds_under_workload() {
 	}
 }
 
+// ── P4: capacity_conservation ───────────────────────────────────────────────
+
+#[test]
+fn capacity_conservation_holds_for_baseline_geometry() {
+	// The baseline geometry resolves through the same path the eval path uses and
+	// conserves the budget.
+	let s = baseline_settings();
+	let resolved = associative_cache::factory::resolve_geometry(&s).expect("baseline geometry must resolve");
+	assert_eq!(resolved.capacity(), s.capacity(), "baseline geometry must conserve the capacity budget");
+}
+
+#[test]
+fn capacity_conservation_detects_inflated_geometry() {
+	// An inflating geometry (extra bucket) must be rejected by the conservation
+	// check the eval path and the gate both run — proving the check itself rejects
+	// inflation, not just that the fixture inflates.
+	let s = baseline_settings();
+	let budget = s.capacity();
+	let inflated = s.with_geometry(s.num_of_buckets + 1, s.bucket_size);
+	assert!(
+		associative_cache::factory::check_conservation(budget, &inflated).is_err(),
+		"conservation check must reject an inflated layout"
+	);
+}
+
 // ── run_invariant_suite: drives the baseline cache ──────────────────────────
 // Requires --features test-utils.
 

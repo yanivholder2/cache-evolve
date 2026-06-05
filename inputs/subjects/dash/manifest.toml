@@ -27,10 +27,16 @@ contract = "dash::dash::segments::Segment"
 impl-files = ["src/dash/segments/dash_segment.rs"]
 description = "The segment's get-time strategy: where items land on a hit and how they migrate between the stash, target, and probing slots. Implements the Segment trait over the shared SegmentCore."
 
+[[extension-points]]
+name = "geometry"
+contract = "dash::shared::traits::BucketGeometry"
+impl-files = ["src/shared/geometry.rs"]
+description = "Factors the fixed total capacity into segment count, normal/stash bucket counts, and bucket size. Reshapes topology only; keeps the budget constant."
+
 [[gates]]
 name = "invariant gate"
 test = "invariant_gate"
-marker = "invariant gate violated: P[1-5] [a-z_]+"
+marker = "invariant gate violated: P[1-6] [a-z_]+"
 
 [contract]
 protected-files = ["src/dash/jni.rs", "src/factory.rs"]
