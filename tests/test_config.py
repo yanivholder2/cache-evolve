@@ -15,6 +15,8 @@ def _write_config(
     authoring_scope: str | None = "extension-points",
     subject: str | None = "dash",
     hypothesis_attempts: int | None = 3,
+    ai_agent_tool: str | None = "claude-sdk",
+    model: str | None = "claude-opus-4-8",
     selection_body: str | None = '[selection]\nmethod = "pareto"\nwinners_count = 3\n',
     fitness_body: str | None = '[fitness]\ndimensions = ["hit-rate"]\n',
 ) -> Path:
@@ -22,12 +24,15 @@ def _write_config(
         "[framework]",
         "cycles = 1",
         "cohort_size = 3",
-        'ai_agent_tool = "claude-sdk"',
         'log_level = "DEBUG"',
         "digest_cycles = 3",
         "max_workers = 0",
         "implementation_attempts = 3",
     ]
+    if ai_agent_tool is not None:
+        lines.append(f'ai_agent_tool = "{ai_agent_tool}"')
+    if model is not None:
+        lines.append(f'model = "{model}"')
     if hypothesis_attempts is not None:
         lines.append(f"hypothesis_attempts = {hypothesis_attempts}")
     if authoring_scope is not None:
@@ -89,6 +94,38 @@ def test_subject_absent_raises(tmp_path: Path):
     _write_config(tmp_path, subject=None)
     with pytest.raises(ConfigError, match="subject"):
         load_configs(tmp_path)
+
+
+def test_model_resolves_from_config(tmp_path: Path):
+    _write_config(tmp_path, model="claude-sonnet-4-6")
+    configs = load_configs(tmp_path)
+    assert configs.framework.model == "claude-sonnet-4-6"
+
+
+def test_model_flag_overrides_config(tmp_path: Path):
+    _write_config(tmp_path, model="claude-opus-4-8")
+    configs = load_configs(tmp_path, model="claude-haiku-4-5-20251001")
+    assert configs.framework.model == "claude-haiku-4-5-20251001"
+
+
+def test_model_absent_raises(tmp_path: Path):
+    _write_config(tmp_path, model=None)
+    with pytest.raises(ConfigError, match="framework.model"):
+        load_configs(tmp_path)
+
+
+def test_model_not_valid_for_adapter_raises(tmp_path: Path):
+    # gemini model under the claude-sdk adapter: valid string, wrong namespace.
+    _write_config(tmp_path, ai_agent_tool="claude-sdk", model="gemini-3-pro-preview")
+    with pytest.raises(ConfigError, match="not valid for ai_agent_tool"):
+        load_configs(tmp_path)
+
+
+def test_model_validated_against_chosen_adapter(tmp_path: Path):
+    _write_config(tmp_path, ai_agent_tool="ollama-local", model="gemma4:e4b")
+    configs = load_configs(tmp_path)
+    assert configs.framework.ai_agent_tool == "ollama-local"
+    assert configs.framework.model == "gemma4:e4b"
 
 
 def test_outputs_root_is_subject_prefixed_under_repo_outputs(tmp_path: Path):

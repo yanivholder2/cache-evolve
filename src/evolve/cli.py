@@ -527,6 +527,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         help="Variants per cycle.")
     parser.add_argument("--ai-agent-tool", choices=sorted(ADAPTER_REGISTRY), default=None,
                         help="AI agent CLI to drive subagents.")
+    parser.add_argument("--model", type=str, default=None,
+                        help="Model the adapter drives. Must be valid for the chosen --ai-agent-tool.")
     parser.add_argument("--log-level", choices=LOG_LEVELS, default=None,
                         type=str.upper,
                         help="Log level for stderr + cycle log file.")
@@ -550,6 +552,7 @@ def main(argv: list[str] | None = None) -> None:
             cycles=args.cycles,
             cohort_size=args.cohort_size,
             ai_agent_tool=args.ai_agent_tool,
+            model=args.model,
             log_level=args.log_level,
             simulator_timeout_s=args.simulator_timeout_s,
             max_workers=args.max_workers,
@@ -559,7 +562,7 @@ def main(argv: list[str] | None = None) -> None:
     except ConfigError as exception:
         die(str(exception))
 
-    adapter = ADAPTER_REGISTRY[cfg.framework.ai_agent_tool]()
+    adapter = ADAPTER_REGISTRY[cfg.framework.ai_agent_tool](model=cfg.framework.model)
     layout = Layout(repo_root=repo_root, outputs_root=cfg.framework.outputs_root, subject=cfg.framework.subject)
     _validate_active_dimensions(cfg, load_subject(layout.sources.subject_dir), layout)
 

@@ -57,12 +57,8 @@ class Model(StrEnum):
     ANTIGRAVITY = "antigravity-preview-05-2026"
 
 
-MODEL = Model.GEMINI_3_1_FLASH_LITE
-
-
 class AntigravitySdkAdapter(LLMAdapter):
-    def identity(self) -> str:
-        return f"{type(self).__name__}(model={MODEL.value})"
+    MODELS = Model
 
     async def call_llm_and_log(
         self,
@@ -98,7 +94,7 @@ class AntigravitySdkAdapter(LLMAdapter):
         ]
 
         config = LocalAgentConfig(
-            model=MODEL.value,
+            model=self.model,
             system_instructions=system_prompt,
             capabilities=CapabilitiesConfig(enabled_tools=enabled),
             workspaces=[str(workspace), *(str(r) for r in readable_resolved)],

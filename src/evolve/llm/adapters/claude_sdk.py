@@ -19,8 +19,6 @@ class Model(StrEnum):
     HAIKU_4_5 = "claude-haiku-4-5-20251001"
 
 
-MODEL = Model.OPUS_4_8
-
 READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
 WRITE_TOOLS = ["Write", "Edit"]
 
@@ -68,8 +66,7 @@ def _usage_from_result(message: Any) -> Usage | None:
 
 
 class ClaudeSdkAdapter(LLMAdapter):
-    def identity(self) -> str:
-        return f"{type(self).__name__}(model={MODEL.value})"
+    MODELS = Model
 
     async def call_llm_and_log(
         self,
@@ -149,7 +146,7 @@ class ClaudeSdkAdapter(LLMAdapter):
         # `setting_sources=[]` prevents user/project `permissions.allow` rules
         # from pre-approving tools and bypassing `gate`.
         options = ClaudeAgentOptions(
-            model=MODEL.value,
+            model=self.model,
             system_prompt=system_prompt,
             cwd=str(workspace_root),
             can_use_tool=gate,

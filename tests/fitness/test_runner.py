@@ -33,7 +33,7 @@ SUBJECT = configured_subject(REPO_ROOT)
 def _cfg(dimensions: tuple[str, ...]) -> Configs:
     return Configs(
         framework=FrameworkConfig(
-            cycles=1, cohort_size=1, ai_agent_tool="claude-sdk",
+            cycles=1, cohort_size=1, ai_agent_tool="claude-sdk", model="claude-opus-4-8",
             outputs_root=Path("/tmp"), log_level="DEBUG", digest_cycles=3,
             max_workers=0, implementation_attempts=3, hypothesis_attempts=3,
             authoring_scope="extension-points", subject=SUBJECT,
