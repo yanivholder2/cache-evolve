@@ -32,9 +32,19 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # 1. Caffeine checkout — a sibling of the repo, or $CAFFEINE_DIR. Matches the
 #    resolution in scripts/caffeine_runner.py.
+#
+# An existing checkout is advanced to origin/master, not left as-is: a reused
+# warm container keeps whatever caffeine it was provisioned with, which can lag
+# behind a freshly-merged subject's simulator policy. Without this, a session
+# refreshes cache-evolve but runs against a stale caffeine — the new policy is
+# unregistered, caffeine emits no CSV, and every variant fails fitness. Fetch +
+# hard-reset (not pull --ff-only) because the clone is shallow and the checkout
+# is a disposable build dependency.
 caffeine_dir="${CAFFEINE_DIR:-$(dirname "$repo_root")/caffeine}"
 if [ -d "$caffeine_dir/.git" ]; then
-  log "caffeine: already present at $caffeine_dir"
+  log "caffeine: updating $caffeine_dir to origin/master"
+  git -C "$caffeine_dir" fetch --depth 1 origin master >&2
+  git -C "$caffeine_dir" reset --hard FETCH_HEAD >&2
 else
   log "caffeine: cloning into $caffeine_dir"
   git clone --depth 1 https://github.com/yanivholder2/caffeine.git "$caffeine_dir" >&2
