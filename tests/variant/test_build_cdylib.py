@@ -12,11 +12,12 @@ from evolve.variant.build import compile_cdylib
 from evolve.identifiers import CycleId, VariantId
 from evolve.paths import CycleVariant, Layout
 
-from _support import configured_subject
-
 REPO_ROOT = Path(__file__).parent.parent.parent
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
-SUBJECT = configured_subject(REPO_ROOT)
+# Pinned to dash, not the swept `config.toml` subject: this suite asserts
+# dash-specific JNI symbols (DashRustPolicy) and overlays dash source files,
+# so it must build dash whatever subject a run currently selects.
+SUBJECT = "dash"
 
 VARIANT = CycleVariant(CycleId(1), VariantId(1))
 VARIANT_SYMBOL_PREFIX = (

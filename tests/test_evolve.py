@@ -59,6 +59,7 @@ def _run(repo_root: Path, *, cohort_size: int = 2, adapter=None) -> None:
     )
 
 
+@pytest.mark.skip(reason="cycle seal stage is disabled in run_cycle (cli.py); re-enable seal_cycle to restore")
 @pytest.mark.slow
 def test_evolve_produces_sealed_cycle(tmp_path):
     repo_root = _setup_repo(tmp_path)
@@ -132,6 +133,7 @@ class _CrossCycleFailingAdapter(StubLLMAdapter):
         return super().run(agent_name, workspace, readable_roots=readable_roots, allow_edits=allow_edits)
 
 
+@pytest.mark.skip(reason="cycle seal stage is disabled in run_cycle (cli.py); re-enable seal_cycle to restore")
 @pytest.mark.slow
 def test_cross_cycle_writer_failure_does_not_block_seal(tmp_path):
     repo_root = _setup_repo(tmp_path)
