@@ -1,0 +1,422 @@
+{
+  "winners": [
+    "cycle/0006/v001"
+  ],
+  "scores": {},
+  "fitness_vectors": [
+    {
+      "variant": "baseline",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6652
+            }
+          ],
+          "summary": 0.6652,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7169
+            }
+          ],
+          "summary": 0.7169,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6754000000000001
+            }
+          ],
+          "summary": 0.6754,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6668000000000001
+            }
+          ],
+          "summary": 0.6668,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7132999999999999
+            }
+          ],
+          "summary": 0.7133,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7169
+            }
+          ],
+          "summary": 0.7169,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7208
+            }
+          ],
+          "summary": 0.7208,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7179000000000001
+            }
+          ],
+          "summary": 0.7179,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7284
+            }
+          ],
+          "summary": 0.7284,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7111
+            }
+          ],
+          "summary": 0.7111,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7286
+            }
+          ],
+          "summary": 0.7286,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7249
+            }
+          ],
+          "summary": 0.7249,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7342
+            }
+          ],
+          "summary": 0.7342,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7317
+            }
+          ],
+          "summary": 0.7317,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7342
+            }
+          ],
+          "summary": 0.7342,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7337
+            }
+          ],
+          "summary": 0.7337,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7343000000000001
+            }
+          ],
+          "summary": 0.7343,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7337
+            }
+          ],
+          "summary": 0.7337,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7208
+            }
+          ],
+          "summary": 0.7208,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6786
+            }
+          ],
+          "summary": 0.6786,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.726
+            }
+          ],
+          "summary": 0.726,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7201000000000001
+            }
+          ],
+          "summary": 0.7201,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7214
+            }
+          ],
+          "summary": 0.7214,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7251000000000001
+            }
+          ],
+          "summary": 0.7251,
+          "higher_is_better": true
+        }
+      ]
+    }
+  ],
+  "best_per_dimension": {
+    "hit-rate": {
+      "variant": "cycle/0006/v001",
+      "summary": 0.7343
+    }
+  }
+}
