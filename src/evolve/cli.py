@@ -8,6 +8,7 @@ import concurrent.futures
 import json
 import logging
 import re
+import shutil
 import sys
 import threading
 import time
@@ -164,6 +165,16 @@ class VariantOutcome:
     survived: bool
     reason: str | None  # None iff survived; e.g. "gate:contract gate", "implement"
     detail: str | None  # underlying cause (gate body, scope path, "no overlay", exception text); None iff survived
+
+
+def _snapshot_run_inputs(layout: Layout) -> None:
+    """Copy the run's config.toml and subject manifest.toml into the output
+    root, so each run folder is self-describing for reviewers and downstream
+    tooling (e.g. plots/build_data.py reads the run setup from here)."""
+
+    layout.outputs.root.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(layout.sources.config_toml, layout.outputs.config_toml)
+    shutil.copy2(layout.sources.subject_manifest, layout.outputs.manifest_toml)
 
 
 def _next_cycle_id(cycles_dir: Path) -> CycleId:
@@ -551,6 +562,8 @@ def main(argv: list[str] | None = None) -> None:
     adapter = ADAPTER_REGISTRY[cfg.framework.ai_agent_tool]()
     layout = Layout(repo_root=repo_root, outputs_root=cfg.framework.outputs_root, subject=cfg.framework.subject)
     _validate_active_dimensions(cfg, load_subject(layout.sources.subject_dir), layout)
+
+    _snapshot_run_inputs(layout)
 
     _log.setup(None, level=cfg.framework.log_level)
     log.debug("repo_root=%s", repo_root)
