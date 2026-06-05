@@ -19,7 +19,27 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-DEFAULT_CAFFEINE_DIR = Path.home() / "projects" / "caffeine"
+def _default_caffeine_dir() -> Path:
+    """Locate the Caffeine checkout without hardcoding an absolute path.
+
+    Resolution order:
+      1. The ``CAFFEINE_DIR`` environment variable, if set (``~`` expanded).
+      2. A ``caffeine/`` sibling of the cache-evolve repo root.
+
+    The sibling default keeps the path anchored to the repo rather than to a
+    fixed home directory: it resolves to ``~/projects/caffeine`` for the local
+    ``~/projects/cache-evolve`` layout and to ``<container>/caffeine`` in a
+    remote session where the repo lives at ``<container>/cache-evolve``.
+    """
+
+    override = os.environ.get("CAFFEINE_DIR")
+    if override:
+        return Path(override).expanduser()
+    repo_root = Path(__file__).resolve().parents[1]
+    return repo_root.parent / "caffeine"
+
+
+DEFAULT_CAFFEINE_DIR = _default_caffeine_dir()
 
 STDERR_TAIL_LINES = 40
 DEFAULT_TIMEOUT_S = 600

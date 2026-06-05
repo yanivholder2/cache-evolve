@@ -4,7 +4,8 @@ For each subject, builds the baseline cdylib, runs the Caffeine simulator once,
 and asserts a valid per-size hit-rate point comes back. This is the coverage
 that catches manifest [caffeine] wiring mismatches — e.g. associative_cache's
 numOfBuckets being read Java-side as a list (getDoubleList) while the framework
-emitted it as a scalar. Requires ~/projects/caffeine and a working JDK + cargo.
+emitted it as a scalar. Requires a caffeine checkout (a `caffeine/` repo
+sibling by default, or $CAFFEINE_DIR) and a working JDK + cargo.
 """
 
 from __future__ import annotations

@@ -36,7 +36,7 @@ Markers can't be combined in one run, so run each in its own invocation, in orde
    cargo test --workspace --manifest-path "$(git rev-parse --show-toplevel)/Cargo.toml"
    ```
 
-4. Caffeine suite (requires `~/projects/caffeine` and a working JDK):
+4. Caffeine suite (requires a caffeine checkout — a `caffeine/` repo sibling by default, or `$CAFFEINE_DIR` — and a working JDK):
    ```
    PYTHONPATH="$WT_SRC" "$VENV_PY" -m pytest --caffeine-needed
    ```
