@@ -546,6 +546,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "s3_fifo"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "framework",
+ "jni",
+ "log",
+ "proptest",
+ "rand 0.8.5",
+ "simplelog",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -681,6 +694,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.107",
+]
+
+[[package]]
+name = "tiny_lfu"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "framework",
+ "jni",
+ "log",
+ "proptest",
+ "rand 0.8.5",
+ "simplelog",
 ]
 
 [[package]]
