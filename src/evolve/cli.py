@@ -25,7 +25,7 @@ from evolve.llm import (
     format_token_totals,
     snapshot_token_totals,
 )
-from evolve.aggregate.cross_cycle_winners import write_cross_cycle_winners
+from evolve.aggregate.cross_cycle_winners import read_baseline, write_cross_cycle_winners
 from evolve.aggregate.cohort import compute_cycle_winners, write_cycle_winners_json
 from evolve.aggregate.selectors import Selector, build_selector
 from evolve.config import AuthoringScope, Configs, ConfigError, load_configs
@@ -342,7 +342,9 @@ def _run_cycle_level(
         if not o.survived
     ]
 
-    winners, scores, fitness_vectors = compute_cycle_winners(survivors, selector)
+    winners, scores, fitness_vectors = compute_cycle_winners(
+        survivors, selector, read_baseline(layout)
+    )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         winners_future = pool.submit(

@@ -26,7 +26,7 @@ def compute_cross_cycle_winners(layout: Layout, selector: Selector) -> dict:
     if not vectors:
         return {"winners": [], "scores": {}, "fitness_vectors": [], "best_per_dimension": {}}
 
-    result = selector.select(vectors)
+    result = selector.select(vectors, baseline=read_baseline(layout))
     best_per_dimension = _best_per_dimension(vectors)
     return {
         "winners": result.winners,
@@ -47,6 +47,16 @@ def write_cross_cycle_winners(layout: Layout, selector: Selector) -> dict:
         data["winners"],
     )
     return data
+
+
+def read_baseline(layout: Layout) -> dict | None:
+    """The subject's baseline fitness vector (the anchor `weighted` scores
+    against), or `None` when it has not been measured."""
+
+    baseline_json = layout.sources.baseline.fitness_vector_json
+    if not baseline_json.is_file():
+        return None
+    return _read_fitness_vector(baseline_json)
 
 
 def _collect_global_vectors(layout: Layout) -> list[dict]:

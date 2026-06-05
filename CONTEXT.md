@@ -211,7 +211,8 @@ A Cycle's selected Variants — typically several, not one — chosen by the run
 **Selection method**. Under the default `pareto` method a Variant **dominates**
 another when it is at least as good on every dimension and strictly better on
 one, and the Winners are the set nothing else dominates (the **Pareto front**).
-Under the `weighted` method the Winners are the top-N by **Score**.
+Under the `weighted` method the Winners are the top-N by **Score** among the
+Variants that net-beat the baseline (Score > 0).
 _Avoid_: Best variant (singular implies one winner).
 
 **Selection method**:
@@ -223,16 +224,18 @@ cross-cycle stage.
 _Avoid_: Selection strategy, ranking, objective.
 
 **Weights**:
-Per-dimension multipliers the `weighted` Selection method applies to the
-min–max-normalized Fitness dimensions before summing them into a Score. Keys
-must match the active Fitness dimensions exactly; absent under `pareto`.
+Per-dimension multipliers the `weighted` Selection method applies to each
+Fitness dimension's percentage change from the baseline anchor before summing
+them into a Score — they say which dimensions matter more, and should sum to 1.
+Keys must match the active Fitness dimensions exactly; absent under `pareto`.
 _Avoid_: Coefficients, priorities.
 
 **Score**:
-The scalar a Selection method assigns a Variant — under `weighted`, the weighted
-sum of its min–max-normalized dimensions. Cohort/union-relative, so it ranks
-within one selection but is not comparable across selections. The `pareto`
-method computes no Score.
+The scalar a Selection method assigns a Variant — under `weighted`, the
+weighted sum of each dimension's percentage change from the baseline anchor
+(signed so an improvement is positive). 0 is the baseline itself, so a positive
+Score is a net improvement over it and a negative Score a net regression. The
+`pareto` method computes no Score.
 _Avoid_: Fitness (Fitness is the multi-dimensional measurement; a Score is the
 scalar a method derives from it), fitness value.
 

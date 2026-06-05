@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from evolve._io import read_utf8, write_json
 from evolve.aggregate.cross_cycle_winners import compute_cross_cycle_winners, write_cross_cycle_winners
 from evolve.aggregate.selectors import ParetoSelector, WeightedSelector
@@ -152,9 +154,10 @@ def test_weighted_selector_top_k_and_scores(tmp_path):
     selector = WeightedSelector(winners_count=2, weights={"hit-rate": 1.0})
     data = compute_cross_cycle_winners(layout, selector)
 
-    # top-2 by hit-rate over {0.40, 0.90, 0.60}.
+    # Scores are percentage change vs the 0.40 baseline anchor; the baseline
+    # itself scores 0 and the floor keeps it out of the winners.
     assert data["winners"] == ["cycle/0001/v001", "cycle/0001/v002"]
-    # scores cover every variant (min-max: v001=1.0, baseline=0.0).
     assert set(data["scores"]) == {"baseline", "cycle/0001/v001", "cycle/0001/v002"}
-    assert data["scores"]["cycle/0001/v001"] == 1.0
-    assert data["scores"]["baseline"] == 0.0
+    assert data["scores"]["cycle/0001/v001"] == pytest.approx(1.25)  # 0.40 -> 0.90
+    assert data["scores"]["cycle/0001/v002"] == pytest.approx(0.5)  # 0.40 -> 0.60
+    assert data["scores"]["baseline"] == pytest.approx(0.0)

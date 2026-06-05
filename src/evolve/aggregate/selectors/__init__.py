@@ -1,8 +1,7 @@
 """Pluggable Winner-selection methods, resolved by name.
 
 `SELECTOR_REGISTRY` mirrors `evolve.llm.ADAPTER_REGISTRY`: a config string names
-the method, `build_selector` instantiates it. See
-[ADR-0008](../../../../docs/adr/0008-pluggable-selection-seam.md).
+the method, `build_selector` instantiates it.
 """
 
 from evolve.aggregate.selectors.base import (
