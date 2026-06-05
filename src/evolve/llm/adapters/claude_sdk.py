@@ -13,12 +13,13 @@ from evolve.llm.token_usage import Usage
 
 
 class Model(StrEnum):
+    OPUS_4_8 = "claude-opus-4-8"
     OPUS_4_7 = "claude-opus-4-7"
     SONNET_4_6 = "claude-sonnet-4-6"
     HAIKU_4_5 = "claude-haiku-4-5-20251001"
 
 
-MODEL = Model.SONNET_4_6
+MODEL = Model.OPUS_4_8
 
 READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
 WRITE_TOOLS = ["Write", "Edit"]
