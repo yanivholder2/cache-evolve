@@ -437,6 +437,7 @@ def test_authoring_scope_section_lists_extension_points(tmp_path):
     assert "## Authoring scope" in task_md
     assert "extension-point impl files" in task_md
     assert "writable by no scope" in task_md
+    assert "gate-integrity surface" in task_md
 
 
 def test_authoring_scope_section_full_autonomy(tmp_path):
@@ -452,6 +453,7 @@ def test_authoring_scope_section_full_autonomy(tmp_path):
     task_md = read_utf8(capture)
     assert "## Authoring scope" in task_md
     assert "Any overlay file may be edited" in task_md
+    assert "gate-integrity surface" in task_md
 
 
 # The real dash manifest's extension-point impl files: eviction_policy.rs,
