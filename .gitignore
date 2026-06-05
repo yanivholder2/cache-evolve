@@ -4,9 +4,11 @@ rust-logs/
 # Microbench harness output (regenerated per run)
 inputs/subjects/dash/bench/bench.json
 
-# Per-invocation evolve outputs (timestamped subdirs)
-#outputs/*
-#!outputs/.gitkeep
+# Per-invocation evolve outputs (timestamped subdirs).
+# Ignore everything in outputs/ except the curated paper_outputs/ folder.
+outputs/*
+!outputs/.gitkeep
+!outputs/paper_outputs/
 
 # Python venv + build artefacts
 .venv/
