@@ -8,6 +8,7 @@ import logging
 import re
 import shutil
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from tempfile import mkdtemp
 
@@ -40,10 +41,18 @@ def _rewrite_framework_path(cargo_toml: Path, framework_crate_dir: Path) -> None
     write_utf8(cargo_toml, new_text)
 
 
-def _apply_overlay(overlay_dir: Path, workspace_root: Path) -> None:
+def _apply_overlay(
+    overlay_dir: Path, workspace_root: Path, is_pinned: Callable[[Path], bool]
+) -> None:
     """Copy every file under `overlay_dir` onto `workspace_root` at the matching
     relative path. Missing/empty `overlay_dir` is a no-op, meaning "no overlay"
-    (a baseline-equivalent build)."""
+    (a baseline-equivalent build).
+
+    Gate-integrity paths (`is_pinned`) are skipped, so the pristine crate copy
+    of the gate harness and the JNI seam always wins over anything the overlay
+    ships — a variant cannot weaken the gates that judge it. The implementer
+    rejects such overlay files up front; skipping here is the structural
+    backstop that holds even if that check is bypassed."""
 
     if not overlay_dir.is_dir():
         return
@@ -51,6 +60,9 @@ def _apply_overlay(overlay_dir: Path, workspace_root: Path) -> None:
         if not src.is_file():
             continue
         rel = src.relative_to(overlay_dir)
+        if is_pinned(rel):
+            log.warning("overlay file %s is gate-pinned; keeping pristine, not applying", rel)
+            continue
         dst = workspace_root / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(src, dst)
@@ -84,7 +96,7 @@ def prepare_variant_workspace(
     try:
         # mkdtemp already created root, so copytree must merge into it.
         shutil.copytree(subject_dir, root, dirs_exist_ok=True, ignore=_ignore_build_cache)
-        _apply_overlay(variant_dir.overlay_dir, root)
+        _apply_overlay(variant_dir.overlay_dir, root, subject.is_pinned_overlay_path)
         _rewrite_framework_path(root / "Cargo.toml", framework_crate_dir)
     except BaseException:
         shutil.rmtree(

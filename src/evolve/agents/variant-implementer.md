@@ -50,6 +50,12 @@ out-of-scope writes are rejected, so honour it.
   the subject's internal layout). You must still satisfy the `Cache<K, V>` contract and
   the subject's invariant suite — including the subject's structural invariants.
 
+**Gate-integrity files are off-limits in every scope** — `task.md` lists them
+(the JNI/factory seam and the fixed gate harness: the gates and the invariant
+suite they run). The harness runs them from the pristine crate, so overlay
+copies are ignored and rejected. Change the cache implementation to pass the
+gates; never change the gates.
+
 Read access is unrestricted in both scopes; scope constrains only what you
 **write**.
 

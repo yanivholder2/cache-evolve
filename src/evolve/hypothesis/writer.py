@@ -36,7 +36,7 @@ def _authoring_scope_section(authoring_scope: AuthoringScope, layout: Layout) ->
     not propose changes outside the writable surface. Derived subject-agnostically
     from the subject manifest."""
     subject = load_subject(layout.sources.subject_dir)
-    protected = sorted(str(path) for path in subject.protected_files)
+    pinned = ", ".join(subject.pinned_overlay_display)
     lines = ["## Authoring scope\n\n"]
     if authoring_scope is AuthoringScope.EXTENSION_POINTS:
         whitelist = sorted(str(path) for path in subject.ep_scope_whitelist)
@@ -47,12 +47,14 @@ def _authoring_scope_section(authoring_scope: AuthoringScope, layout: Layout) ->
         for path in whitelist:
             lines.append(f"- {path}\n")
         lines.append(
-            f"\nThe contract-protected files are writable by no scope: {protected}.\n\n"
+            f"\nThe gate-integrity surface is writable by no scope ({pinned}). "
+            "Do not propose ideas that require editing it.\n\n"
         )
     else:
         lines.append(
-            "Any overlay file may be edited, except the contract-protected files "
-            f"which are writable by no scope: {protected}.\n\n"
+            "Any overlay file may be edited, except the gate-integrity surface, "
+            f"writable by no scope ({pinned}). Do not propose ideas that require "
+            "editing it.\n\n"
         )
     return "".join(lines)
 

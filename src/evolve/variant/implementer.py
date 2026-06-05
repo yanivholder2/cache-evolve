@@ -114,13 +114,17 @@ def _write_task_md(
         f"- Subject manifest:      {layout.sources.subject_manifest}\n\n"
         f"## Authoring scope\n\n"
         f"{authoring_scope}\n\n"
+        f"Gate-integrity files are pinned to the pristine crate and may not be\n"
+        f"authored in any scope — overlay copies of them are ignored and rejected:\n"
+        f"{', '.join(subject.pinned_overlay_display)}\n\n"
     )
     if prev_attempt_dir is not None:
         body += _repair_section(variant_dir.rejection_md, prev_attempt_dir, subject, layout)
     body += (
         f"## Write\n\n"
         f"Place every changed file under `overlay/<path-within-subject>`; the overlay\n"
-        f"is applied verbatim to a copy of the subject crate at build time.\n"
+        f"is applied to a copy of the subject crate at build time (gate-integrity\n"
+        f"files excluded).\n"
     )
     write_utf8(attempt_dir.task_md, body)
 
@@ -182,24 +186,25 @@ def implement_variant(
             "overlay is indistinguishable from the baseline.",
         )
 
-    # The manifest's contract-protected files are the fixed seam between the
-    # Rust cache and the Caffeine Java side: the JNI entry points and the
-    # factory that constructs the cache. Their function signatures and exported
-    # symbol names are a binding contract — if a variant changes them, Caffeine
-    # still loads the library but silently fails to call into the cache, so
-    # every request misses. No authoring scope (not even full-autonomy) may
-    # touch them.
-    protected = sorted(
+    # The gate-integrity surface is writable by no scope (not even
+    # full-autonomy): the JNI/factory ABI seam Caffeine binds to (silently
+    # misses every request if its signatures change) plus the fixed gate
+    # harness — Cargo.toml, src/lib.rs, tests/, src/test_utils/ — which a
+    # variant could otherwise overwrite to weaken or stub the gates judging it.
+    # The build harness pins these to the pristine crate regardless; rejecting
+    # here gives the agent corrective feedback instead of a silent no-op.
+    pinned = sorted(
         str(p.relative_to(overlay_dir))
         for p in overlay_files
-        if p.relative_to(overlay_dir) in subject.protected_files
+        if subject.is_pinned_overlay_path(p.relative_to(overlay_dir))
     )
-    if protected:
+    if pinned:
         raise ImplementerRejection(
-            f"variant wrote contract-protected files (the fixed JNI/factory seam "
-            f"between the cache and Caffeine, writable by no scope): {protected}",
-            f"Remove the contract-protected files from the overlay: {protected}. "
-            "No scope may edit them.",
+            f"variant wrote gate-integrity files (the JNI/factory seam and the "
+            f"fixed gate harness, writable by no scope): {pinned}",
+            f"Remove these from the overlay: {pinned}. No scope may author the "
+            f"gate-integrity surface ({', '.join(subject.pinned_overlay_display)}); "
+            f"the harness runs it from the pristine crate.",
         )
 
     if authoring_scope is AuthoringScope.EXTENSION_POINTS:
