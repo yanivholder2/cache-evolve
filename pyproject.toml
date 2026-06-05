@@ -26,5 +26,5 @@ where = ["src"]
 testpaths = ["tests"]
 markers = [
     "slow: end-to-end test that drives a real cargo build",
-    "caffeine_needed: end-to-end test that requires ~/projects/caffeine and a JDK; never run in CI",
+    "caffeine_needed: end-to-end test that requires a caffeine checkout (a `caffeine/` repo sibling by default, or $CAFFEINE_DIR) and a JDK; never run in CI",
 ]

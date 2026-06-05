@@ -18,8 +18,47 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
-DEFAULT_CAFFEINE_DIR = Path.home() / "projects" / "caffeine"
+
+def _resolve_trace(trace: str) -> str:
+    """Anchor the path part of a ``<format>:<path>`` trace to the repo root.
+
+    A relative path is resolved against the repo root so manifests stay
+    portable across machines (mirrors :func:`_default_caffeine_dir` rather than
+    hardcoding an absolute home directory); an absolute path is left untouched.
+    The ``<format>`` prefix (e.g. ``lirs``) is preserved.
+    """
+
+    fmt, sep, path = trace.partition(":")
+    if not sep or not path:
+        return trace
+    resolved = Path(path).expanduser()
+    if not resolved.is_absolute():
+        resolved = REPO_ROOT / resolved
+    return f"{fmt}:{resolved}"
+
+
+def _default_caffeine_dir() -> Path:
+    """Locate the Caffeine checkout without hardcoding an absolute path.
+
+    Resolution order:
+      1. The ``CAFFEINE_DIR`` environment variable, if set (``~`` expanded).
+      2. A ``caffeine/`` sibling of the cache-evolve repo root.
+
+    The sibling default keeps the path anchored to the repo rather than to a
+    fixed home directory: it resolves to ``~/projects/caffeine`` for the local
+    ``~/projects/cache-evolve`` layout and to ``<container>/caffeine`` in a
+    remote session where the repo lives at ``<container>/cache-evolve``.
+    """
+
+    override = os.environ.get("CAFFEINE_DIR")
+    if override:
+        return Path(override).expanduser()
+    return REPO_ROOT.parent / "caffeine"
+
+
+DEFAULT_CAFFEINE_DIR = _default_caffeine_dir()
 
 STDERR_TAIL_LINES = 40
 DEFAULT_TIMEOUT_S = 600
@@ -88,7 +127,7 @@ class Invocation:
             f"--outputDir={self.output_dir}",
             f"-PjvmArgs={jvm_args}",
             "-Dcaffeine.simulator.trace.source=files",
-            f"-Dcaffeine.simulator.files.paths.0={self.trace}",
+            f"-Dcaffeine.simulator.files.paths.0={_resolve_trace(self.trace)}",
             f"-Dcaffeine.simulator.policies.0={self.policy_spec_name}",
         ]
         for config_key, value in self.geometry.items():

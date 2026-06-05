@@ -2,7 +2,8 @@
 
 Builds the variant cdylib, runs the Caffeine simulator against the good
 fixture variant, and checks the hit-rate plugin output for shape +
-non-zero hit rate. Requires ~/projects/caffeine and a working JDK + cargo.
+non-zero hit rate. Requires a caffeine checkout (a `caffeine/` repo sibling
+by default, or $CAFFEINE_DIR) and a working JDK + cargo.
 """
 
 from __future__ import annotations

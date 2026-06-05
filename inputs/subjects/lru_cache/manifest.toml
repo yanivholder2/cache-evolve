@@ -26,5 +26,5 @@ insight = "baseline/insight.md"
 
 [evaluation]
 fitness-vector = "baseline/eval/fitness-vector.json"
-traces = ["lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz"]
+traces = ["lirs:inputs/traces/workload-a.trace.gz"]
 sizes = [2048]

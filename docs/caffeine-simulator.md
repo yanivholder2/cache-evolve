@@ -4,7 +4,7 @@ Reference for invoking the Caffeine cache simulator with a JNI-backed (native cd
 
 ## Invocation
 
-Caffeine is invoked via `gradlew simulator:simulate -q` from a Caffeine checkout (`~/projects/caffeine`). A native policy is loaded by Caffeine through `-Djava.library.path=<dir-containing-the-cdylib>`.
+Caffeine is invoked via `gradlew simulator:simulate -q` from a Caffeine checkout. The checkout location is resolved by `scripts/caffeine_runner.py`: the `CAFFEINE_DIR` env var if set, otherwise a `caffeine/` sibling of the cache-evolve repo root (so `~/projects/cache-evolve` pairs with `~/projects/caffeine`). A native policy is loaded by Caffeine through `-Djava.library.path=<dir-containing-the-cdylib>`.
 
 ### Required JVM args
 

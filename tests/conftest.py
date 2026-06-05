@@ -26,7 +26,7 @@ def pytest_addoption(parser):
         "--caffeine-needed",
         action="store_true",
         default=False,
-        help="run tests marked `caffeine_needed` (require ~/projects/caffeine)",
+        help="run tests marked `caffeine_needed` (require a caffeine checkout: a `caffeine/` repo sibling by default, or $CAFFEINE_DIR)",
     )
 
 
@@ -36,8 +36,9 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "caffeine_needed: end-to-end test that requires ~/projects/caffeine "
-        "and a working JDK; invoke explicitly with --caffeine-needed, never in CI",
+        "caffeine_needed: end-to-end test that requires a caffeine checkout "
+        "(a `caffeine/` repo sibling by default, or $CAFFEINE_DIR) and a working "
+        "JDK; invoke explicitly with --caffeine-needed, never in CI",
     )
     if config.getoption("--slow") and config.getoption("--caffeine-needed"):
         raise pytest.UsageError(

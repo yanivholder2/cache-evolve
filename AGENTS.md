@@ -13,7 +13,7 @@ Research framework at the repo root that drives the cache-policy evolution loop 
 # Caffeine Simulator Integration
 Each Subject cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI. Per-subject wiring lives in the subject's `manifest.toml` `[caffeine]` table; the runner is subject-agnostic.
 
-**Repo**: `~/projects/caffeine` (sibling of the main repo; the only caffeine repo to use)
+**Repo**: a `caffeine/` checkout that is a sibling of this repo (override with the `CAFFEINE_DIR` env var); the only caffeine repo to use. The location is repo-relative, never hardcoded — `scripts/caffeine_runner.py` resolves it from the repo root, so `~/projects/cache-evolve` pairs with `~/projects/caffeine` locally and `<container>/cache-evolve` with `<container>/caffeine` in a remote session.
 
 **Invariants**:
 - Pointer-based JNI: Java side stores the pointer returned from cache init and passes it back on every call.

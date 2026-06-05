@@ -28,6 +28,17 @@ source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
+### Caffeine simulator (optional)
+
+Subjects are scored by the [Caffeine](https://github.com/ben-manes/caffeine) cache simulator over JNI. To set up its prerequisites — a Caffeine checkout (a `caffeine/` sibling of this repo, or `$CAFFEINE_DIR`) and a JDK 25 (Caffeine's Gradle toolchain floor) — run:
+
+```bash
+scripts/setup-caffeine.sh
+```
+
+The script is idempotent: an existing checkout and JDK 25 are reused. If no JDK 25 is found it prints how to install one; pass `--install-jdk` to let it `apt-get install openjdk-25` for you. In a Claude Code web session this runs automatically via the SessionStart hook (`.claude/hooks/session-start.sh`), so a fresh remote session is ready to run without any manual setup.
+
+
 ## Usage
 
 The framework entry point is the `evolve` console script:
@@ -56,6 +67,14 @@ evolve --cycles 3 --cohort-size 4
 ```
 
 Each cycle ends with a `cycle <NNNN> complete` line naming the sealed cycle directory.
+
+### One-shot runs via the `evolve-run` skill
+
+Inside an AI agent session, the **`evolve-run`** skill kicks off a run from a plain-language description, then reads the whole output folder and reports what happened. Describe the run in natural language — the skill translates it to non-persistent CLI flags and never edits `config.toml`:
+
+> evolve dash for 3 cycles, four variants each, full autonomy
+
+It runs pre-flight checks (venv, Caffeine, JDK 25, `cargo build`), launches the run in the background, then summarises the winners and hit-rate trend, any failures with their root cause, and logging or quality issues worth a look.
 
 ## Inputs and outputs
 
