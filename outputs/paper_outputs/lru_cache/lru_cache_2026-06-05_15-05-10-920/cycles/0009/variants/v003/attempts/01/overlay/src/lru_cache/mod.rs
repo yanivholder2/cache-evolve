@@ -1,0 +1,429 @@
+// O(1) LRU cache using HashMap + arena-based doubly-linked list.
+// Nodes are stored in a Vec (arena) indexed by usize. On eviction the slot is reused in-place,
+// so no free-list management is needed. No unsafe, no external crates.
+
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::Hash;
+
+pub mod lru_cache_jni;
+
+#[derive(Debug)]
+struct Node<K, V> {
+	key: K,
+	value: V,
+	prev: Option<usize>,
+	next: Option<usize>,
+	freq: u8,
+}
+
+#[derive(Debug)]
+pub struct LruCache<K, V> {
+	map: HashMap<K, usize>, // key -> node index
+	nodes: Vec<Node<K, V>>, // arena
+	head: Option<usize>,    // LRU (front)
+	tail: Option<usize>,    // MRU (back)
+	capacity: usize,
+	// Adaptive hit-rate monitoring fields
+	hit_count: u64,
+	miss_count: u64,
+	last_hit_rate: f64,
+	decay_interval_multiplier: u64,
+	// Track operations for periodic checking
+	operation_counter: u64,
+}
+
+impl<K, V> LruCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	pub fn try_new(capacity: usize) -> Option<Self> {
+		if capacity == 0 {
+			log::error!("LruCache.try_new: capacity must be > 0");
+			return None;
+		}
+		log::info!("LruCache.try_new: capacity={capacity}");
+		Some(Self {
+			map: HashMap::with_capacity(capacity),
+			nodes: Vec::with_capacity(capacity),
+			head: None,
+			tail: None,
+			capacity,
+			hit_count: 0,
+			miss_count: 0,
+			last_hit_rate: 1.0,
+			decay_interval_multiplier: 16,
+			operation_counter: 0,
+		})
+	}
+
+	pub fn new(capacity: usize) -> Self {
+		Self::try_new(capacity).expect("LruCache::new: initialization failed")
+	}
+
+	/// Returns the value for `key` if present, promoting it to most-recently-used.
+	pub fn get(&mut self, key: &K) -> Option<&V> {
+		// Look up the arena index for this key; return None on miss
+		let &idx = self.map.get(key)?;
+		// Increment frequency counter (saturating at 255)
+		self.nodes[idx].freq = self.nodes[idx].freq.saturating_add(1);
+		// Promote to MRU: detach from current position, re-attach at tail
+		self.unlink(idx);
+		self.push_back(idx);
+
+		// Track hit
+		self.hit_count += 1;
+		// Increment operation counter and check for adaptive decay
+		self.operation_counter += 1;
+		self.check_and_perform_adaptive_decay();
+
+		Some(&self.nodes[idx].value)
+	}
+
+	/// Inserts or updates `key`. If at capacity, evicts the entry with the lowest frequency.
+	pub fn put(&mut self, key: K, value: V) {
+		// Key already exists: update value in-place and promote to MRU
+		if let Some(&idx) = self.map.get(&key) {
+			self.nodes[idx].value = value;
+			self.unlink(idx);
+			self.push_back(idx);
+
+			// Increment operation counter and check for adaptive decay
+			self.operation_counter += 1;
+			self.check_and_perform_adaptive_decay();
+
+			return;
+		}
+		// New key — need an arena slot
+		let idx = if self.nodes.len() >= self.capacity {
+			// Arena full: evict the node with minimum frequency (ties broken by earliest in order)
+			debug_assert!(self.head.is_some(), "head must be Some when arena is full");
+
+			// Scan all nodes to find the one with minimum frequency
+			let mut victim_idx = self.head.unwrap();
+			let mut min_freq = self.nodes[victim_idx].freq;
+
+			let mut current = self.nodes[victim_idx].next;
+			while let Some(idx) = current {
+				if self.nodes[idx].freq < min_freq {
+					min_freq = self.nodes[idx].freq;
+					victim_idx = idx;
+				}
+				current = self.nodes[idx].next;
+			}
+
+			let evicted_key = self.nodes[victim_idx].key.clone();
+			self.map.remove(&evicted_key);
+			self.unlink(victim_idx);
+			self.nodes[victim_idx].key = key.clone();
+			self.nodes[victim_idx].value = value;
+			self.nodes[victim_idx].freq = 0;
+			victim_idx
+		} else {
+			// Arena has room: allocate a new slot
+			let idx = self.nodes.len();
+			self.nodes.push(Node {
+				key: key.clone(),
+				value,
+				prev: None,
+				next: None,
+				freq: 0,
+			});
+			idx
+		};
+		// Link the new/reused slot at the tail (MRU) and register in the map
+		self.push_back(idx);
+		self.map.insert(key, idx);
+		debug_assert!(self.map.len() <= self.capacity);
+
+		// Track miss (new key insertion)
+		self.miss_count += 1;
+		// Increment operation counter and check for adaptive decay
+		self.operation_counter += 1;
+		self.check_and_perform_adaptive_decay();
+	}
+
+	/// Perform frequency decay: multiplicative decay (multiply by 0.8 to match parent)
+	fn perform_frequency_decay(&mut self) {
+		for node in &mut self.nodes {
+			node.freq = (node.freq as u16 * 4 / 5) as u8;
+		}
+	}
+
+	/// Check hit-rate trend periodically and adjust decay interval adaptively.
+	fn check_and_perform_adaptive_decay(&mut self) {
+		// Check hit-rate trend every capacity × 8 operations
+		let check_interval = (self.capacity as u64) * 8;
+		// Normal decay trigger at capacity × decay_interval_multiplier
+		let decay_threshold = (self.capacity as u64) * self.decay_interval_multiplier;
+
+		// Periodic hit-rate check
+		if self.operation_counter % check_interval == 0 && self.operation_counter > 0 {
+			// Calculate current hit rate
+			let total_ops = self.hit_count + self.miss_count;
+			let current_hit_rate = if total_ops > 0 {
+				self.hit_count as f64 / total_ops as f64
+			} else {
+				1.0
+			};
+
+			// Check if hit-rate has dropped by 5% or more
+			if current_hit_rate < self.last_hit_rate * 0.95 {
+				// Phase shift detected: decay immediately instead of waiting for decay_threshold
+				self.perform_frequency_decay();
+				self.reset_counters();
+				// Increase decay interval slightly to avoid over-decaying
+				self.decay_interval_multiplier = (self.decay_interval_multiplier + 1).min(24);
+			} else {
+				// Stable phase: allow interval to relax toward capacity × 16
+				self.decay_interval_multiplier = (self.decay_interval_multiplier - 1).max(16);
+			}
+
+			// Update last hit rate for next comparison
+			self.last_hit_rate = current_hit_rate;
+		}
+
+		// Normal decay trigger (unless already triggered by hit-rate drop)
+		if self.operation_counter >= decay_threshold {
+			self.perform_frequency_decay();
+			self.reset_counters();
+		}
+	}
+
+	/// Reset hit/miss counters and operation counter.
+	fn reset_counters(&mut self) {
+		self.hit_count = 0;
+		self.miss_count = 0;
+		self.operation_counter = 0;
+	}
+
+	/// Remove node from its current position in the list.
+	fn unlink(&mut self, idx: usize) {
+		let prev = self.nodes[idx].prev;
+		let next = self.nodes[idx].next;
+		match prev {
+			Some(p) => self.nodes[p].next = next,
+			None => self.head = next,
+		}
+		match next {
+			Some(n) => self.nodes[n].prev = prev,
+			None => self.tail = prev,
+		}
+		self.nodes[idx].prev = None;
+		self.nodes[idx].next = None;
+	}
+
+	/// Append node to the tail (MRU end) of the list.
+	fn push_back(&mut self, idx: usize) {
+		self.nodes[idx].prev = self.tail;
+		self.nodes[idx].next = None;
+		match self.tail {
+			Some(t) => self.nodes[t].next = Some(idx),
+			None => self.head = Some(idx),
+		}
+		self.tail = Some(idx);
+	}
+}
+
+impl<K, V> framework::Cache<K, V> for LruCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	fn put(&mut self, key: K, value: V) {
+		LruCache::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		LruCache::get(self, key)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn get_miss_returns_none() {
+		let mut cache = LruCache::<i64, i64>::new(4);
+		assert!(cache.get(&42).is_none());
+	}
+
+	#[test]
+	fn put_then_get() {
+		let mut cache = LruCache::new(4);
+		cache.put(1, 10);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn put_overwrites_existing_key() {
+		let mut cache = LruCache::new(4);
+		cache.put(1, 10);
+		cache.put(1, 20);
+		assert_eq!(*cache.get(&1).unwrap(), 20);
+	}
+
+	#[test]
+	fn overwrite_does_not_grow_order() {
+		let mut cache = LruCache::new(2);
+		cache.put(1, 10);
+		cache.put(1, 20);
+		cache.put(1, 30);
+		// Should still have room for a second key without eviction
+		cache.put(2, 40);
+		assert_eq!(*cache.get(&1).unwrap(), 30);
+		assert_eq!(*cache.get(&2).unwrap(), 40);
+	}
+
+	#[test]
+	fn eviction_removes_lowest_frequency() {
+		let mut cache = LruCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		// Access key 2 to increase its frequency
+		cache.get(&2);
+		// Now key 1 has freq 0, key 2 has freq 1
+		cache.put(3, 30); // evicts key 1 (lowest freq)
+
+		assert!(cache.get(&1).is_none());
+		assert_eq!(*cache.get(&2).unwrap(), 20);
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+	}
+
+	#[test]
+	fn access_updates_frequency() {
+		let mut cache = LruCache::new(3);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(3, 30);
+		// Access key 1 multiple times to increase its frequency
+		for _ in 0..5 {
+			cache.get(&1);
+		}
+		// key 1 should have freq 5, key 2 and 3 have freq 0
+		cache.put(4, 40); // Should evict key 2 (tied at freq 0, earliest in order)
+
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		assert!(cache.get(&2).is_none());
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+		assert_eq!(*cache.get(&4).unwrap(), 40);
+	}
+
+	#[test]
+	fn put_overwrites_existing_key_preserves_freq() {
+		let mut cache = LruCache::new(4);
+		cache.put(1, 10);
+		cache.get(&1); // freq becomes 1
+		cache.put(1, 20); // overwrite preserves promotion but not freq
+		assert_eq!(*cache.get(&1).unwrap(), 20);
+	}
+
+	#[test]
+	fn overwrite_at_full_capacity_does_not_evict() {
+		let mut cache = LruCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20); // cache full
+		cache.put(1, 11); // overwrite, must NOT evict key 2
+		assert_eq!(*cache.get(&1).unwrap(), 11);
+		assert_eq!(*cache.get(&2).unwrap(), 20);
+	}
+
+	#[test]
+	fn repeated_get_increases_frequency() {
+		let mut cache = LruCache::new(3);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(3, 30);
+		for _ in 0..10 {
+			cache.get(&1);
+		}
+		// key 1 has freq 10, key 2 and 3 have freq 0
+		cache.put(4, 40); // should evict key 2 (freq 0, earliest)
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		assert!(cache.get(&2).is_none());
+	}
+
+	#[test]
+	fn get_middle_node_promotes_correctly() {
+		let mut cache = LruCache::new(3);
+		cache.put(1, 10); // LRU
+		cache.put(2, 20); // middle
+		cache.put(3, 30); // MRU
+		cache.get(&2); // unlink middle, push to MRU, freq becomes 1
+								 // Order: 1 (LRU, freq 0), 3 (freq 0), 2 (MRU, freq 1)
+		cache.put(4, 40); // evicts 1 (freq 0)
+		assert!(cache.get(&1).is_none());
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+		assert_eq!(*cache.get(&2).unwrap(), 20);
+	}
+
+	#[test]
+	fn slot_reuse_after_promotion_and_re_eviction() {
+		let mut cache = LruCache::new(2);
+		cache.put(1, 10); // slot 0
+		cache.put(2, 20); // slot 1
+		cache.put(3, 30); // evicts 1 -> slot 0 reused for key 3
+		cache.get(&3); // promote slot 0 (key 3) to MRU, freq becomes 1
+		cache.put(4, 40); // evicts 2 (freq 0) -> slot 1 reused for key 4
+		cache.put(5, 50); // evicts 4 (freq 0) -> slot 1 reused for key 5
+		assert!(cache.get(&2).is_none());
+		assert!(cache.get(&4).is_none());
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+		assert_eq!(*cache.get(&5).unwrap(), 50);
+	}
+
+	#[test]
+	fn get_only_element() {
+		let mut cache = LruCache::new(3);
+		cache.put(1, 10);
+		// List has one node; get unlinks then re-pushes it
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		// Verify list is still intact
+		cache.put(2, 20);
+		cache.put(3, 30);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn overwrite_mru_at_capacity() {
+		let mut cache = LruCache::new(3);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(3, 30); // full; 3 is MRU (tail)
+		cache.put(3, 31); // overwrite MRU
+										// Eviction should take 1 (lowest freq)
+		cache.put(4, 40); // evicts 1
+		assert!(cache.get(&1).is_none());
+		assert_eq!(*cache.get(&2).unwrap(), 20);
+		assert_eq!(*cache.get(&3).unwrap(), 31);
+		assert_eq!(*cache.get(&4).unwrap(), 40);
+	}
+
+	#[test]
+	#[should_panic(expected = "initialization failed")]
+	fn capacity_zero_panics() {
+		LruCache::<i64, i64>::new(0);
+	}
+
+	#[test]
+	fn adaptive_decay_basic_tracking() {
+		let mut cache = LruCache::new(4);
+		// Test that hit/miss tracking works correctly
+		cache.put(1, 10);
+		assert_eq!(cache.miss_count, 1);
+		assert_eq!(cache.hit_count, 0);
+
+		cache.get(&1);
+		assert_eq!(cache.hit_count, 1);
+		assert_eq!(cache.miss_count, 1);
+
+		cache.put(2, 20);
+		assert_eq!(cache.miss_count, 2);
+
+		// Verify cache still works correctly with tracking
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		assert_eq!(*cache.get(&2).unwrap(), 20);
+	}
+}
