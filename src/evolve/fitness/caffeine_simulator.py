@@ -206,9 +206,13 @@ def simulate_variant(
         # One native invocation per trace sweeps every size at once, emitting a
         # hit_rate_<size>.csv per size. Accumulate all (trace, size) points.
         for trace in traces:
+            # Log the policy caffeine actually runs (the subject's registered
+            # spec name), not the internal eviction-selector default. They differ:
+            # caffeine drives `policy_spec_name`; `policy_name` only feeds the
+            # internal selector for subjects that declare a `policy-key`.
             log.info(
                 "[%s] caffeine simulate trace=%s sizes=%s policy=%s",
-                variant, trace, list(sizes), policy_name,
+                variant, trace, list(sizes), caffeine.policy_spec_name,
             )
             try:
                 with _CAFFEINE_LOCK:
