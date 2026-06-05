@@ -16,8 +16,7 @@ conventions below are non-obvious — follow, don't rediscover.
   (`associative_cache`, `lru_cache`), so split off the subject by the timestamp,
   not the first underscore.
 - A raw run is multi-GB, the curated copy a few MB. The bloat that must not enter
-  git: `eval/caffeine/rust-logs/*.log`, the gradle logs, and the run's top-level
-  `logs/`.
+  git: `eval/caffeine/rust-logs/*.log` and the gradle logs.
 
 ## Steps
 
