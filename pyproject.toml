@@ -7,10 +7,17 @@ license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "pytest>=7.0",
-    "google-antigravity",
-    "claude-agent-sdk",
-    "ollama",
 ]
+
+# Every AI-agent backend is optional: a core install pulls in none of them, and
+# the backend is chosen explicitly via ai_agent_tool — install the extra for the
+# one you pick. (google-antigravity additionally ships no sdist and only
+# mac-arm64 + manylinux aarch64/x86_64 wheels, so as a hard dep it would break
+# `uv sync` on Windows and macOS-x86.)
+[project.optional-dependencies]
+claude = ["claude-agent-sdk"]
+antigravity = ["google-antigravity"]
+ollama = ["ollama"]
 
 [project.scripts]
 evolve = "evolve.cli:main"

@@ -128,6 +128,29 @@ def test_model_validated_against_chosen_adapter(tmp_path: Path):
     assert configs.framework.model == "gemma4:e4b"
 
 
+def test_ai_agent_tool_absent_raises_instructive(tmp_path: Path):
+    # No backend default lives in config.toml: omitting both flag and config must
+    # die with a message that names the backends and how to install each.
+    _write_config(tmp_path, ai_agent_tool=None)
+    with pytest.raises(ConfigError, match="no AI agent backend selected") as excinfo:
+        load_configs(tmp_path)
+    message = str(excinfo.value)
+    assert "claude-sdk" in message
+    assert "antigravity-sdk" in message
+    assert "ollama-local" in message
+
+
+def test_missing_sdk_backend_raises_install_hint(tmp_path: Path, monkeypatch):
+    # Selecting a backend whose optional SDK is not installed names the extra.
+    monkeypatch.setattr("evolve.llm._is_importable", lambda module_name: False)
+    _write_config(tmp_path, ai_agent_tool="antigravity-sdk", model="gemini-3-pro-preview")
+    with pytest.raises(ConfigError, match="antigravity") as excinfo:
+        load_configs(tmp_path)
+    message = str(excinfo.value)
+    assert "antigravity-sdk" in message
+    assert "extra antigravity" in message
+
+
 def test_outputs_root_is_subject_prefixed_under_repo_outputs(tmp_path: Path):
     _write_config(tmp_path, subject="lru_cache")
     configs = load_configs(tmp_path)
