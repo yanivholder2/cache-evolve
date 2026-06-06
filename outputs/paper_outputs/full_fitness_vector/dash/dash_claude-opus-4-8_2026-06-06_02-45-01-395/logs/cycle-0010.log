@@ -98,3 +98,12 @@
 10:10:06 INFO     [v001 : evolve.variant.build : compile_for_gates] build gate: passed
 10:10:06 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0010/v001
 10:10:06 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0010/v001
+10:10:07 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0010/v001
+10:10:07 INFO     [v001 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0010/v001
+10:10:07 INFO     [v001 : evolve.variant.repair_loop : implement_with_repair] [v001] gates passed on attempt 1/3
+10:10:07 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] implement-and-gate done
+10:10:07 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0010/v001] caffeine simulate (build cdylib + run)
+10:10:07 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-xv95t6fm subject=/home/user/cache-evolve/inputs/subjects/dash repo_root=/home/user/cache-evolve
+10:10:07 INFO     [v001 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0010/v001 ...
+10:10:27 INFO     [v001 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-target-w9po8_wb/release/libdash.so
+10:10:27 INFO     [v001 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0010/v001] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=dash.DashRust
