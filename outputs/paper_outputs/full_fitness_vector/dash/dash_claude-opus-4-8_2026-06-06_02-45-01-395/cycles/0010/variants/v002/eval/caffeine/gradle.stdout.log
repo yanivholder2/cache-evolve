@@ -1,0 +1,10 @@
+Downloading https://services.gradle.org/distributions/gradle-9.4.0-bin.zip
+.............10%.............20%.............30%.............40%.............50%.............60%..............70%.............80%.............90%.............100%
+^^^^^^^^^^^^^^^^^^^^^^ DashRust Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
+maximumSize: 2048
+numOfSegments: 1
+evictionPolicy: ClassicLRU
+^^^^^^^^^^^^^^^^^^^^^^ DashRust Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2,048: Executed in 20.91 s
+Did not generate a chart as only one data point
+Wrote report to /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/dash/dash_claude-opus-4-8_2026-06-06_02-45-01-395/cycles/0010/variants/v002/eval/caffeine/hit_rate_2048.csv

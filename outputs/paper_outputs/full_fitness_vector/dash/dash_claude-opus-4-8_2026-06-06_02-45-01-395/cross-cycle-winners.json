@@ -32,7 +32,10 @@
     "cycle/0008/v003": 0.24850146043481913,
     "cycle/0009/v001": 0.243489195418205,
     "cycle/0009/v002": 0.24048183640823645,
-    "cycle/0009/v003": 0.24931544897868407
+    "cycle/0009/v003": 0.24931544897868407,
+    "cycle/0010/v001": 0.21456154830802074,
+    "cycle/0010/v002": 0.22080970526069543,
+    "cycle/0010/v003": 0.21915141570745836
   },
   "fitness_vectors": [
     {
@@ -1406,12 +1409,159 @@
           "higher_is_better": false
         }
       ]
+    },
+    {
+      "variant": "cycle/0010/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6737000000000001
+            }
+          ],
+          "summary": 0.6737,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 16
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 16,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 105,
+              "p99_ns": 223
+            },
+            {
+              "op": "put",
+              "p50_ns": 97,
+              "p99_ns": 194
+            }
+          ],
+          "summary": 105,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6794
+            }
+          ],
+          "summary": 0.6794,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 16
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 16,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 104,
+              "p99_ns": 211
+            },
+            {
+              "op": "put",
+              "p50_ns": 93,
+              "p99_ns": 127
+            }
+          ],
+          "summary": 104,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6823999999999999
+            }
+          ],
+          "summary": 0.6824,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 16
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 16,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 108,
+              "p99_ns": 229
+            },
+            {
+              "op": "put",
+              "p50_ns": 94,
+              "p99_ns": 112
+            }
+          ],
+          "summary": 108,
+          "higher_is_better": false
+        }
+      ]
     }
   ],
   "best_per_dimension": {
     "hit-rate": {
-      "variant": "cycle/0009/v003",
-      "summary": 0.6795
+      "variant": "cycle/0010/v003",
+      "summary": 0.6824
     },
     "metadata-size": {
       "variant": "cycle/0002/v002",
