@@ -1,0 +1,322 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
+
+pub mod tiny_lfu_jni;
+
+const SKETCH_DEPTH: usize = 4;
+const SKETCH_WIDTH_FACTOR: usize = 4;
+const MIN_SKETCH_WIDTH: usize = 16;
+const MAX_COUNT: u32 = u32::MAX;
+
+#[derive(Debug)]
+pub struct Node<K, V> {
+	key: K,
+	value: V,
+	prev: Option<usize>,
+	next: Option<usize>,
+}
+
+#[derive(Debug)]
+pub struct TinyLfuCache<K, V> {
+	map: HashMap<K, usize>,
+	nodes: Vec<Node<K, V>>,
+	head: Option<usize>,
+	tail: Option<usize>,
+	capacity: usize,
+	sketch: CountMinSketch,
+}
+
+impl<K, V> TinyLfuCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	pub fn try_new(capacity: usize) -> Option<Self> {
+		if capacity == 0 {
+			log::error!("TinyLfuCache.try_new: capacity must be > 0");
+			return None;
+		}
+		let width = (capacity * SKETCH_WIDTH_FACTOR)
+			.max(MIN_SKETCH_WIDTH)
+			.next_power_of_two();
+		log::info!("TinyLfuCache.try_new: capacity={capacity} sketch_width={width}");
+		Some(Self {
+			map: HashMap::with_capacity(capacity),
+			nodes: Vec::with_capacity(capacity),
+			head: None,
+			tail: None,
+			capacity,
+			sketch: CountMinSketch::new(width),
+		})
+	}
+
+	pub fn new(capacity: usize) -> Self {
+		Self::try_new(capacity).expect("TinyLfuCache::new: initialization failed")
+	}
+
+	/// Heap bytes held by the frequency sketch for this cache: `depth * width * size_of::<u32>()`.
+	///
+	/// This is the FIXED metadata overhead TinyLfu carries beyond the per-entry nodes — it is
+	/// sized at construction from capacity (see `try_new`) and does not grow with population.
+	/// The metadata-size fitness bin reports it so variant edits to the sketch geometry are visible.
+	pub fn sketch_heap_bytes(&self) -> usize {
+		self.sketch.heap_bytes()
+	}
+
+	pub fn get(&mut self, key: &K) -> Option<&V> {
+		self.sketch.increment(key);
+		let &idx = self.map.get(key)?;
+		self.unlink(idx);
+		self.push_back(idx);
+		Some(&self.nodes[idx].value)
+	}
+
+	pub fn put(&mut self, key: K, value: V) {
+		self.sketch.increment(&key);
+		if let Some(&idx) = self.map.get(&key) {
+			self.nodes[idx].value = value;
+			self.unlink(idx);
+			self.push_back(idx);
+			return;
+		}
+
+		if self.nodes.len() < self.capacity {
+			let idx = self.nodes.len();
+			self.nodes.push(Node {
+				key: key.clone(),
+				value,
+				prev: None,
+				next: None,
+			});
+			self.push_back(idx);
+			self.map.insert(key, idx);
+			return;
+		}
+
+		let victim_idx = self.head.expect("TinyLfuCache: full cache has no victim");
+		let victim_key = self.nodes[victim_idx].key.clone();
+		let victim_freq = self.sketch.estimate(&victim_key);
+		let incoming_freq = self.sketch.estimate(&key);
+		if incoming_freq > victim_freq {
+			self.map.remove(&victim_key);
+			self.unlink(victim_idx);
+			self.nodes[victim_idx].key = key.clone();
+			self.nodes[victim_idx].value = value;
+			self.push_back(victim_idx);
+			self.map.insert(key, victim_idx);
+		}
+	}
+
+	fn unlink(&mut self, idx: usize) {
+		let prev = self.nodes[idx].prev;
+		let next = self.nodes[idx].next;
+		match prev {
+			Some(p) => self.nodes[p].next = next,
+			None => self.head = next,
+		}
+		match next {
+			Some(n) => self.nodes[n].prev = prev,
+			None => self.tail = prev,
+		}
+		self.nodes[idx].prev = None;
+		self.nodes[idx].next = None;
+	}
+
+	fn push_back(&mut self, idx: usize) {
+		self.nodes[idx].prev = self.tail;
+		self.nodes[idx].next = None;
+		match self.tail {
+			Some(t) => self.nodes[t].next = Some(idx),
+			None => self.head = Some(idx),
+		}
+		self.tail = Some(idx);
+	}
+}
+
+/// A small non-cryptographic hasher (FxHash-style multiply/rotate folding).
+///
+/// Replaces the SipHash `DefaultHasher` in `base_hash`: integer keys feed a single
+/// 64-bit word through one multiply, so each get/put pays one cheap fold instead of
+/// a full SipHash pass. `finish` applies a final xorshift to improve avalanche of the
+/// high bits that `position_for` consumes via double hashing.
+struct FastHasher {
+	state: u64,
+}
+
+impl FastHasher {
+	const SEED: u64 = 0x9e37_79b9_7f4a_7c15;
+	const MUL: u64 = 0x517c_c1b7_2722_0a95;
+
+	#[inline]
+	fn new() -> Self {
+		Self { state: Self::SEED }
+	}
+
+	#[inline]
+	fn fold(&mut self, word: u64) {
+		self.state = (self.state.rotate_left(5) ^ word).wrapping_mul(Self::MUL);
+	}
+}
+
+impl Hasher for FastHasher {
+	#[inline]
+	fn write(&mut self, bytes: &[u8]) {
+		let mut chunks = bytes.chunks_exact(8);
+		for chunk in &mut chunks {
+			let word = u64::from_ne_bytes(chunk.try_into().unwrap());
+			self.fold(word);
+		}
+		let rem = chunks.remainder();
+		if !rem.is_empty() {
+			let mut buf = [0u8; 8];
+			buf[..rem.len()].copy_from_slice(rem);
+			self.fold(u64::from_ne_bytes(buf));
+		}
+	}
+
+	#[inline]
+	fn write_u64(&mut self, i: u64) {
+		self.fold(i);
+	}
+
+	#[inline]
+	fn write_usize(&mut self, i: usize) {
+		self.fold(i as u64);
+	}
+
+	#[inline]
+	fn finish(&self) -> u64 {
+		self.state ^ (self.state >> 32)
+	}
+}
+
+#[derive(Debug)]
+struct CountMinSketch {
+	width: usize,
+	depth: usize,
+	counts: Vec<Vec<u32>>,
+}
+
+impl CountMinSketch {
+	fn new(width: usize) -> Self {
+		let depth = SKETCH_DEPTH;
+		let counts = vec![vec![0; width]; depth];
+		Self { width, depth, counts }
+	}
+
+	/// Heap bytes backing the counter table: `depth * width * size_of::<u32>()`.
+	fn heap_bytes(&self) -> usize {
+		self.depth * self.width * std::mem::size_of::<u32>()
+	}
+
+	/// Hash the key exactly once with a cheap multiply-xorshift `FastHasher` and return the
+	/// finished 64-bit value. All per-row column positions are then derived from this single
+	/// hash via double hashing, so each get/put pays one cheap fold instead of a SipHash pass.
+	fn base_hash<K: Hash>(&self, key: &K) -> u64 {
+		let mut hasher = FastHasher::new();
+		key.hash(&mut hasher);
+		hasher.finish()
+	}
+
+	/// Derive the column index for `row` from a single base hash via double hashing.
+	#[inline]
+	fn position_for(&self, h: u64, row: usize) -> usize {
+		let h1 = h as usize;
+		let h2 = (h >> 32) as usize;
+		(h1.wrapping_add(row.wrapping_mul(h2)) | 1) & (self.width - 1)
+	}
+
+	fn increment<K: Hash>(&mut self, key: &K) {
+		let h = self.base_hash(key);
+		for row in 0..self.depth {
+			let pos = self.position_for(h, row);
+			let counter = &mut self.counts[row][pos];
+			if *counter < MAX_COUNT {
+				*counter += 1;
+			}
+		}
+	}
+
+	fn estimate<K: Hash>(&self, key: &K) -> u32 {
+		let h = self.base_hash(key);
+		(0..self.depth)
+			.map(|row| self.counts[row][self.position_for(h, row)])
+			.min()
+			.unwrap_or(0)
+	}
+}
+
+impl<K, V> framework::Cache<K, V> for TinyLfuCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	fn put(&mut self, key: K, value: V) {
+		TinyLfuCache::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		TinyLfuCache::get(self, key)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn get_miss_returns_none() {
+		let mut cache = TinyLfuCache::<i64, i64>::new(4);
+		assert!(cache.get(&42).is_none());
+	}
+
+	#[test]
+	fn put_then_get() {
+		let mut cache = TinyLfuCache::new(4);
+		cache.put(1, 10);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn eviction_prefers_hot_items() {
+		let mut cache = TinyLfuCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.get(&1); // make key 1 hotter than key 2
+		cache.get(&3);
+		cache.get(&3);
+		cache.put(3, 30);
+
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+		assert!(cache.get(&2).is_none());
+	}
+
+	#[test]
+	fn low_frequency_new_item_is_rejected() {
+		let mut cache = TinyLfuCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.get(&1);
+		cache.put(3, 30);
+
+		assert!(cache.get(&2).is_some());
+		assert!(cache.get(&3).is_none());
+	}
+
+	#[test]
+	fn update_promotes_existing_item_and_admits_hot_arrivals() {
+		let mut cache = TinyLfuCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(1, 11);
+		cache.get(&3);
+		cache.get(&3);
+		cache.put(3, 30);
+
+		assert_eq!(*cache.get(&1).unwrap(), 11);
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+		assert!(cache.get(&2).is_none());
+	}
+}
