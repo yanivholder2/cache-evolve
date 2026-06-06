@@ -89,7 +89,10 @@ def test_build_cdylib_empty_overlay(tmp_path):
 
 @pytest.mark.slow
 def test_build_cdylib_broken_overlay_raises_and_produces_no_artifact(tmp_path, monkeypatch):
-    layout, variant = _stage(tmp_path, "broken")
+    # Uses broken-cdylib (a non-pinned dash source file), not the shared `broken`
+    # fixture: the latter breaks via the now-pinned src/factory.rs, which the
+    # overlay drops, so it would no longer fail a real dash build.
+    layout, variant = _stage(tmp_path, "broken-cdylib")
 
     workspaces_root = tmp_path / "cdylib-workspaces"
     workspaces_root.mkdir()

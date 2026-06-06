@@ -184,6 +184,37 @@ def test_ep_scope_whitelist_is_union_of_impl_files():
     )
 
 
+@pytest.mark.parametrize(
+    "rel, pinned",
+    [
+        ("src/dash/jni.rs", True),  # manifest protected-file (JNI seam)
+        ("src/factory.rs", True),  # manifest protected-file
+        ("Cargo.toml", True),  # build manifest / gate test targets
+        ("src/lib.rs", True),  # module wiring (could shadow the suite)
+        ("tests/invariant_gate.rs", True),  # gate harness
+        ("src/test_utils/invariants.rs", True),  # invariant suite the gates run
+        ("src/test_utils/mod.rs", True),
+        ("src/dash/segments/dash_segment.rs", False),  # cache implementation
+        ("src/shared/geometry.rs", False),
+        ("src/logging.rs", False),
+    ],
+)
+def test_is_pinned_overlay_path(rel, pinned):
+    subject = load_subject(DASH_SUBJECT)
+    assert subject.is_pinned_overlay_path(Path(rel)) is pinned
+
+
+def test_pinned_overlay_display_lists_protected_and_conventions():
+    # The single rendering injected into prompts; every pinned path it names must
+    # actually be pinned, so the two stay in lockstep.
+    subject = load_subject(DASH_SUBJECT)
+    display = subject.pinned_overlay_display
+    assert "src/dash/jni.rs" in display  # manifest protected-file
+    assert {"Cargo.toml", "src/lib.rs", "tests/", "src/test_utils/"} <= set(display)
+    for shown in display:
+        assert subject.is_pinned_overlay_path(Path(shown.rstrip("/")))
+
+
 def test_whitelist_dedupes_overlapping_impl_files(tmp_path: Path):
     _write_valid_subject(tmp_path)
     (tmp_path / "src" / "policy" / "ep2.rs").write_text("// stub\n")

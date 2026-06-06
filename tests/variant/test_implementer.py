@@ -204,7 +204,7 @@ def test_full_autonomy_scope_allows_any_non_protected_file(tmp_path):
 
 def test_full_autonomy_scope_rejects_protected_file(tmp_path):
     layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
-    with pytest.raises(ImplementerRejection, match="contract-protected"):
+    with pytest.raises(ImplementerRejection, match="gate-integrity"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
             adapter=_WritingAdapter([stub.protected_files[1].as_posix()]),
@@ -214,11 +214,27 @@ def test_full_autonomy_scope_rejects_protected_file(tmp_path):
 
 def test_extension_points_scope_rejects_protected_file(tmp_path):
     layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
-    with pytest.raises(ImplementerRejection, match="contract-protected"):
+    with pytest.raises(ImplementerRejection, match="gate-integrity"):
         implement_variant(
             hypothesis, variant_dir, layout=layout,
             adapter=_WritingAdapter([stub.protected_files[0].as_posix()]),
             authoring_scope=AuthoringScope.EXTENSION_POINTS,
+        )
+
+
+@pytest.mark.parametrize(
+    "pinned_file",
+    ["Cargo.toml", "src/lib.rs", "tests/invariant_gate.rs", "src/test_utils/invariants.rs"],
+)
+def test_full_autonomy_scope_rejects_gate_integrity_file(tmp_path, pinned_file):
+    # Full-autonomy may rewrite the cache freely, but never the gate harness:
+    # the gates that judge a variant must not be authorable by that variant.
+    layout, variant_dir, hypothesis, stub = _prepare(tmp_path)
+    with pytest.raises(ImplementerRejection, match="gate-integrity"):
+        implement_variant(
+            hypothesis, variant_dir, layout=layout,
+            adapter=_WritingAdapter([pinned_file]),
+            authoring_scope=AuthoringScope.FULL_AUTONOMY,
         )
 
 

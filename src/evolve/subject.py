@@ -109,6 +109,12 @@ class Metadata:
     binary_name: str
 
 
+# Crate-relative paths an overlay may never author, under any authoring scope:
+# the gate-integrity surface. See `Subject.is_pinned_overlay_path`.
+_PINNED_OVERLAY_FILES = (Path("Cargo.toml"), Path("src/lib.rs"))
+_PINNED_OVERLAY_DIRS = (Path("tests"), Path("src/test_utils"))
+
+
 @dataclass(frozen=True)
 class Subject:
     subject_dir: Path
@@ -127,6 +133,39 @@ class Subject:
     @property
     def ep_scope_whitelist(self) -> frozenset[Path]:
         return frozenset(path for ep in self.extension_points for path in ep.impl_files)
+
+    def is_pinned_overlay_path(self, rel_path: Path) -> bool:
+        """Whether `rel_path` (relative to the crate root) is gate-integrity
+        surface that no overlay may author, under any authoring scope.
+
+        Pinning these to the pristine crate stops a variant from weakening or
+        stubbing the gates that judge it — the overlay is otherwise applied
+        verbatim, so any crate path it ships overwrites the gate harness the
+        gates then run. The surface is:
+          - the manifest contract `protected-files` (the JNI/factory ABI seam);
+          - `Cargo.toml` (gate test targets and their required features);
+          - `src/lib.rs` (the crate's module wiring, which could otherwise
+            shadow the invariant suite with a gutted inline module);
+          - everything under `tests/` (the gate harnesses) and `src/test_utils/`
+            (the invariant suite those gates run).
+        """
+        if rel_path in self.protected_files:
+            return True
+        if rel_path in _PINNED_OVERLAY_FILES:
+            return True
+        return any(rel_path.is_relative_to(pinned_dir) for pinned_dir in _PINNED_OVERLAY_DIRS)
+
+    @property
+    def pinned_overlay_display(self) -> tuple[str, ...]:
+        """The gate-integrity surface as display strings — the single
+        human-readable rendering of `is_pinned_overlay_path`, injected into agent
+        prompts and rejection guidance so no call site hardcodes the list.
+        Directories carry a trailing slash."""
+        return (
+            *sorted(str(path) for path in self.protected_files),
+            *(str(path) for path in _PINNED_OVERLAY_FILES),
+            *(f"{pinned_dir}/" for pinned_dir in _PINNED_OVERLAY_DIRS),
+        )
 
     @property
     def axis_descriptions(self) -> dict[str, str]:

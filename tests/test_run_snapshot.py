@@ -56,6 +56,25 @@ def test_snapshot_run_inputs_applies_flag_overrides_and_leaves_source(tmp_path):
     assert layout.sources.config_toml.read_text() == "[framework]\ncycles = 7\n"
 
 
+def test_snapshot_run_inputs_preserves_existing_snapshot(tmp_path):
+    # A resumed run (--continue) already has both snapshots; they are the run's
+    # identity and must not be overwritten with the current repo state.
+    layout = Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out", subject="lru_cache")
+    layout.sources.config_toml.parent.mkdir(parents=True, exist_ok=True)
+    layout.sources.config_toml.write_text("[framework]\ncycles = 7\n")
+    layout.sources.subject_manifest.parent.mkdir(parents=True, exist_ok=True)
+    layout.sources.subject_manifest.write_text("[caffeine]\n")
+
+    layout.outputs.root.mkdir(parents=True, exist_ok=True)
+    layout.outputs.config_toml.write_text("[framework]\ncycles = 3\n")
+    layout.outputs.manifest_toml.write_text("[caffeine]\nold = true\n")
+
+    snapshot_run_inputs(layout, {"framework": {"cycles": 99}})
+
+    assert layout.outputs.config_toml.read_text() == "[framework]\ncycles = 3\n"
+    assert layout.outputs.manifest_toml.read_text() == "[caffeine]\nold = true\n"
+
+
 def test_overlay_config_no_overrides_is_verbatim():
     source = "[framework]\n# keep me\ncycles = 7\n"
     assert overlay_config(source, {}) == source
