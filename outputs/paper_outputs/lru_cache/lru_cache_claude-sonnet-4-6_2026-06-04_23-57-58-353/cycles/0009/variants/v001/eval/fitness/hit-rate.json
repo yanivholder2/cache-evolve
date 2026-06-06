@@ -2,11 +2,11 @@
   "dim": "hit-rate",
   "values": [
     {
-      "trace": "lirs:/home/yaniv/projects/cache-evolve/inputs/traces/workload-a.trace.gz",
+      "trace": "lirs:inputs/traces/workload-a.trace.gz",
       "size": 2048,
-      "hit_rate": 0.7341
+      "hit_rate": 0.7315999999999999
     }
   ],
-  "summary": 0.7341,
+  "summary": 0.7316,
   "higher_is_better": true
 }

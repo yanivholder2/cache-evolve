@@ -1,22 +1,23 @@
 # Task: cycle-insight-writer
 
 Cycle: 0009
-Output dir: /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009
+Output dir: /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009
 
 ## Winners
 
-- v003
+- v001
 
 ## Variant insights
 
-- /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/variants/v002/insight.md
-- /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/variants/v003/insight.md
+- /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/variants/v001/insight.md
+- /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/variants/v002/insight.md
+- /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/variants/v003/insight.md
 
 ## Hypotheses (this cycle)
 
-- /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H01.md
-- /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H02.md
-- /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H03.md
+- /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H01.md
+- /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H02.md
+- /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H03.md
 
 ## Prior cycles digest
 
@@ -98,24 +99,6 @@ All three variants probed the IRR-based SLRU baseline from cycle 7 — narrowing
 
 Next cycle should keep cycle/0007/v003 as the confirmed baseline (IRR timestamps preserved across demotion, 80/20 split, LRU-quarter scan in protected, LRU-half scan in probationary, no ghost set). The probationary scan fraction and segment ratio are both settled — neither narrowing nor widening is productive. Ghost admission is exhausted as a direction on the IRR baseline. The highest-value next steps are: (1) a hybrid signal that combines IRR with a coarse visit count to recover long-term warmth information, or (2) multi-workload evaluation to determine whether the current gains are broadly transferable before further parameter tuning.
 
-
-## Rejected variants
-
-- v001 — insight
-  agent 'variant-insight-writer' returned status=ok but recorded 0 input AND 0 output tokens (usage=input_tokens=0, output_tokens=0, cache_read_tokens=0, cache_write_tokens=0, cost_usd=0) — almost always a silent backend failure (session limit, quota, dropped connection). tail of /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/variants/v001/variant-insight-writer.log.md:
-  # Agent log: variant-insight-writer
-  
-  - adapter: ClaudeSdkAdapter(model=claude-sonnet-4-6)
-  - workspace: /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/variants/v001
-  - allow_edits: True
-  - started: 2026-06-04T23:28:13+00:00
-  
-  ## timeline
-  
-  ### 23:28:15 chat
-  
-  You've hit your session limit · resets 4:10am (Asia/Jerusalem)
-  
 
 ## Write
 

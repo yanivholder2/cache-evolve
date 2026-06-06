@@ -2,10 +2,12 @@
 
 ## Helped
 
-- hit-rate: Expanding the protected segment from 80% to 85% gave the hot working set slightly more room, reducing the rate at which warm entries get demoted from protected back to probationary and must be re-promoted.
+- hit-rate: The staleness multiplier (`irr * (op_clock - last_access)`) correctly reclassified entries that had a tight historical burst but had gone untouched for many operations, allowing the scanner to prefer evicting them over entries with a moderate but more recent access gap.
 
 ## Hurt
 
+_(none — only one fitness dimension is tracked)_
+
 ## Takeaway
 
-Shrinking probationary from 20% to 15% produced a small but real hit-rate gain, confirming that the directional evidence from prior cycles (every protected-reduction hurt) was pointing the right way. The gain is modest, however, which indicates the active working set on workload-a is only slightly larger than what 80% protected can hold — it was not severely capacity-constrained at the old split, just mildly so. Further expansion of protected space may yield similar incremental returns rather than a step-change.
+Replacing pure IRR with the staleness-weighted score `irr * staleness` produces a small but real hit-rate gain, confirming that long-silent tight-burst entries are genuinely poor candidates for retention and that pure IRR was retaining some of them incorrectly. The gain is modest rather than large, which indicates that on this LIRS-structured trace the majority of eviction decisions were already correct under pure IRR — the staleness correction rescues only a narrow slice of borderline cases where an entry's raw IRR happened to look hot while its actual last access was far in the past.

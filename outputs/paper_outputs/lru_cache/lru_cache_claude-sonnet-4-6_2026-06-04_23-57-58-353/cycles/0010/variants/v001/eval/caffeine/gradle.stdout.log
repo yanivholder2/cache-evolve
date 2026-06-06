@@ -1,0 +1,6 @@
+^^^^^^^^^^^^^^^^^^^^^^ LruRust Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
+capacity: 2048
+^^^^^^^^^^^^^^^^^^^^^^ LruRust Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2,048: Executed in 1.722 s
+Did not generate a chart as only one data point
+Wrote report to /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0010/variants/v001/eval/caffeine/hit_rate_2048.csv

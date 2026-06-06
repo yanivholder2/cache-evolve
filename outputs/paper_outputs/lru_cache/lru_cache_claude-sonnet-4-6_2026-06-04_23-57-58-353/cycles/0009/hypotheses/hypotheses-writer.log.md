@@ -1,130 +1,102 @@
 # Agent log: hypotheses-writer
 
 - adapter: ClaudeSdkAdapter(model=claude-sonnet-4-6)
-- workspace: /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses
+- workspace: /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/hypotheses
 - allow_edits: True
-- started: 2026-06-04T23:13:32+00:00
+- started: 2026-06-06T01:03:21+00:00
 
 ## timeline
 
-### 23:13:34 thinking
+### 01:03:25 thinking
 
-Let me read all the context files needed to write the hypotheses for cycle 0009.
+Let me read all the context files to understand the current state of the evolution and formulate good hypotheses for cycle 0009.
 
-### 23:13:35 tool: Bash
+### 01:03:26 tool: Bash
 
 ```json
 {
-  "command": "ls /home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/variants/",
+  "command": "ls /home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/",
   "description": "List cycle 0008 variants"
 }
 ```
 
-### 23:13:36 tool: Read
+### 01:03:27 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/cycle-insight.md"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/cycle-winners.json"
 }
 ```
 
-### 23:13:36 tool: Read
+### 01:03:27 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/cycle-winners.json"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/cycle-insight.md"
 }
 ```
 
-### 23:13:38 tool: Read
+### 01:03:32 tool: Glob
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/leaderboard.md"
+  "pattern": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/*/eval/fitness-vector.json"
 }
 ```
 
-### 23:13:38 tool: Read
+### 01:03:33 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cross-cycle-insights.md"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/leaderboard.md"
 }
 ```
 
-### 23:13:41 thinking
-
-Now let me read the cycle 0008 variants in detail, and the baseline, and the winning variant cycle/0006/v001.
-
-### 23:13:42 tool: Glob
+### 01:03:34 tool: Read
 
 ```json
 {
-  "pattern": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/variants/v*/eval/fitness-vector.json"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cross-cycle-insights.md"
 }
 ```
 
-### 23:13:43 tool: Glob
+### 01:03:37 thinking
+
+Now let me read the cycle 0008 variants' overlays to understand what was tried.
+
+### 01:03:38 tool: Glob
 
 ```json
 {
-  "pattern": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/variants/v*/insight.md"
+  "pattern": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/v*/insight.md"
 }
 ```
 
-### 23:13:47 tool: Glob
+### 01:03:39 tool: Read
 
 ```json
 {
-  "pattern": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/variants/**"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles-ledger.jsonl"
 }
 ```
 
-### 23:13:49 thinking
+### 01:03:42 thinking
 
-Let me read the cycle 0008 variants' overlays and insights.
+Now let me read the cycle 0008 variant overlays to understand what was implemented:
 
-### 23:13:50 tool: Read
+### 01:03:42 chat
+
+Now let me read the cycle 0008 variant overlays and the baseline:
+
+### 01:03:44 tool: Glob
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/variants/v001/insight.md"
+  "pattern": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/*/attempts/*/overlay/**"
 }
 ```
 
-### 23:13:50 tool: Read
-
-```json
-{
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/variants/v002/insight.md"
-}
-```
-
-### 23:13:51 tool: Read
-
-```json
-{
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0008/variants/v003/insight.md"
-}
-```
-
-### 23:13:53 thinking
-
-Now let me read the cycle/0006/v001 overlay to understand the current best variant, and the baseline.
-
-### 23:13:54 chat
-
-Now let me read the winning variant (cycle/0006/v001) and the baseline:
-
-### 23:13:55 tool: Glob
-
-```json
-{
-  "pattern": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0006/variants/v001/attempts/*/overlay/src/lru_cache/mod.rs"
-}
-```
-
-### 23:13:55 tool: Glob
+### 01:03:44 tool: Glob
 
 ```json
 {
@@ -132,243 +104,284 @@ Now let me read the winning variant (cycle/0006/v001) and the baseline:
 }
 ```
 
-### 23:13:59 tool: Glob
+### 01:03:48 tool: Glob
 
 ```json
 {
-  "pattern": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0006/variants/v001/**"
+  "pattern": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/**"
 }
 ```
 
-### 23:14:01 tool: Read
+### 01:03:51 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0006/variants/v001/attempts/01/overlay/src/lru_cache/mod.rs"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/v001/attempts/01/overlay/src/lru_cache/mod.rs"
 }
 ```
 
-### 23:14:05 thinking
-
-Now I have a solid understanding of the current state. Let me also read the cycle/0007/v003 (the IRR parent that cycle/0008 derives from):
-
-### 23:14:05 chat
-
-Now let me read cycle/0007/v003 (the IRR baseline that cycle 0008 variants built on):
-
-### 23:14:07 tool: Glob
+### 01:03:52 tool: Read
 
 ```json
 {
-  "pattern": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0007/variants/v003/**"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/v001/insight.md"
 }
 ```
 
-### 23:14:09 tool: Read
+### 01:03:55 thinking
+
+Now let me read the cycle 0008 v002 and v003 insights and the cycle 0006/v001 overlay (the incumbent):
+
+### 01:03:57 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0007/variants/v003/attempts/01/overlay/src/lru_cache/mod.rs"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/v002/insight.md"
 }
 ```
 
-### 23:14:10 tool: Read
+### 01:03:58 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0007/variants/v003/insight.md"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0008/variants/v003/insight.md"
 }
 ```
 
-### 23:16:47 thinking
-
-Now I have a thorough understanding of the entire research history. Let me synthesize what I know:
-
-**The current incumbent**: cycle/0006/v001 (hit-rate 0.734) — SLRU 80/20, frequency-aware eviction with halving on demotion, ghost set, referenced-bit tie-breaker.
-
-**The IRR baseline** (cycle/0007/v003, hit-rate 0.726): SLRU 80/20, IRR timestamps preserved across demotion, no ghost set, LRU-quarter scan in protected, LRU-half scan in probationary.
- 
-So cycle/0006/v001 remains the global best at 0.734, beating the IRR approach from cycle/0007 which only reached 0.726. Even though cycle/0008 built on cycle/0007's foundation, the earlier cycle/0006/v001 still holds the top position.
-
-Now I need to make sure at least one hypothesis directly cites cycle/0006/v001 as its parent, and I'm looking at three promising directions: combining IRR with visit-count signals to capture long-term patterns, testing across multiple workloads, and finally trying the adaptive segment-ratio balancing that's been nominated repeatedly but never implemented. Let me check what cycle/0008/v003 actually was. I'm considering a few concrete modifications to cycle/0006/v001: making the probationary scan width adaptive based on what we observe, implementing dynamic segment balancing with live hit-rate feedback to adjust the protected/probationary split, or expanding the ghost set beyond the current capacity to capture more ghost hits. For Strategy 2, I'm thinking about combining IRR signals with visit frequency to preserve the long-term warmth history that pure IRR alone would lose. I'm considering adding a lightweight visit counter clamped to a few levels that works alongside IRR to break ties—entries with fewer visits get evicted first, preserving some frequency signal without the overhead of full tracking. I'm also reconsidering whether expanding the ghost set beyond its current 20% window would help, though earlier attempts at 50% already regressed, so there's a risk that simply widening it won't solve the underlying admission problem.
-
-Looking at what's been tested across cycles, ghost admission has been exhausted through multiple parameterizations—at probationary capacity, isolated on frequency baselines, at full capacity, and at half-total capacity—so I should abandon that direction. Instead, I'm thinking about replacing the referenced-bit mechanism from cycle 6 with something more effective, like a second-tier scan that covers a larger portion of the protected segment rather than just the LRU quarter.
-
-The real puzzle is why cycle 6's frequency-halving approach achieves 0.734 while the pure IRR method only reaches 0.726. The frequency mechanism preserves a decaying multi-cycle signal—an entry accessed many times long ago still retains some frequency value after halving—whereas IRR only captures the most recent accesses. This means entries that were hot over multiple cycles can still compete effectively with the frequency approach, whereas IRR loses that historical context.
-
-For the next steps, I'm focusing on three hypotheses. The first builds directly on cycle 6's success by adding adaptive feedback to the protected segment size. I'd track whether recently promoted entries are getting evicted too quickly (suggesting the protected segment is undersized) or whether demoted entries rarely get reused (suggesting it might be oversized), then adjust the protection cap accordingly within reasonable bounds.
-
-But I'm realizing the constraints are tighter than I initially thought—the minimum has to stay at 80% based on earlier cycles, so there's limited room to shrink. And cycle 5 already showed that tweaking the scan window in the protected segment gave diminishing returns, which suggests the segment is already fairly well-tuned. So maybe adaptive sizing isn't the breakthrough I'm looking for.
-
-Let me reconsider what's actually promising. Adaptive segment balancing keeps getting nominated across cycles but has never actually been tested—the idea would be that a live controller adjusting the split dynamically, rather than a fixed 80/20 split, could unlock better hit rates.
-
-Another angle is adding a visit counter to track how often nodes get accessed, then using that alongside IRR to create a composite eviction score that captures both recency and long-term warmth without letting the signal grow unbounded.
-
-Or I could revisit demotion mechanics entirely—instead of halving frequency when a node gets demoted, I could apply a penalty that adjusts the frequency differently, preserving more signal while still decaying appropriately.
-
-Actually, looking back at the experimental history, cycle/0006/v001 combined SLRU with ghost sets and frequency halving, and that's still the strongest baseline. What if I augmented that frequency-based approach with IRR to get the best of both signals?
-
-Instead of using the referenced bit as a tie-breaker in the eviction logic—which turned out to be inert because equal-frequency collisions are rare—I could use IRR normalization to distinguish quality across all frequency levels. This would give me fine-grained ranking within each frequency bucket. So the victim selection would prioritize lowest frequency first, then among equal frequencies, pick the coldest node by IRR. Let me formalize this as a concrete hypothesis to test.
-
-For the second hypothesis, I'm considering adding a visit counter capped at 4 that increments on cache hits, then using the inverse of that visit count combined with IRR as the eviction score... Highest IRR first; among equal IRR, fewest visits = coldest). This recovers the long-term warmth signal that pure IRR discards without reintroducing unbounded accumulation. The visit cap at 4 means 2 halvings at demotion (visits >>= 1) would reduce it to 1, preserving modest signal across transitions like frequency halving does.
-
-Wait, I should think about what "visits" means in the context of IRR. Actually, the cross-cycle insight is clear: "a hybrid signal that blends IRR with a visit count... to recover long-term warmth information that pure IRR discards." Let me make this simpler: add a `visits: u8` field, increment on get, cap at 4. Use `(irr, MAX_VISITS - visits)` as eviction score in both segments. Halve visits on demotion.
-
-Now I'm exploring early demotion with re-promotion credit as an alternative direction. When a protected entry gets demoted, it could retain a flag marking it as previously protected and get a faster path back to protected status on the next hit—skipping the normal probationary requirement that cold newcomers face. The idea is that entries hot enough to earn protection deserve quicker re-entry if they're crowded out. But actually, the current design already handles this: demoted entries with frequency > 0 already compete better than cold newcomers during probationary scanning.
-
-Looking at another angle for H03: using insertion-order memory for the probationary scan instead of scanning from the LRU end, sampling entries probabilistically based on their position so older entries are more likely selected. This changes the scan geometry but seems complex to tune. Or maybe segment-clock with position reset—on a protected hit, only move to the MRU tail if the IRR is below a threshold, otherwise keep the node near its current position and just update the timestamp. This prevents a single lucky hit after a long absence from bubbling an entry to the tail.
-
-The core issue is that any protected hit currently moves the entry to the MRU tail regardless of when it was last accessed, so an entry hit after 10,000 ops jumps ahead of genuinely warm nodes. Using the IRR value to position the node instead—hot entries with small IRR go to the tail, cold re-activated entries with high IRR go to a middle position—could help, but this is getting complicated. Let me focus on simpler, more targeted fixes instead.
-
-For H03, I'm considering what hasn't been explored yet: multi-level LRU structures are too complex, and ARC-style adaptive boundaries risk the widening probationary failure. W-TinyLFU with sketches is also too involved for a single change. But here's a cleaner approach: track a `demotion_count` per node and prefer evicting entries with zero demotions over those that have survived multiple demotion cycles—this protects battle-tested entries that were re-promoted over fresh newcomers. It's similar to the referenced bit for the protected segment but operates on multi-cycle history instead.
-
-Actually, I'm reconsidering the insertion point for demoted entries. Currently they go to probationary MRU, but what if demoted-from-protected entries went to the middle of probationary instead—at the boundary between the scanned and unscanned halves? That would guarantee a full scan comparison before eviction rather than risking the unscanned half where they'd be next in line. But wait, the current eviction already scans the LRU half for minimum-frequency victims, so an entry at MRU is already safe for a while. It'll eventually become LRU if not re-accessed, which is actually the right behavior.
-
-So demoted hot entries do need some residency period. Let me refocus on what's actually left to try. I've exhausted ghost admission, widening probationary, fixed counter decay, scan narrowing, second-chance bits, and scan widening—all either failed or hit diminishing returns. The only real open strategies are adaptive segment balancing with a floor and the hybrid IRR plus visit count signal. For the next cycle, the most promising distinct approach is using IRR as a frequency metric.
-
-H01 adds `last_access` and `prev_access` tracking to compute IRR directly, then uses it as a tiebreaker in the demotion logic—scoring candidates by frequency first, then IRR among ties, keeping the existing frequency halving intact. H02 takes a different angle by adding a coarse visit counter capped at 4 that increments on hits and halves on demotion, then combines IRR with the inverse of visits as the composite score for both demotion and ghost admission decisions.
-
-Now I'm looking at H03, which proposes adaptive segment sizing based on a rolling hit-rate feedback loop—widening the protected segment when recent hit rate dips below a threshold to capture more hot entries, and shrinking it when hit rate is strong and the probationary segment stays empty, since that signals protected overflow is doing most of the eviction work. The challenge is that this adaptive resizing could conflict with the other heuristics, especially around how frequency halving and visit counting interact with a dynamically changing capacity boundary.
-
-But stepping back, the real insight from the cross-cycle analysis is simpler: with a sharper eviction signal in place, the optimal protected-to-probationary ratio might just be different from the current 80/20 split—possibly higher, like 85/15, if the working set is dense enough that a larger protected segment would actually help. Rather than building a complex feedback controller, I should test whether a fixed larger protected segment performs better as a baseline.
-
-The hypothesis is straightforward: increase the protected segment to 85% of capacity and shrink probationary to 15%, then measure whether this improves hit rate when the eviction signal is strong. This is a new direction because previous cycles tested widening probationary (which failed), but none have tested widening protected—and the evidence suggests the hot working set might be too dense for 80% protection.
-
-Now I'm laying out three concrete hypotheses to test, starting with adding recency tracking to the protected segment for better demotion decisions.
-
-The second approach layers a visit counter on top of the IRR signal, incrementing on each access and halving on demotion to capture frequency patterns at a coarser granularity.
-
-Now I'm working through the scoring logic more carefully—I need the eviction key to prioritize coldest entries, which means lowest visit count first, then highest IRR among ties. The tuple comparison `(-visits, irr)` ascending gives me exactly that ordering. I'm settling on a simpler approach: pick the victim with the fewest visits, and when visits are tied, evict the one with the highest IRR. This is straightforward to implement with a direct comparison of visits first, then IRR as a tiebreaker. I also need to adjust the protected segment capacity from 80% to 85% for the H03 change.
-
-The 85% protected hypothesis is that if the hot working set is dense enough that 80% barely works, then expanding to 85% might retain more active entries and reduce unnecessary evictions of warm data. This shrinks the probationary zone from 20% to 15%, which is the trade-off risk. The evidence shows 80% is currently winning, while both narrower and wider protected regions have failed, so this is an untested direction worth exploring with a clear success criterion.
-
-All three hypotheses are distinct from each other and prior work, so they're worth running. Now I'm verifying that the implementation descriptions will be clear enough for someone to execute them.
-
-Defining the code changes... I need to be careful about the scoring logic here—I want to evict the coldest node (highest IRR) when frequencies are equal, so I should compare tuples as (freq, -irr) to ensure that among nodes with the same frequency, the one with the highest IRR gets selected as the victim.
-
-Now I'm outlining the H02 changes: adding a `visits` counter capped at 4 to track access patterns, incrementing it in the `get()` method after updating timestamps, and then using it during demotion to refine victim selection.
-
-For victim selection in both eviction and demotion, I'm switching to a composite rule that prioritizes entries with the lowest visit count first, then breaks ties by choosing the highest IRR. I'll also halve the visits counter when demoting to preserve the decaying signal across state transitions.
-
-For H03, I'm adjusting the protected region capacity ratio from 4/5 to 17/20, which naturally cascades to the probationary and ghost capacities.
-
-Everything else stays the same—this is a clean A/B test comparing the two split ratios with all other mechanics held constant. Now I need to verify the output directory and write these changes out.
-
-### 23:16:47 chat
-
-Now I have enough context. Let me check the output directory:
-
-### 23:16:48 tool: Glob
+### 01:04:01 tool: Glob
 
 ```json
 {
-  "pattern": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses"
+  "pattern": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0006/variants/**"
 }
 ```
 
-### 23:16:50 thinking
-
-The directory doesn't exist yet. I need to create the files in it. Let me also read the cycles-ledger to have the full picture.
-
-### 23:16:51 tool: Read
+### 01:04:04 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles-ledger.jsonl"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0006/variants/v001/attempts/01/overlay/src/lru_cache/mod.rs"
 }
 ```
 
-### 23:17:23 thinking
+### 01:08:48 thinking
 
-Now I have a complete picture. Let me design the three hypotheses carefully:
+Now I have a thorough understanding of the context. Let me synthesize what I know:
 
-**Summary of key insights:**
-1. Global winner: cycle/0006/v001 (0.734) - SLRU 80/20, freq-aware demotion with halving, ghost set, referenced bit, MAX_FREQ=8
-2. IRR baseline (cycle/0007/v003, 0.726) - SLRU 80/20, IRR timestamps preserved across demotion, no ghost set
-3. Cycle 0008 all regressed (best was 0.725, v003 was a ghost+IRR variant that regressed)
+## Current state
 
+**Cross-cycle winner**: `cycle/0006/v001` — hit-rate=0.7343 — This is the SLRU + frequency-based policy (freq counters, halving on demotion, LRU quarter scan in protected, LRU half scan in probationary, ghost admission, referenced-bit tie-breaker, MAX_FREQ=8 cap).
 
-4. Open questions: (1) hybrid IRR + visit count, (2) adaptive segment balancing, (3) multi-workload
+**Best IRR-based variant**: `cycle/0007/v003` — hit-rate=0.726 — IRR timestamps, no ghost set, 80/20 split, LRU quarter scan in protected, LRU half scan in probationary.
+Cycle 0008 didn't improve on this—the winner was v003 at 0.7251, which added ghost admission to the IRR baseline but still underperformed compared to 0006/v001. I've been testing variations like narrowing the probationary scan window and adjusting the protected/probationary split, but each attempt has regressed the hit rate.
 
-**What's exhausted/settled:**
-- Ghost admission: exhausted
-- Scan fractions (quarter in protected, half in probationary): both settled
-- Segment ratio widening probationary: always fails  
-- Fixed-rate counter decay: failed
-- Second-chance reprieve bits: inert
+The most promising direction forward is combining IRR with a visit-count signal—pure IRR scored 0.726 while pure frequency hit 0.7343, so a hybrid approach that layers visit history on top of IRR could close that gap. I'm also considering adaptive segment-ratio balancing driven by live feedback, though the fixed 80/20 split has held up well so far. recency gives short-term recency. So I could layer IRR timestamps as a secondary tie-breaker within the frequency-based design to capture both long-term warmth and recent activity without the staleness issues of pure cumulative counts.
 
-**What's unexplored:**
-- Hybrid IRR + visit count signal
-- Widening protected ABOVE 80% (tested from below but never above!)
-- IRR as tie-breaker in frequency-based eviction
-- Adaptive segment balancing
+I'm also considering a coarse visit counter capped at a small value like 4, paired with IRR on the baseline. This would use a composite score where IRR is the primary signal but adjusted when visit counts are close, recovering some long-term warmth without unbounded frequency accumulation.
 
-The referenced-bit tie-breaker stayed inert because equal-frequency collisions rarely surface at the narrow scan window, but swapping it for IRR-based discrimination could actually trigger more often and unlock real improvements. So I'm looking at three concrete hypotheses: replacing the tie-breaker with IRR timestamps for finer eviction granularity when frequencies match, layering a coarse visit counter (clamped at 4) on top of IRR to recover long-term warmth signals that pure IRR loses, and then exploring what comes next.
+There's also the idea of making the protected/probationary split adaptive based on hit-rate feedback instead of keeping it fixed at 80/20. When the protected segment's hit rate drops or promotions are immediately followed by demotions, we could shift more capacity to protected. Though we know from earlier testing that widening probationary beyond 20% regresses, so adaptive balancing would likely just settle back at 80/20 or higher anyway.
 
-Before I write these out, I'm reconsidering cycle/0008/v003's finding that dropping the cumulative frequency counter in favor of two-point IRR timestamps actually hurt hit rate. That's a signal I need to account for when deciding how to layer these changes together.
+Given that 80/20 is described as "at or near the minimum" for holding the active set, trying 85/15 to give more protected space might be worth exploring — that hasn't been tested yet.
 
-H01 is fundamentally different from that failed experiment — it keeps frequency as the primary signal and only uses IRR as a tie-breaker when entries have equal access counts. So when demoting from the protected segment, I'm picking the coldest entry among those with the same frequency, which is a more conservative hybrid approach than replacing frequency entirely.
+I'm considering three distinct approaches. The first is a hybrid strategy that builds on cycle/0006/v001's frequency-based design by adding operation clock timestamps and using IRR as a secondary tie-breaker when candidates have equal frequency counts. This would keep all existing mechanics intact while improving hit rates through better discrimination among equal-frequency candidates.
 
-Updating the demotion logic... Writing eviction logic...
+The second approach, based on cycle/0007/v003, augments the IRR baseline with a small capped access counter that persists across demotion with halving. This counter only breaks ties among cold entries where IRR values are equal, helping protect single-access entries with prior residency over freshly inserted ones.
 
-### 23:17:24 chat
+The third strategy involves adaptive segment-ratio balancing driven by hit-rate feedback, which I'm still working through.
 
-I have all the context I need. Let me write the three hypotheses now.
+Actually, let me focus on something more concrete: an IRR-aware demotion guard that checks whether an entry being demoted has a recent IRR below a threshold before evicting it. If it was accessed very recently, I skip it and scan further into the protected segment to find a colder victim instead.
 
-### 23:17:42 tool: Write
+But wait—the scan window already selects the coldest victim by IRR, so adding a guard wouldn't help much unless I extend the scan depth. Let me try a different angle: what if promotion to protected requires the second access to happen within a recency window, meaning the IRR has to be low enough? That way, entries accessed twice but with a large gap between them wouldn't immediately promote, staying probationary until they prove they're actually warm. This filters out bursty one-time entries.
+
+Though I recall testing something similar in an earlier cycle and it regressed. Maybe I should explore a frequency-weighted IRR approach instead—combining access frequency with recency to make a better promotion decision.
+
+Or I could try layering SIEVE's visited-bit mechanism on top of the SLRU structure, since SIEVE showed promise in earlier testing even though it didn't quite beat the current best score. Looking back at the cross-cycle results, the frequency-based approach is still outperforming pure IRR, so that's probably the direction worth pushing.
+
+The real question is whether I can combine these signals effectively—either by enhancing the frequency baseline with IRR timestamps, or by adding visit counts to the IRR approach to better capture long-term warmth. There's also the possibility of trying something structurally different, like only triggering deeper scans when the immediate victim looks warm rather than scanning proactively on every eviction. Adding timestamp fields to track the most recent and previous access times, then using those as a tiebreaker when frequencies are equal—so entries with the same frequency count but more recent access patterns get prioritized for retention over stale ones.
+
+But there's a wrinkle with the IRR baseline: newly inserted entries all start with `prev_access=0`, making their IRR maximal and indistinguishable from each other. Though actually, demoted entries preserve their timestamps from protected, so they'd have a lower IRR than true newcomers—which means the differentiation might already be working as intended.
+
+The real issue is at the opposite end of the spectrum: entries with many accesses versus those with just a few can end up with similar IRR if their recent accesses happen to cluster together. A visit counter would capture this cumulative warmth—an entry accessed fifty times is more likely to be reused than one accessed twice, regardless of how close those two accesses were. So I'm thinking of using a composite score that pairs IRR with a negated visit count, letting the visit count act as a tiebreaker for entries with comparable IRR values.
+
+I'm adding a `visit_count` field capped at 8 that increments on every access and new insertion, halves on demotion to stay symmetric with the frequency baseline, and gets initialized to 1 for new entries. During eviction, I'll use the composite `(irr, -visit_count)` ordering so entries with the same IRR get evicted based on their access history.
+
+Now I'm considering an adaptive promotion threshold that only moves probationary entries to protected if their IRR is below a certain value, filtering out lucky second accesses with large gaps. But cycle 0005 already showed that a two-hit promotion gate regressed because the frequency-aware eviction scan handles cold-traffic filtering well enough. Instead, I'm exploring a CLOCK-within-SLRU approach where the protected segment uses a clock hand rather than strict LRU ordering — on a protected hit, I set a referenced bit without moving the entry, and the clock hand sweeps through demoting unreferenced entries.
+
+This avoids the O(1) MRU-tail move cost and handles eviction lazily, though I'm concerned it might repeat cycle 0003's problem where freezing position destroyed recency ordering. A simpler alternative is increasing the protected segment to 85/15 from the current 80/20 split, since cycle 0008 suggested that 80/20 is barely sufficient for the workload's active set.
+
+The tradeoff is that shrinking probationary space means entries get evicted faster before a second access can happen, but this direction—widening protected rather than widening probationary—hasn't actually been tested yet on the IRR baseline.
+
+A better approach might be to rethink admission filtering itself: instead of always evicting the highest-IRR entry from probationary, use the LRU head as a guaranteed fallback victim. This way, if the scan winner is deeper in the queue than the head, we'd be preserving a less-cold entry over a more-cold one, which could be counterproductive.
+
+But I'm overcomplicating this. Looking at the actual data, frequency-based eviction is outperforming IRR-based by about 0.8%, and the cross-cycle analysis suggests the real win comes from blending IRR with visit frequency or a referenced bit to capture the long-term warmth that pure IRR misses. Let me focus on the most promising directions instead.
+
+The three main candidates are enhancing the frequency approach with IRR, adding visit count to the IRR approach, or trying something structurally different. I've already explored most of the obvious variations—two-segment SLRU, ghost sets, frequency-aware scanning, IRR timestamps, referenced bits, decay rates, and various tuning parameters. Now I need to figure out what genuinely hasn't been tested yet.
+
+The missing piece is adaptive segment ratio balancing. I've considered it repeatedly but never actually built it. The approach would track hit rates separately for protected and probationary segments, then dynamically adjust the boundary between them to maximize overall performance. I can implement this using an ARC-inspired strategy: monitor whether promoted entries churn quickly (suggesting the protected segment is too large) or stick around and get hit again (suggesting it should grow). I'll track protected hits and promotions from probationary, then use those signals to shift the segment boundary.
+
+Now I'm settling on three concrete hypotheses to test. The first one builds on the IRR work from cycle 0006, adding timestamps as a secondary tie-breaker to refine victim selection when frequency scores are close.
+
+Implementing this means tracking operation clock and access timestamps on each node, updating them on every cache hit and new insertion while preserving them during demotion. The IRR calculation returns the inter-reference recency, and I'm modifying the victim selection logic to use a three-part score combining frequency, reference bit, and IRR for more precise eviction decisions. the idea is that entries with the same IRR but different access patterns get distinguished by visit count, so frequently-accessed items survive eviction while one-off accesses get pruned first. I'm tracking this with a capped visit counter that increments on hits, gets halved during demotion to preserve relative warmth across segment transitions, and feeds into the eviction comparison as a secondary tiebreaker after IRR.
+
+Now I'm considering whether H03's adaptive segment ratio approach would actually improve things — the idea is to let the protected/probationary boundary shift dynamically based on promotion-demotion churn rather than staying fixed at 80/20, which could better track the workload's active set size. Though I should think about whether parenting from the highest-scoring variant is the right move here.
+
+Actually, it might make more sense to build H03 on top of the IRR-based SLRU from cycle/0007/v003 rather than starting from baseline, since that gives the implementer a solid foundation to add the adaptive ratio mechanism on top of, reducing the risk of bugs from building everything from scratch.
+
+The adaptive approach would track hit rates in a rolling window and adjust the protected/probationary split dynamically based on whether the signal suggests a shift is needed—different from the fixed 70/30 ratio that regressed in cycle/0008/v002.
+
+I could implement this by monitoring churn (entries promoted then quickly demoted) to detect when the protected segment is oversized, or use periodic reassessment to decide whether to expand or contract based on current hit rates and eviction pressure.
+
+For a cleaner, more concrete approach: start with protected at 80% of capacity, then after every `capacity` operations, check if probationary is empty (shrink protected to reclaim space) or oversized (grow protected), keeping the protected size bounded within reasonable limits.
+
+But honestly, these adaptive schemes add complexity without proven benefits. Instead, I should explore genuinely different structural ideas: proactively demoting stale protected entries during idle periods rather than waiting for promotion to trigger a scan, dividing the protected segment itself into hot and warm tiers to create a three-level hierarchy, or reconsidering where newly inserted keys land in probationary—maybe not always at the MRU tail but somewhere in the middle to bias eviction differently.
+
+Actually, stepping back: the cycle/0006/v001 version carries overhead from mechanisms that haven't proven effective on this workload—the ghost set and referenced bit. What if I strip those out and instead add IRR timestamps as a tie-breaker? That's a cleaner hybrid: removing the exhausted complexity while keeping the frequency counter and halving-on-demotion logic that provides long-term warmth, then layering in the IRR signal that's proven valuable. This feels like a well-motivated hypothesis that combines the best of the frequency-based design with the IRR insights from cycle 7.
+
+Now I'm formalizing three concrete hypotheses with their specific changes. H01 removes the ghost set and referenced-bit fields entirely, then introduces an operation clock to track inter-reference recency as a tie-breaker for the frequency counter.
+
+Implementing the operation clock that increments on every access, storing both the last and previous access timestamps on each node so I can compute inter-reference recency (IRR) as the gap between them. The eviction scoring then uses frequency as the primary criterion with IRR as the secondary tie-breaker, favoring nodes with longer gaps between accesses. Comparing tuples with `(freq, irr_negated)` where irr_negated inverts the IRR value so higher IRR maps to lower comparison rank — that way the victim selection naturally picks the entry with lowest frequency and, among ties, highest IRR.
+
+I'm writing a comparison that checks if the current entry beats the victim by having lower frequency, or equal frequency but higher IRR, making the logic straightforward and readable.
+
+Keeping the configuration parameters stable: 80/20 split between protected and probationary, LRU quarter in protected and half in probationary, frequency capped at 8 with halving on demotion.
+
+For the next iteration, I'm adding a visit counter capped at 8 that gets halved when entries are demoted, which helps recover long-term warmth information and improves victim selection when IRR values are similar. The counter increments on each access up to the cap, resets to 1 on slot reuse, and feeds into a composite victim selection that prioritizes highest IRR combined with lowest visit count. I'm exploring whether a temperature-tiered approach within the protected segment could work better—scanning all of protected but weighting scores to favor the LRU end—but the fixed scan fraction has already been validated, and the IRR signal is sharp enough that expanding the scan window doesn't yield gains. I'm also considering a soft demotion mechanism with IRR cooldown, though the thought cuts off mid-sentence. I'm considering widening the demotion scan in protected from a quarter to a third, but looking back at the test history, this was already explored on the frequency baseline with only marginal gains, and narrowing the scan in cycle 0008 actually regressed performance. This doesn't seem like a strong enough direction to pursue as a full hypothesis.
+
+Another angle is routing evicted protected entries into a ghost set for fast-tracked re-admission, but that approach has already been exhausted. What I should focus on instead is something genuinely untested: a CLOCK-within-SLRU approach using a circular buffer and referenced bits in the protected region, which would differ fundamentally from the referenced-bit attempt in cycle 3 that froze position on hits. The real question is whether a proper CLOCK eviction policy could compete with the IRR-based scan, though this would require significant architectural changes.
+
+A more concrete hypothesis worth testing: conditional demotion that skips demoting an entry if its IRR falls below a burst threshold. Right now the scan always demotes its coldest victim regardless of actual hotness, but if the entire scan window contains hot entries (low IRR values), maybe I should extend the scan to look elsewhere instead of forcing a demotion. After selecting a victim from the LRU quarter, I'd check if its IRR falls below a hot threshold—if so, I'd expand the scan to cover more candidates and find something genuinely cold. Alternatively, I could just widen the protected scan window from a quarter to a third, which gives more selection room and might work better with the sharper IRR signal than it did with frequency-based eviction.
+
+But the gains are marginal at best. Instead, I'm going to pursue the adaptive segment ratio approach—it's the most novel and theoretically sound direction. I'll implement an ARC-style mechanism where the protected/probationary split adjusts dynamically: start with 80% protected, then increment the target by 1 whenever a probationary hit occurs, and decrement it on probationary misses, letting the system learn the optimal ratio over time. I need a different signal since ghost lists aren't available. I'm thinking about using a promotion-versus-eviction rate instead: tracking a heat value that starts around 80% of capacity, then incrementing it when probationary entries get promoted (signaling demand for more protected space) and decrementing it on cold evictions (signaling the protected tier is oversized). This adapts the protected capacity dynamically within bounds of 50% to 90% of total capacity, requiring modifications to the `get()` method to trigger these adjustments.
+
+But I'm realizing the increment and decrement rates could cancel each other out in steady state, causing `heat_p` to oscillate randomly rather than converge. I need to look at how ARC handles this adaptation more carefully.
+
+The key insight is to only adjust `heat_p` during moments of actual pressure—increment when the protected segment hits capacity and we're promoting from probationary, and decrement when probationary is full and we're evicting. This way the adaptation responds to real contention rather than just noise.
+
+Alternatively, I could skip the adaptive logic entirely and just test a fixed adjustment like increasing the protected segment to 85% instead of 80% to see if that alone improves performance on the baseline.
+
+I'm leaning toward the adaptive approach since it's the genuinely novel direction that's emerged across multiple cycles. Let me formalize this as H03 with an adaptive protected/probationary ratio that tracks promotion demand to dynamically allocate more capacity to the protected segment when the hot set is underserved.
+
+The implementation adds mutable protected capacity bounds (between 50% and 90% of total), a heat adaptation counter that accumulates pressure signals, and hooks into the promotion and eviction paths to adjust the ratio based on whether we're promoting hot entries or evicting cold ones.
+
+Defining the adaptation logic... I'm reconsidering the approach and moving toward a simpler weighted IRR mechanism that normalizes the inter-reference recency signal by operation clock to avoid staleness bias, building on the cycle/0007/v003 foundation. Actually, the IRR calculation already captures some recency since it updates with each access—the interval between the last two accesses becomes the new IRR. But the problem is that an entry accessed long ago retains its IRR value indefinitely, so something with IRR=2 from operations 100 and 102 still looks "hot" at operation 10000 even though it hasn't been touched in nearly 10000 operations. Weighting by the time since last access fixes this: that same entry would get a score of 2 × 9898, making it correctly appear cold. This approach is theoretically sound and worth exploring.
+
+The implementation would calculate a weighted IRR by multiplying the current IRR by the elapsed time since the last access, then use this weighted value in the eviction and demotion logic. For single-access entries where there's no previous access time, I'd keep them at maximum priority. The tricky part is handling potential overflow when multiplying two large u64 values, so I'd need saturating or checked arithmetic to avoid wrapping.
+
+This approach captures the intuition that even entries with good historical IRR should be treated as colder if they haven't been accessed recently. Now I'm ready to finalize my three hypotheses and document them clearly. on stale access patterns. I need to verify the exact parent versions for H02 and H03 by checking what cycle/0008/v003 actually implemented, since that's the current winner I'm building from. Ghost admission caused the regression in cycle 0008, so cycle/0007/v003 is the cleaner IRR baseline to reference for H02 and H03. I need to verify what scan window cycle/0007/v003 actually used—cycle/0008/v001 narrowed it to a quarter scan in probationary, so the earlier version likely had a half scan instead.
+
+### 01:08:48 chat
+
+Let me read the cycle 0007 v003 overlay to confirm the code structure:
+
+### 01:08:50 tool: Glob
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H01.md",
-  "content": "# H01\n\nReplace the inert referenced-bit tie-breaker in `demote_prot_head()` with IRR as the secondary eviction criterion to improve hit rate by demoting cold-but-equally-frequent protected entries before recently-warm ones.\n\n## Parent\n\ncycle/0006/v001\n\n## Changes\n\ncycle/0006/v001 uses `(freq, referenced)` as the two-key demotion score in `demote_prot_head()`. The referenced bit was empirically confirmed inert (cycle 6 insight): equal-frequency collisions almost never occur at the narrow LRU-quarter scan window on this trace. IRR, however, differs among entries at any frequency level and carries genuine recency-of-recency information.\n\n### Additions to Node<K, V>\n\nAdd two new fields alongside the existing `freq` and `referenced` fields:\n\n```rust\nlast_access: u64,   // op_clock value at most recent get hit; 0 if never hit\nprev_access: u64,   // op_clock value at second-most-recent get hit; 0 if fewer than 2\n```\n\n### New field on LruCache<K, V>\n\nAdd `op_clock: u64`, initialized to `1` in `try_new()`.\n\n### New helper method\n\n```rust\n#[inline]\nfn irr(&self, idx: usize) -> u64 {\n    if self.nodes[idx].prev_access == 0 {\n        u64::MAX\n    } else {\n        self.nodes[idx].last_access - self.nodes[idx].prev_access\n    }\n}\n```\n\n### Changes to `get()`\n\nBefore any segment-specific logic, update the IRR timestamps for every cache hit:\n\n```rust\nself.nodes[idx].prev_access = self.nodes[idx].last_access;\nself.nodes[idx].last_access = self.op_clock;\nself.op_clock += 1;\n```\n\nAlso set `self.nodes[idx].referenced = true` for protected hits (unchanged from parent), but the bit is now redundant — it can be retained for test compatibility or removed; the demotion logic no longer reads it.\n\n### Changes to `demote_prot_head()`\n\nReplace the victim score from `(freq, referenced_bit_as_u32)` to a two-key comparison that evicts the entry with the lowest frequency first, then among equal-frequency entries the one with the highest IRR (coldest):\n\n```rust\n// Old:\nlet r = if self.nodes[idx].referenced { 1u32 } else { 0u32 };\nlet score = (freq, r);\nif score < victim_score { ... }\n\n// New (victim_irr: u64 alongside victim_freq: u32):\nlet cur_freq = self.nodes[idx].freq;\nlet cur_irr  = self.irr(idx);\n// Prefer lower freq; break ties with higher IRR (colder = higher value)\nif cur_freq < victim_freq\n   || (cur_freq == victim_freq && cur_irr > victim_irr)\n{\n    victim_freq = cur_freq;\n    victim_irr  = cur_irr;\n    victim_idx  = Some(idx);\n}\n```\n\nInitialize `victim_irr` to `0` (so the first candidate unconditionally sets the victim). Alternatively, start with `victim_score = (u32::MAX, 0u64)`.\n\n### Everything else preserved\n\nGhost admission, frequency halving on demotion (`freq /= 2`), MAX_FREQ cap, probationary half-scan minimum-frequency victim selection, and all linked-list mechanics are unchanged from cycle/0006/v001.\n\n## Rationale\n\nThe referenced bit targets frequency-equal collisions that are rare at the quarter-scan width. IRR fires continuously: every pair of entries at the same frequency level has distinguishable IRR values, so the tie-breaker actually selects a different (colder) victim on nearly every demotion. This preserves cycle/0006/v001's proven frequency signal as the outer key while adding real discrimination inside each frequency bucket.\n"
+  "pattern": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0007/variants/*/attempts/*/overlay/**"
 }
 ```
 
-### 23:18:03 tool: Write
+### 01:08:53 tool: Glob
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H02.md",
-  "content": "# H02\n\nAugmenting the IRR baseline with a coarse visit counter (clamped at 4, halved on demotion) and using it as the primary eviction key will improve hit rate by recovering the long-term warmth signal that pure IRR discards.\n\n## Parent\n\ncycle/0007/v003\n\n## Changes\n\ncycle/0007/v003 uses IRR as the sole eviction signal. The cycle 8 cross-cycle insight identified the core weakness: IRR is a two-point snapshot and cannot distinguish an entry accessed twice quickly *in the distant past* from one accessed twice quickly *just now*. A coarse visit count provides exactly the long-term signal that frequency halving gave cycle/0006/v001, but without unbounded accumulation.\n\n### New constant\n\n```rust\nconst MAX_VISITS: u8 = 4;\n```\n\n### New field on Node<K, V>\n\nAdd `visits: u8` initialized to `0` alongside the existing IRR timestamp fields.\n\n### Changes to `get()`\n\nAfter updating the IRR timestamps (`prev_access`, `last_access`, `op_clock`), increment visits capped at `MAX_VISITS`:\n\n```rust\nif self.nodes[idx].visits < MAX_VISITS {\n    self.nodes[idx].visits += 1;\n}\n```\n\nApply this for hits in both segments (protected and probationary).\n\n### Changes to `demote_prot_head()`\n\nAfter the victim is selected and before it is unlinked from protected, halve its visit count to preserve a decaying warmth signal across the segment transition (mirroring counter halving in cycle/0006/v001):\n\n```rust\nself.nodes[victim_idx].visits >>= 1;\n```\n\nThe IRR timestamps are already preserved across demotion (unchanged from parent).\n\n### Changes to victim selection in both `evict_from_probationary()` and `demote_prot_head()`\n\nReplace the single-key `max IRR` comparison with a two-key comparison: fewest visits first (coldest on long-term), then highest IRR as tie-breaker (coldest on short-term). This means the \"victim\" in both scan loops is selected as:\n\n```rust\n// cur_visits: u8, cur_irr: u64 for the current candidate\n// victim_visits: u8, victim_irr: u64 initialized to (MAX_VISITS+1, 0u64)\nif cur_visits < victim_visits\n   || (cur_visits == victim_visits && cur_irr > victim_irr)\n{\n    victim_visits = cur_visits;\n    victim_irr    = cur_irr;\n    victim_idx    = Some(cur_node_idx);\n}\n```\n\nInitialize `victim_visits = MAX_VISITS + 1` (or `u8::MAX`) and `victim_irr = 0` before the scan loop so the first candidate always replaces the initial sentinel.\n\n### New entries\n\nNew entries in `put()` initialize `visits = 0`, which makes them primary eviction candidates when they compete against entries with any accumulated visits — correctly biasing eviction toward cold newcomers.\n\n### Invariants preserved\n\nAll IRR timestamp mechanics (preservation across demotion, `op_clock` increment pattern), scan window fractions (LRU half in probationary, LRU quarter in protected), the 80/20 segment split, and the absence of a ghost set are unchanged from cycle/0007/v003.\n\n## Rationale\n\nThe `visits` counter with halving-on-demotion mimics the frequency-halving mechanism that made cycle/0006/v001 effective, but at a coarser level (4 states vs. 8). An entry that accumulated 4 visits and is demoted arrives in probationary with 2 visits — enough to survive over cold newcomers at 0 visits — matching the intended behavior of cycle/0006/v001's frequency halving. The 2-bit ceiling prevents unbounded accumulation. IRR remains as the tie-breaker, preserving its sharpness when visit counts are equal.\n"
+  "pattern": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0007/**"
 }
 ```
 
-### 23:18:23 tool: Write
+### 01:08:56 tool: Read
 
 ```json
 {
-  "file_path": "/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H03.md",
-  "content": "# H03\n\nWidening the protected segment from 80% to 85% of capacity will improve hit rate by reducing demotion churn on a workload whose hot working set is dense enough to overflow the current 80% floor.\n\n## Parent\n\ncycle/0006/v001\n\n## Changes\n\nEvery prior cycle tested the 80/20 split or failed by *shrinking* the protected segment (cycles 2 and 8 both regressed when probationary was widened to 30%). No cycle has ever tested the opposite direction: shrinking probationary below 20% to give protected more space. The cycle 8 and cycle 2 failures both point to the same root cause — the hot working set is dense and 80% protected is \"at or near the minimum\" — which implies the active set might benefit from more, not less, protected capacity.\n\n### Single change in `try_new()`\n\nReplace:\n\n```rust\nlet prot_cap = capacity * 4 / 5;\n```\n\nwith:\n\n```rust\nlet prot_cap = capacity * 17 / 20;\n```\n\n`prob_cap = capacity - prot_cap` and `ghost_cap = prob_cap` follow automatically, so probationary shrinks from 20% to 15% of capacity and the ghost window shrinks proportionally.\n\nNo other code changes. All eviction logic (frequency-aware demotion scanning LRU quarter of protected, probationary half-scan, counter halving on demotion, MAX_FREQ cap, referenced-bit tie-breaker, ghost admission) is identical to cycle/0006/v001.\n\n### Edge case\n\nFor small capacities (e.g., capacity = 4), `capacity * 17 / 20` rounds down (4 * 17 / 20 = 3), giving prot_cap = 3, prob_cap = 1, which is the same result as the current formula (4 * 4 / 5 = 3). The change only has effect at capacity >= 20, well below the evaluated capacity of 2048.\n\n## Rationale\n\nThe evidence pattern is directional: every failure from *reducing* protected space confirms the active set is large and dense. Expanding protected space in the complementary direction is a direct, untested prediction of the same evidence. At 85% protected (15% probationary), the one-hit filter is weaker (fewer slots in probationary means faster eviction of cold newcomers — which is actually stricter filtering, not looser), while the hot set gets 5% more room. The risk is that 15% probationary reduces the cold-filter window too aggressively on access bursts; the hypothesis is that the benefit of holding more warm entries outweighs this cost on the dense working set of workload-a.\n"
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0007/variants/v003/attempts/01/overlay/src/lru_cache/mod.rs"
 }
 ```
 
-### 23:18:35 chat
+### 01:09:36 thinking
 
-Three hypotheses written to `/home/yaniv/projects/cache-evolve/outputs/lru_cache_2026-06-04_23-57-58-353/cycles/0009/hypotheses/`:
+Now I have a clear picture of the code. `cycle/0007/v003` is the clean IRR-only SLRU design with:
+- Half scan in probationary: `scan_len = (prob_count / 2).max(1)`
+- Quarter scan in protected: `scan_len = (prot_count / 4).max(1)`
+- No ghost set
+- No freq counter
+- Timestamps preserved across demotion
+
+Now let me finalize my three hypotheses:
+
+**H01 (parent: cycle/0006/v001)** — MANDATORY
+Remove ghost set and referenced-bit from the frequency-based incumbent, add IRR timestamps as secondary tie-breaker for equal-frequency candidates. 
+
+This strips two exhausted mechanisms and adds the IRR signal that cycle/0007 validated as a strong discriminator.
+
+**H02 (parent: cycle/0007/v003)**
+Add coarse visit counter (capped at 8, halved on demotion) as tie-breaker for equal-IRR entries in both eviction and demotion scans. Recovers long-term warmth history that pure IRR discards.
+
+**H03 (parent: cycle/0007/v003)**  
+Use current-time-weighted IRR as the eviction score instead of pure IRR, penalizing entries that were historically hot but haven't been accessed recently.
+
+But I'm questioning whether the staleness bias actually exists here. With IRR defined as the gap between last and previous access, an entry touched at times T1 and T2 gets IRR = T2 - T1, which remains frozen if never accessed again. So at a much later time T3, it looks "hot" with a low IRR despite sitting untouched for T3 - T2 operations. The weighting by elapsed time since last access directly addresses this problem. be fine for the workload sizes we're testing. Let me verify the overflow math holds up and that this approach doesn't introduce any edge cases with the scoring mechanism.
+
+Implementing the `irr_score` function... I need to write the three hypothesis files to the output directory, and I'm reconsidering H01's design—it should combine frequency counters with halving on demotion, a MAX_FREQ cap, and LRU quarter scan logic from the earlier cycle variant.
+
+The key insight is that by removing the ghost set and referenced bit while adding IRR timestamps as a tie-breaker, I'm creating a genuine hybrid that leverages frequency's long-term warmth signal alongside IRR's burst detection. The testable claim is that this should exceed the 0.7343 hit rate baseline if the hypothesis holds.
+
+### 01:09:36 chat
+
+Now I have all the context I need. Let me write the three hypothesis files:
+
+### 01:09:57 tool: Write
+
+```json
+{
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H01.md",
+  "content": "# H01\n\nRemoving the ghost set and referenced-bit from cycle/0006/v001 and layering IRR timestamps as a secondary tie-breaker for equal-frequency candidates raises hit rate by combining the long-term warmth signal of frequency counters with IRR's burst-detection capability while eliminating two exhausted mechanisms.\n\n## Parent\n\ncycle/0006/v001\n\n## Changes\n\nStart from the cycle/0006/v001 overlay (SLRU + frequency + ghost set + referenced-bit + MAX_FREQ cap).\n\n**Remove ghost admission entirely:**\n- Delete the `ghost: VecDeque<K>`, `ghost_set: HashSet<K>`, and `ghost_cap: usize` fields from `LruCache`.\n- Delete the `add_to_ghost()` helper.\n- Remove all ghost-set reads/writes from `put()`: the ghost-hit branch in step 2 (where a ghost match routes a new key directly into protected) is removed; all new keys always land in probationary via the normal path.\n- Remove the `ghost_set.remove()` defensive cleanup in `get()`.\n- Remove the `HashSet` import if no longer needed.\n\n**Remove the referenced-bit tie-breaker:**\n- Delete the `referenced: bool` field from `Node`.\n- In `get()`, remove the `self.nodes[idx].referenced = true` assignment on protected hits.\n- In `demote_prot_head()`, replace the old `(freq, referenced as u32)` victim score with the new composite described below.\n\n**Add IRR timestamps:**\n- Add `op_clock: u64` to `LruCache`, initialized to `1`.\n- Add `last_access: u64` and `prev_access: u64` fields to `Node`. On new insertion in `put()`, set `last_access = op_clock` and `prev_access = 0`. Increment `op_clock` after the assignment.\n- In `get()`, before the segment dispatch: `self.nodes[idx].prev_access = self.nodes[idx].last_access; self.nodes[idx].last_access = self.op_clock; self.op_clock += 1;`\n- On demotion in `demote_prot_head()`, do NOT reset timestamps. They are preserved just as in cycle/0007/v003, so a warm demoted entry retains its competitive IRR.\n- On slot reuse in `put()` (the arena-full path), reset `prev_access = 0` and `last_access = op_clock` for the recycled slot, same as a fresh insertion.\n- Add `fn irr(&self, idx: usize) -> u64` returning `u64::MAX` if `self.nodes[idx].prev_access == 0`, else `self.nodes[idx].last_access - self.nodes[idx].prev_access`.\n\n**Update victim selection in both scan functions:**\n\nIn `demote_prot_head()` (LRU-quarter scan of protected), use composite `(freq, irr)` ascending to select the coldest victim: a candidate beats the current victim if `cur_freq < victim_freq`, or `cur_freq == victim_freq && cur_irr > victim_irr`. Lower frequency is colder; at equal frequency, higher IRR (larger gap between last two accesses) is colder.\n\nIn the probationary eviction scan (LRU-half scan), apply the same composite: candidate beats current victim if `cur_freq < victim_freq || (cur_freq == victim_freq && cur_irr > victim_irr)`.\n\n**Keep unchanged:**\n- MAX_FREQ=8 cap on `freq` counter (incremented on every `get` hit, capped with `.min(MAX_FREQ)`).\n- Halving of `freq` on demotion: `self.nodes[v].freq /= 2`.\n- 80/20 protected/probationary split (`prot_cap = capacity * 4 / 5`).\n- LRU-quarter scan in protected, LRU-half scan in probationary.\n- Single-hit promotion from probationary to protected.\n- All linked-list helpers and the arena slot-reuse mechanism.\n\n## Rationale\n\nGhost admission and the referenced bit have been exhausted as productive directions across cycles 2-8. Removing them simplifies the design and frees up the guard logic for a genuinely informative signal: IRR. The frequency counter preserves long-term access history that pure IRR discards (the key reason cycle/0006/v001 outscores cycle/0007/v003 at 0.7343 vs 0.726), while IRR adds burst-detection precision as a tie-breaker when frequency scores are degenerate. Preserving timestamps across demotion — a principle validated in cycle 7 — keeps demoted warm entries competitive in probationary without any extra adjustment logic.\n"
+}
+```
+
+### 01:10:19 tool: Write
+
+```json
+{
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H02.md",
+  "content": "# H02\n\nAdding a coarse visit counter (capped at 8, halved on demotion) as a secondary tie-breaker for entries with equal IRR values in the cycle/0007/v003 eviction scans raises hit rate by recovering long-term warmth information that pure IRR discards.\n\n## Parent\n\ncycle/0007/v003\n\n## Changes\n\nStart from the cycle/0007/v003 overlay (SLRU + IRR timestamps, 80/20 split, LRU-quarter scan in protected, LRU-half scan in probationary, no ghost set, timestamps preserved across demotion).\n\n**Add a coarse visit counter to each node:**\n- Add `visit_count: u8` to `Node`.\n- Add `const MAX_VISITS: u8 = 8;` at the top of the file.\n- On new insertion in `put()` (both fresh arena slot and recycled slot path): set `visit_count = 1`.\n- In `get()`, after updating IRR timestamps: `self.nodes[idx].visit_count = (self.nodes[idx].visit_count + 1).min(MAX_VISITS);`\n- In the defensive re-put branch of `put()` (resident key, contract-violating path): also increment `visit_count` with the same cap.\n\n**Update victim selection in both scan functions:**\n\nReplace the plain `cur_irr > victim_irr` comparisons with a composite `(irr, inverted_visit_count)` comparison that makes `visit_count` a secondary tie-breaker. The logic: a candidate beats the current victim if its IRR is strictly higher, OR its IRR is equal AND its visit_count is strictly lower (fewer historical accesses = colder). In Rust:\n```rust\nlet beats_victim = cur_irr > victim_irr\n    || (cur_irr == victim_irr && cur_vc < victim_vc);\n```\nApply this in `evict_from_probationary()` and in `demote_prot_head()`. The scan length and scan starting point (LRU head) remain unchanged.\n\n**Halve visit_count on demotion, preserve on eviction:**\n- In `demote_prot_head()`, after moving the victim from protected to probationary MRU tail: `self.nodes[victim_idx].visit_count /= 2;`. This mirrors the `freq /= 2` halving used in the frequency baseline — it preserves relative warmth information across segment transitions without letting the counter become unfairly large.\n- On eviction from probationary (in `evict_from_probationary()`), no explicit reset is needed since the node's slot is freed.\n\n**Keep unchanged:**\n- IRR timestamp mechanics (`last_access`, `prev_access`, `op_clock`, the `irr()` function).\n- 80/20 protected/probationary split (`prot_cap = capacity * 4 / 5`).\n- LRU-quarter scan in protected (`scan_len = (prot_count / 4).max(1)`).\n- LRU-half scan in probationary (`scan_len = (prob_count / 2).max(1)`).\n- Single-hit promotion from probationary to protected.\n- Timestamp preservation across demotion (do NOT reset `last_access` or `prev_access` when demoting).\n- All linked-list helpers and the arena slot-reuse mechanism (`free_slots`).\n\n## Rationale\n\nPure IRR cannot distinguish an entry with IRR=50 accessed once long ago versus an entry with IRR=50 accessed dozens of times across its residency history. Both look equally cold by IRR alone. The coarse visit counter adds a lightweight long-term warmth signal — equivalent to the frequency counter's contribution in cycle/0006/v001 but without the staleness problem of unbounded accumulation. The cap at MAX_VISITS=8 and halving on demotion mirror the frequency-era design decisions that proved load-bearing (cycles 3-6): the counter remains bounded, and relative warmth survives segment transitions. Because `visit_count` only breaks ties among equal-IRR candidates, it cannot override the sharper IRR signal where IRR values differ.\n"
+}
+```
+
+### 01:10:44 tool: Write
+
+```json
+{
+  "file_path": "/home/yaniv/projects/cache-evolve/outputs/paper_outputs/lru_cache/lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353/cycles/0009/hypotheses/H03.md",
+  "content": "# H03\n\nReplacing the raw IRR score with a staleness-weighted IRR score — `irr * (op_clock - last_access)` — in the cycle/0007/v003 eviction scans raises hit rate by evicting entries whose historical hotness has decayed, rather than entries that merely have a large absolute inter-reference gap.\n\n## Parent\n\ncycle/0007/v003\n\n## Changes\n\nStart from the cycle/0007/v003 overlay (SLRU + IRR timestamps, 80/20 split, LRU-quarter scan in protected, LRU-half scan in probationary, no ghost set, timestamps preserved across demotion).\n\n**The problem being addressed:**\nPure IRR captures only the gap between an entry's last two accesses. An entry accessed at op-clocks 100 and 102 (IRR=2) will retain IRR=2 indefinitely even if `op_clock` later reaches 50000 — it appears maximally \"hot\" despite having gone untouched for 49998 operations. Meanwhile an entry with IRR=10 but accessed just 3 operations ago is treated as much colder, even though it is far more likely to be reaccessed soon.\n\n**Replace `irr()` with `irr_score(idx, now)`:**\nAdd a new function:\n```rust\nfn irr_score(&self, idx: usize, now: u64) -> u64 {\n    if self.nodes[idx].prev_access == 0 {\n        // Single-access cold newcomer: remains maximally cold.\n        u64::MAX\n    } else {\n        let irr = self.nodes[idx].last_access - self.nodes[idx].prev_access;\n        let staleness = now.saturating_sub(self.nodes[idx].last_access).max(1);\n        irr.saturating_mul(staleness)\n    }\n}\n```\nThe `staleness` term is `op_clock - last_access` (how many operations ago the entry was last touched). Multiplying by IRR means: a small IRR (tight two-access burst) survives as long as `last_access` is recent, but degrades as the entry goes untouched. The `.max(1)` prevents an entry just accessed from getting a zero score. `saturating_mul` prevents overflow.\n\n**Update victim selection in both scan functions:**\n- In `evict_from_probationary()`, replace `let cur_irr = self.irr(cur);` with `let cur_score = self.irr_score(cur, self.op_clock);` and replace `if cur_irr > victim_irr` with `if cur_score > victim_score`. Also initialize `victim_score = self.irr_score(start, self.op_clock)` in place of `victim_irr`.\n- In `demote_prot_head()`, apply the same substitution.\n- Remove the old `irr()` function (or keep it as dead code if the test suite references it — but the scan functions should use `irr_score`).\n\n**Keep unchanged:**\n- IRR timestamp mechanics (`last_access`, `prev_access`, `op_clock`). The timestamps are still updated identically on every `get` hit and on new `put` insertion.\n- 80/20 protected/probationary split (`prot_cap = capacity * 4 / 5`).\n- LRU-quarter scan in protected (`scan_len = (prot_count / 4).max(1)`).\n- LRU-half scan in probationary (`scan_len = (prob_count / 2).max(1)`).\n- Single-hit promotion from probationary to protected.\n- Timestamp preservation across demotion (do NOT reset `last_access` or `prev_access`).\n- All linked-list helpers and the arena slot-reuse mechanism (`free_slots`).\n- Unit tests: any test that calls `irr()` directly should be updated to call `irr_score(idx, self.op_clock)` or adjusted to match the new behavior.\n\n## Rationale\n\nThis change addresses a systematic bias in pure IRR: entries that were accessed in a tight burst long ago \"look hot\" indefinitely, while entries with a moderate but recent access gap look cold. The product `irr * staleness` functions like a distance metric in two-dimensional (inter-reference gap, time-since-last-access) space. The LRU-K literature (specifically LRU-2) motivated a related idea: evict the entry whose second-most-recent access is furthest in the past. The weighted IRR score approximates this by penalizing entries where both the gap and the silence since the last access are large. Unlike LRU-K, this requires no structural change — it is purely a scoring change within the existing scan mechanism, preserving all other properties that have proven load-bearing across cycles 1-8.\n"
+}
+```
+
+### 01:10:58 chat
+
+Three hypothesis files written to the output directory. Here's a summary of what was proposed:
 
 ---
 
-**H01 — IRR as demotion tie-breaker (parent: `cycle/0006/v001`)**
-Replaces the inert `referenced` bit in `demote_prot_head()` with IRR as the secondary eviction key. The victim score becomes `(freq, irr)` — lowest frequency evicted first, then highest IRR (coldest) among equals. Requires adding `last_access`/`prev_access` fields plus an `op_clock` to cycle/0006/v001. All other frequency mechanics (halving, ghost set, MAX_FREQ cap, probationary half-scan) are unchanged. The referenced bit was empirically confirmed inert; IRR fires at every frequency level, giving real discrimination where the bit had none.
+**H01** — `cycle/0006/v001` (mandatory cross-cycle winner parent)
+
+*Hybrid frequency + IRR on the frequency incumbent.* Strips the two exhausted mechanisms from cycle/0006/v001 (ghost set, referenced bit) and adds IRR timestamps as a secondary tie-breaker. Victim selection becomes `(freq, irr)` ascending: lowest frequency first, ties broken by highest IRR. Halving on demotion and MAX_FREQ=8 cap are preserved. The bet: frequency captures long-term warmth (why 0006/v001 at 0.7343 beats 0007/v003 at 0.726); IRR sharpens tie-breaking within equal-frequency cohorts.
+
+**H02** — `cycle/0007/v003`
+
+*Coarse visit counter on the IRR baseline.* Adds a `visit_count` field (capped at 8, halved on demotion) that breaks ties among equal-IRR candidates. A candidate with `irr_a == irr_b` is ranked colder if its `visit_count` is lower. IRR remains the primary signal; the count only fires when IRR is degenerate (both candidates single-access with `irr=MAX`, or both demoted with identical gaps). Recovers warmth history without reintroducing frequency staleness.
+
+**H03** — `cycle/0007/v003`
+
+*Staleness-weighted IRR.* Replaces `irr(idx)` with `irr * (op_clock - last_access)` — a product of the inter-reference gap and how long ago the entry was last touched. An entry with IRR=2 accessed 10,000 operations ago scores 20,000 (cold); an entry with IRR=10 accessed 3 operations ago scores 30 (hot). This corrects a systematic bias in pure IRR where historical close-access entries appear permanently hot regardless of staleness.
+
 
 ---
 
-**H02 — Coarse visit counter layered on IRR baseline (parent: `cycle/0007/v003`)**
-Adds a `visits: u8` field clamped at `MAX_VISITS = 4`, incremented on every get hit, and halved on demotion (mirroring cycle/0006/v001's frequency halving). Victim selection in both `evict_from_probationary()` and `demote_prot_head()` changes from single-key (max IRR) to two-key (fewest visits first, then max IRR as tie-breaker). New entries start with `visits = 0`, making them natural eviction targets. This recovers the long-term warmth signal that pure IRR discards, as identified in cycles 8's open questions.
-
----
-
-**H03 — 85% protected segment (parent: `cycle/0006/v001`)**
-One-line change: `prot_cap = capacity * 17 / 20` instead of `capacity * 4 / 5`. No other changes. All prior experiments tested shrinking protected below 80% and failed consistently; no cycle has ever tested the opposite direction. The cycle 2 and 8 failure evidence ("hot working set is dense, 80% is the floor") is directionally compatible with the hypothesis that 85% would hold even more of the active set. The probationary shrink from 20% to 15% actually tightens the one-hit filter (fewer slots = faster eviction of cold newcomers), which may complement the larger protected space.
-
-
----
-
-- finished: 2026-06-04T23:18:36+00:00
-- duration: 303.99s
+- finished: 2026-06-06T01:10:58+00:00
+- duration: 457.06s
 - status: ok
-- input_tokens: 16
-- output_tokens: 14911
-- cache_read_tokens: 511051
-- cache_write_tokens: 52071
-- cost_usd: 0.573704
+- input_tokens: 17
+- output_tokens: 22838
+- cache_read_tokens: 676741
+- cache_write_tokens: 83036
+- cost_usd: 0.85866

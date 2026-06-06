@@ -1,0 +1,6 @@
+^^^^^^^^^^^^^^^^^^^^^^ TinyLfuRust Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
+capacity: 2048
+^^^^^^^^^^^^^^^^^^^^^^ TinyLfuRust Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2,048: Executed in 42.53 s
+Did not generate a chart as only one data point
+Wrote report to /home/yaniv/projects/cache-evolve/outputs/paper_outputs/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_01-29-41-542/cycles/0010/variants/v001/eval/caffeine/hit_rate_2048.csv

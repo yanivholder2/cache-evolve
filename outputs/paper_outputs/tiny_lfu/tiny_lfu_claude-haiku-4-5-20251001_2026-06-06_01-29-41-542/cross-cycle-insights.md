@@ -2,28 +2,42 @@
 
 ## Recurring wins
 
-- **Simplicity and interpretability outperform parameterized elaboration**: Direct metrics (linear age/(freq+1), frequency-based partitioning) consistently beat sub-linear damping, normalization, tiering, and collision heuristics. When a straightforward formula or method works, refinements reliably fail.
-- **Hierarchical deterministic partitioning breaks global-scoring plateaus**: Moving from all-at-once continuous scoring to two-pass ordered partitioning (frequency-cold cohort with fallback) unlocked gains after five consecutive failed tuning cycles. This shift revealed the prior architecture's stability was not fundamental optimality but method-dependent saturation.
-- **Frequency and age remain orthogonal and complementary**: Removing age causes measurable regression; frequency-based primary partitioning outperforms age-based, yet layering age as a secondary signal preserves its value. Neither signal is redundant.
-- **Strict admission gate (>) is architecturally essential**: The > threshold has survived every relaxation attempt (>=), every policy shift, and every eviction refinement. Its selectivity is not a limitation of prior layers but a fundamental discriminator that tied frequencies must reject.
+- **Frequency-based signals are universally productive**: Width and depth tuning (Cycles 0001–0002) improved hit-rate measurably; frequency-age hybrid eviction (Cycles 0003–0010) sustains the improvements. Frequency estimation, when tuned for collision resistance, underpins all gains.
+
+- **Simplicity and interpretability outperform parameterized complexity**: Linear formulas beat damped and normalized variants (Cycles 0004–0005); deterministic partitioning beats randomization (Cycle 0008); continuous scoring + hierarchical partitioning beats tiering (Cycles 0008–0009). Direct, transparent metrics remain robust across parameter drift.
+
+- **Architectural shifts unlock gains when formulas plateau**: Global continuous-scoring exhausted (Cycles 0006–0007); hierarchical frequency-cohort partitioning broke the plateau (Cycle 0008) and enabled measurable gains. Changing *how* candidates are selected beats tuning the selection formula when the latter plateaus.
+
+- **Orthogonal signals—frequency and age—remain complementary**: Removing age (v003, Cycle 0005) caused 0.31% regression despite refined sketches. Both frequency and age capture distinct working-set properties; neither subsumes the other. Partitioning by frequency (primary) with age-based ranking (secondary) is well-balanced.
 
 ## Recurring failures
 
-- **Gate relaxation consistently regresses**: Switching > to >= across Cycles 0001 and 0006 (and retested implicitly in 0003) fails regardless of eviction sophistication. The selectivity is not an artifact of simpler victim selection.
-- **Fine-tuning locally optimal architectures converges without gain**: Parameter adjustment attempts (Cycle 0005: offset and exponent tweaks; Cycle 0009: threshold percentile shifts) in stable architectures show diminishing returns collapse to zero. Once a system reaches local maximum under an architecture, constant and exponent tuning becomes ineffective.
-- **Augmenting locked policies with new signals fails uniformly**: Size penalties, time-dependent admission logic, burstiness tracking, and sketch collision heuristics (Cycles 0006–0007) all failed or regressed when added to the established frequency-age framework. New signals either conflict with frequency's discrimination or lack proper grounding.
-- **Sketch parameter tuning saturated early**: Width scaling (4x→8x→16x) delivered rapidly diminishing returns by Cycle 0002. Adaptive counter recycling and collision-detection heuristics yielded no measurable improvement, signaling the sketch is no longer the active bottleneck.
+- **Threshold and gate relaxation never improves performance**: Strict admission gate `>` (vs `>=`) (Cycles 0001, 0006); percentile-threshold tightening (v001, Cycle 0009) and broadening (v003, Cycle 0009); dynamic percentile adaptation (v003, Cycle 0010). When ambiguity arises, tighter gates preserve working-set selectivity. Relaxation consistently degrades hit-rate.
+
+- **Saturation recycling and sketch-refinement heuristics are inert or harmful**: Counter recycling on overflow (v001, Cycle 0003) produced zero change; collision-detection heuristics (v003, Cycle 0007) regressed. The existing count-min infrastructure with adequate width and depth already tolerates collision noise; retrofitted refinements add complexity without signal gain.
+
+- **Decay and forgetting mechanisms degrade monotonic frequency signals**: Periodic frequency decay (v002, Cycle 0001) caused regression. Early high-frequency items are genuinely predictive; resetting or halving counters removes signal rather than improving responsiveness. Monotonic accumulation is more reliable than time-windowed forgetting.
+
+- **New signals fail without structural change**: Burstiness tracking (H01, Cycle 0007) yielded zero hit-rate change; windowing dormancy (v002, Cycle 0010) yielded zero change. Adding signals to existing formulas produces no gain. Signals require architectural roles—primary vs secondary partitioning, or ranking within cohorts—to meaningfully affect victim selection.
+
+- **Parameter fine-tuning within a stable architecture converges fast**: Formula constants (Cycles 0004–0005), frequency and age exponents (Cycle 0005), percentile thresholds (Cycle 0009), dynamic adaptation (Cycle 0010) all regressed or plateaued quickly. Once an architecture is locally stable, local tuning exhausts rapidly; breakthrough requires architectural shift, not parameter drift.
 
 ## Open questions
 
-- **Can frequency and age partitioning be layered hierarchically?**: Would frequency-cold cohort, then age-ranked selection within that subset, compound both signals' discriminative power without reducing victim-pool availability?
-- **Does the 25th-percentile frequency threshold generalize?**: Is it specific to the tiny-lfu trace and configuration, or robust across workloads, cache sizes, and admission-gate settings?
-- **What is the hit-rate ceiling under hierarchical partitioning?**: Is the asymptotic limit near, or is substantial room remaining above the current optimum?
-- **Do secondary partitioning signals unlock gains?**: Can burstiness, inter-arrival variance, or reuse-distance clustering improve discrimination as second-pass criteria within the cold cohort?
+- **Does the frequency-cohort partitioning architecture generalize?** The 25th-percentile threshold and age/(freq+2) secondary ranking are locally optimal for tiny-lfu trace. Will these parameters transfer to other workloads, cache sizes, admission-gate thresholds, and request patterns?
+
+- **Is a theoretical hit-rate ceiling reachable, and how far is the current policy from it?** Cycles 0006–0010 show plateaus at higher levels after architectural breaks (Cycle 0008). Can gap analysis—measuring upper-bound hit-rate and current performance—ground whether further improvement is possible within this policy family?
+
+- **Do hierarchical partitioning and new signals interact productively?** Layered partitioning (frequency-cohort then age-ranked, or frequency then inter-arrival variance) might compound orthogonal signals. Can multi-level partitioning unlock gains without the overhead that sidelined other signal combinations?
+
+- **What architectural alternatives exist beyond hierarchical partitioning?** Multi-level caches, adaptive policy mixing (e.g., switching between frequency-dominant and age-dominant baselines), neural or multi-armed-bandit victim selection, and cost-aware replacement all remain unexplored.
 
 ## Per-policy notes
 
-- **Sketch parameters**: Width and depth improvements exhausted by Cycle 0002 with rapidly diminishing returns; subsequent saturation-handling and heuristic refinements (Cycles 0003, 0007) produced no improvement. The sketch is no longer the optimization axis.
-- **Admission gate**: Strict > threshold is stable across all policy changes. Relaxations (>=), time-based variants, and bypass mechanisms have all failed. Gate selectivity is architecturally necessary and non-negotiable.
-- **Eviction—global scoring era (Cycles 0003–0007)**: Linear age/(freq+1) hybrid emerged as locally optimal under all-at-once scoring. Parameter and signal augmentation attempts regressed or stalled, creating the appearance of fundamental optimality.
-- **Eviction—hierarchical partitioning era (Cycles 0008–0009)**: Frequency-cohort partitioning (25th-percentile cold threshold, age-ranked fallback) broke the global-scoring plateau and improved hit-rate. The threshold calibration is locally tight; adjacent percentiles regress. Frequency is the stronger primary filter; age remains valuable as a secondary discriminator.
+- **Sketch-parameter layer (Cycles 0001–0002)**: Width expansion (4x→8x→16x) and depth increase (4→6 rows) are both productive but show diminishing returns. The 16x+6-row configuration is stable; further sketch tuning has negligible ROI. Collision-detection heuristics and saturation recycling do not improve it.
+
+- **Admission gate (Cycles 0001–0010)**: Strict `>` threshold remains optimal across all policy variations and signal additions. Gate relaxation, time-based logic, and structural bypasses all failed. The gate is not a bottleneck; do not revisit without fundamentally new signals (e.g., request-specific cost, class-based separation).
+
+- **Frequency-age eviction (Cycles 0003–0010)**: Evolved from pure-LRU → linear hybrid (age/(freq+1)) → refined hybrid (age/(freq+2)) → hierarchical partitioning (25th-percentile cold-cohort with age/(freq+2) secondary ranking). The architecture is now stable; parameter tuning yields diminishing returns. Architectural shifts (e.g., multi-level, adaptive mixing) are the next frontier.
+
+- **Victim-selection architecture shift (Cycle 0008 breakthrough)**: Global continuous scoring (Cycles 0003–0007) plateaued despite six independent refinement vectors. Hierarchical frequency-cohort partitioning broke the plateau and sustained robustness through Cycles 0009–0010. This shift from monolithic to stratified selection is the most significant structural improvement to date; future gains likely require further architectural innovation.

@@ -1,0 +1,8 @@
+^^^^^^^^^^^^^^^^^^^^^^ DashRust Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
+maximumSize: 2048
+numOfSegments: 1
+evictionPolicy: ClassicLRU
+^^^^^^^^^^^^^^^^^^^^^^ DashRust Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2,048: Executed in 1.645 min
+Did not generate a chart as only one data point
+Wrote report to /home/yaniv/projects/cache-evolve/outputs/paper_outputs/dash/dash_claude-sonnet-4-6_2026-06-05_11-49-56-558/cycles/0010/variants/v001/eval/caffeine/hit_rate_2048.csv

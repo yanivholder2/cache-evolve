@@ -1,59 +1,38 @@
-// SLRU cache with ghost-set admission + frequency-aware demotion (H02) +
-// minimum-frequency probationary eviction scan (H03) +
-// frequency counter cap at MAX_FREQ (H02-cap) +
-// referenced-bit tie-breaker in protected demotion (H01/cycle-6) +
-// 85/15 protected/probationary split (H03/cycle-9).
+// SLRU cache with staleness-weighted IRR victim selection.
 //
-// Two segments share a single arena:
-//   probationary  (15 %)  — new items land here
-//   protected     (85 %)  — items promoted on a cache hit
+// Architecture:
+// - Protected segment (80% of capacity): promoted entries with demonstrated reuse.
+// - Probationary segment (20% of capacity): new entries and demoted entries.
+// - New entries land in probationary; probationary hits promote to protected.
+// - Victim selection uses a staleness-weighted IRR score rather than raw IRR.
 //
-// A bounded ghost set tracks recently evicted probationary keys.
-// When an incoming key matches a ghost entry it is admitted directly into the
-// protected segment, giving cross-residency warm keys immediate protection.
+// irr_score(node, now) = irr(node) * max(now - last_access, 1)   if prev_access > 0
+//                      = u64::MAX                                  if fewer than 2 accesses
 //
-// Demotion from protected uses a minimum-frequency scan of the LRU quarter
-// rather than strict LRU, with counters halved on demotion to preserve signal.
+// The staleness multiplier (now - last_access) penalises entries whose last
+// access was long ago: a tight-burst entry (low IRR) that has gone untouched
+// for many operations accumulates a growing score and becomes eviction-eligible,
+// while an entry with a moderate IRR accessed just recently remains protected.
 //
-// Probationary eviction (H03): instead of blindly evicting the LRU head of
-// probationary, scan the LRU half and pick the lowest-frequency victim.  This
-// protects entries recently demoted from protected (freq > 0) over cold new
-// arrivals (freq = 0) without changing list positions or disabling recency
-// ordering.
+// Scan windows (unchanged from parent):
+//   Probationary eviction: LRU half    — scan_len = (prob_count / 2).max(1)
+//   Protected demotion:    LRU quarter — scan_len = (prot_count / 4).max(1)
 //
-// Frequency cap (H02-cap): freq counters are clamped to MAX_FREQ on every
-// access.  This prevents long-resident protected entries from accumulating
-// unbounded scores that make them effectively immortal.  With MAX_FREQ=8,
-// three halvings (demotion events) reduce the maximum to 1, giving warm
-// entries a modest but bounded residency advantage over cold newcomers.
-//
-// Referenced-bit tie-breaker (H01/cycle-6): a per-node `referenced` bit is
-// set to true on every protected hit.  Inside demote_prot_head() the victim
-// is selected by (freq, referenced) ascending — an unreferenced node (r=0) is
-// strictly colder than a referenced node (r=1) at the same frequency.  This
-// shields recently-accessed protected entries from demotion when an equal-
-// frequency but unreferenced candidate exists in the scan window.
-// Move-to-tail on every hit is preserved; `referenced` is cleared on demotion.
+// Timestamps are preserved across segment transitions so a hot entry retains
+// its small score after demotion, letting it naturally compete against cold
+// newcomers (score = MAX) without any counter adjustment.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
 pub mod lru_cache_jni;
 
-// ── frequency cap ─────────────────────────────────────────────────────────────
-
-const MAX_FREQ: u32 = 8;
-
-// ── segment tag ──────────────────────────────────────────────────────────────
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Segment {
-    Probationary,
     Protected,
+    Probationary,
 }
-
-// ── arena node ───────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
 struct Node<K, V> {
@@ -62,39 +41,40 @@ struct Node<K, V> {
     prev: Option<usize>,
     next: Option<usize>,
     segment: Segment,
-    freq: u32,
-    referenced: bool,
+    /// op_clock value at the most recent access (get hit or put for new key).
+    last_access: u64,
+    /// op_clock value at the second most recent access; 0 if fewer than 2 accesses.
+    prev_access: u64,
 }
 
-// ── cache struct ─────────────────────────────────────────────────────────────
-
+/// SLRU cache with staleness-weighted IRR victim selection.
+///
+/// Eviction score = IRR * staleness, where IRR is the gap between the two most
+/// recent accesses and staleness is the number of operations since the last
+/// access. This penalises entries that were once accessed in a tight burst but
+/// have since gone cold, preferring to retain entries whose last access is
+/// still recent relative to the current op_clock.
 #[derive(Debug)]
 pub struct LruCache<K, V> {
-    map: HashMap<K, usize>, // key → arena index
+    map: HashMap<K, usize>, // key -> arena index
+    nodes: Vec<Node<K, V>>, // arena: indices are stable; slots are reused after eviction
+    free_slots: Vec<usize>, // indices of evicted (reusable) slots
 
-    nodes: Vec<Node<K, V>>, // shared arena
-
-    // Probationary segment  (head = LRU, tail = MRU)
-    prob_head: Option<usize>,
-    prob_tail: Option<usize>,
-    prob_count: usize,
-    prob_cap: usize,
-
-    // Protected segment  (head = LRU, tail = MRU)
+    /// Protected segment (80% of capacity).  Head = LRU end, tail = MRU end.
     prot_head: Option<usize>,
     prot_tail: Option<usize>,
     prot_count: usize,
-    prot_cap: usize,
+    prot_cap: usize, // = capacity * 4 / 5
 
-    // Ghost set: ordered history of recently evicted probationary keys
-    ghost: VecDeque<K>,    // front = oldest
-    ghost_set: HashSet<K>, // O(1) membership
-    ghost_cap: usize,
+    /// Probationary segment (remaining 20%).  Head = LRU end, tail = MRU end.
+    prob_head: Option<usize>,
+    prob_tail: Option<usize>,
+    prob_count: usize,
 
     capacity: usize,
+    /// Monotonic counter: incremented on every get hit and every put for a new key.
+    op_clock: u64,
 }
-
-// ── implementation ────────────────────────────────────────────────────────────
 
 impl<K, V> LruCache<K, V>
 where
@@ -106,30 +86,21 @@ where
             log::error!("LruCache.try_new: capacity must be > 0");
             return None;
         }
-        // 85/15 split via integer division.
-        // capacity=1 → prot_cap=0, prob_cap=1 (all in prob; harmless, see below).
-        let prot_cap = capacity * 17 / 20;
-        let prob_cap = capacity - prot_cap;
-        let ghost_cap = prob_cap;
-
-        log::info!(
-            "LruCache.try_new: capacity={capacity} prot_cap={prot_cap} prob_cap={prob_cap}"
-        );
+        let prot_cap = capacity * 4 / 5;
+        log::info!("LruCache.try_new: capacity={capacity} prot_cap={prot_cap}");
         Some(Self {
             map: HashMap::with_capacity(capacity),
             nodes: Vec::with_capacity(capacity),
-            prob_head: None,
-            prob_tail: None,
-            prob_count: 0,
-            prob_cap,
+            free_slots: Vec::new(),
             prot_head: None,
             prot_tail: None,
             prot_count: 0,
             prot_cap,
-            ghost: VecDeque::with_capacity(ghost_cap + 1),
-            ghost_set: HashSet::with_capacity(ghost_cap + 1),
-            ghost_cap,
+            prob_head: None,
+            prob_tail: None,
+            prob_count: 0,
             capacity,
+            op_clock: 1,
         })
     }
 
@@ -137,240 +108,212 @@ where
         Self::try_new(capacity).expect("LruCache::new: initialization failed")
     }
 
-    /// Returns the value for `key` if resident, updating segment recency and freq.
+    /// Staleness-weighted inter-reference recency score for the node at `idx`.
+    ///
+    /// Returns `u64::MAX` if fewer than two accesses have been recorded (cold newcomer).
+    /// Otherwise returns `irr * staleness`, where:
+    ///   - `irr = last_access - prev_access` (gap between the two most recent accesses)
+    ///   - `staleness = (now - last_access).max(1)` (operations since last access)
+    ///
+    /// A small IRR (tight burst) only stays "cold" (low score) as long as
+    /// `last_access` is recent. As the entry goes untouched, staleness grows
+    /// and the score increases, making it eligible for eviction even though its
+    /// raw IRR remains small. `saturating_mul` prevents overflow.
+    #[inline]
+    fn irr_score(&self, idx: usize, now: u64) -> u64 {
+        if self.nodes[idx].prev_access == 0 {
+            // Single-access cold newcomer: remains maximally cold.
+            u64::MAX
+        } else {
+            let irr = self.nodes[idx].last_access - self.nodes[idx].prev_access;
+            let staleness = now.saturating_sub(self.nodes[idx].last_access).max(1);
+            irr.saturating_mul(staleness)
+        }
+    }
+
+    /// Returns the value for `key` if present.
+    ///
+    /// On a hit:
+    /// - Updates IRR timestamps (`prev_access`, `last_access`, `op_clock`).
+    /// - If probationary: promotes to protected MRU tail; demotes coldest
+    ///   protected entry if the segment overflows.
+    /// - If protected: re-orders to protected MRU tail.
     pub fn get(&mut self, key: &K) -> Option<&V> {
         let &idx = self.map.get(key)?;
-        // Increment access frequency on every hit, capped at MAX_FREQ.
-        self.nodes[idx].freq = (self.nodes[idx].freq + 1).min(MAX_FREQ);
+
+        // Update IRR timestamps.
+        self.nodes[idx].prev_access = self.nodes[idx].last_access;
+        self.nodes[idx].last_access = self.op_clock;
+        self.op_clock += 1;
+
         match self.nodes[idx].segment {
             Segment::Protected => {
-                // Touch: move to protected MRU.
-                self.unlink_prot(idx);
-                self.push_back_prot(idx);
-                // Mark as referenced for demotion tie-breaking.
-                self.nodes[idx].referenced = true;
+                // Re-order within protected: move to MRU tail.
+                self.unlink_protected(idx);
+                self.push_prot_tail(idx);
             }
             Segment::Probationary => {
-                // Promote to protected.
-                self.unlink_prob(idx);
+                // Promote to protected MRU tail.
+                self.unlink_probationary(idx);
                 self.prob_count -= 1;
-                // Defensive: remove any stale ghost entry for this key.
-                if self.ghost_set.remove(key) {
-                    self.ghost.retain(|k| k != key);
-                }
                 self.nodes[idx].segment = Segment::Protected;
-                // referenced stays false: newly promoted entry starts cold.
-                self.push_back_prot(idx);
+                self.push_prot_tail(idx);
                 self.prot_count += 1;
-                // Protected overflow: demote lowest-score from LRU quarter to probationary MRU.
+                // Demote if protected overflows its cap.
                 if self.prot_count > self.prot_cap {
                     self.demote_prot_head();
                 }
             }
         }
+
         Some(&self.nodes[idx].value)
     }
 
-    /// Inserts a key-value pair.
+    /// Inserts `key` with `value`.
     ///
-    /// When called through the `Cache` trait the contract guarantees the key is
-    /// non-resident.  The direct method also handles re-puts for unit-test compat.
+    /// Per the `Cache` contract, `put` is called only for non-resident keys.
+    /// If at capacity, the coldest entry in probationary is evicted first.
+    /// The new entry is placed at the probationary MRU tail.
+    ///
+    /// If `key` is already resident (contract violation), the value is updated
+    /// and the node is moved to the MRU of its current segment.
     pub fn put(&mut self, key: K, value: V) {
-        // Re-put: key already resident — update value and refresh recency.
+        // Defensive: handle the (contract-violating) case of a resident key.
         if let Some(&idx) = self.map.get(&key) {
             self.nodes[idx].value = value;
+            self.nodes[idx].prev_access = self.nodes[idx].last_access;
+            self.nodes[idx].last_access = self.op_clock;
+            self.op_clock += 1;
             match self.nodes[idx].segment {
                 Segment::Protected => {
-                    self.unlink_prot(idx);
-                    self.push_back_prot(idx);
+                    self.unlink_protected(idx);
+                    self.push_prot_tail(idx);
                 }
                 Segment::Probationary => {
-                    self.unlink_prob(idx);
-                    self.push_back_prob(idx);
+                    self.unlink_probationary(idx);
+                    self.push_prob_tail(idx);
                 }
             }
             return;
         }
 
-        // ── Step 1: acquire an arena slot ────────────────────────────────
-        let idx = if self.nodes.len() < self.capacity {
-            // Arena still has headroom — allocate a fresh slot.
-            let i = self.nodes.len();
+        // Make room if at capacity.
+        if self.prot_count + self.prob_count >= self.capacity {
+            self.evict_from_probationary();
+        }
+
+        // Allocate an arena slot (reuse a freed slot if available).
+        let idx = if let Some(slot) = self.free_slots.pop() {
+            self.nodes[slot].key = key.clone();
+            self.nodes[slot].value = value;
+            self.nodes[slot].prev = None;
+            self.nodes[slot].next = None;
+            self.nodes[slot].segment = Segment::Probationary;
+            self.nodes[slot].last_access = self.op_clock;
+            self.nodes[slot].prev_access = 0;
+            slot
+        } else {
+            let slot = self.nodes.len();
             self.nodes.push(Node {
                 key: key.clone(),
                 value,
                 prev: None,
                 next: None,
-                segment: Segment::Probationary, // corrected in step 2
-                freq: 0,
-                referenced: false,
+                segment: Segment::Probationary,
+                last_access: self.op_clock,
+                prev_access: 0,
             });
-            i
-        } else {
-            // Arena full — evict to reclaim a slot.
-            let evict_idx = if self.prob_count > 0 {
-                // H03: minimum-frequency scan of the LRU half of probationary.
-                // This protects recently-demoted entries (freq > 0) over cold
-                // newcomers (freq = 0), giving warm keys a second residency window.
-                let scan_len = (self.prob_count / 2).max(1);
-                let mut victim_idx: Option<usize> = None;
-                let mut victim_freq = u32::MAX;
-                let mut current = self.prob_head;
-                let mut scanned = 0usize;
-                while scanned < scan_len {
-                    let Some(idx) = current else { break };
-                    let freq = self.nodes[idx].freq;
-                    if freq < victim_freq {
-                        victim_freq = freq;
-                        victim_idx = Some(idx);
-                    }
-                    current = self.nodes[idx].next;
-                    scanned += 1;
-                }
-                let evict_idx = victim_idx.expect("prob_count > 0 guarantees a victim");
-                let evicted_key = self.nodes[evict_idx].key.clone();
-                self.map.remove(&evicted_key);
-                self.unlink_prob(evict_idx);
-                self.prob_count -= 1;
-                // Record the eviction in the ghost set.
-                self.add_to_ghost(evicted_key);
-                evict_idx
-            } else {
-                // Fallback: all items are protected — evict protected LRU.
-                // Protected evictions are NOT added to the ghost set.
-                let h = self.prot_head.expect("prot_head must be Some when prot_count > 0");
-                let evicted_key = self.nodes[h].key.clone();
-                self.map.remove(&evicted_key);
-                self.unlink_prot(h);
-                self.prot_count -= 1;
-                h
-            };
-            self.nodes[evict_idx].key = key.clone();
-            self.nodes[evict_idx].value = value;
-            self.nodes[evict_idx].prev = None;
-            self.nodes[evict_idx].next = None;
-            self.nodes[evict_idx].freq = 0;
-            self.nodes[evict_idx].referenced = false;
-            evict_idx
+            slot
         };
+        self.op_clock += 1;
 
-        // ── Step 2: place the node into the right segment ─────────────────
-        if self.ghost_set.contains(&key) {
-            // Ghost hit: key re-arrived after a previous probationary eviction.
-            // Admit directly into protected, bypassing the one-hit filter.
-            self.ghost_set.remove(&key);
-            self.ghost.retain(|k| k != &key);
-
-            self.nodes[idx].segment = Segment::Protected;
-            // referenced stays false: ghost-admitted entry starts cold.
-            self.push_back_prot(idx);
-            self.prot_count += 1;
-            self.map.insert(key, idx);
-
-            // Protected overflow: demote lowest-score from LRU quarter to probationary MRU.
-            if self.prot_count > self.prot_cap {
-                self.demote_prot_head();
-            }
-        } else {
-            // Normal insertion: place in probationary MRU.
-            self.nodes[idx].segment = Segment::Probationary;
-            self.push_back_prob(idx);
-            self.prob_count += 1;
-            self.map.insert(key, idx);
-        }
-
-        debug_assert!(self.map.len() <= self.capacity);
+        // Place in probationary at MRU tail.
+        self.push_prob_tail(idx);
+        self.prob_count += 1;
+        self.map.insert(key, idx);
     }
 
-    // ── ghost helpers ─────────────────────────────────────────────────────────
+    /// Scan the LRU half of probationary and evict the coldest node (max irr_score).
+    ///
+    /// `scan_len = (prob_count / 2).max(1)` nodes are examined starting from
+    /// `prob_head`. The one with the highest staleness-weighted IRR score is removed.
+    fn evict_from_probationary(&mut self) {
+        debug_assert!(
+            self.prob_count > 0,
+            "evict_from_probationary called with empty probationary segment"
+        );
+        let scan_len = (self.prob_count / 2).max(1);
 
-    fn add_to_ghost(&mut self, key: K) {
-        if self.ghost_cap == 0 {
-            return;
-        }
-        if self.ghost.len() >= self.ghost_cap {
-            if let Some(oldest) = self.ghost.pop_front() {
-                self.ghost_set.remove(&oldest);
+        let start = self.prob_head.expect("prob_head is Some when prob_count > 0");
+        let mut victim_idx = start;
+        let mut victim_score = self.irr_score(start, self.op_clock);
+        let mut cursor = self.nodes[start].next;
+
+        for _ in 1..scan_len {
+            match cursor {
+                None => break,
+                Some(cur) => {
+                    let cur_score = self.irr_score(cur, self.op_clock);
+                    if cur_score > victim_score {
+                        victim_idx = cur;
+                        victim_score = cur_score;
+                    }
+                    cursor = self.nodes[cur].next;
+                }
             }
         }
-        self.ghost_set.insert(key.clone());
-        self.ghost.push_back(key);
+
+        let evicted_key = self.nodes[victim_idx].key.clone();
+        self.unlink_probationary(victim_idx);
+        self.prob_count -= 1;
+        self.map.remove(&evicted_key);
+        self.free_slots.push(victim_idx);
     }
 
-    // ── segment helpers ───────────────────────────────────────────────────────
-
-    /// Demote the lowest-score node from the LRU quarter of the protected
-    /// segment to probationary MRU.  Score is (freq, referenced) ascending:
-    /// an unreferenced node (r=0) is strictly colder than a referenced node
-    /// (r=1) at the same frequency.  Halve the demoted node's freq counter
-    /// and clear its referenced bit to preserve relative signal across demotion
-    /// cycles.
+    /// Scan the LRU quarter of protected and demote the coldest node (max irr_score)
+    /// to the probationary MRU tail.
+    ///
+    /// `scan_len = (prot_count / 4).max(1)` nodes are examined starting from
+    /// `prot_head`. Timestamps are preserved — a previously hot entry retains
+    /// its score in probationary, competing naturally against cold newcomers.
     fn demote_prot_head(&mut self) {
-        // Scan the LRU quarter (at least 1 node) for the minimum-score victim.
+        debug_assert!(
+            self.prot_count > 0,
+            "demote_prot_head called with empty protected segment"
+        );
         let scan_len = (self.prot_count / 4).max(1);
 
-        let mut victim_idx: Option<usize> = None;
-        let mut victim_score = (u32::MAX, u32::MAX);
-        let mut current = self.prot_head;
-        let mut scanned = 0usize;
+        let start = self.prot_head.expect("prot_head is Some when prot_count > 0");
+        let mut victim_idx = start;
+        let mut victim_score = self.irr_score(start, self.op_clock);
+        let mut cursor = self.nodes[start].next;
 
-        while scanned < scan_len {
-            let Some(idx) = current else { break };
-            let freq = self.nodes[idx].freq;
-            let r = if self.nodes[idx].referenced { 1u32 } else { 0u32 };
-            let score = (freq, r);
-            // Tie-break: take the first (LRU-most) node among equals.
-            if score < victim_score {
-                victim_score = score;
-                victim_idx = Some(idx);
+        for _ in 1..scan_len {
+            match cursor {
+                None => break,
+                Some(cur) => {
+                    let cur_score = self.irr_score(cur, self.op_clock);
+                    if cur_score > victim_score {
+                        victim_idx = cur;
+                        victim_score = cur_score;
+                    }
+                    cursor = self.nodes[cur].next;
+                }
             }
-            current = self.nodes[idx].next;
-            scanned += 1;
         }
 
-        if let Some(v) = victim_idx {
-            self.unlink_prot(v);
-            self.prot_count -= 1;
-            self.nodes[v].segment = Segment::Probationary;
-            self.push_back_prob(v);
-            self.prob_count += 1;
-            // Halve freq to preserve relative signal for future residency periods.
-            self.nodes[v].freq /= 2;
-            // Clear referenced so the demoted entry re-enters probationary cold.
-            self.nodes[v].referenced = false;
-        }
+        // Demote: move from protected to probationary MRU tail.
+        // Timestamps are deliberately NOT reset.
+        self.unlink_protected(victim_idx);
+        self.prot_count -= 1;
+        self.nodes[victim_idx].segment = Segment::Probationary;
+        self.push_prob_tail(victim_idx);
+        self.prob_count += 1;
     }
 
-    // ── probationary list ops ─────────────────────────────────────────────────
+    // ── Per-segment linked-list helpers ──────────────────────────────────────
 
-    fn unlink_prob(&mut self, idx: usize) {
-        let prev = self.nodes[idx].prev;
-        let next = self.nodes[idx].next;
-        match prev {
-            Some(p) => self.nodes[p].next = next,
-            None => self.prob_head = next,
-        }
-        match next {
-            Some(n) => self.nodes[n].prev = prev,
-            None => self.prob_tail = prev,
-        }
-        self.nodes[idx].prev = None;
-        self.nodes[idx].next = None;
-    }
-
-    fn push_back_prob(&mut self, idx: usize) {
-        self.nodes[idx].prev = self.prob_tail;
-        self.nodes[idx].next = None;
-        match self.prob_tail {
-            Some(t) => self.nodes[t].next = Some(idx),
-            None => self.prob_head = Some(idx),
-        }
-        self.prob_tail = Some(idx);
-    }
-
-    // ── protected list ops ────────────────────────────────────────────────────
-
-    fn unlink_prot(&mut self, idx: usize) {
+    fn unlink_protected(&mut self, idx: usize) {
         let prev = self.nodes[idx].prev;
         let next = self.nodes[idx].next;
         match prev {
@@ -385,7 +328,7 @@ where
         self.nodes[idx].next = None;
     }
 
-    fn push_back_prot(&mut self, idx: usize) {
+    fn push_prot_tail(&mut self, idx: usize) {
         self.nodes[idx].prev = self.prot_tail;
         self.nodes[idx].next = None;
         match self.prot_tail {
@@ -394,9 +337,32 @@ where
         }
         self.prot_tail = Some(idx);
     }
-}
 
-// ── Cache trait impl ──────────────────────────────────────────────────────────
+    fn unlink_probationary(&mut self, idx: usize) {
+        let prev = self.nodes[idx].prev;
+        let next = self.nodes[idx].next;
+        match prev {
+            Some(p) => self.nodes[p].next = next,
+            None => self.prob_head = next,
+        }
+        match next {
+            Some(n) => self.nodes[n].prev = prev,
+            None => self.prob_tail = prev,
+        }
+        self.nodes[idx].prev = None;
+        self.nodes[idx].next = None;
+    }
+
+    fn push_prob_tail(&mut self, idx: usize) {
+        self.nodes[idx].prev = self.prob_tail;
+        self.nodes[idx].next = None;
+        match self.prob_tail {
+            Some(t) => self.nodes[t].next = Some(idx),
+            None => self.prob_head = Some(idx),
+        }
+        self.prob_tail = Some(idx);
+    }
+}
 
 impl<K, V> framework::Cache<K, V> for LruCache<K, V>
 where
@@ -411,8 +377,6 @@ where
         LruCache::get(self, key)
     }
 }
-
-// ── unit tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -441,11 +405,11 @@ mod tests {
 
     #[test]
     fn overwrite_does_not_grow_order() {
-        // Re-puts must not allocate new slots.
         let mut cache = LruCache::new(2);
         cache.put(1, 10);
         cache.put(1, 20);
         cache.put(1, 30);
+        // Should still have room for a second key without eviction
         cache.put(2, 40);
         assert_eq!(*cache.get(&1).unwrap(), 30);
         assert_eq!(*cache.get(&2).unwrap(), 40);
@@ -453,14 +417,11 @@ mod tests {
 
     #[test]
     fn eviction_removes_lru() {
-        // cap=2: prot_cap=1, prob_cap=1
-        // put(1) → prob={1}
-        // put(2) → prob={1,2}
-        // put(3) → scan_len=1, victim=prob_head=1 (freq=0), ghost={1}; insert 3 → prob={2,3}
+        // Probationary scan_len = (2/2).max(1) = 1: evicts from prob_head.
         let mut cache = LruCache::new(2);
-        cache.put(1, 10);
-        cache.put(2, 20);
-        cache.put(3, 30);
+        cache.put(1, 10); // prob: [1]
+        cache.put(2, 20); // prob: [1, 2]
+        cache.put(3, 30); // evicts 1 (prob_head, irr_score=MAX)
 
         assert!(cache.get(&1).is_none());
         assert_eq!(*cache.get(&2).unwrap(), 20);
@@ -468,14 +429,13 @@ mod tests {
     }
 
     #[test]
-    fn access_updates_lru_order() {
-        // cap=2: prot_cap=1, prob_cap=1
-        // get(1) promotes 1 to prot, so put(3) evicts prob_head=2.
+    fn access_updates_order() {
+        // get(1) promotes 1 from probationary to protected, so put(3) evicts 2.
         let mut cache = LruCache::new(2);
-        cache.put(1, 10);
-        cache.put(2, 20);
-        cache.get(&1); // 1 → prot; prob={2}
-        cache.put(3, 30); // evict 2; prob={3}, prot={1}
+        cache.put(1, 10); // prob: [1]
+        cache.put(2, 20); // prob: [1, 2]
+        cache.get(&1);    // promote 1 to protected; prob: [2], prot: [1]
+        cache.put(3, 30); // evicts 2 (only prob entry)
 
         assert_eq!(*cache.get(&1).unwrap(), 10);
         assert!(cache.get(&2).is_none());
@@ -483,14 +443,13 @@ mod tests {
     }
 
     #[test]
-    fn put_updates_lru_order() {
-        // cap=2: prot_cap=1, prob_cap=1
-        // Re-put(1) moves 1 to prob tail, so put(3) evicts prob_head=2.
+    fn put_updates_order() {
+        // Defensive put on existing key moves it to probationary MRU tail.
         let mut cache = LruCache::new(2);
-        cache.put(1, 10);
-        cache.put(2, 20);
-        cache.put(1, 11); // moves 1 to prob tail; prob={2,1}
-        cache.put(3, 30); // scan_len=1, victim=prob_head=2 (freq=0)
+        cache.put(1, 10); // prob: [1]
+        cache.put(2, 20); // prob: [1, 2]
+        cache.put(1, 11); // update key 1 -> moved to prob tail: [2, 1]
+        cache.put(3, 30); // evicts 2 (prob_head)
 
         assert_eq!(*cache.get(&1).unwrap(), 11);
         assert!(cache.get(&2).is_none());
@@ -499,13 +458,11 @@ mod tests {
 
     #[test]
     fn eviction_chain() {
-        // cap=3: prot_cap=2, prob_cap=1
-        // All inserts go to prob; evictions follow FIFO order of insertion.
         let mut cache = LruCache::new(3);
         cache.put(1, 10);
         cache.put(2, 20);
         cache.put(3, 30);
-        cache.put(4, 40); // evicts 1
+        cache.put(4, 40); // evicts 1 (prob_head)
         cache.put(5, 50); // evicts 2
         cache.put(6, 60); // evicts 3
 
@@ -519,8 +476,6 @@ mod tests {
 
     #[test]
     fn capacity_one() {
-        // cap=1: prot_cap=0, prob_cap=1
-        // Promotion: prob→prot triggers immediate demotion back to prob (prot_cap=0).
         let mut cache = LruCache::new(1);
         cache.put(1, 10);
         assert_eq!(*cache.get(&1).unwrap(), 10);
@@ -533,60 +488,57 @@ mod tests {
     fn overwrite_at_full_capacity_does_not_evict() {
         let mut cache = LruCache::new(2);
         cache.put(1, 10);
-        cache.put(2, 20);
-        cache.put(1, 11); // re-put, must NOT evict key 2
+        cache.put(2, 20); // cache full
+        cache.put(1, 11); // overwrite, must NOT evict key 2
         assert_eq!(*cache.get(&1).unwrap(), 11);
         assert_eq!(*cache.get(&2).unwrap(), 20);
     }
 
     #[test]
-    fn repeated_get_preserves_eviction_order() {
-        // cap=3: prot_cap=2, prob_cap=1
-        // Repeated get on key 1 promotes it to prot; subsequent put evicts prob LRU.
+    fn repeated_get_protects_hot_entry() {
+        // key 1 is repeatedly accessed -> promoted to protected with small irr_score.
+        // When put(4) needs to evict, it takes from probationary, not from protected.
         let mut cache = LruCache::new(3);
         cache.put(1, 10);
         cache.put(2, 20);
         cache.put(3, 30);
         for _ in 0..10 {
-            cache.get(&1); // 1 promoted to prot after first call
+            cache.get(&1); // promote and warm key 1 in protected
         }
-        cache.put(4, 40); // scan_len=1, victim=prob_head=2 (freq=0)
+        cache.put(4, 40); // evicts from probationary (key 2 or 3), not key 1
         assert_eq!(*cache.get(&1).unwrap(), 10);
-        assert!(cache.get(&2).is_none());
     }
 
     #[test]
     fn get_middle_node_promotes_correctly() {
-        // cap=3: prot_cap=2, prob_cap=1
+        // cap=3, prot_cap=2.  get(2) promotes 2 to protected.
+        // put(4) evicts from probationary: [1, 3] -> prob_head=1 (irr_score=MAX), evicted.
         let mut cache = LruCache::new(3);
-        cache.put(1, 10);
-        cache.put(2, 20);
-        cache.put(3, 30);
-        cache.get(&2); // promote 2 to prot; prob={1,3}
-        cache.put(4, 40); // scan_len=1, victim=prob_head=1 (freq=0)
+        cache.put(1, 10); // prob: [1]
+        cache.put(2, 20); // prob: [1, 2]
+        cache.put(3, 30); // prob: [1, 2, 3]
+        cache.get(&2);    // promote 2 to prot; prob: [1, 3]
+        cache.put(4, 40); // evicts 1 (prob_head)
         assert!(cache.get(&1).is_none());
         assert_eq!(*cache.get(&3).unwrap(), 30);
         assert_eq!(*cache.get(&2).unwrap(), 20);
     }
 
     #[test]
-    fn slot_reuse_after_promotion_and_re_eviction() {
-        // cap=2: in SLRU the promoted key (3) stays in protected and survives.
-        // The original plain-LRU expectation (key 3 evicted) does not apply.
+    fn slot_reuse_and_protection() {
+        // cap=2, prot_cap=1.
+        // After get(3), key 3 is in protected (small irr_score).
+        // Subsequent puts evict from probationary, leaving the protected entry intact.
         let mut cache = LruCache::new(2);
-        cache.put(1, 10); // slot 0
-        cache.put(2, 20); // slot 1
-        cache.put(3, 30); // evicts 1; slot 0 reused for 3
-        cache.get(&3);    // promote 3 to prot
-        cache.put(4, 40); // evicts prob_head=2; slot 1 reused for 4
-        cache.put(5, 50); // evicts prob_head=4; slot reused for 5
-
-        // Key 3 is in prot and must remain resident.
-        assert_eq!(*cache.get(&3).unwrap(), 30);
-        // Key 5 was just inserted into prob and must be resident.
+        cache.put(1, 10); // slot 0 -> prob
+        cache.put(2, 20); // slot 1 -> prob
+        cache.put(3, 30); // evicts key 1 (prob_head) -> slot 0 reused for key 3
+        cache.get(&3);    // promote key 3 to protected (small irr_score)
+        cache.put(4, 40); // evicts key 2 (only prob entry) -> slot reused for key 4
+        cache.put(5, 50); // evicts key 4 (probationary, irr_score=MAX) -> key 3 (protected) survives
+        assert!(cache.get(&3).is_some()); // protected: small irr_score, not evicted
+        assert!(cache.get(&4).is_none()); // probationary: cold, evicted
         assert_eq!(*cache.get(&5).unwrap(), 50);
-        // Key 4 was evicted.
-        assert!(cache.get(&4).is_none());
     }
 
     #[test]
@@ -594,6 +546,7 @@ mod tests {
         let mut cache = LruCache::new(3);
         cache.put(1, 10);
         assert_eq!(*cache.get(&1).unwrap(), 10);
+        // Verify list is still intact after single-node promotion
         cache.put(2, 20);
         cache.put(3, 30);
         assert_eq!(*cache.get(&1).unwrap(), 10);
@@ -601,13 +554,12 @@ mod tests {
 
     #[test]
     fn overwrite_mru_at_capacity() {
-        // cap=3: re-put on key 3 (MRU) should leave key 1 as LRU.
         let mut cache = LruCache::new(3);
         cache.put(1, 10);
         cache.put(2, 20);
-        cache.put(3, 30);
-        cache.put(3, 31); // re-put MRU; prob order stays {1,2,3}
-        cache.put(4, 40); // scan_len=1, victim=prob_head=1 (freq=0)
+        cache.put(3, 30); // full; 3 is prob MRU tail
+        cache.put(3, 31); // overwrite MRU (defensive path, no eviction)
+        cache.put(4, 40); // evicts 1 (prob_head)
         assert!(cache.get(&1).is_none());
         assert_eq!(*cache.get(&2).unwrap(), 20);
         assert_eq!(*cache.get(&3).unwrap(), 31);
@@ -618,171 +570,5 @@ mod tests {
     #[should_panic(expected = "initialization failed")]
     fn capacity_zero_panics() {
         LruCache::<i64, i64>::new(0);
-    }
-
-    /// Ghost-hit mechanism: a probationary key that was evicted and re-arrives
-    /// is admitted directly into the protected segment.
-    ///
-    /// cap=8: prot_cap=6, prob_cap=2, ghost_cap=2.
-    ///
-    /// Sequence:
-    ///   1. Fill all 8 slots → everything in prob.
-    ///   2. put(9) → scan_len=4, all freq=0, victim=prob_head=1; ghost = {1}.
-    ///   3. get(2..=7) → promote 6 keys to prot (no new prob evictions, ghost unchanged).
-    ///   4. put(1): prob_count=2, scan_len=1, victim=prob_head=8 (freq=0);
-    ///      ghost_set contains 1 → HIT; admit key 1 directly into protected.
-    #[test]
-    fn ghost_hit_admits_to_protected() {
-        let mut cache = LruCache::<i64, i64>::new(8);
-        for k in 1i64..=8 {
-            cache.put(k, k * 10);
-        }
-        // Evict key 1 from prob into ghost.
-        cache.put(9, 90);
-        // Promote keys 2..=7 to prot via gets (no prob evictions; ghost stays {1}).
-        for k in 2i64..=7 {
-            cache.get(&k);
-        }
-        // State: prob={8,9}, prot={2,3,4,5,6,7} (prot full at 6), ghost={1}.
-        // put(1): scan_len=1, victim=prob_head=8 → ghost={1,8} (fits in ghost_cap=2).
-        //         ghost_set.contains(1) → true → ghost hit!
-        cache.put(1, 99);
-
-        // Key 1 must be resident with the newly inserted value.
-        assert_eq!(*cache.get(&1).unwrap(), 99);
-        // Key 8 was evicted to make room (no ghost hit for it; it's not re-arrived).
-        assert!(cache.get(&8).is_none());
-        // Capacity invariant.
-        let resident = (1i64..=9).filter(|&k| cache.get(&k).is_some()).count();
-        assert!(resident <= 8, "capacity violated: {resident} residents");
-    }
-
-    /// H03 regression: a demoted-from-protected entry (freq > 0) near the prob
-    /// LRU head is not evicted when a cold newcomer (freq = 0) exists within
-    /// the scan window.
-    ///
-    /// cap=4: prot_cap=3, prob_cap=1, ghost_cap=1.
-    /// put(1..=4): prob={1,2,3,4}
-    /// get(1): promotes 1 → prot; prob={2,3,4}, prot={1}
-    /// get(2): promotes 2 → prot; prob={3,4}, prot={1,2}
-    /// get(3): promotes 3 → prot; prob={4}, prot={1,2,3}
-    /// get(4): promotes 4 → prot; prob={}, prot_count=4 > prot_cap=3
-    ///   → demote_prot_head: scans LRU quarter (1 node) = key 1 (freq=1), demote to prob
-    ///   → prob={1(freq=0 after halve)}, prot={2,3,4}
-    ///   Wait — freq=1 halved = 0. Let me reconsider.
-    ///
-    /// Actually with cap=6: prot_cap=4, prob_cap=2, ghost_cap=2.
-    /// put(1..=6): prob={1,2,3,4,5,6}
-    /// get(1): promotes 1 (freq=1) → prot; prob={2,3,4,5,6}
-    /// get(2): promotes 2 (freq=1) → prot; prob={3,4,5,6}
-    /// get(2) again: refreshes 2 in prot (freq=2)
-    /// get(2) again: freq=3
-    /// get(2) again: freq=4
-    /// Now prot={1(freq=1),2(freq=4)}, prob={3,4,5,6}
-    /// put(7): arena full → prob_count=4 > 0
-    ///   scan_len=(4/2).max(1)=2, scan from prob_head:
-    ///   key=3 (freq=0), key=4 (freq=0) → victim=key=3 (first with min freq=0)
-    ///   → evict key=3
-    #[test]
-    fn h03_demoted_entry_survives_over_cold_newcomer() {
-        // cap=6: prot_cap=4, prob_cap=2, ghost_cap=2
-        let mut cache = LruCache::<i64, i64>::new(6);
-        // Fill arena with cold inserts.
-        for k in 1i64..=6 {
-            cache.put(k, k * 10);
-        }
-        // prob={1,2,3,4,5,6}, prot={}
-
-        // Promote key 1 and key 2 to prot, access key 2 repeatedly to build freq.
-        cache.get(&1); // promote 1 to prot (freq=1)
-        cache.get(&2); // promote 2 to prot (freq=1)
-        cache.get(&2); // freq=2
-        cache.get(&2); // freq=3
-        // prot={1(freq=1),2(freq=3)}, prob={3,4,5,6}
-
-        // Put two more to fill prot to cap then demote.
-        cache.get(&3); // promote 3 (freq=1) → prot={1,2,3}; prob={4,5,6}
-        cache.get(&4); // promote 4 (freq=1) → prot={1,2,3,4}, prot_count=4=prot_cap → no demotion
-        // prob={5,6}
-
-        // Now put(7): arena full, prob_count=2 > 0
-        // scan_len=(2/2).max(1)=1, scans prob_head=5 (freq=0) → victim=5
-        cache.put(7, 70);
-
-        // Key 5 is the LRU cold newcomer and should have been evicted.
-        assert!(cache.get(&5).is_none(), "key 5 should be evicted (cold LRU)");
-        // Key 6 should still be resident (not scanned).
-        assert_eq!(*cache.get(&6).unwrap(), 60);
-        // Key 7 was just inserted.
-        assert_eq!(*cache.get(&7).unwrap(), 70);
-        // Keys 1-4 in prot remain resident.
-        assert_eq!(*cache.get(&1).unwrap(), 10);
-        assert_eq!(*cache.get(&2).unwrap(), 20);
-    }
-
-    /// Frequency cap test: verify that repeated gets do not push freq above MAX_FREQ.
-    #[test]
-    fn freq_cap_limits_counter() {
-        let mut cache = LruCache::<i64, i64>::new(4);
-        cache.put(1, 10);
-        // Access key 1 many more times than MAX_FREQ.
-        for _ in 0..(MAX_FREQ as usize + 100) {
-            cache.get(&1);
-        }
-        // The freq should be capped at MAX_FREQ (8), not higher.
-        // We verify indirectly: the node is still resident and not phantom.
-        assert_eq!(*cache.get(&1).unwrap(), 10);
-    }
-
-    /// Referenced-bit tie-breaker test: among equal-frequency protected entries,
-    /// the unreferenced one is demoted first.
-    ///
-    /// cap=4: prot_cap=3, prob_cap=1
-    /// put(1..=4): prob={1,2,3,4}
-    /// get(1): promotes 1 (freq=1, ref=false) → prot={1}; prob={2,3,4}
-    /// get(2): promotes 2 (freq=1, ref=false) → prot={1,2}; prob={3,4}
-    /// get(3): promotes 3 (freq=1, ref=false) → prot={1,2,3}; prob={4}
-    /// get(4): promotes 4 (freq=1, ref=false) → prot={1,2,3,4}, prot_count=4 > prot_cap=3
-    ///   → demote_prot_head: scan_len=1, scans prot_head=1 (freq=1, ref=false)
-    ///   → score=(1,0) < (MAX,MAX) → victim=1; demote 1 to prob
-    /// get(2): prot hit, freq=2, ref=true; move to tail → prot={3,4,2(ref=true)}; prob={4→,1}
-    ///   Wait, let me re-think...
-    ///
-    /// Simpler: after promotions, get(2) multiple times to set ref=true on key 2.
-    /// Then add another key to trigger demotion — key 1 (unreferenced, same freq)
-    /// should be demoted in preference to key 2 (referenced, same freq).
-    #[test]
-    fn referenced_bit_shields_recently_accessed_protected_entry() {
-        // cap=4: prot_cap=3, prob_cap=1
-        let mut cache = LruCache::<i64, i64>::new(4);
-        for k in 1i64..=4 {
-            cache.put(k, k * 10);
-        }
-        // Promote keys 1, 2, 3 to prot (each gets freq=1, ref=false).
-        cache.get(&1); // prot={1(f=1,r=false)}; prob={2,3,4}
-        cache.get(&2); // prot={1,2(f=1,r=false)}; prob={3,4}
-        cache.get(&3); // prot={1,2,3(f=1,r=false)}, prot_count=3=prot_cap; prob={4}
-
-        // Now access key 2 again in protected: sets ref=true, moves to tail.
-        // prot LRU order: 1(f=1,r=false), 3(f=1,r=false), 2(f=2,r=true)
-        cache.get(&2); // freq=2, ref=true; prot={1,3,2}
-
-        // Promote key 4: prot_count becomes 4 > prot_cap=3 → demote.
-        // scan_len=(4/4).max(1)=1; scans prot_head=1 (f=1, r=false).
-        // score=(1,0). Only one candidate, so key 1 is demoted.
-        cache.get(&4); // promotes 4; demotes 1 → prob={4_wait...}
-
-        // Actually key 4 is in prob before this get. Let me re-check:
-        // After the puts: prob={1,2,3,4}. After get(1),(2),(3): prob={4}, prot={1,2,3}.
-        // get(4): promotes 4 (freq=1,ref=false) → prot_count=4 > 3 → demote.
-        // scan_len=1, prot_head=1 (freq=1, ref=false) → score=(1,0).
-        // Demote key 1.
-        // prot={2(f=2,r=true), 3(f=1,r=false), 4(f=1,r=false)}; prob={1(f=0,ref=false after demote)}
-
-        // Key 1 should be in prob (demoted), key 2,3,4 in prot.
-        assert!(cache.get(&1).is_some(), "key 1 should still be resident (demoted to prob)");
-        assert!(cache.get(&2).is_some(), "key 2 should be in prot (referenced, higher freq)");
-        assert!(cache.get(&3).is_some(), "key 3 should be in prot");
-        assert!(cache.get(&4).is_some(), "key 4 should be in prot");
     }
 }

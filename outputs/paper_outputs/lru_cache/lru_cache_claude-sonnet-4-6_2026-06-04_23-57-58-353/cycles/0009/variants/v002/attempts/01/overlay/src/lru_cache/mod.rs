@@ -1,30 +1,27 @@
-// SLRU cache with visits-first, IRR-tiebreaker victim selection.
+// SLRU cache with IRR-based victim selection and coarse visit counter.
 //
 // Architecture:
 // - Protected segment (80% of capacity): promoted entries with demonstrated reuse.
 // - Probationary segment (20% of capacity): new entries and demoted entries.
 // - New entries land in probationary; probationary hits promote to protected.
-// - Victim selection uses a coarse visit counter as primary key and IRR as
-//   tie-breaker.
-//
-// Visit counter:
-//   visits: u8, clamped at MAX_VISITS = 4.
-//   Incremented on every get hit (protected or probationary hit).
-//   New entries start at visits = 0 (cold newcomers are primary eviction targets).
-//   Halved on protected->probationary demotion (decaying warmth signal).
+// - Victim selection uses inter-reference recency (IRR) as primary signal and
+//   visit_count as secondary tie-breaker (lower visit_count = colder = evict first).
 //
 // IRR(node) = last_access - prev_access   if prev_access > 0
 //           = u64::MAX                    if fewer than 2 accesses recorded
 //
-// Victim selection (both evict_from_probationary and demote_prot_head):
-//   Primary key:   fewest visits (coldest long-term)
-//   Tie-breaker:   highest IRR (coldest short-term)
+// Lower IRR = hotter (two recent accesses were close together).
+// Higher IRR (or MAX) = colder — eviction/demotion target.
+//
+// visit_count tracks coarse access frequency (capped at MAX_VISITS=8).
+// It is halved on demotion to preserve relative warmth across segment transitions
+// without letting the counter become unfairly large.
 //
 // Scan windows:
 //   Probationary eviction: LRU half  — scan_len = (prob_count / 2).max(1)
 //   Protected demotion:    LRU quarter — scan_len = (prot_count / 4).max(1)
 //
-// IRR timestamps are preserved across segment transitions so a hot entry retains
+// Timestamps are preserved across segment transitions so a hot entry retains
 // its small IRR after demotion, letting it naturally compete against cold
 // newcomers (IRR = MAX) without any counter adjustment.
 
@@ -34,8 +31,7 @@ use std::hash::Hash;
 
 pub mod lru_cache_jni;
 
-/// Maximum value the visits counter can reach (2-bit ceiling: 0..=4).
-const MAX_VISITS: u8 = 4;
+const MAX_VISITS: u8 = 8;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Segment {
@@ -54,16 +50,20 @@ struct Node<K, V> {
     last_access: u64,
     /// op_clock value at the second most recent access; 0 if fewer than 2 accesses.
     prev_access: u64,
-    /// Coarse access frequency counter; clamped at MAX_VISITS; halved on demotion.
-    visits: u8,
+    /// Coarse visit counter, capped at MAX_VISITS. Halved on demotion.
+    visit_count: u8,
 }
 
-/// SLRU cache with visits-first, IRR-tiebreaker victim selection.
+/// SLRU cache with IRR-based victim selection and coarse visit counter.
 ///
-/// Augments pure IRR eviction with a coarse visit counter that recovers the
-/// long-term warmth signal IRR (a two-point snapshot) discards.  Entries with
-/// fewer accumulated visits are preferentially evicted; IRR breaks ties among
-/// entries with equal visit counts.
+/// Replaces accumulated frequency counters with inter-reference recency (IRR)
+/// timestamps so that entries accessed twice in quick succession (low IRR,
+/// "hot") are protected while entries with a large gap between last two
+/// accesses (high IRR, "cold") are preferentially evicted.
+///
+/// The coarse visit counter provides a secondary tie-breaker among equal-IRR
+/// candidates: an entry visited fewer times is considered colder and evicted
+/// first, recovering long-term warmth information that pure IRR discards.
 #[derive(Debug)]
 pub struct LruCache<K, V> {
     map: HashMap<K, usize>, // key -> arena index
@@ -133,7 +133,7 @@ where
     ///
     /// On a hit:
     /// - Updates IRR timestamps (`prev_access`, `last_access`, `op_clock`).
-    /// - Increments visit counter (capped at MAX_VISITS).
+    /// - Increments `visit_count` (capped at MAX_VISITS).
     /// - If probationary: promotes to protected MRU tail; demotes coldest
     ///   protected entry if the segment overflows.
     /// - If protected: re-orders to protected MRU tail.
@@ -145,10 +145,8 @@ where
         self.nodes[idx].last_access = self.op_clock;
         self.op_clock += 1;
 
-        // Increment visit counter (clamped at MAX_VISITS).
-        if self.nodes[idx].visits < MAX_VISITS {
-            self.nodes[idx].visits += 1;
-        }
+        // Increment visit counter, capped at MAX_VISITS.
+        self.nodes[idx].visit_count = (self.nodes[idx].visit_count + 1).min(MAX_VISITS);
 
         match self.nodes[idx].segment {
             Segment::Protected => {
@@ -177,7 +175,7 @@ where
     ///
     /// Per the `Cache` contract, `put` is called only for non-resident keys.
     /// If at capacity, the coldest entry in probationary is evicted first.
-    /// The new entry is placed at the probationary MRU tail with visits = 0.
+    /// The new entry is placed at the probationary MRU tail.
     ///
     /// If `key` is already resident (contract violation), the value is updated
     /// and the node is moved to the MRU of its current segment.
@@ -188,6 +186,8 @@ where
             self.nodes[idx].prev_access = self.nodes[idx].last_access;
             self.nodes[idx].last_access = self.op_clock;
             self.op_clock += 1;
+            // Increment visit counter with cap on defensive re-put.
+            self.nodes[idx].visit_count = (self.nodes[idx].visit_count + 1).min(MAX_VISITS);
             match self.nodes[idx].segment {
                 Segment::Protected => {
                     self.unlink_protected(idx);
@@ -215,7 +215,7 @@ where
             self.nodes[slot].segment = Segment::Probationary;
             self.nodes[slot].last_access = self.op_clock;
             self.nodes[slot].prev_access = 0;
-            self.nodes[slot].visits = 0;
+            self.nodes[slot].visit_count = 1;
             slot
         } else {
             let slot = self.nodes.len();
@@ -227,7 +227,7 @@ where
                 segment: Segment::Probationary,
                 last_access: self.op_clock,
                 prev_access: 0,
-                visits: 0,
+                visit_count: 1,
             });
             slot
         };
@@ -241,9 +241,10 @@ where
 
     /// Scan the LRU half of probationary and evict the coldest node.
     ///
+    /// Coldest = highest IRR; ties broken by lowest visit_count (fewer accesses = colder).
+    ///
     /// `scan_len = (prob_count / 2).max(1)` nodes are examined starting from
-    /// `prob_head`. The victim is chosen by fewest visits (primary), then
-    /// highest IRR (tie-breaker).
+    /// `prob_head`. The one with the highest (IRR, inverted_visit_count) is removed.
     fn evict_from_probationary(&mut self) {
         debug_assert!(
             self.prob_count > 0,
@@ -252,25 +253,26 @@ where
         let scan_len = (self.prob_count / 2).max(1);
 
         let start = self.prob_head.expect("prob_head is Some when prob_count > 0");
+        let mut victim_idx = start;
+        let mut victim_irr = self.irr(start);
+        let mut victim_vc = self.nodes[start].visit_count;
+        let mut cursor = self.nodes[start].next;
 
-        // Sentinel initial values ensure the first candidate always replaces them.
-        let mut victim_idx: usize = start;
-        let mut victim_visits: u8 = MAX_VISITS + 1;
-        let mut victim_irr: u64 = 0;
-        let mut cursor = Some(start);
-
-        for _ in 0..scan_len {
+        for _ in 1..scan_len {
             match cursor {
                 None => break,
                 Some(cur) => {
-                    let cur_visits = self.nodes[cur].visits;
                     let cur_irr = self.irr(cur);
-                    if cur_visits < victim_visits
-                        || (cur_visits == victim_visits && cur_irr > victim_irr)
-                    {
-                        victim_visits = cur_visits;
-                        victim_irr = cur_irr;
+                    let cur_vc = self.nodes[cur].visit_count;
+                    // A candidate beats the current victim if its IRR is strictly higher,
+                    // OR its IRR is equal AND its visit_count is strictly lower
+                    // (fewer historical accesses = colder).
+                    let beats_victim = cur_irr > victim_irr
+                        || (cur_irr == victim_irr && cur_vc < victim_vc);
+                    if beats_victim {
                         victim_idx = cur;
+                        victim_irr = cur_irr;
+                        victim_vc = cur_vc;
                     }
                     cursor = self.nodes[cur].next;
                 }
@@ -284,13 +286,14 @@ where
         self.free_slots.push(victim_idx);
     }
 
-    /// Scan the LRU quarter of protected and demote the coldest node
-    /// to the probationary MRU tail.
+    /// Scan the LRU quarter of protected and demote the coldest node (max IRR,
+    /// tie-broken by lowest visit_count) to the probationary MRU tail.
     ///
     /// `scan_len = (prot_count / 4).max(1)` nodes are examined starting from
-    /// `prot_head`. Victim chosen by fewest visits (primary), then highest IRR
-    /// (tie-breaker). The victim's visit count is halved before demotion to
-    /// preserve a decaying warmth signal across the segment transition.
+    /// `prot_head`. Timestamps are preserved — a previously hot entry retains
+    /// its small IRR in probationary, competing naturally against cold newcomers.
+    /// visit_count is halved on demotion to preserve relative warmth without
+    /// letting the counter become unfairly large.
     fn demote_prot_head(&mut self) {
         debug_assert!(
             self.prot_count > 0,
@@ -299,41 +302,39 @@ where
         let scan_len = (self.prot_count / 4).max(1);
 
         let start = self.prot_head.expect("prot_head is Some when prot_count > 0");
+        let mut victim_idx = start;
+        let mut victim_irr = self.irr(start);
+        let mut victim_vc = self.nodes[start].visit_count;
+        let mut cursor = self.nodes[start].next;
 
-        // Sentinel initial values ensure the first candidate always replaces them.
-        let mut victim_idx: usize = start;
-        let mut victim_visits: u8 = MAX_VISITS + 1;
-        let mut victim_irr: u64 = 0;
-        let mut cursor = Some(start);
-
-        for _ in 0..scan_len {
+        for _ in 1..scan_len {
             match cursor {
                 None => break,
                 Some(cur) => {
-                    let cur_visits = self.nodes[cur].visits;
                     let cur_irr = self.irr(cur);
-                    if cur_visits < victim_visits
-                        || (cur_visits == victim_visits && cur_irr > victim_irr)
-                    {
-                        victim_visits = cur_visits;
-                        victim_irr = cur_irr;
+                    let cur_vc = self.nodes[cur].visit_count;
+                    // A candidate beats the current victim if its IRR is strictly higher,
+                    // OR its IRR is equal AND its visit_count is strictly lower
+                    // (fewer historical accesses = colder).
+                    let beats_victim = cur_irr > victim_irr
+                        || (cur_irr == victim_irr && cur_vc < victim_vc);
+                    if beats_victim {
                         victim_idx = cur;
+                        victim_irr = cur_irr;
+                        victim_vc = cur_vc;
                     }
                     cursor = self.nodes[cur].next;
                 }
             }
         }
 
-        // Halve visits before demotion: preserves decaying warmth signal so a
-        // previously hot entry (visits=4 -> 2) survives over cold newcomers
-        // (visits=0) in probationary without completely resetting the signal.
-        self.nodes[victim_idx].visits >>= 1;
-
         // Demote: move from protected to probationary MRU tail.
-        // IRR timestamps are deliberately NOT reset.
+        // Timestamps are deliberately NOT reset.
+        // visit_count is halved to preserve relative warmth across segment transitions.
         self.unlink_protected(victim_idx);
         self.prot_count -= 1;
         self.nodes[victim_idx].segment = Segment::Probationary;
+        self.nodes[victim_idx].visit_count /= 2;
         self.push_prob_tail(victim_idx);
         self.prob_count += 1;
     }
@@ -448,7 +449,7 @@ mod tests {
         let mut cache = LruCache::new(2);
         cache.put(1, 10); // prob: [1]
         cache.put(2, 20); // prob: [1, 2]
-        cache.put(3, 30); // evicts 1 (prob_head, visits=0, irr=MAX)
+        cache.put(3, 30); // evicts 1 (prob_head, irr=MAX)
 
         assert!(cache.get(&1).is_none());
         assert_eq!(*cache.get(&2).unwrap(), 20);
@@ -539,7 +540,7 @@ mod tests {
     #[test]
     fn get_middle_node_promotes_correctly() {
         // cap=3, prot_cap=2.  get(2) promotes 2 to protected.
-        // put(4) evicts from probationary: [1, 3] -> prob_head=1 (visits=0), evicted.
+        // put(4) evicts from probationary: [1, 3] -> prob_head=1 (irr=MAX), evicted.
         let mut cache = LruCache::new(3);
         cache.put(1, 10); // prob: [1]
         cache.put(2, 20); // prob: [1, 2]
@@ -562,8 +563,8 @@ mod tests {
         cache.put(3, 30); // evicts key 1 (prob_head) -> slot 0 reused for key 3
         cache.get(&3);    // promote key 3 to protected (small IRR)
         cache.put(4, 40); // evicts key 2 (only prob entry) -> slot reused for key 4
-        cache.put(5, 50); // evicts key 4 (probationary, visits=0) -> key 3 (protected) survives
-        assert!(cache.get(&3).is_some()); // protected: warmed, not evicted
+        cache.put(5, 50); // evicts key 4 (probationary, irr=MAX) -> key 3 (protected) survives
+        assert!(cache.get(&3).is_some()); // protected: small IRR, not evicted
         assert!(cache.get(&4).is_none()); // probationary: cold, evicted
         assert_eq!(*cache.get(&5).unwrap(), 50);
     }
@@ -600,47 +601,47 @@ mod tests {
     }
 
     #[test]
-    fn visits_increments_on_get() {
+    fn visit_count_increments_on_get() {
         let mut cache = LruCache::new(4);
-        cache.put(1, 10);
-        cache.get(&1); // visits -> 1
-        cache.get(&1); // visits -> 2
-        // visits counter capped at MAX_VISITS
-        for _ in 0..10 {
-            cache.get(&1);
-        }
-        // Entry should still be accessible; visits capped, not overflowed
+        cache.put(1, 10); // visit_count = 1
+        cache.get(&1);    // visit_count = 2
+        cache.get(&1);    // visit_count = 3
+        // Entry should still be accessible
         assert_eq!(*cache.get(&1).unwrap(), 10);
     }
 
     #[test]
-    fn visits_biases_eviction_toward_cold_newcomer() {
-        // cap=2, prot_cap=1.
-        // key 1 gets visits via repeated gets before key 2 arrives.
-        // When we need to evict, key 2 (visits=0) should be preferred over key 1.
-        let mut cache = LruCache::new(2);
+    fn visit_count_caps_at_max() {
+        let mut cache = LruCache::new(4);
+        cache.put(1, 10); // visit_count = 1
+        for _ in 0..20 {
+            cache.get(&1); // visit_count capped at MAX_VISITS=8
+        }
+        // Entry should still be accessible after many gets
+        assert_eq!(*cache.get(&1).unwrap(), 10);
+    }
+
+    #[test]
+    fn visit_count_tie_breaks_equal_irr() {
+        // Two entries with equal IRR (both never accessed twice = irr=MAX).
+        // The one with lower visit_count should be evicted.
+        // cap=3, prot_cap=2.
+        // put 1,2,3 — all in prob with irr=MAX, visit_count=1.
+        // get(1) twice: 1 gets promoted to prot, visit_count=2.
+        // Now prob has [2, 3] both with irr=MAX, visit_count=1.
+        // Need to evict: put(4) — prob is full (prot_cap=2).
+        // prob scan_len = (2/2).max(1) = 1, so just evicts prob_head (key 2).
+        let mut cache = LruCache::new(3);
         cache.put(1, 10);
-        cache.put(2, 20); // full: prob=[1,2], scan_len=1 -> only prob_head inspected
-        // Warm up key 2 (it's prob_tail, not prob_head yet)
-        // Force key 2 to be at prob_head by putting a third key to evict key 1 first
-        // Actually with scan_len=1 it just evicts prob_head=1 regardless.
-        // Let's use cap=3 to get a scan window.
-        let mut cache2 = LruCache::new(4);
-        cache2.put(1, 10);
-        cache2.put(2, 20);
-        cache2.put(3, 30);
-        cache2.put(4, 40); // full, prob=[1,2,3,4]
-        // Warm up keys 1,2,3 so they have visits; key 4 stays at visits=0
-        cache2.get(&1); // visits[1]=1
-        cache2.get(&1); // visits[1]=2
-        cache2.get(&2); // visits[2]=1 (promoted to prot)
-        cache2.get(&3); // visits[3]=1 (promoted to prot)
-        // Now prob has key 1 (warmed) and key 4 (visits=0).
-        // Adding key 5 forces eviction from probationary.
-        // scan_len=(prob_count/2).max(1); key 4 has visits=0 so should be evicted.
-        // (key 1 was promoted to protected after get, so prob has key 4 only? Let's check)
-        // After get(&1) key 1 is promoted to prot; prob=[4]; prot=[2,3] or similar
-        // Actually let me just verify the cache still works correctly
-        assert_eq!(*cache2.get(&2).unwrap(), 20);
+        cache.put(2, 20);
+        cache.put(3, 30);
+        cache.get(&1); // promote 1 to prot (visit_count=2); prob: [2, 3]
+        cache.get(&1); // keep in prot (visit_count=3)
+        // put(4): prot_count=1 <= prot_cap=2, prob has 2 entries, total=3=capacity
+        // evict from prob: scan_len=1, evicts prob_head (key 2)
+        cache.put(4, 40);
+        assert!(cache.get(&2).is_none()); // evicted (prob_head)
+        assert!(cache.get(&3).is_some()); // survived
+        assert!(cache.get(&1).is_some()); // protected, survived
     }
 }
