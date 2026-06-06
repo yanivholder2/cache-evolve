@@ -1,0 +1,191 @@
+05:48:49 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0007 allocated at /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007 ===
+05:48:49 INFO     [MainThread : evolve.cli : run_cycle] cohort_size=3 adapter=ClaudeSdkAdapter(model=claude-opus-4-8)
+05:48:49 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses ---
+05:48:49 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] generating 3 hypotheses for cycle 0007 into /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses
+05:48:49 DEBUG    [MainThread : evolve.hypothesis.writer : write_hypotheses] wrote task spec: /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/task.md
+05:48:49 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses allow_edits=True
+05:48:49 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo')]
+05:54:15 INFO     [MainThread : evolve.llm.base_adapter : run] agent hypotheses-writer finished status=ok usage=input_tokens=39, output_tokens=21395, cache_read_tokens=666547, cache_write_tokens=41347, cost_usd=0.677581 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/hypotheses-writer.log.md
+05:54:15 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent hypotheses-writer produced 3 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses: ['H01.md', 'H02.md', 'H03.md']
+05:54:15 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] adapter produced 3 hypothesis files in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: "Give the resident set an O(1) hash index so `get` resolves in constant time instead of a linear queue walk, lowering get-p50 (per-op-time) below v002's 38ns floor."
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: cycle/0006/v002
+05:54:15 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim="Give the resident set an O(1) hash index so `get` resolves in constant time instead of a linear queue walk, lowering get-p50 (per-op-time) below v002's 38ns floor." parent=cycle/0006/v002 changes=2001 chars
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: 'Cluster proven-hot keys at the front of `main` by moving an entry to the head on freq saturation, shortening the median scan-to-hit and lowering get-p50 (per-op-time).'
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: cycle/0006/v002
+05:54:15 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim='Cluster proven-hot keys at the front of `main` by moving an entry to the head on freq saturation, shortening the median scan-to-hit and lowering get-p50 (per-op-time).' parent=cycle/0006/v002 changes=1427 chars
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: 'Add a short dedicated `hot` queue scanned first in `get` so median hits resolve in a tiny segment instead of a full `main` walk, lowering get-p50 (per-op-time).'
+05:54:15 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: cycle/0006/v002
+05:54:15 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Add a short dedicated `hot` queue scanned first in `get` so median hits resolve in a tiny segment instead of a full `main` walk, lowering get-p50 (per-op-time).' parent=cycle/0006/v002 changes=1588 chars
+05:54:15 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses done (325.8s) ---
+05:54:15 INFO     [MainThread : evolve.cli : _phase] --- per-variant ---
+05:54:15 DEBUG    [v002 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md
+05:54:15 DEBUG    [v003 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md
+05:54:15 DEBUG    [v001 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md
+05:54:15 DEBUG    [v002 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:54:15 DEBUG    [v002 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: 'Cluster proven-hot keys at the front of `main` by moving an entry to the head on freq saturation, shortening the median scan-to-hit and lowering get-p50 (per-op-time).'
+05:54:15 DEBUG    [v002 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: cycle/0006/v002
+05:54:15 INFO     [v002 : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim='Cluster proven-hot keys at the front of `main` by moving an entry to the head on freq saturation, shortening the median scan-to-hit and lowering get-p50 (per-op-time).' parent=cycle/0006/v002 changes=1427 chars
+05:54:15 DEBUG    [v003 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:54:15 DEBUG    [v003 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: 'Add a short dedicated `hot` queue scanned first in `get` so median hits resolve in a tiny segment instead of a full `main` walk, lowering get-p50 (per-op-time).'
+05:54:15 DEBUG    [v003 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: cycle/0006/v002
+05:54:15 INFO     [v003 : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Add a short dedicated `hot` queue scanned first in `get` so median hits resolve in a tiny segment instead of a full `main` walk, lowering get-p50 (per-op-time).' parent=cycle/0006/v002 changes=1588 chars
+05:54:15 DEBUG    [v001 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:54:15 DEBUG    [v001 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: "Give the resident set an O(1) hash index so `get` resolves in constant time instead of a linear queue walk, lowering get-p50 (per-op-time) below v002's 38ns floor."
+05:54:15 DEBUG    [v001 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: cycle/0006/v002
+05:54:15 INFO     [v001 : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim="Give the resident set an O(1) hash index so `get` resolves in constant time instead of a linear queue walk, lowering get-p50 (per-op-time) below v002's 38ns floor." parent=cycle/0006/v002 changes=2001 chars
+05:54:15 DEBUG    [v003 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003/attempts/01/task.md
+05:54:15 DEBUG    [v002 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002/attempts/01/task.md
+05:54:15 INFO     [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003/attempts/01 allow_edits=True
+05:54:15 DEBUG    [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0006/variants/v002'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo')]
+05:54:15 DEBUG    [v001 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001/attempts/01/task.md
+05:54:15 INFO     [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001/attempts/01 allow_edits=True
+05:54:15 DEBUG    [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0006/variants/v002'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo')]
+05:54:15 INFO     [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002/attempts/01 allow_edits=True
+05:54:15 DEBUG    [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0006/variants/v002'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/s3_fifo')]
+05:55:41 INFO     [v002 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=11, output_tokens=6032, cache_read_tokens=135776, cache_write_tokens=13733, cost_usd=0.183825 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002/attempts/01/variant-implementer.log.md
+05:55:41 INFO     [v002 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002/attempts/01: []
+05:55:41 INFO     [v002 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002/attempts/01/overlay
+05:55:41 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-ke3gwn8k subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:55:41 INFO     [v002 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0007/v002 ...
+05:55:53 INFO     [v002 : evolve.variant.build : compile_for_gates] build gate: passed
+05:55:53 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0007/v002
+05:55:53 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0007/v002
+05:55:54 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0007/v002
+05:55:54 INFO     [v002 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0007/v002
+05:55:54 INFO     [v002 : evolve.variant.repair_loop : implement_with_repair] [v002] gates passed on attempt 1/3
+05:55:54 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] implement-and-gate done
+05:55:54 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0007/v002] caffeine simulate (build cdylib + run)
+05:55:54 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-_jar8gzi subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:55:54 INFO     [v002 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0007/v002 ...
+05:56:03 INFO     [v002 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-workspace-_jar8gzi/target/release/libs3_fifo.so
+05:56:03 INFO     [v002 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0007/v002] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=s3fifo.S3FifoRust
+05:56:25 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0007/v002] plugin hit-rate
+05:56:25 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0007/v002] plugin per-op-time
+05:56:25 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-xrla4zfd subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:56:34 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0007/v002] plugin metadata-size
+05:56:34 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-s8xc8ov1 subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:56:42 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0007/v002] aggregate fitness-vector
+05:56:42 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] fitness done
+05:56:42 DEBUG    [v002 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md
+05:56:42 DEBUG    [v002 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:56:42 DEBUG    [v002 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: 'Cluster proven-hot keys at the front of `main` by moving an entry to the head on freq saturation, shortening the median scan-to-hit and lowering get-p50 (per-op-time).'
+05:56:42 DEBUG    [v002 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md: cycle/0006/v002
+05:56:42 INFO     [v002 : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim='Cluster proven-hot keys at the front of `main` by moving an entry to the head on freq saturation, shortening the median scan-to-hit and lowering get-p50 (per-op-time).' parent=cycle/0006/v002 changes=1427 chars
+05:56:42 DEBUG    [v002 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v002
+05:56:42 INFO     [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002 allow_edits=True
+05:56:42 DEBUG    [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0006/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md')]
+05:56:47 INFO     [v001 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=19, output_tokens=12271, cache_read_tokens=279796, cache_write_tokens=24773, cost_usd=0.362045 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001/attempts/01/variant-implementer.log.md
+05:56:47 INFO     [v001 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001/attempts/01: []
+05:56:47 INFO     [v001 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001/attempts/01/overlay
+05:56:47 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-_tdzxf7z subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:56:47 INFO     [v001 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0007/v001 ...
+05:56:49 INFO     [v003 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=17, output_tokens=13648, cache_read_tokens=242911, cache_write_tokens=24662, cost_usd=0.371202 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003/attempts/01/variant-implementer.log.md
+05:56:49 INFO     [v003 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003/attempts/01: []
+05:56:49 INFO     [v003 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003/attempts/01/overlay
+05:56:49 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-qooqdhr8 subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:56:49 INFO     [v003 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0007/v003 ...
+05:57:08 INFO     [v001 : evolve.variant.build : compile_for_gates] build gate: passed
+05:57:08 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0007/v001
+05:57:08 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0007/v001
+05:57:09 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0007/v001
+05:57:09 INFO     [v001 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0007/v001
+05:57:09 INFO     [v001 : evolve.variant.repair_loop : implement_with_repair] [v001] gates passed on attempt 1/3
+05:57:09 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] implement-and-gate done
+05:57:09 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0007/v001] caffeine simulate (build cdylib + run)
+05:57:09 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-74t43orm subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:57:09 INFO     [v001 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0007/v001 ...
+05:57:10 INFO     [v003 : evolve.variant.build : compile_for_gates] build gate: passed
+05:57:10 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0007/v003
+05:57:11 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0007/v003
+05:57:11 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0007/v003
+05:57:11 INFO     [v003 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0007/v003
+05:57:11 INFO     [v003 : evolve.variant.repair_loop : implement_with_repair] [v003] gates passed on attempt 1/3
+05:57:11 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] implement-and-gate done
+05:57:11 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0007/v003] caffeine simulate (build cdylib + run)
+05:57:11 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-7bfhu9ds subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:57:11 INFO     [v003 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0007/v003 ...
+05:57:22 INFO     [v001 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-workspace-74t43orm/target/release/libs3_fifo.so
+05:57:22 INFO     [v001 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0007/v001] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=s3fifo.S3FifoRust
+05:57:25 INFO     [v003 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-workspace-7bfhu9ds/target/release/libs3_fifo.so
+05:57:25 INFO     [v003 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0007/v003] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=s3fifo.S3FifoRust
+05:57:26 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0007/v001] plugin hit-rate
+05:57:26 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0007/v001] plugin per-op-time
+05:57:26 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-eqymhv2m subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:57:31 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0007/v003] plugin hit-rate
+05:57:31 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0007/v003] plugin per-op-time
+05:57:31 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-arbn0t2m subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:57:31 INFO     [v002 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=13, output_tokens=3175, cache_read_tokens=151624, cache_write_tokens=15209, cost_usd=0.151385 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002/variant-insight-writer.log.md
+05:57:31 INFO     [v002 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002: ['insight.md']
+05:57:31 INFO     [v002 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v002
+05:57:31 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] insight done
+05:57:41 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0007/v001] plugin metadata-size
+05:57:41 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-_my628kq subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:57:43 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0007/v003] plugin metadata-size
+05:57:43 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-4nr5oynt subject=/home/user/cache-evolve/inputs/subjects/s3_fifo repo_root=/home/user/cache-evolve
+05:57:51 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0007/v001] aggregate fitness-vector
+05:57:51 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] fitness done
+05:57:51 DEBUG    [v001 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md
+05:57:51 DEBUG    [v001 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:57:51 DEBUG    [v001 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: "Give the resident set an O(1) hash index so `get` resolves in constant time instead of a linear queue walk, lowering get-p50 (per-op-time) below v002's 38ns floor."
+05:57:51 DEBUG    [v001 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md: cycle/0006/v002
+05:57:51 INFO     [v001 : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim="Give the resident set an O(1) hash index so `get` resolves in constant time instead of a linear queue walk, lowering get-p50 (per-op-time) below v002's 38ns floor." parent=cycle/0006/v002 changes=2001 chars
+05:57:51 DEBUG    [v001 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v001
+05:57:51 INFO     [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001 allow_edits=True
+05:57:51 DEBUG    [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0006/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md')]
+05:57:53 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0007/v003] aggregate fitness-vector
+05:57:53 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] fitness done
+05:57:53 DEBUG    [v003 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md
+05:57:53 DEBUG    [v003 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+05:57:53 DEBUG    [v003 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: 'Add a short dedicated `hot` queue scanned first in `get` so median hits resolve in a tiny segment instead of a full `main` walk, lowering get-p50 (per-op-time).'
+05:57:53 DEBUG    [v003 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md: cycle/0006/v002
+05:57:53 INFO     [v003 : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Add a short dedicated `hot` queue scanned first in `get` so median hits resolve in a tiny segment instead of a full `main` walk, lowering get-p50 (per-op-time).' parent=cycle/0006/v002 changes=1588 chars
+05:57:53 DEBUG    [v003 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v003
+05:57:53 INFO     [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003 allow_edits=True
+05:57:53 DEBUG    [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0006/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md')]
+05:58:27 INFO     [v001 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=11, output_tokens=2403, cache_read_tokens=126020, cache_write_tokens=11506, cost_usd=0.118192 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001/variant-insight-writer.log.md
+05:58:27 INFO     [v001 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001: ['insight.md']
+05:58:27 INFO     [v001 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v001
+05:58:27 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] insight done
+05:58:46 INFO     [v003 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=11, output_tokens=3718, cache_read_tokens=128871, cache_write_tokens=16089, cost_usd=0.155973 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003/variant-insight-writer.log.md
+05:58:46 INFO     [v003 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003: ['insight.md']
+05:58:46 INFO     [v003 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v003
+05:58:46 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] insight done
+05:58:46 INFO     [MainThread : evolve.cli : _log_survival_summary] cycle 0007 survivors=3/3 rejected={}
+05:58:46 INFO     [MainThread : evolve.cli : _phase] --- per-variant done (271.1s) ---
+05:58:46 INFO     [MainThread : evolve.cli : _phase] --- cycle-level ---
+05:58:46 INFO     [MainThread : evolve.aggregate.cohort : compute_cycle_winners] cycle winners: ['v001', 'v002', 'v003']
+05:58:46 INFO     [cycle_insight : evolve.cycle.ledger_digest : digest_prior_cycles] digest_prior_cycles: ledger=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles-ledger.jsonl total_rows=6 window=3 selected_cycles=['0004', '0005', '0006'] body_chars=8891
+05:58:46 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-winners.json done
+05:58:46 DEBUG    [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] wrote cycle-insight-writer task.md for cycle 0007
+05:58:46 INFO     [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007 allow_edits=True
+05:58:46 DEBUG    [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v001/insight.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v002/insight.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/variants/v003/insight.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H01.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H02.md'), PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/hypotheses/H03.md')]
+05:59:20 INFO     [cycle_insight : evolve.llm.base_adapter : run] agent cycle-insight-writer finished status=ok usage=input_tokens=5, output_tokens=2374, cache_read_tokens=63814, cache_write_tokens=12236, cost_usd=0.103975 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/cycle-insight-writer.log.md
+05:59:20 INFO     [cycle_insight : evolve.llm.base_adapter : _log_produced_artifacts] agent cycle-insight-writer produced 2 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007: ['cycle-insight.md', 'cycle-winners.json']
+05:59:20 INFO     [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] cycle insight written for cycle 0007
+05:59:20 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-insight-writer done
+05:59:20 INFO     [MainThread : evolve.cli : run_cycle] cycle 0007 winners: ['v001', 'v002', 'v003']
+05:59:20 INFO     [MainThread : evolve.aggregate.cross_cycle_winners : write_cross_cycle_winners] global cross_cycle_winners: 22 variants, winners=['cycle/0007/v001', 'cycle/0007/v002', 'cycle/0006/v002']
+05:59:20 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] cross-cycle-winners.json done
+05:59:20 DEBUG    [MainThread : evolve.cli : _run_post_cycle_insight] ledger row keys: ['cohort_size', 'cycle', 'cycle_dir', 'cycle_insight', 'winners']
+05:59:20 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] ledger-append done
+05:59:20 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] leaderboard-regen done
+05:59:20 INFO     [MainThread : evolve.cli : _phase] --- cycle-level done (34.2s) ---
+05:59:20 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights ---
+05:59:20 INFO     [MainThread : evolve.cycle.ledger_digest : digest_all_cycles] digest_all_cycles: ledger=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles-ledger.jsonl total_rows=7 cycles=['0001', '0002', '0003', '0004', '0005', '0006', '0007'] body_chars=19869
+05:59:20 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/cross-cycle allow_edits=True
+05:59:20 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles-ledger.jsonl')]
+05:59:57 INFO     [MainThread : evolve.llm.base_adapter : run] agent cross-cycle-insight-writer finished status=ok usage=input_tokens=5, output_tokens=2347, cache_read_tokens=66416, cache_write_tokens=11163, cost_usd=0.102894 log=/home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/cross-cycle/cross-cycle-insight-writer.log.md
+05:59:57 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent cross-cycle-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cycles/0007/cross-cycle: ['cross-cycle-insights.md']
+05:59:57 INFO     [MainThread : evolve.cycle.cross_cycle_insight_writer : write_cross_cycle_insight] cross-cycle insights written to /home/user/cache-evolve/outputs/s3_fifo_2026-06-06_02-49-23-803/cross-cycle-insights.md
+05:59:57 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights done (36.4s) ---
+05:59:57 INFO     [MainThread : evolve.cli : run_cycle] cycle 0007 timings: total=667.6s write hypotheses=325.8s per-variant=271.1s cycle-level=34.2s cross-cycle-insights=36.4s
+05:59:57 INFO     [MainThread : evolve.cli : run_cycle] cycle 0007 cumulative tokens: cache_read_tokens=3091435 cache_write_tokens=281141 input_tokens=224 output_tokens=106667
+05:59:57 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0007 complete (cohort=3) ===
+05:59:57 INFO     [MainThread : evolve.cli : main] --- evolve loop: cycle 8/10 ---
