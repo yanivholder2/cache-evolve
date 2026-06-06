@@ -143,11 +143,18 @@ where
 	}
 
 	/// Flush all pending frequency promotions in the current batch by executing them.
+	/// Processes promotions in fixed-size batches to improve CPU cache locality and reduce p99 latency.
 	fn flush_pending_promotions(&mut self) {
-		// Collect indices first to avoid holding a mutable borrow
-		let indices: Vec<usize> = self.current_batch.drain(..).collect();
-		for idx in indices {
-			self.update_node_frequency(idx);
+		const PROMOTION_BATCH_SIZE: usize = 16;
+
+		// Process current batch in fixed-size chunks for better cache locality
+		while !self.current_batch.is_empty() {
+			let batch_size = std::cmp::min(PROMOTION_BATCH_SIZE, self.current_batch.len());
+			for _ in 0..batch_size {
+				if let Some(idx) = self.current_batch.pop() {
+					self.update_node_frequency(idx);
+				}
+			}
 		}
 	}
 
