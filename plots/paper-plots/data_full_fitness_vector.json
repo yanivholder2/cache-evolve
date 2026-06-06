@@ -1,0 +1,2236 @@
+{
+  "runs": [
+    {
+      "setup": {
+        "run": "dash_claude-haiku-4-5-20251001_2026-06-06_05-09-07-908",
+        "subject-name": "dash",
+        "total-cycles": 7,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "dash",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6787,
+          "metadata-size": 40,
+          "per-op-time": 104
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6965,
+          "metadata-size": 40,
+          "per-op-time": 120
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6634,
+          "metadata-size": 40,
+          "per-op-time": 105
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6991,
+          "metadata-size": 40,
+          "per-op-time": 122
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7078,
+          "metadata-size": 40,
+          "per-op-time": 117
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6687,
+          "metadata-size": 40,
+          "per-op-time": 103
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6787,
+          "metadata-size": 40,
+          "per-op-time": 107
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.699,
+          "metadata-size": 40,
+          "per-op-time": 118
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.714,
+          "metadata-size": 40,
+          "per-op-time": 109
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7161,
+          "metadata-size": 40,
+          "per-op-time": 112
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7119,
+          "metadata-size": 40,
+          "per-op-time": 111
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7145,
+          "metadata-size": 40,
+          "per-op-time": 111
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7155,
+          "metadata-size": 40,
+          "per-op-time": 126
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7099,
+          "metadata-size": 40,
+          "per-op-time": 105
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6634,
+          "metadata-size": 40,
+          "per-op-time": 105
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7126,
+          "metadata-size": 40,
+          "per-op-time": 108
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7132,
+          "metadata-size": 40,
+          "per-op-time": 115
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6709,
+          "metadata-size": 40,
+          "per-op-time": 104
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7131,
+          "metadata-size": 40,
+          "per-op-time": 107
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7166,
+          "metadata-size": 40,
+          "per-op-time": 109
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6709,
+          "metadata-size": 40,
+          "per-op-time": 104
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "dash_claude-opus-4-8_2026-06-06_02-45-01-395",
+        "subject-name": "dash",
+        "total-cycles": 9,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "dash",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6787,
+          "metadata-size": 40,
+          "per-op-time": 91
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6573,
+          "metadata-size": 40,
+          "per-op-time": 91
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6634,
+          "metadata-size": 24,
+          "per-op-time": 89
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6787,
+          "metadata-size": 24,
+          "per-op-time": 81
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6634,
+          "metadata-size": 16,
+          "per-op-time": 88
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6791,
+          "metadata-size": 40,
+          "per-op-time": 81
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6791,
+          "metadata-size": 24,
+          "per-op-time": 93
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 24,
+          "per-op-time": 92
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6787,
+          "metadata-size": 24,
+          "per-op-time": 102
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 86
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6787,
+          "metadata-size": 24,
+          "per-op-time": 78
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 24,
+          "per-op-time": 83
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 86
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6787,
+          "metadata-size": 24,
+          "per-op-time": 81
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 92
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 76
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 87
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6793,
+          "metadata-size": 16,
+          "per-op-time": 112
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 75
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 77
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 77
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 82
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6793,
+          "metadata-size": 16,
+          "per-op-time": 78
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6786,
+          "metadata-size": 16,
+          "per-op-time": 78
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6791,
+          "metadata-size": 16,
+          "per-op-time": 83
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6794,
+          "metadata-size": 16,
+          "per-op-time": 86
+        },
+        {
+          "subject-name": "dash",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6795,
+          "metadata-size": 16,
+          "per-op-time": 78
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "lru_cache_claude-haiku-4-5-20251001_2026-06-06_05-10-02-607",
+        "subject-name": "lru_cache",
+        "total-cycles": 6,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "lru_cache",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6652,
+          "metadata-size": 56,
+          "per-op-time": 44
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6721,
+          "metadata-size": 56,
+          "per-op-time": 36
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6926,
+          "metadata-size": 48,
+          "per-op-time": 49
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6721,
+          "metadata-size": 56,
+          "per-op-time": 35
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 35
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6849,
+          "metadata-size": 56,
+          "per-op-time": 52
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 36
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6827,
+          "metadata-size": 56,
+          "per-op-time": 37
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 34
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 53
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 35
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6737,
+          "metadata-size": 56,
+          "per-op-time": 40
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 38
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 35
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 40
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 35
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": 56,
+          "per-op-time": 35
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6652,
+          "metadata-size": 56,
+          "per-op-time": 35
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "lru_cache_claude-opus-4-8_2026-06-06_05-32-18-783",
+        "subject-name": "lru_cache",
+        "total-cycles": 10,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "lru_cache",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7241,
+          "metadata-size": 56,
+          "per-op-time": 77
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6652,
+          "metadata-size": 24,
+          "per-op-time": 78
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6652,
+          "metadata-size": 48,
+          "per-op-time": 39
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6652,
+          "metadata-size": 24,
+          "per-op-time": 52
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7241,
+          "metadata-size": 56,
+          "per-op-time": 35
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6652,
+          "metadata-size": 48,
+          "per-op-time": 58
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7129,
+          "metadata-size": 56,
+          "per-op-time": 61
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6652,
+          "metadata-size": 24,
+          "per-op-time": 51
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7241,
+          "metadata-size": 24,
+          "per-op-time": 27
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7242,
+          "metadata-size": 56,
+          "per-op-time": 40
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7304,
+          "metadata-size": 56,
+          "per-op-time": 52
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7242,
+          "metadata-size": 24,
+          "per-op-time": 55
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7204,
+          "metadata-size": 24,
+          "per-op-time": 37
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7241,
+          "metadata-size": 24,
+          "per-op-time": 56
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7241,
+          "metadata-size": 24,
+          "per-op-time": 40
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7241,
+          "metadata-size": 24,
+          "per-op-time": 33
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7291,
+          "metadata-size": 24,
+          "per-op-time": 26
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7316,
+          "metadata-size": 24,
+          "per-op-time": 38
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7204,
+          "metadata-size": 24,
+          "per-op-time": 27
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7291,
+          "metadata-size": 24,
+          "per-op-time": 58
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7291,
+          "metadata-size": 24,
+          "per-op-time": 69
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7224,
+          "metadata-size": 24,
+          "per-op-time": 31
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7267,
+          "metadata-size": 24,
+          "per-op-time": 30
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7291,
+          "metadata-size": 24,
+          "per-op-time": 27
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6754,
+          "metadata-size": 24,
+          "per-op-time": 26
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 10,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7298,
+          "metadata-size": 24,
+          "per-op-time": 52
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 10,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7291,
+          "metadata-size": 24,
+          "per-op-time": 55
+        },
+        {
+          "subject-name": "lru_cache",
+          "cycle": 10,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7202,
+          "metadata-size": 24,
+          "per-op-time": 58
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "s3_fifo_claude-haiku-4-5-20251001_2026-06-06_05-09-43-685",
+        "subject-name": "s3_fifo",
+        "total-cycles": 9,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7162,
+          "metadata-size": 24,
+          "per-op-time": 138
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.657,
+          "metadata-size": 24,
+          "per-op-time": 138
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7112,
+          "metadata-size": 24,
+          "per-op-time": 177
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7161,
+          "metadata-size": 24,
+          "per-op-time": 138
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.713,
+          "metadata-size": 24,
+          "per-op-time": 158
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7162,
+          "metadata-size": 24,
+          "per-op-time": 140
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6685,
+          "metadata-size": 24,
+          "per-op-time": 140
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.5902,
+          "metadata-size": 24,
+          "per-op-time": 138
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7164,
+          "metadata-size": 24,
+          "per-op-time": 140
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6566,
+          "metadata-size": 24,
+          "per-op-time": 141
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7106,
+          "metadata-size": 24,
+          "per-op-time": 284
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7248,
+          "metadata-size": 24,
+          "per-op-time": 174
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6497,
+          "metadata-size": 24,
+          "per-op-time": 139
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7222,
+          "metadata-size": 24,
+          "per-op-time": 131
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6848,
+          "metadata-size": 24,
+          "per-op-time": 139
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7223,
+          "metadata-size": 24,
+          "per-op-time": 137
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7074,
+          "metadata-size": 24,
+          "per-op-time": 175
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7162,
+          "metadata-size": 24,
+          "per-op-time": 139
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7074,
+          "metadata-size": 24,
+          "per-op-time": 174
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7073,
+          "metadata-size": 24,
+          "per-op-time": 140
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.709,
+          "metadata-size": 24,
+          "per-op-time": 140
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7161,
+          "metadata-size": 24,
+          "per-op-time": 136
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7101,
+          "metadata-size": 24,
+          "per-op-time": 140
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7133,
+          "metadata-size": 24,
+          "per-op-time": 137
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7159,
+          "metadata-size": 24,
+          "per-op-time": 137
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.711,
+          "metadata-size": 24,
+          "per-op-time": 106
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.716,
+          "metadata-size": 24,
+          "per-op-time": 139
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "s3_fifo_claude-opus-4-8_2026-06-06_02-49-23-803",
+        "subject-name": "s3_fifo",
+        "total-cycles": 10,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7136,
+          "metadata-size": 24,
+          "per-op-time": 122
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7103,
+          "metadata-size": 24,
+          "per-op-time": 122
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7248,
+          "metadata-size": 24,
+          "per-op-time": 74
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7269,
+          "metadata-size": 24,
+          "per-op-time": 64
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.717,
+          "metadata-size": 24,
+          "per-op-time": 73
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.718,
+          "metadata-size": 24,
+          "per-op-time": 122
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": 24,
+          "per-op-time": 46
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7283,
+          "metadata-size": 24,
+          "per-op-time": 64
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7257,
+          "metadata-size": 24,
+          "per-op-time": 65
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7305,
+          "metadata-size": 24,
+          "per-op-time": 46
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7298,
+          "metadata-size": 24,
+          "per-op-time": 46
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7261,
+          "metadata-size": 24,
+          "per-op-time": 47
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7304,
+          "metadata-size": 24,
+          "per-op-time": 47
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7267,
+          "metadata-size": 24,
+          "per-op-time": 47
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 24,
+          "per-op-time": 47
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 24,
+          "per-op-time": 39
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 24,
+          "per-op-time": 38
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7311,
+          "metadata-size": 24,
+          "per-op-time": 39
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 24,
+          "per-op-time": 23
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7314,
+          "metadata-size": 24,
+          "per-op-time": 38
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7317,
+          "metadata-size": 24,
+          "per-op-time": 40
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 24,
+          "per-op-time": 22
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 16,
+          "per-op-time": 24
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 24,
+          "per-op-time": 24
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 16,
+          "per-op-time": 22
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 16,
+          "per-op-time": 24
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 8,
+          "per-op-time": 23
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 10,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 0,
+          "per-op-time": 23
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 10,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7312,
+          "metadata-size": 8,
+          "per-op-time": 23
+        },
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 10,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7325,
+          "metadata-size": 8,
+          "per-op-time": 23
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572",
+        "subject-name": "tiny_lfu",
+        "total-cycles": 9,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7409,
+          "metadata-size": 48,
+          "per-op-time": 110
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7243,
+          "metadata-size": 48,
+          "per-op-time": 117
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7341,
+          "metadata-size": 48,
+          "per-op-time": 110
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7377,
+          "metadata-size": 48,
+          "per-op-time": 110
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7334,
+          "metadata-size": 48,
+          "per-op-time": 90
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7395,
+          "metadata-size": 48,
+          "per-op-time": 146
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.739,
+          "metadata-size": 48,
+          "per-op-time": 144
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7311,
+          "metadata-size": 48,
+          "per-op-time": 112
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7363,
+          "metadata-size": 48,
+          "per-op-time": 112
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.734,
+          "metadata-size": 48,
+          "per-op-time": 93
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7334,
+          "metadata-size": 48,
+          "per-op-time": 93
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7405,
+          "metadata-size": 48,
+          "per-op-time": 112
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7355,
+          "metadata-size": 48,
+          "per-op-time": 91
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7349,
+          "metadata-size": 48,
+          "per-op-time": 179
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7367,
+          "metadata-size": 48,
+          "per-op-time": 110
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7354,
+          "metadata-size": 48,
+          "per-op-time": 92
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7333,
+          "metadata-size": 48,
+          "per-op-time": 91
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7383,
+          "metadata-size": 48,
+          "per-op-time": 192
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7334,
+          "metadata-size": 48,
+          "per-op-time": 92
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7384,
+          "metadata-size": 48,
+          "per-op-time": 188
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7362,
+          "metadata-size": 48,
+          "per-op-time": 109
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7264,
+          "metadata-size": 48,
+          "per-op-time": 92
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7268,
+          "metadata-size": 48,
+          "per-op-time": 74
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7243,
+          "metadata-size": 48,
+          "per-op-time": 73
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.727,
+          "metadata-size": 48,
+          "per-op-time": 73
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7362,
+          "metadata-size": 48,
+          "per-op-time": 110
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7374,
+          "metadata-size": 48,
+          "per-op-time": 117
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "tiny_lfu_claude-opus-4-8_2026-06-06_02-49-34-396",
+        "subject-name": "tiny_lfu",
+        "total-cycles": 10,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate",
+          "metadata-size",
+          "per-op-time"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6869,
+          "metadata-size": 48,
+          "per-op-time": 112
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7321,
+          "metadata-size": 48,
+          "per-op-time": 50
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7362,
+          "metadata-size": 48,
+          "per-op-time": 109
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7321,
+          "metadata-size": 48,
+          "per-op-time": 49
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7303,
+          "metadata-size": 48,
+          "per-op-time": 43
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7381,
+          "metadata-size": 48,
+          "per-op-time": 109
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7303,
+          "metadata-size": 48,
+          "per-op-time": 42
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7362,
+          "metadata-size": 24,
+          "per-op-time": 111
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7369,
+          "metadata-size": 48,
+          "per-op-time": 43
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7369,
+          "metadata-size": 24,
+          "per-op-time": 43
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7425,
+          "metadata-size": 48,
+          "per-op-time": 43
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7367,
+          "metadata-size": 56,
+          "per-op-time": 42
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7425,
+          "metadata-size": 24,
+          "per-op-time": 44
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7393,
+          "metadata-size": 24,
+          "per-op-time": 46
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7375,
+          "metadata-size": 24,
+          "per-op-time": 43
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7425,
+          "metadata-size": 24,
+          "per-op-time": 54
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7412,
+          "metadata-size": 24,
+          "per-op-time": 72
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7425,
+          "metadata-size": 24,
+          "per-op-time": 52
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7412,
+          "metadata-size": 24,
+          "per-op-time": 51
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7424,
+          "metadata-size": 24,
+          "per-op-time": 53
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7229,
+          "metadata-size": 24,
+          "per-op-time": 53
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7426,
+          "metadata-size": 24,
+          "per-op-time": 60
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.743,
+          "metadata-size": 24,
+          "per-op-time": 57
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7423,
+          "metadata-size": 24,
+          "per-op-time": 53
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7392,
+          "metadata-size": 24,
+          "per-op-time": 50
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7432,
+          "metadata-size": 32,
+          "per-op-time": 51
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7425,
+          "metadata-size": 24,
+          "per-op-time": 53
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 10,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7425,
+          "metadata-size": 24,
+          "per-op-time": 53
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 10,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6723,
+          "metadata-size": 24,
+          "per-op-time": 53
+        },
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 10,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7433,
+          "metadata-size": 24,
+          "per-op-time": 52
+        }
+      ]
+    }
+  ]
+}

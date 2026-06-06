@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Aggregate real run outputs under outputs/ into plots/data.json.
+"""Aggregate real run outputs under outputs/paper_outputs/ into per-group JSON.
+
+Runs are grouped under outputs/paper_outputs/<group>/<subject>/<run>/, where
+<group> is the fitness configuration the runs share (e.g. only_hit_rate,
+full_fitness_vector). Each group becomes its own plots/paper-plots/data_<group>.json
+so hit-rate-only and full-fitness-vector runs stay in separate datasets.
 
 Emits one row per variant per cycle, plus a baseline row when the run
 recorded one. Each canonical fitness dimension absent from a variant's
@@ -10,7 +15,7 @@ into each run folder at start. Runs predating that snapshot fall back to
 the authoritative cycle count and ledger cohort size, with the rest left
 as "unknown" / -1.
 
-Idempotent: regenerates data.json from scratch on every invocation.
+Idempotent: regenerates the data files from scratch on every invocation.
 Stdlib only (tomllib needs Python 3.11+). Run with the project venv:
 
     .venv/bin/python plots/build_data.py
@@ -25,8 +30,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS_DIR = REPO_ROOT / "outputs"
+PAPER_OUTPUTS_DIR = OUTPUTS_DIR / "paper_outputs"
 PLOTS_DIR = REPO_ROOT / "plots"
-DATA_PATH = PLOTS_DIR / "data.json"
+PAPER_PLOTS_DIR = PLOTS_DIR / "paper-plots"
 
 UNKNOWN = "unknown"
 
@@ -34,11 +40,6 @@ UNKNOWN = "unknown"
 # vector omits one of these gets MISSING for that dimension.
 CANONICAL_DIMS = ("hit-rate", "metadata-size", "per-op-time")
 MISSING = -1
-
-
-def subject_of(run_name: str) -> str:
-    """Run dir is "<subject>_<YYYY-MM-DD>_<HH-MM-SS-mmm>"; strip the timestamp."""
-    return run_name.rsplit("_", 2)[0]
 
 
 def dim_summaries(vector: dict) -> dict:
@@ -131,11 +132,15 @@ def baseline_row(run_dir: Path, subject: str):
     return None
 
 
-def build_run(run_dir: Path):
-    """Return the {setup, variants} block for one run, or None if incomplete."""
+def build_run(run_dir: Path, subject: str):
+    """Return the {setup, variants} block for one run, or None if incomplete.
+
+    Subject comes from the run's parent folder; the run dir name embeds the
+    agent (e.g. "lru_cache_claude-opus-4-8_<date>_<time>") and is not safely
+    parseable for subjects whose names contain underscores.
+    """
     if not (run_dir / "cycles-ledger.jsonl").exists():
         return None  # run never reached a sealed cycle
-    subject = subject_of(run_dir.name)
     winners = winners_by_cycle(run_dir)
 
     variants = []
@@ -167,39 +172,56 @@ def build_run(run_dir: Path):
     return {"setup": setup, "variants": variants}
 
 
-def resolve_run_dirs(selectors: list[str]) -> list[Path]:
-    """Map CLI selectors to run dirs. A selector may be a run dir name (looked
-    up under outputs/) or a path to a run dir. Empty selectors means every run
-    under outputs/."""
+def group_run_dirs(group_dir: Path) -> list[tuple[Path, str]]:
+    """List (run_dir, subject) pairs under a group's <subject>/<run> folders."""
+    pairs = []
+    for subject_dir in sorted(p for p in group_dir.iterdir() if p.is_dir()):
+        for run_dir in sorted(p for p in subject_dir.iterdir() if p.is_dir()):
+            pairs.append((run_dir, subject_dir.name))
+    return pairs
+
+
+def resolve_groups(selectors: list[str]) -> list[Path]:
+    """Map CLI selectors to group dirs under outputs/paper_outputs/. A selector
+    is a group folder name. Empty selectors means every group."""
     if not selectors:
-        return sorted(p for p in OUTPUTS_DIR.iterdir() if p.is_dir())
-    run_dirs = []
+        return sorted(p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir())
+    group_dirs = []
     for selector in selectors:
-        path = Path(selector)
-        run_dir = path if path.is_absolute() or path.exists() else OUTPUTS_DIR / selector
-        if not run_dir.is_dir():
-            raise SystemExit(f"run dir not found: {run_dir}")
-        run_dirs.append(run_dir)
-    return run_dirs
+        group_dir = PAPER_OUTPUTS_DIR / selector
+        if not group_dir.is_dir():
+            raise SystemExit(f"group dir not found: {group_dir}")
+        group_dirs.append(group_dir)
+    return group_dirs
+
+
+def build_group(group_dir: Path) -> Path:
+    """Aggregate one group into plots/paper-plots/data_<group>.json; return its path."""
+    runs = []
+    for run_dir, subject in group_run_dirs(group_dir):
+        built = build_run(run_dir, subject)
+        if built is not None:
+            runs.append(built)
+    PAPER_PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    data_path = PAPER_PLOTS_DIR / f"data_{group_dir.name}.json"
+    data_path.write_text(json.dumps({"runs": runs}, indent=2) + "\n")
+    variant_count = sum(len(run["variants"]) for run in runs)
+    print(f"Wrote {data_path} with {len(runs)} runs and {variant_count} variant rows.")
+    return data_path
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "runs",
+        "groups",
         nargs="*",
-        help="run dir name(s) or path(s) to aggregate; default: every run under outputs/",
+        help="group folder name(s) under outputs/paper_outputs/ to aggregate; "
+        "default: every group",
     )
     args = parser.parse_args()
 
-    runs = []
-    for run_dir in resolve_run_dirs(args.runs):
-        built = build_run(run_dir)
-        if built is not None:
-            runs.append(built)
-    DATA_PATH.write_text(json.dumps({"runs": runs}, indent=2) + "\n")
-    variant_count = sum(len(run["variants"]) for run in runs)
-    print(f"Wrote {DATA_PATH} with {len(runs)} runs and {variant_count} variant rows.")
+    for group_dir in resolve_groups(args.groups):
+        build_group(group_dir)
 
 
 if __name__ == "__main__":
