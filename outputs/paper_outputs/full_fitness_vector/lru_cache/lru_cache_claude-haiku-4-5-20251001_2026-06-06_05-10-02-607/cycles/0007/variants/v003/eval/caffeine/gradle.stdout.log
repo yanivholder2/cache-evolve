@@ -1,0 +1,8 @@
+Downloading https://services.gradle.org/distributions/gradle-9.4.0-bin.zip
+.............10%.............20%.............30%.............40%.............50%.............60%..............70%.............80%.............90%.............100%
+^^^^^^^^^^^^^^^^^^^^^^ LruRust Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
+capacity: 2048
+^^^^^^^^^^^^^^^^^^^^^^ LruRust Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2,048: Executed in 452.1 ms
+Did not generate a chart as only one data point
+Wrote report to /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/lru_cache/lru_cache_claude-haiku-4-5-20251001_2026-06-06_05-10-02-607/cycles/0007/variants/v003/eval/caffeine/hit_rate_2048.csv

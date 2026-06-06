@@ -1,0 +1,6 @@
+^^^^^^^^^^^^^^^^^^^^^^ LruRust Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
+capacity: 2048
+^^^^^^^^^^^^^^^^^^^^^^ LruRust Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2,048: Executed in 416.0 ms
+Did not generate a chart as only one data point
+Wrote report to /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/lru_cache/lru_cache_claude-haiku-4-5-20251001_2026-06-06_05-10-02-607/cycles/0008/variants/v001/eval/caffeine/hit_rate_2048.csv
