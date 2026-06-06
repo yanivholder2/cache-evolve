@@ -52,8 +52,14 @@ def dim_summaries(vector: dict) -> dict:
 BACKFILL_DIMS = ("metadata-size", "per-op-time")
 
 
-def parse_number(text: str):
-    return float(text) if "." in text else int(text)
+def try_number(text: str):
+    """Parse a table cell into int/float, or None when it is not numeric (e.g.
+    the "—" the leaderboard writes for an absent score)."""
+    text = text.strip()
+    try:
+        return float(text) if "." in text else int(text)
+    except ValueError:
+        return None
 
 
 def diff_variant_key(variant_cell: str):
@@ -98,11 +104,13 @@ def fitness_diff_rows(run_dir: Path) -> dict:
         key = diff_variant_key(record.get("Variant", ""))
         if key is None:
             continue
-        rows[key] = {
-            dim: parse_number(record[dim])
-            for dim in CANONICAL_DIMS
-            if record.get(dim) and record[dim] != str(MISSING)
-        }
+        dims = {}
+        for dim in (*CANONICAL_DIMS, "weighted-score"):
+            column = "Weighted score" if dim == "weighted-score" else dim
+            value = try_number(record.get(column, ""))
+            if value is not None:
+                dims[dim] = value
+        rows[key] = dims
     return rows
 
 
@@ -116,6 +124,7 @@ def make_row(summaries, *, subject, cycle, variant, is_baseline, is_winner):
     }
     for dim in CANONICAL_DIMS:
         row[dim] = summaries.get(dim, MISSING)
+    row["weighted-score"] = MISSING
     return row
 
 
@@ -181,16 +190,11 @@ def backfill(row: dict, dims: dict) -> dict:
     return row
 
 
-def leaderboard_baseline_dims(run_dir: Path) -> dict:
-    """Baseline fitness dims from the leaderboard's baseline row.
-
-    Every run writes leaderboard.md with a "baseline" row, so this is the one
-    baseline source common to all runs. Hit-rate-only leaderboards carry just
-    hit-rate; full-fitness ones also carry metadata-size and per-op-time.
-    """
+def leaderboard_records(run_dir: Path):
+    """Yield each leaderboard.md data row as a header-mapped cell dict."""
     path = run_dir / "leaderboard.md"
     if not path.exists():
-        return {}
+        return
     header = None
     for line in path.read_text().splitlines():
         if not line.strip().startswith("|"):
@@ -202,15 +206,60 @@ def leaderboard_baseline_dims(run_dir: Path) -> dict:
             continue
         if all(set(cell) <= {"-"} for cell in cells):
             continue  # markdown separator row
-        record = dict(zip(header, cells))
+        yield dict(zip(header, cells))
+
+
+def leaderboard_baseline_dims(run_dir: Path) -> dict:
+    """Baseline fitness dims from the leaderboard's baseline row.
+
+    Every run writes leaderboard.md with a "baseline" row, so this is the one
+    baseline source common to all runs. Hit-rate-only leaderboards carry just
+    hit-rate; full-fitness ones also carry metadata-size and per-op-time.
+    """
+    for record in leaderboard_records(run_dir):
         if record.get("Cycle") != "baseline":
             continue
-        return {
-            dim: parse_number(record[dim])
-            for dim in CANONICAL_DIMS
-            if record.get(dim) and record[dim] != str(MISSING)
-        }
+        dims = {}
+        for dim in CANONICAL_DIMS:
+            value = try_number(record.get(dim, ""))
+            if value is not None:
+                dims[dim] = value
+        return dims
     return {}
+
+
+def leaderboard_scores(run_dir: Path) -> dict:
+    """Map (cycle, variant) into the weighted score from the leaderboard.
+
+    A cycle row's Variants and Score cells are comma-aligned lists; winners
+    carry a "(winner)" suffix in the Variants cell. Hit-rate-only runs leave
+    Score as "—" and so contribute nothing.
+    """
+    scores = {}
+    for record in leaderboard_records(run_dir):
+        cycle_cell = record.get("Cycle", "")
+        if not cycle_cell.isdigit():
+            continue  # baseline row carries no per-variant score
+        cycle = int(cycle_cell)
+        variants = [part.split()[0] for part in record.get("Variants", "").split(",")]
+        cells = record.get("Score", "").split(",")
+        for variant, cell in zip(variants, cells):
+            value = try_number(cell)
+            if value is not None:
+                scores[(cycle, variant)] = value
+    return scores
+
+
+def collect_scores(run_dir: Path, diff_rows: dict) -> dict:
+    """Weighted scores keyed by (cycle, variant), from the leaderboard and the
+    diff. Where any score exists, the baseline anchors the scale at 0."""
+    scores = leaderboard_scores(run_dir)
+    for key, dims in diff_rows.items():
+        if "weighted-score" in dims:
+            scores[key] = dims["weighted-score"]
+    if scores:
+        scores.setdefault((0, "baseline"), 0)
+    return scores
 
 
 def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
@@ -245,10 +294,12 @@ def build_run(run_dir: Path, subject: str):
         return None  # run never reached a sealed cycle
     winners = winners_by_cycle(run_dir)
     diff_rows = fitness_diff_rows(run_dir)
+    scores = collect_scores(run_dir, diff_rows)
 
     variants = []
     baseline = baseline_row(run_dir, subject, diff_rows)
     if baseline is not None:
+        baseline["weighted-score"] = scores.get((0, "baseline"), MISSING)
         variants.append(baseline)
 
     cycle_dirs = sorted((run_dir / "cycles").glob("[0-9]" * 4))
@@ -260,19 +311,19 @@ def build_run(run_dir: Path, subject: str):
             if not vector_path.exists():
                 continue  # variant produced no vector (e.g. build or gate failure)
             summaries = dim_summaries(json.loads(vector_path.read_text()))
-            variants.append(
-                backfill(
-                    make_row(
-                        summaries,
-                        subject=subject,
-                        cycle=cycle,
-                        variant=variant_dir.name,
-                        is_baseline=False,
-                        is_winner=variant_dir.name in cycle_winners,
-                    ),
-                    diff_rows.get((cycle, variant_dir.name), {}),
-                )
+            row = backfill(
+                make_row(
+                    summaries,
+                    subject=subject,
+                    cycle=cycle,
+                    variant=variant_dir.name,
+                    is_baseline=False,
+                    is_winner=variant_dir.name in cycle_winners,
+                ),
+                diff_rows.get((cycle, variant_dir.name), {}),
             )
+            row["weighted-score"] = scores.get((cycle, variant_dir.name), MISSING)
+            variants.append(row)
 
     setup = run_setup(run_dir, subject, len(cycle_dirs))
     return {"setup": setup, "variants": variants}

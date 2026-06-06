@@ -25,7 +25,8 @@
           "is-winner": false,
           "hit-rate": 0.663,
           "metadata-size": 40,
-          "per-op-time": 183
+          "per-op-time": 183,
+          "weighted-score": 0
         },
         {
           "subject-name": "dash",
@@ -35,7 +36,8 @@
           "is-winner": true,
           "hit-rate": 0.6787,
           "metadata-size": 40,
-          "per-op-time": 104
+          "per-op-time": 104,
+          "weighted-score": 0.1
         },
         {
           "subject-name": "dash",
@@ -45,7 +47,8 @@
           "is-winner": true,
           "hit-rate": 0.6965,
           "metadata-size": 40,
-          "per-op-time": 120
+          "per-op-time": 120,
+          "weighted-score": 0.0988
         },
         {
           "subject-name": "dash",
@@ -55,7 +58,8 @@
           "is-winner": true,
           "hit-rate": 0.6634,
           "metadata-size": 40,
-          "per-op-time": 105
+          "per-op-time": 105,
+          "weighted-score": 0.0852
         },
         {
           "subject-name": "dash",
@@ -65,7 +69,8 @@
           "is-winner": true,
           "hit-rate": 0.6991,
           "metadata-size": 40,
-          "per-op-time": 122
+          "per-op-time": 122,
+          "weighted-score": 0.099
         },
         {
           "subject-name": "dash",
@@ -75,7 +80,8 @@
           "is-winner": true,
           "hit-rate": 0.7078,
           "metadata-size": 40,
-          "per-op-time": 117
+          "per-op-time": 117,
+          "weighted-score": 0.112
         },
         {
           "subject-name": "dash",
@@ -85,7 +91,8 @@
           "is-winner": true,
           "hit-rate": 0.6687,
           "metadata-size": 40,
-          "per-op-time": 103
+          "per-op-time": 103,
+          "weighted-score": 0.0922
         },
         {
           "subject-name": "dash",
@@ -95,7 +102,8 @@
           "is-winner": true,
           "hit-rate": 0.6787,
           "metadata-size": 40,
-          "per-op-time": 107
+          "per-op-time": 107,
+          "weighted-score": 0.0969
         },
         {
           "subject-name": "dash",
@@ -105,7 +113,8 @@
           "is-winner": true,
           "hit-rate": 0.699,
           "metadata-size": 40,
-          "per-op-time": 118
+          "per-op-time": 118,
+          "weighted-score": 0.103
         },
         {
           "subject-name": "dash",
@@ -115,7 +124,8 @@
           "is-winner": true,
           "hit-rate": 0.714,
           "metadata-size": 40,
-          "per-op-time": 109
+          "per-op-time": 109,
+          "weighted-score": 0.127
         },
         {
           "subject-name": "dash",
@@ -125,7 +135,8 @@
           "is-winner": true,
           "hit-rate": 0.7161,
           "metadata-size": 40,
-          "per-op-time": 112
+          "per-op-time": 112,
+          "weighted-score": 0.125
         },
         {
           "subject-name": "dash",
@@ -135,7 +146,8 @@
           "is-winner": true,
           "hit-rate": 0.7119,
           "metadata-size": 40,
-          "per-op-time": 111
+          "per-op-time": 111,
+          "weighted-score": 0.123
         },
         {
           "subject-name": "dash",
@@ -145,7 +157,8 @@
           "is-winner": true,
           "hit-rate": 0.7145,
           "metadata-size": 40,
-          "per-op-time": 111
+          "per-op-time": 111,
+          "weighted-score": 0.125
         },
         {
           "subject-name": "dash",
@@ -155,7 +168,8 @@
           "is-winner": true,
           "hit-rate": 0.7155,
           "metadata-size": 40,
-          "per-op-time": 126
+          "per-op-time": 126,
+          "weighted-score": 0.109
         },
         {
           "subject-name": "dash",
@@ -165,7 +179,8 @@
           "is-winner": true,
           "hit-rate": 0.7099,
           "metadata-size": 40,
-          "per-op-time": 105
+          "per-op-time": 105,
+          "weighted-score": 0.127
         },
         {
           "subject-name": "dash",
@@ -175,7 +190,8 @@
           "is-winner": true,
           "hit-rate": 0.6634,
           "metadata-size": 40,
-          "per-op-time": 105
+          "per-op-time": 105,
+          "weighted-score": 0.0852
         },
         {
           "subject-name": "dash",
@@ -185,7 +201,8 @@
           "is-winner": true,
           "hit-rate": 0.7126,
           "metadata-size": 40,
-          "per-op-time": 108
+          "per-op-time": 108,
+          "weighted-score": 0.126
         },
         {
           "subject-name": "dash",
@@ -195,7 +212,8 @@
           "is-winner": true,
           "hit-rate": 0.7132,
           "metadata-size": 40,
-          "per-op-time": 115
+          "per-op-time": 115,
+          "weighted-score": 0.119
         },
         {
           "subject-name": "dash",
@@ -205,7 +223,8 @@
           "is-winner": true,
           "hit-rate": 0.6709,
           "metadata-size": 40,
-          "per-op-time": 104
+          "per-op-time": 104,
+          "weighted-score": 0.0931
         },
         {
           "subject-name": "dash",
@@ -215,7 +234,8 @@
           "is-winner": true,
           "hit-rate": 0.7131,
           "metadata-size": 40,
-          "per-op-time": 107
+          "per-op-time": 107,
+          "weighted-score": 0.128
         },
         {
           "subject-name": "dash",
@@ -225,7 +245,8 @@
           "is-winner": true,
           "hit-rate": 0.7166,
           "metadata-size": 40,
-          "per-op-time": 109
+          "per-op-time": 109,
+          "weighted-score": 0.129
         },
         {
           "subject-name": "dash",
@@ -235,7 +256,8 @@
           "is-winner": true,
           "hit-rate": 0.6709,
           "metadata-size": 40,
-          "per-op-time": 104
+          "per-op-time": 104,
+          "weighted-score": 0.0931
         }
       ]
     },
@@ -264,7 +286,8 @@
           "is-winner": false,
           "hit-rate": 0.663,
           "metadata-size": 40,
-          "per-op-time": 183
+          "per-op-time": 183,
+          "weighted-score": 0
         },
         {
           "subject-name": "dash",
@@ -274,7 +297,8 @@
           "is-winner": true,
           "hit-rate": 0.6787,
           "metadata-size": 40,
-          "per-op-time": 91
+          "per-op-time": 91,
+          "weighted-score": 0.114
         },
         {
           "subject-name": "dash",
@@ -284,7 +308,8 @@
           "is-winner": true,
           "hit-rate": 0.6573,
           "metadata-size": 40,
-          "per-op-time": 91
+          "per-op-time": 91,
+          "weighted-score": 0.095
         },
         {
           "subject-name": "dash",
@@ -294,7 +319,8 @@
           "is-winner": true,
           "hit-rate": 0.6634,
           "metadata-size": 24,
-          "per-op-time": 89
+          "per-op-time": 89,
+          "weighted-score": 0.183
         },
         {
           "subject-name": "dash",
@@ -304,7 +330,8 @@
           "is-winner": true,
           "hit-rate": 0.6787,
           "metadata-size": 24,
-          "per-op-time": 81
+          "per-op-time": 81,
+          "weighted-score": 0.205
         },
         {
           "subject-name": "dash",
@@ -314,7 +341,8 @@
           "is-winner": true,
           "hit-rate": 0.6634,
           "metadata-size": 16,
-          "per-op-time": 88
+          "per-op-time": 88,
+          "weighted-score": 0.224
         },
         {
           "subject-name": "dash",
@@ -324,7 +352,8 @@
           "is-winner": true,
           "hit-rate": 0.6791,
           "metadata-size": 40,
-          "per-op-time": 81
+          "per-op-time": 81,
+          "weighted-score": 0.126
         },
         {
           "subject-name": "dash",
@@ -334,7 +363,8 @@
           "is-winner": true,
           "hit-rate": 0.6791,
           "metadata-size": 24,
-          "per-op-time": 93
+          "per-op-time": 93,
+          "weighted-score": 0.193
         },
         {
           "subject-name": "dash",
@@ -344,7 +374,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 24,
-          "per-op-time": 92
+          "per-op-time": 92,
+          "weighted-score": 0.194
         },
         {
           "subject-name": "dash",
@@ -354,7 +385,8 @@
           "is-winner": true,
           "hit-rate": 0.6787,
           "metadata-size": 24,
-          "per-op-time": 102
+          "per-op-time": 102,
+          "weighted-score": 0.182
         },
         {
           "subject-name": "dash",
@@ -364,7 +396,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 86
+          "per-op-time": 86,
+          "weighted-score": 0.24
         },
         {
           "subject-name": "dash",
@@ -374,7 +407,8 @@
           "is-winner": true,
           "hit-rate": 0.6787,
           "metadata-size": 24,
-          "per-op-time": 78
+          "per-op-time": 78,
+          "weighted-score": 0.209
         },
         {
           "subject-name": "dash",
@@ -384,7 +418,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 24,
-          "per-op-time": 83
+          "per-op-time": 83,
+          "weighted-score": 0.204
         },
         {
           "subject-name": "dash",
@@ -394,7 +429,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 86
+          "per-op-time": 86,
+          "weighted-score": 0.24
         },
         {
           "subject-name": "dash",
@@ -404,7 +440,8 @@
           "is-winner": true,
           "hit-rate": 0.6787,
           "metadata-size": 24,
-          "per-op-time": 81
+          "per-op-time": 81,
+          "weighted-score": 0.205
         },
         {
           "subject-name": "dash",
@@ -414,7 +451,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 92
+          "per-op-time": 92,
+          "weighted-score": 0.234
         },
         {
           "subject-name": "dash",
@@ -424,7 +462,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 76
+          "per-op-time": 76,
+          "weighted-score": 0.251
         },
         {
           "subject-name": "dash",
@@ -434,7 +473,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 87
+          "per-op-time": 87,
+          "weighted-score": 0.239
         },
         {
           "subject-name": "dash",
@@ -444,7 +484,8 @@
           "is-winner": true,
           "hit-rate": 0.6793,
           "metadata-size": 16,
-          "per-op-time": 112
+          "per-op-time": 112,
+          "weighted-score": 0.212
         },
         {
           "subject-name": "dash",
@@ -454,7 +495,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 75
+          "per-op-time": 75,
+          "weighted-score": 0.253
         },
         {
           "subject-name": "dash",
@@ -464,7 +506,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 77
+          "per-op-time": 77,
+          "weighted-score": 0.25
         },
         {
           "subject-name": "dash",
@@ -474,7 +517,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 77
+          "per-op-time": 77,
+          "weighted-score": 0.25
         },
         {
           "subject-name": "dash",
@@ -484,7 +528,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 82
+          "per-op-time": 82,
+          "weighted-score": 0.245
         },
         {
           "subject-name": "dash",
@@ -494,7 +539,8 @@
           "is-winner": true,
           "hit-rate": 0.6793,
           "metadata-size": 16,
-          "per-op-time": 78
+          "per-op-time": 78,
+          "weighted-score": 0.249
         },
         {
           "subject-name": "dash",
@@ -504,7 +550,8 @@
           "is-winner": true,
           "hit-rate": 0.6786,
           "metadata-size": 16,
-          "per-op-time": 78
+          "per-op-time": 78,
+          "weighted-score": 0.249
         },
         {
           "subject-name": "dash",
@@ -514,7 +561,8 @@
           "is-winner": true,
           "hit-rate": 0.6791,
           "metadata-size": 16,
-          "per-op-time": 83
+          "per-op-time": 83,
+          "weighted-score": 0.243
         },
         {
           "subject-name": "dash",
@@ -524,7 +572,8 @@
           "is-winner": true,
           "hit-rate": 0.6794,
           "metadata-size": 16,
-          "per-op-time": 86
+          "per-op-time": 86,
+          "weighted-score": 0.24
         },
         {
           "subject-name": "dash",
@@ -534,7 +583,8 @@
           "is-winner": true,
           "hit-rate": 0.6795,
           "metadata-size": 16,
-          "per-op-time": 78
+          "per-op-time": 78,
+          "weighted-score": 0.249
         }
       ]
     },
@@ -563,7 +613,8 @@
           "is-winner": false,
           "hit-rate": 0.665,
           "metadata-size": 48,
-          "per-op-time": 41
+          "per-op-time": 41,
+          "weighted-score": 0
         },
         {
           "subject-name": "lru_cache",
@@ -573,7 +624,8 @@
           "is-winner": false,
           "hit-rate": 0.6652,
           "metadata-size": 56,
-          "per-op-time": 44
+          "per-op-time": 44,
+          "weighted-score": -0.048
         },
         {
           "subject-name": "lru_cache",
@@ -583,7 +635,8 @@
           "is-winner": false,
           "hit-rate": 0.6721,
           "metadata-size": 56,
-          "per-op-time": 36
+          "per-op-time": 36,
+          "weighted-score": -0.00272
         },
         {
           "subject-name": "lru_cache",
@@ -593,7 +646,8 @@
           "is-winner": false,
           "hit-rate": 0.6926,
           "metadata-size": 48,
-          "per-op-time": 49
+          "per-op-time": 49,
+          "weighted-score": -0.0143
         },
         {
           "subject-name": "lru_cache",
@@ -603,7 +657,8 @@
           "is-winner": true,
           "hit-rate": 0.6721,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": 0.00216
         },
         {
           "subject-name": "lru_cache",
@@ -613,7 +668,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": 0.0187
         },
         {
           "subject-name": "lru_cache",
@@ -623,7 +679,8 @@
           "is-winner": false,
           "hit-rate": 0.6849,
           "metadata-size": 56,
-          "per-op-time": 52
+          "per-op-time": 52,
+          "weighted-score": -0.0692
         },
         {
           "subject-name": "lru_cache",
@@ -633,7 +690,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 36
+          "per-op-time": 36,
+          "weighted-score": 0.0138
         },
         {
           "subject-name": "lru_cache",
@@ -643,7 +701,8 @@
           "is-winner": true,
           "hit-rate": 0.6827,
           "metadata-size": 56,
-          "per-op-time": 37
+          "per-op-time": 37,
+          "weighted-score": 0.00196
         },
         {
           "subject-name": "lru_cache",
@@ -653,7 +712,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 34
+          "per-op-time": 34,
+          "weighted-score": 0.0235
         },
         {
           "subject-name": "lru_cache",
@@ -663,7 +723,8 @@
           "is-winner": false,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 53
+          "per-op-time": 53,
+          "weighted-score": -0.0691
         },
         {
           "subject-name": "lru_cache",
@@ -673,7 +734,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": 0.0187
         },
         {
           "subject-name": "lru_cache",
@@ -683,7 +745,8 @@
           "is-winner": false,
           "hit-rate": 0.6737,
           "metadata-size": 56,
-          "per-op-time": 40
+          "per-op-time": 40,
+          "weighted-score": -0.0208
         },
         {
           "subject-name": "lru_cache",
@@ -693,7 +756,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 38
+          "per-op-time": 38,
+          "weighted-score": 0.00403
         },
         {
           "subject-name": "lru_cache",
@@ -703,7 +767,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": 0.0187
         },
         {
           "subject-name": "lru_cache",
@@ -713,7 +778,8 @@
           "is-winner": false,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 40
+          "per-op-time": 40,
+          "weighted-score": -0.00573
         },
         {
           "subject-name": "lru_cache",
@@ -723,7 +789,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": 0.0187
         },
         {
           "subject-name": "lru_cache",
@@ -733,7 +800,8 @@
           "is-winner": true,
           "hit-rate": 0.6904,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": 0.0187
         },
         {
           "subject-name": "lru_cache",
@@ -743,7 +811,8 @@
           "is-winner": false,
           "hit-rate": 0.6652,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": -0.00407
         }
       ]
     },
@@ -772,7 +841,8 @@
           "is-winner": false,
           "hit-rate": 0.665,
           "metadata-size": 48,
-          "per-op-time": 41
+          "per-op-time": 41,
+          "weighted-score": 0
         },
         {
           "subject-name": "lru_cache",
@@ -782,7 +852,8 @@
           "is-winner": false,
           "hit-rate": 0.7241,
           "metadata-size": 56,
-          "per-op-time": 77
+          "per-op-time": 77,
+          "weighted-score": -0.156
         },
         {
           "subject-name": "lru_cache",
@@ -792,7 +863,8 @@
           "is-winner": false,
           "hit-rate": 0.6652,
           "metadata-size": 24,
-          "per-op-time": 78
+          "per-op-time": 78,
+          "weighted-score": -0.0805
         },
         {
           "subject-name": "lru_cache",
@@ -802,7 +874,8 @@
           "is-winner": true,
           "hit-rate": 0.6652,
           "metadata-size": 48,
-          "per-op-time": 39
+          "per-op-time": 39,
+          "weighted-score": 0.00976
         },
         {
           "subject-name": "lru_cache",
@@ -812,7 +885,8 @@
           "is-winner": true,
           "hit-rate": 0.6652,
           "metadata-size": 24,
-          "per-op-time": 52
+          "per-op-time": 52,
+          "weighted-score": 0.0463
         },
         {
           "subject-name": "lru_cache",
@@ -822,7 +896,8 @@
           "is-winner": true,
           "hit-rate": 0.7241,
           "metadata-size": 56,
-          "per-op-time": 35
+          "per-op-time": 35,
+          "weighted-score": 0.0491
         },
         {
           "subject-name": "lru_cache",
@@ -832,7 +907,8 @@
           "is-winner": false,
           "hit-rate": 0.6652,
           "metadata-size": 48,
-          "per-op-time": 58
+          "per-op-time": 58,
+          "weighted-score": -0.0829
         },
         {
           "subject-name": "lru_cache",
@@ -842,7 +918,8 @@
           "is-winner": false,
           "hit-rate": 0.7129,
           "metadata-size": 56,
-          "per-op-time": 61
+          "per-op-time": 61,
+          "weighted-score": -0.0879
         },
         {
           "subject-name": "lru_cache",
@@ -852,7 +929,8 @@
           "is-winner": true,
           "hit-rate": 0.6652,
           "metadata-size": 24,
-          "per-op-time": 51
+          "per-op-time": 51,
+          "weighted-score": 0.0512
         },
         {
           "subject-name": "lru_cache",
@@ -862,7 +940,8 @@
           "is-winner": true,
           "hit-rate": 0.7241,
           "metadata-size": 24,
-          "per-op-time": 27
+          "per-op-time": 27,
+          "weighted-score": 0.221
         },
         {
           "subject-name": "lru_cache",
@@ -872,7 +951,8 @@
           "is-winner": true,
           "hit-rate": 0.7242,
           "metadata-size": 56,
-          "per-op-time": 40
+          "per-op-time": 40,
+          "weighted-score": 0.0248
         },
         {
           "subject-name": "lru_cache",
@@ -882,7 +962,8 @@
           "is-winner": false,
           "hit-rate": 0.7304,
           "metadata-size": 56,
-          "per-op-time": 52
+          "per-op-time": 52,
+          "weighted-score": -0.0282
         },
         {
           "subject-name": "lru_cache",
@@ -892,7 +973,8 @@
           "is-winner": true,
           "hit-rate": 0.7242,
           "metadata-size": 24,
-          "per-op-time": 55
+          "per-op-time": 55,
+          "weighted-score": 0.0849
         },
         {
           "subject-name": "lru_cache",
@@ -902,7 +984,8 @@
           "is-winner": true,
           "hit-rate": 0.7204,
           "metadata-size": 24,
-          "per-op-time": 37
+          "per-op-time": 37,
+          "weighted-score": 0.169
         },
         {
           "subject-name": "lru_cache",
@@ -912,7 +995,8 @@
           "is-winner": true,
           "hit-rate": 0.7241,
           "metadata-size": 24,
-          "per-op-time": 56
+          "per-op-time": 56,
+          "weighted-score": 0.08
         },
         {
           "subject-name": "lru_cache",
@@ -922,7 +1006,8 @@
           "is-winner": true,
           "hit-rate": 0.7241,
           "metadata-size": 24,
-          "per-op-time": 40
+          "per-op-time": 40,
+          "weighted-score": 0.158
         },
         {
           "subject-name": "lru_cache",
@@ -932,7 +1017,8 @@
           "is-winner": true,
           "hit-rate": 0.7241,
           "metadata-size": 24,
-          "per-op-time": 33
+          "per-op-time": 33,
+          "weighted-score": 0.192
         },
         {
           "subject-name": "lru_cache",
@@ -942,7 +1028,8 @@
           "is-winner": true,
           "hit-rate": 0.7291,
           "metadata-size": 24,
-          "per-op-time": 26
+          "per-op-time": 26,
+          "weighted-score": 0.231
         },
         {
           "subject-name": "lru_cache",
@@ -952,7 +1039,8 @@
           "is-winner": true,
           "hit-rate": 0.7316,
           "metadata-size": 24,
-          "per-op-time": 38
+          "per-op-time": 38,
+          "weighted-score": 0.175
         },
         {
           "subject-name": "lru_cache",
@@ -962,7 +1050,8 @@
           "is-winner": true,
           "hit-rate": 0.7204,
           "metadata-size": 24,
-          "per-op-time": 27
+          "per-op-time": 27,
+          "weighted-score": 0.218
         },
         {
           "subject-name": "lru_cache",
@@ -972,7 +1061,8 @@
           "is-winner": true,
           "hit-rate": 0.7291,
           "metadata-size": 24,
-          "per-op-time": 58
+          "per-op-time": 58,
+          "weighted-score": 0.0747
         },
         {
           "subject-name": "lru_cache",
@@ -982,7 +1072,8 @@
           "is-winner": true,
           "hit-rate": 0.7291,
           "metadata-size": 24,
-          "per-op-time": 69
+          "per-op-time": 69,
+          "weighted-score": 0.0211
         },
         {
           "subject-name": "lru_cache",
@@ -992,7 +1083,8 @@
           "is-winner": true,
           "hit-rate": 0.7224,
           "metadata-size": 24,
-          "per-op-time": 31
+          "per-op-time": 31,
+          "weighted-score": 0.2
         },
         {
           "subject-name": "lru_cache",
@@ -1002,7 +1094,8 @@
           "is-winner": true,
           "hit-rate": 0.7267,
           "metadata-size": 24,
-          "per-op-time": 30
+          "per-op-time": 30,
+          "weighted-score": 0.209
         },
         {
           "subject-name": "lru_cache",
@@ -1012,7 +1105,8 @@
           "is-winner": true,
           "hit-rate": 0.7291,
           "metadata-size": 24,
-          "per-op-time": 27
+          "per-op-time": 27,
+          "weighted-score": 0.226
         },
         {
           "subject-name": "lru_cache",
@@ -1022,7 +1116,8 @@
           "is-winner": true,
           "hit-rate": 0.6754,
           "metadata-size": 24,
-          "per-op-time": 26
+          "per-op-time": 26,
+          "weighted-score": 0.182
         },
         {
           "subject-name": "lru_cache",
@@ -1032,7 +1127,8 @@
           "is-winner": true,
           "hit-rate": 0.7298,
           "metadata-size": 24,
-          "per-op-time": 52
+          "per-op-time": 52,
+          "weighted-score": 0.105
         },
         {
           "subject-name": "lru_cache",
@@ -1042,7 +1138,8 @@
           "is-winner": true,
           "hit-rate": 0.7291,
           "metadata-size": 24,
-          "per-op-time": 55
+          "per-op-time": 55,
+          "weighted-score": 0.0893
         },
         {
           "subject-name": "lru_cache",
@@ -1052,7 +1149,8 @@
           "is-winner": true,
           "hit-rate": 0.7202,
           "metadata-size": 24,
-          "per-op-time": 58
+          "per-op-time": 58,
+          "weighted-score": 0.0667
         }
       ]
     },
@@ -1081,7 +1179,8 @@
           "is-winner": false,
           "hit-rate": 0.716,
           "metadata-size": 24,
-          "per-op-time": 248
+          "per-op-time": 248,
+          "weighted-score": 0
         },
         {
           "subject-name": "s3_fifo",
@@ -1091,7 +1190,8 @@
           "is-winner": true,
           "hit-rate": 0.7162,
           "metadata-size": 24,
-          "per-op-time": 138
+          "per-op-time": 138,
+          "weighted-score": 0.0885
         },
         {
           "subject-name": "s3_fifo",
@@ -1101,7 +1201,8 @@
           "is-winner": true,
           "hit-rate": 0.657,
           "metadata-size": 24,
-          "per-op-time": 138
+          "per-op-time": 138,
+          "weighted-score": 0.039
         },
         {
           "subject-name": "s3_fifo",
@@ -1111,7 +1212,8 @@
           "is-winner": true,
           "hit-rate": 0.7112,
           "metadata-size": 24,
-          "per-op-time": 177
+          "per-op-time": 177,
+          "weighted-score": 0.0529
         },
         {
           "subject-name": "s3_fifo",
@@ -1121,7 +1223,8 @@
           "is-winner": true,
           "hit-rate": 0.7161,
           "metadata-size": 24,
-          "per-op-time": 138
+          "per-op-time": 138,
+          "weighted-score": 0.0885
         },
         {
           "subject-name": "s3_fifo",
@@ -1131,7 +1234,8 @@
           "is-winner": true,
           "hit-rate": 0.713,
           "metadata-size": 24,
-          "per-op-time": 158
+          "per-op-time": 158,
+          "weighted-score": 0.0697
         },
         {
           "subject-name": "s3_fifo",
@@ -1141,7 +1245,8 @@
           "is-winner": true,
           "hit-rate": 0.7162,
           "metadata-size": 24,
-          "per-op-time": 140
+          "per-op-time": 140,
+          "weighted-score": 0.0869
         },
         {
           "subject-name": "s3_fifo",
@@ -1151,7 +1256,8 @@
           "is-winner": true,
           "hit-rate": 0.6685,
           "metadata-size": 24,
-          "per-op-time": 140
+          "per-op-time": 140,
+          "weighted-score": 0.047
         },
         {
           "subject-name": "s3_fifo",
@@ -1161,7 +1267,8 @@
           "is-winner": false,
           "hit-rate": 0.5902,
           "metadata-size": 24,
-          "per-op-time": 138
+          "per-op-time": 138,
+          "weighted-score": -0.017
         },
         {
           "subject-name": "s3_fifo",
@@ -1171,7 +1278,8 @@
           "is-winner": true,
           "hit-rate": 0.7164,
           "metadata-size": 24,
-          "per-op-time": 140
+          "per-op-time": 140,
+          "weighted-score": 0.0871
         },
         {
           "subject-name": "s3_fifo",
@@ -1181,7 +1289,8 @@
           "is-winner": true,
           "hit-rate": 0.6566,
           "metadata-size": 24,
-          "per-op-time": 141
+          "per-op-time": 141,
+          "weighted-score": 0.0362
         },
         {
           "subject-name": "s3_fifo",
@@ -1191,7 +1300,8 @@
           "is-winner": false,
           "hit-rate": 0.7106,
           "metadata-size": 24,
-          "per-op-time": 284
+          "per-op-time": 284,
+          "weighted-score": -0.0339
         },
         {
           "subject-name": "s3_fifo",
@@ -1201,7 +1311,8 @@
           "is-winner": true,
           "hit-rate": 0.7248,
           "metadata-size": 24,
-          "per-op-time": 174
+          "per-op-time": 174,
+          "weighted-score": 0.0667
         },
         {
           "subject-name": "s3_fifo",
@@ -1211,7 +1322,8 @@
           "is-winner": true,
           "hit-rate": 0.6497,
           "metadata-size": 24,
-          "per-op-time": 139
+          "per-op-time": 139,
+          "weighted-score": 0.032
         },
         {
           "subject-name": "s3_fifo",
@@ -1221,7 +1333,8 @@
           "is-winner": true,
           "hit-rate": 0.7222,
           "metadata-size": 24,
-          "per-op-time": 131
+          "per-op-time": 131,
+          "weighted-score": 0.0992
         },
         {
           "subject-name": "s3_fifo",
@@ -1231,7 +1344,8 @@
           "is-winner": true,
           "hit-rate": 0.6848,
           "metadata-size": 24,
-          "per-op-time": 139
+          "per-op-time": 139,
+          "weighted-score": 0.0614
         },
         {
           "subject-name": "s3_fifo",
@@ -1241,7 +1355,8 @@
           "is-winner": true,
           "hit-rate": 0.7223,
           "metadata-size": 24,
-          "per-op-time": 137
+          "per-op-time": 137,
+          "weighted-score": 0.0945
         },
         {
           "subject-name": "s3_fifo",
@@ -1251,7 +1366,8 @@
           "is-winner": true,
           "hit-rate": 0.7074,
           "metadata-size": 24,
-          "per-op-time": 175
+          "per-op-time": 175,
+          "weighted-score": 0.0513
         },
         {
           "subject-name": "s3_fifo",
@@ -1261,7 +1377,8 @@
           "is-winner": true,
           "hit-rate": 0.7162,
           "metadata-size": 24,
-          "per-op-time": 139
+          "per-op-time": 139,
+          "weighted-score": 0.0877
         },
         {
           "subject-name": "s3_fifo",
@@ -1271,7 +1388,8 @@
           "is-winner": true,
           "hit-rate": 0.7074,
           "metadata-size": 24,
-          "per-op-time": 174
+          "per-op-time": 174,
+          "weighted-score": 0.0521
         },
         {
           "subject-name": "s3_fifo",
@@ -1281,7 +1399,8 @@
           "is-winner": true,
           "hit-rate": 0.7073,
           "metadata-size": 24,
-          "per-op-time": 140
+          "per-op-time": 140,
+          "weighted-score": 0.0795
         },
         {
           "subject-name": "s3_fifo",
@@ -1291,7 +1410,8 @@
           "is-winner": true,
           "hit-rate": 0.709,
           "metadata-size": 24,
-          "per-op-time": 140
+          "per-op-time": 140,
+          "weighted-score": 0.0809
         },
         {
           "subject-name": "s3_fifo",
@@ -1301,7 +1421,8 @@
           "is-winner": true,
           "hit-rate": 0.7161,
           "metadata-size": 24,
-          "per-op-time": 136
+          "per-op-time": 136,
+          "weighted-score": 0.0901
         },
         {
           "subject-name": "s3_fifo",
@@ -1311,7 +1432,8 @@
           "is-winner": true,
           "hit-rate": 0.7101,
           "metadata-size": 24,
-          "per-op-time": 140
+          "per-op-time": 140,
+          "weighted-score": 0.0818
         },
         {
           "subject-name": "s3_fifo",
@@ -1321,7 +1443,8 @@
           "is-winner": true,
           "hit-rate": 0.7133,
           "metadata-size": 24,
-          "per-op-time": 137
+          "per-op-time": 137,
+          "weighted-score": 0.0869
         },
         {
           "subject-name": "s3_fifo",
@@ -1331,7 +1454,8 @@
           "is-winner": true,
           "hit-rate": 0.7159,
           "metadata-size": 24,
-          "per-op-time": 137
+          "per-op-time": 137,
+          "weighted-score": 0.0891
         },
         {
           "subject-name": "s3_fifo",
@@ -1341,7 +1465,8 @@
           "is-winner": true,
           "hit-rate": 0.711,
           "metadata-size": 24,
-          "per-op-time": 106
+          "per-op-time": 106,
+          "weighted-score": 0.11
         },
         {
           "subject-name": "s3_fifo",
@@ -1351,7 +1476,8 @@
           "is-winner": true,
           "hit-rate": 0.716,
           "metadata-size": 24,
-          "per-op-time": 139
+          "per-op-time": 139,
+          "weighted-score": 0.0876
         }
       ]
     },
@@ -1380,7 +1506,8 @@
           "is-winner": false,
           "hit-rate": 0.716,
           "metadata-size": 24,
-          "per-op-time": 248
+          "per-op-time": 248,
+          "weighted-score": 0
         },
         {
           "subject-name": "s3_fifo",
@@ -1390,7 +1517,8 @@
           "is-winner": true,
           "hit-rate": 0.7136,
           "metadata-size": 24,
-          "per-op-time": 122
+          "per-op-time": 122,
+          "weighted-score": 0.0993
         },
         {
           "subject-name": "s3_fifo",
@@ -1400,7 +1528,8 @@
           "is-winner": true,
           "hit-rate": 0.7103,
           "metadata-size": 24,
-          "per-op-time": 122
+          "per-op-time": 122,
+          "weighted-score": 0.0965
         },
         {
           "subject-name": "s3_fifo",
@@ -1410,7 +1539,8 @@
           "is-winner": true,
           "hit-rate": 0.7248,
           "metadata-size": 24,
-          "per-op-time": 74
+          "per-op-time": 74,
+          "weighted-score": 0.147
         },
         {
           "subject-name": "s3_fifo",
@@ -1420,7 +1550,8 @@
           "is-winner": true,
           "hit-rate": 0.7269,
           "metadata-size": 24,
-          "per-op-time": 64
+          "per-op-time": 64,
+          "weighted-score": 0.157
         },
         {
           "subject-name": "s3_fifo",
@@ -1430,7 +1561,8 @@
           "is-winner": true,
           "hit-rate": 0.717,
           "metadata-size": 24,
-          "per-op-time": 73
+          "per-op-time": 73,
+          "weighted-score": 0.142
         },
         {
           "subject-name": "s3_fifo",
@@ -1440,7 +1572,8 @@
           "is-winner": true,
           "hit-rate": 0.718,
           "metadata-size": 24,
-          "per-op-time": 122
+          "per-op-time": 122,
+          "weighted-score": 0.103
         },
         {
           "subject-name": "s3_fifo",
@@ -1450,7 +1583,8 @@
           "is-winner": true,
           "hit-rate": 0.7284,
           "metadata-size": 24,
-          "per-op-time": 46
+          "per-op-time": 46,
+          "weighted-score": 0.173
         },
         {
           "subject-name": "s3_fifo",
@@ -1460,7 +1594,8 @@
           "is-winner": true,
           "hit-rate": 0.7283,
           "metadata-size": 24,
-          "per-op-time": 64
+          "per-op-time": 64,
+          "weighted-score": 0.158
         },
         {
           "subject-name": "s3_fifo",
@@ -1470,7 +1605,8 @@
           "is-winner": true,
           "hit-rate": 0.7257,
           "metadata-size": 24,
-          "per-op-time": 65
+          "per-op-time": 65,
+          "weighted-score": 0.155
         },
         {
           "subject-name": "s3_fifo",
@@ -1480,7 +1616,8 @@
           "is-winner": true,
           "hit-rate": 0.7305,
           "metadata-size": 24,
-          "per-op-time": 46
+          "per-op-time": 46,
+          "weighted-score": 0.175
         },
         {
           "subject-name": "s3_fifo",
@@ -1490,7 +1627,8 @@
           "is-winner": true,
           "hit-rate": 0.7298,
           "metadata-size": 24,
-          "per-op-time": 46
+          "per-op-time": 46,
+          "weighted-score": 0.174
         },
         {
           "subject-name": "s3_fifo",
@@ -1500,7 +1638,8 @@
           "is-winner": true,
           "hit-rate": 0.7261,
           "metadata-size": 24,
-          "per-op-time": 47
+          "per-op-time": 47,
+          "weighted-score": 0.17
         },
         {
           "subject-name": "s3_fifo",
@@ -1510,7 +1649,8 @@
           "is-winner": true,
           "hit-rate": 0.7304,
           "metadata-size": 24,
-          "per-op-time": 47
+          "per-op-time": 47,
+          "weighted-score": 0.174
         },
         {
           "subject-name": "s3_fifo",
@@ -1520,7 +1660,8 @@
           "is-winner": true,
           "hit-rate": 0.7267,
           "metadata-size": 24,
-          "per-op-time": 47
+          "per-op-time": 47,
+          "weighted-score": 0.171
         },
         {
           "subject-name": "s3_fifo",
@@ -1530,7 +1671,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 24,
-          "per-op-time": 47
+          "per-op-time": 47,
+          "weighted-score": 0.174
         },
         {
           "subject-name": "s3_fifo",
@@ -1540,7 +1682,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 24,
-          "per-op-time": 39
+          "per-op-time": 39,
+          "weighted-score": 0.181
         },
         {
           "subject-name": "s3_fifo",
@@ -1550,7 +1693,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 24,
-          "per-op-time": 38
+          "per-op-time": 38,
+          "weighted-score": 0.182
         },
         {
           "subject-name": "s3_fifo",
@@ -1560,7 +1704,8 @@
           "is-winner": true,
           "hit-rate": 0.7311,
           "metadata-size": 24,
-          "per-op-time": 39
+          "per-op-time": 39,
+          "weighted-score": 0.181
         },
         {
           "subject-name": "s3_fifo",
@@ -1570,7 +1715,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 24,
-          "per-op-time": 23
+          "per-op-time": 23,
+          "weighted-score": 0.194
         },
         {
           "subject-name": "s3_fifo",
@@ -1580,7 +1726,8 @@
           "is-winner": true,
           "hit-rate": 0.7314,
           "metadata-size": 24,
-          "per-op-time": 38
+          "per-op-time": 38,
+          "weighted-score": 0.182
         },
         {
           "subject-name": "s3_fifo",
@@ -1590,7 +1737,8 @@
           "is-winner": true,
           "hit-rate": 0.7317,
           "metadata-size": 24,
-          "per-op-time": 40
+          "per-op-time": 40,
+          "weighted-score": 0.181
         },
         {
           "subject-name": "s3_fifo",
@@ -1600,7 +1748,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 24,
-          "per-op-time": 22
+          "per-op-time": 22,
+          "weighted-score": 0.195
         },
         {
           "subject-name": "s3_fifo",
@@ -1610,7 +1759,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 16,
-          "per-op-time": 24
+          "per-op-time": 24,
+          "weighted-score": 0.26
         },
         {
           "subject-name": "s3_fifo",
@@ -1620,7 +1770,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 24,
-          "per-op-time": 24
+          "per-op-time": 24,
+          "weighted-score": 0.193
         },
         {
           "subject-name": "s3_fifo",
@@ -1630,7 +1781,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 16,
-          "per-op-time": 22
+          "per-op-time": 22,
+          "weighted-score": 0.261
         },
         {
           "subject-name": "s3_fifo",
@@ -1640,7 +1792,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 16,
-          "per-op-time": 24
+          "per-op-time": 24,
+          "weighted-score": 0.26
         },
         {
           "subject-name": "s3_fifo",
@@ -1650,7 +1803,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 8,
-          "per-op-time": 23
+          "per-op-time": 23,
+          "weighted-score": 0.327
         },
         {
           "subject-name": "s3_fifo",
@@ -1660,7 +1814,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 0,
-          "per-op-time": 23
+          "per-op-time": 23,
+          "weighted-score": 0.394
         },
         {
           "subject-name": "s3_fifo",
@@ -1670,7 +1825,8 @@
           "is-winner": true,
           "hit-rate": 0.7312,
           "metadata-size": 8,
-          "per-op-time": 23
+          "per-op-time": 23,
+          "weighted-score": 0.327
         },
         {
           "subject-name": "s3_fifo",
@@ -1680,7 +1836,8 @@
           "is-winner": true,
           "hit-rate": 0.7325,
           "metadata-size": 8,
-          "per-op-time": 23
+          "per-op-time": 23,
+          "weighted-score": 0.328
         }
       ]
     },
@@ -1709,7 +1866,8 @@
           "is-winner": false,
           "hit-rate": 0.736,
           "metadata-size": 48,
-          "per-op-time": 132
+          "per-op-time": 132,
+          "weighted-score": 0
         },
         {
           "subject-name": "tiny_lfu",
@@ -1719,7 +1877,8 @@
           "is-winner": true,
           "hit-rate": 0.7409,
           "metadata-size": 48,
-          "per-op-time": 110
+          "per-op-time": 110,
+          "weighted-score": 0.0372
         },
         {
           "subject-name": "tiny_lfu",
@@ -1729,7 +1888,8 @@
           "is-winner": true,
           "hit-rate": 0.7243,
           "metadata-size": 48,
-          "per-op-time": 117
+          "per-op-time": 117,
+          "weighted-score": 0.013
         },
         {
           "subject-name": "tiny_lfu",
@@ -1739,7 +1899,8 @@
           "is-winner": true,
           "hit-rate": 0.7341,
           "metadata-size": 48,
-          "per-op-time": 110
+          "per-op-time": 110,
+          "weighted-score": 0.0316
         },
         {
           "subject-name": "tiny_lfu",
@@ -1749,7 +1910,8 @@
           "is-winner": true,
           "hit-rate": 0.7377,
           "metadata-size": 48,
-          "per-op-time": 110
+          "per-op-time": 110,
+          "weighted-score": 0.0346
         },
         {
           "subject-name": "tiny_lfu",
@@ -1759,7 +1921,8 @@
           "is-winner": true,
           "hit-rate": 0.7334,
           "metadata-size": 48,
-          "per-op-time": 90
+          "per-op-time": 90,
+          "weighted-score": 0.0614
         },
         {
           "subject-name": "tiny_lfu",
@@ -1769,7 +1932,8 @@
           "is-winner": false,
           "hit-rate": 0.7395,
           "metadata-size": 48,
-          "per-op-time": 146
+          "per-op-time": 146,
+          "weighted-score": -0.0185
         },
         {
           "subject-name": "tiny_lfu",
@@ -1779,7 +1943,8 @@
           "is-winner": false,
           "hit-rate": 0.739,
           "metadata-size": 48,
-          "per-op-time": 144
+          "per-op-time": 144,
+          "weighted-score": -0.0159
         },
         {
           "subject-name": "tiny_lfu",
@@ -1789,7 +1954,8 @@
           "is-winner": true,
           "hit-rate": 0.7311,
           "metadata-size": 48,
-          "per-op-time": 112
+          "per-op-time": 112,
+          "weighted-score": 0.0261
         },
         {
           "subject-name": "tiny_lfu",
@@ -1799,7 +1965,8 @@
           "is-winner": true,
           "hit-rate": 0.7363,
           "metadata-size": 48,
-          "per-op-time": 112
+          "per-op-time": 112,
+          "weighted-score": 0.0304
         },
         {
           "subject-name": "tiny_lfu",
@@ -1809,7 +1976,8 @@
           "is-winner": true,
           "hit-rate": 0.734,
           "metadata-size": 48,
-          "per-op-time": 93
+          "per-op-time": 93,
+          "weighted-score": 0.0573
         },
         {
           "subject-name": "tiny_lfu",
@@ -1819,7 +1987,8 @@
           "is-winner": true,
           "hit-rate": 0.7334,
           "metadata-size": 48,
-          "per-op-time": 93
+          "per-op-time": 93,
+          "weighted-score": 0.0568
         },
         {
           "subject-name": "tiny_lfu",
@@ -1829,7 +1998,8 @@
           "is-winner": true,
           "hit-rate": 0.7405,
           "metadata-size": 48,
-          "per-op-time": 112
+          "per-op-time": 112,
+          "weighted-score": 0.0338
         },
         {
           "subject-name": "tiny_lfu",
@@ -1839,7 +2009,8 @@
           "is-winner": true,
           "hit-rate": 0.7355,
           "metadata-size": 48,
-          "per-op-time": 91
+          "per-op-time": 91,
+          "weighted-score": 0.0616
         },
         {
           "subject-name": "tiny_lfu",
@@ -1849,7 +2020,8 @@
           "is-winner": false,
           "hit-rate": 0.7349,
           "metadata-size": 48,
-          "per-op-time": 179
+          "per-op-time": 179,
+          "weighted-score": -0.0723
         },
         {
           "subject-name": "tiny_lfu",
@@ -1859,7 +2031,8 @@
           "is-winner": true,
           "hit-rate": 0.7367,
           "metadata-size": 48,
-          "per-op-time": 110
+          "per-op-time": 110,
+          "weighted-score": 0.0337
         },
         {
           "subject-name": "tiny_lfu",
@@ -1869,7 +2042,8 @@
           "is-winner": true,
           "hit-rate": 0.7354,
           "metadata-size": 48,
-          "per-op-time": 92
+          "per-op-time": 92,
+          "weighted-score": 0.06
         },
         {
           "subject-name": "tiny_lfu",
@@ -1879,7 +2053,8 @@
           "is-winner": true,
           "hit-rate": 0.7333,
           "metadata-size": 48,
-          "per-op-time": 91
+          "per-op-time": 91,
+          "weighted-score": 0.0598
         },
         {
           "subject-name": "tiny_lfu",
@@ -1889,7 +2064,8 @@
           "is-winner": false,
           "hit-rate": 0.7383,
           "metadata-size": 48,
-          "per-op-time": 192
+          "per-op-time": 192,
+          "weighted-score": -0.0892
         },
         {
           "subject-name": "tiny_lfu",
@@ -1899,7 +2075,8 @@
           "is-winner": true,
           "hit-rate": 0.7334,
           "metadata-size": 48,
-          "per-op-time": 92
+          "per-op-time": 92,
+          "weighted-score": 0.0583
         },
         {
           "subject-name": "tiny_lfu",
@@ -1909,7 +2086,8 @@
           "is-winner": false,
           "hit-rate": 0.7384,
           "metadata-size": 48,
-          "per-op-time": 188
+          "per-op-time": 188,
+          "weighted-score": -0.0831
         },
         {
           "subject-name": "tiny_lfu",
@@ -1919,7 +2097,8 @@
           "is-winner": true,
           "hit-rate": 0.7362,
           "metadata-size": 48,
-          "per-op-time": 109
+          "per-op-time": 109,
+          "weighted-score": 0.0348
         },
         {
           "subject-name": "tiny_lfu",
@@ -1929,7 +2108,8 @@
           "is-winner": true,
           "hit-rate": 0.7264,
           "metadata-size": 48,
-          "per-op-time": 92
+          "per-op-time": 92,
+          "weighted-score": 0.0526
         },
         {
           "subject-name": "tiny_lfu",
@@ -1939,7 +2119,8 @@
           "is-winner": true,
           "hit-rate": 0.7268,
           "metadata-size": 48,
-          "per-op-time": 74
+          "per-op-time": 74,
+          "weighted-score": 0.0802
         },
         {
           "subject-name": "tiny_lfu",
@@ -1949,7 +2130,8 @@
           "is-winner": true,
           "hit-rate": 0.7243,
           "metadata-size": 48,
-          "per-op-time": 73
+          "per-op-time": 73,
+          "weighted-score": 0.0797
         },
         {
           "subject-name": "tiny_lfu",
@@ -1959,7 +2141,8 @@
           "is-winner": true,
           "hit-rate": 0.727,
           "metadata-size": 48,
-          "per-op-time": 73
+          "per-op-time": 73,
+          "weighted-score": 0.0819
         },
         {
           "subject-name": "tiny_lfu",
@@ -1969,7 +2152,8 @@
           "is-winner": true,
           "hit-rate": 0.7362,
           "metadata-size": 48,
-          "per-op-time": 110
+          "per-op-time": 110,
+          "weighted-score": 0.0333
         },
         {
           "subject-name": "tiny_lfu",
@@ -1979,7 +2163,8 @@
           "is-winner": true,
           "hit-rate": 0.7374,
           "metadata-size": 48,
-          "per-op-time": 117
+          "per-op-time": 117,
+          "weighted-score": 0.0237
         }
       ]
     },
@@ -2008,7 +2193,8 @@
           "is-winner": false,
           "hit-rate": 0.736,
           "metadata-size": 48,
-          "per-op-time": 132
+          "per-op-time": 132,
+          "weighted-score": 0
         },
         {
           "subject-name": "tiny_lfu",
@@ -2018,7 +2204,8 @@
           "is-winner": false,
           "hit-rate": 0.6869,
           "metadata-size": 48,
-          "per-op-time": 112
+          "per-op-time": 112,
+          "weighted-score": -0.00988
         },
         {
           "subject-name": "tiny_lfu",
@@ -2028,7 +2215,8 @@
           "is-winner": true,
           "hit-rate": 0.7321,
           "metadata-size": 48,
-          "per-op-time": 50
+          "per-op-time": 50,
+          "weighted-score": 0.121
         },
         {
           "subject-name": "tiny_lfu",
@@ -2038,7 +2226,8 @@
           "is-winner": true,
           "hit-rate": 0.7362,
           "metadata-size": 48,
-          "per-op-time": 109
+          "per-op-time": 109,
+          "weighted-score": 0.0348
         },
         {
           "subject-name": "tiny_lfu",
@@ -2048,7 +2237,8 @@
           "is-winner": true,
           "hit-rate": 0.7321,
           "metadata-size": 48,
-          "per-op-time": 49
+          "per-op-time": 49,
+          "weighted-score": 0.122
         },
         {
           "subject-name": "tiny_lfu",
@@ -2058,7 +2248,8 @@
           "is-winner": true,
           "hit-rate": 0.7303,
           "metadata-size": 48,
-          "per-op-time": 43
+          "per-op-time": 43,
+          "weighted-score": 0.13
         },
         {
           "subject-name": "tiny_lfu",
@@ -2068,7 +2259,8 @@
           "is-winner": true,
           "hit-rate": 0.7381,
           "metadata-size": 48,
-          "per-op-time": 109
+          "per-op-time": 109,
+          "weighted-score": 0.0364
         },
         {
           "subject-name": "tiny_lfu",
@@ -2078,7 +2270,8 @@
           "is-winner": true,
           "hit-rate": 0.7303,
           "metadata-size": 48,
-          "per-op-time": 42
+          "per-op-time": 42,
+          "weighted-score": 0.132
         },
         {
           "subject-name": "tiny_lfu",
@@ -2088,7 +2281,8 @@
           "is-winner": true,
           "hit-rate": 0.7362,
           "metadata-size": 24,
-          "per-op-time": 111
+          "per-op-time": 111,
+          "weighted-score": 0.132
         },
         {
           "subject-name": "tiny_lfu",
@@ -2098,7 +2292,8 @@
           "is-winner": true,
           "hit-rate": 0.7369,
           "metadata-size": 48,
-          "per-op-time": 43
+          "per-op-time": 43,
+          "weighted-score": 0.135
         },
         {
           "subject-name": "tiny_lfu",
@@ -2108,7 +2303,8 @@
           "is-winner": true,
           "hit-rate": 0.7369,
           "metadata-size": 24,
-          "per-op-time": 43
+          "per-op-time": 43,
+          "weighted-score": 0.235
         },
         {
           "subject-name": "tiny_lfu",
@@ -2118,7 +2314,8 @@
           "is-winner": true,
           "hit-rate": 0.7425,
           "metadata-size": 48,
-          "per-op-time": 43
+          "per-op-time": 43,
+          "weighted-score": 0.14
         },
         {
           "subject-name": "tiny_lfu",
@@ -2128,7 +2325,8 @@
           "is-winner": true,
           "hit-rate": 0.7367,
           "metadata-size": 56,
-          "per-op-time": 42
+          "per-op-time": 42,
+          "weighted-score": 0.103
         },
         {
           "subject-name": "tiny_lfu",
@@ -2138,7 +2336,8 @@
           "is-winner": true,
           "hit-rate": 0.7425,
           "metadata-size": 24,
-          "per-op-time": 44
+          "per-op-time": 44,
+          "weighted-score": 0.238
         },
         {
           "subject-name": "tiny_lfu",
@@ -2148,7 +2347,8 @@
           "is-winner": true,
           "hit-rate": 0.7393,
           "metadata-size": 24,
-          "per-op-time": 46
+          "per-op-time": 46,
+          "weighted-score": 0.233
         },
         {
           "subject-name": "tiny_lfu",
@@ -2158,7 +2358,8 @@
           "is-winner": true,
           "hit-rate": 0.7375,
           "metadata-size": 24,
-          "per-op-time": 43
+          "per-op-time": 43,
+          "weighted-score": 0.236
         },
         {
           "subject-name": "tiny_lfu",
@@ -2168,7 +2369,8 @@
           "is-winner": true,
           "hit-rate": 0.7425,
           "metadata-size": 24,
-          "per-op-time": 54
+          "per-op-time": 54,
+          "weighted-score": 0.223
         },
         {
           "subject-name": "tiny_lfu",
@@ -2178,7 +2380,8 @@
           "is-winner": true,
           "hit-rate": 0.7412,
           "metadata-size": 24,
-          "per-op-time": 72
+          "per-op-time": 72,
+          "weighted-score": 0.195
         },
         {
           "subject-name": "tiny_lfu",
@@ -2188,7 +2391,8 @@
           "is-winner": true,
           "hit-rate": 0.7425,
           "metadata-size": 24,
-          "per-op-time": 52
+          "per-op-time": 52,
+          "weighted-score": 0.226
         },
         {
           "subject-name": "tiny_lfu",
@@ -2198,7 +2402,8 @@
           "is-winner": true,
           "hit-rate": 0.7412,
           "metadata-size": 24,
-          "per-op-time": 51
+          "per-op-time": 51,
+          "weighted-score": 0.227
         },
         {
           "subject-name": "tiny_lfu",
@@ -2208,7 +2413,8 @@
           "is-winner": true,
           "hit-rate": 0.7424,
           "metadata-size": 24,
-          "per-op-time": 53
+          "per-op-time": 53,
+          "weighted-score": 0.225
         },
         {
           "subject-name": "tiny_lfu",
@@ -2218,7 +2424,8 @@
           "is-winner": true,
           "hit-rate": 0.7229,
           "metadata-size": 24,
-          "per-op-time": 53
+          "per-op-time": 53,
+          "weighted-score": 0.209
         },
         {
           "subject-name": "tiny_lfu",
@@ -2228,7 +2435,8 @@
           "is-winner": true,
           "hit-rate": 0.7426,
           "metadata-size": 24,
-          "per-op-time": 60
+          "per-op-time": 60,
+          "weighted-score": 0.214
         },
         {
           "subject-name": "tiny_lfu",
@@ -2238,7 +2446,8 @@
           "is-winner": true,
           "hit-rate": 0.743,
           "metadata-size": 24,
-          "per-op-time": 57
+          "per-op-time": 57,
+          "weighted-score": 0.219
         },
         {
           "subject-name": "tiny_lfu",
@@ -2248,7 +2457,8 @@
           "is-winner": true,
           "hit-rate": 0.7423,
           "metadata-size": 24,
-          "per-op-time": 53
+          "per-op-time": 53,
+          "weighted-score": 0.225
         },
         {
           "subject-name": "tiny_lfu",
@@ -2258,7 +2468,8 @@
           "is-winner": true,
           "hit-rate": 0.7392,
           "metadata-size": 24,
-          "per-op-time": 50
+          "per-op-time": 50,
+          "weighted-score": 0.227
         },
         {
           "subject-name": "tiny_lfu",
@@ -2268,7 +2479,8 @@
           "is-winner": true,
           "hit-rate": 0.7432,
           "metadata-size": 32,
-          "per-op-time": 51
+          "per-op-time": 51,
+          "weighted-score": 0.195
         },
         {
           "subject-name": "tiny_lfu",
@@ -2278,7 +2490,8 @@
           "is-winner": true,
           "hit-rate": 0.7425,
           "metadata-size": 24,
-          "per-op-time": 53
+          "per-op-time": 53,
+          "weighted-score": 0.225
         },
         {
           "subject-name": "tiny_lfu",
@@ -2288,7 +2501,8 @@
           "is-winner": true,
           "hit-rate": 0.7425,
           "metadata-size": 24,
-          "per-op-time": 53
+          "per-op-time": 53,
+          "weighted-score": 0.225
         },
         {
           "subject-name": "tiny_lfu",
@@ -2298,7 +2512,8 @@
           "is-winner": true,
           "hit-rate": 0.6723,
           "metadata-size": 24,
-          "per-op-time": 53
+          "per-op-time": 53,
+          "weighted-score": 0.168
         },
         {
           "subject-name": "tiny_lfu",
@@ -2308,7 +2523,8 @@
           "is-winner": true,
           "hit-rate": 0.7433,
           "metadata-size": 24,
-          "per-op-time": 52
+          "per-op-time": 52,
+          "weighted-score": 0.227
         }
       ]
     }
