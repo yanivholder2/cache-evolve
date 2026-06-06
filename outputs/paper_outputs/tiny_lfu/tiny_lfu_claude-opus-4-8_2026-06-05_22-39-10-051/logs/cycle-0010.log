@@ -1,0 +1,20 @@
+23:41:02 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0010 allocated at /home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010 ===
+23:41:02 INFO     [MainThread : evolve.cli : run_cycle] cohort_size=3 adapter=ClaudeSdkAdapter(model=claude-opus-4-8)
+23:41:02 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses ---
+23:41:02 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] generating 3 hypotheses for cycle 0010 into /home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010/hypotheses
+23:41:02 DEBUG    [MainThread : evolve.hypothesis.writer : write_hypotheses] wrote task spec: /home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010/hypotheses/task.md
+23:41:02 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer adapter=ClaudeSdkAdapter(model=claude-opus-4-8) workspace=/home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010/hypotheses allow_edits=True
+23:41:02 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051'), PosixPath('/home/user/cache-evolve/inputs/subjects/tiny_lfu/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/tiny_lfu')]
+23:41:22 INFO     [MainThread : evolve.llm.base_adapter : run] agent hypotheses-writer finished status=ok usage=input_tokens=7, output_tokens=1449, cache_read_tokens=85004, cache_write_tokens=8549, cost_usd=0.080735 log=/home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010/hypotheses/hypotheses-writer.log.md
+23:41:22 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent hypotheses-writer produced 0 file(s) in /home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010/hypotheses: []
+23:41:22 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses failed (20.0s) ---
+23:41:22 ERROR    [MainThread : evolve.cli : run_cycle] run_cycle failed
+Traceback (most recent call last):
+  File "/home/user/cache-evolve/src/evolve/cli.py", line 441, in run_cycle
+    write_hypotheses(
+  File "/home/user/cache-evolve/src/evolve/hypothesis/writer.py", line 247, in write_hypotheses
+    files = _collect_hypothesis_files(hypotheses_dir, hypotheses_num)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/cache-evolve/src/evolve/hypothesis/writer.py", line 279, in _collect_hypothesis_files
+    raise ValueError(
+ValueError: adapter wrote 0 H<NN>.md files in /home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010/hypotheses, expected 3; matched=[]; other_files=['hypotheses-writer.log.md', 'task.md']; agent_log=/home/user/cache-evolve/outputs/tiny_lfu_2026-06-05_22-39-10-051/cycles/0010/hypotheses/hypotheses-writer.log.md
