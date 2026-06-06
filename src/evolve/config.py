@@ -15,7 +15,7 @@ from pathlib import Path
 
 from evolve._log import LOG_LEVELS
 from evolve.aggregate.selectors import SelectorConfigError, build_selector
-from evolve.llm import ADAPTER_REGISTRY
+from evolve.llm import ADAPTER_REGISTRY, backend_choices_help, backend_unavailable_reason
 from evolve.paths import SourcesLayout
 
 
@@ -189,11 +189,24 @@ def _resolve_non_negative_int(override: int | None, defaults: dict, key: str, fl
 
 
 def _resolve_ai_agent_tool(override: str | None, defaults: dict) -> str:
-    value = str(_resolve(override, defaults, "ai_agent_tool", "--ai-agent-tool", "framework"))
+    # No backend default lives in config.toml, so an unset value is a real
+    # mistake — die with an instructive message rather than the generic
+    # "not set" hint: name the backends and how to install each one.
+    value = override if override is not None else defaults.get("ai_agent_tool")
+    if value is None:
+        raise ConfigError(
+            "no AI agent backend selected: set framework.ai_agent_tool in "
+            "config.toml or pass --ai-agent-tool. "
+            f"Backends: {backend_choices_help()}."
+        )
+    value = str(value)
     if value not in ADAPTER_REGISTRY:
         raise ConfigError(
             f"--ai-agent-tool must be one of {sorted(ADAPTER_REGISTRY)}, got: {value!r}"
         )
+    reason = backend_unavailable_reason(value)
+    if reason is not None:
+        raise ConfigError(reason)
     return value
 
 

@@ -12,8 +12,11 @@ cycles = 10
 cohort_size = 3
 
 # AI agent backend to drive subagents (--ai-agent-tool). One of the keys in
-# src/evolve/llm/ADAPTER_REGISTRY.
-ai_agent_tool = "claude-sdk"
+# src/evolve/llm/ADAPTER_REGISTRY. No default: set it here or pass the flag, or
+# the run hard-errors. Every backend is an optional extra — install the one you
+# pick: claude-sdk needs `--extra claude`, antigravity-sdk `--extra antigravity`,
+# ollama-local `--extra ollama`.
+# ai_agent_tool = "claude-sdk"
 
 # Model the chosen adapter drives (--model). Must be one of the selected
 # ai_agent_tool adapter's MODELS enum, else config load fails. Valid sets:

@@ -39,7 +39,15 @@ def _layout(repo_root: Path) -> Layout:
 def _run_cycles(repo_root: Path, n: int) -> None:
     # Stub overlay writes a `.overlay` sentinel, not a manifest impl file;
     # full-autonomy keeps it legal so the loop mechanics aren't scope-gated.
-    cfg = load_configs(repo_root, cohort_size=COHORT, authoring_scope="full-autonomy")
+    # The loop runs on a StubLLMAdapter, so the backend is irrelevant here; pin
+    # ollama-local (the lightest, pure-Python backend) so config loads.
+    cfg = load_configs(
+        repo_root,
+        cohort_size=COHORT,
+        authoring_scope="full-autonomy",
+        ai_agent_tool="ollama-local",
+        model="gemma4:e4b",
+    )
     for cycle_index in range(1, n + 1):
         # From cycle 2 on, the prior cycle's variants sit on the global front, so
         # the parent-anchor quota requires at least one hypothesis to parent on a

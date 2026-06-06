@@ -63,7 +63,15 @@ def _run_cycle(
         # The stub overlay writes a `.overlay` sentinel, not a manifest impl
         # file; full-autonomy keeps that legal so the pipeline mechanics under
         # test aren't gated by authoring scope.
-        cfg = load_configs(repo_root, cohort_size=cohort_size, authoring_scope="full-autonomy")
+        # Driven by a StubLLMAdapter, so the backend is irrelevant here; pin
+        # ollama-local (the lightest, pure-Python backend) so config loads.
+        cfg = load_configs(
+            repo_root,
+            cohort_size=cohort_size,
+            authoring_scope="full-autonomy",
+            ai_agent_tool="ollama-local",
+            model="gemma4:e4b",
+        )
         run_cycle(
             layout=_layout(repo_root),
             repo_root=repo_root,
