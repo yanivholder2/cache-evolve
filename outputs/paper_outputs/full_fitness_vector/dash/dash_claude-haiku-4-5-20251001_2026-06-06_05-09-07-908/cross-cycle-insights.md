@@ -2,38 +2,40 @@
 
 ## Recurring wins
 
-- **Bucket geometry reallocation remains the primary performance lever**: Adjustment of hash-indexed vs. stash capacity ratio has driven consistent improvements across all cycles. The progression from baseline (25/75) through 50/50, 62.5/37.5, 75/25, 85/15, and into saturation (90/10) reveals geometry as the most reliable and composable axis. By cycles 0006–0007, geometry-based optimizations continue to improve both hit-rate and latency even when paired with other mechanisms.
+- **Geometry allocation tuning (normal-to-stash bucket ratio)**: The most reliable and composable lever across all 10 cycles. Progressive refinement from baseline (25/75) through increasingly aggressive allocations yielded sustained improvements in both hit-rate and latency, with the sweet-spot converging to the 75/25–80/20 band (cycles 0001–0009). Geometry adjustments target the fundamental capacity bottleneck for Zipfian workloads.
 
-- **Reduction of unnecessary work on the hot path**: All successful variants across cycles exploit opportunities to eliminate wasteful operations: redundant promotion attempts (cycle 0002's frequency gating), false-positive tier transitions (cycle 0005's adaptive thresholds), and over-ambitious capacity reallocation (cycle 0007's inverse-tuned divisor). Each improvement compounds by focusing work on genuinely hot keys.
+- **Adaptive parameter scaling tied to geometry**: Shifting from hardcoded constants (e.g., promotion threshold=2 on all geometries) to formula-based scaling (e.g., divisor derived from stash bucket count) resolved parameter coupling and enabled reliable composition. The inverse relationship—stricter gating on tight allocations, looser gating on spacious ones—is now empirically grounded and mechanically robust (cycles 0005–0008).
 
-- **Adaptive parameter scaling enables reliable composition**: The breakthrough from cycle 0005 onward—scaling promotion thresholds to stash bucket capacity via divisor-based formulas—solved the brittleness that plagued earlier compositions. By cycle 0007, inverse-tuned parameters (aggressive geometry paired with higher threshold divisor) achieve simultaneous improvements across both hit-rate and latency, confirming that composition works reliably when parameters align with workload capacity constraints.
+- **Latency-hit-rate decoupling via new mechanisms**: Cycles 0009–0010 demonstrated that implementation efficiency (in-place counter optimization) and new tier-crossing heuristics (frequency-aware demotion gating) can improve latency substantially without sacrificing hit-rate, separating concerns that earlier cycles treated as coupled trade-offs.
 
-- **Hit-rate and latency improvements coexist**: Rather than trading one metric for the other, successful late-cycle variants (0006–0007) preserve or improve both simultaneously. This convergence indicates they exploit the same underlying efficiency: capacity utilization and hot-key residence time remain the binding constraints on Zipfian workloads.
+- **Frequency-aware demotion cascade gating (cycle 0010)**: The first major breakthrough after geometry and promotion optimization saturated. By preventing cold items from entering target tier via frequency thresholds, this mechanism delivered ~57% get-latency improvement with minimal hit-rate trade-off (0.14% loss). It opens a new optimization axis targeting tier-crossing efficiency rather than eviction ranking.
 
 ## Recurring failures
 
-- **Back-insert promotion is fundamentally costly**: Showed initial promise in cycle 0001 but failed consistently from cycle 0002 onward. Incurs latency overhead on both get and put operations across all tested geometries (25/75 through 85/15). The MRU-insertion mechanism carries structural overhead incompatible with this workload; no amount of primary-tier capacity (cycles 0004, 0006) recovers it.
+- **Back-insert promotion**: Tested in cycles 0001, 0002, and 0004, consistently regressed latency on both get and put operations despite pairing with increasingly generous capacity allocations (50/50, 62.5/37.5, 85/15, 90/10). The MRU-insertion mechanism carries a structural cost that no amount of primary-tier capacity can overcome.
 
-- **Hardcoded promotion thresholds lack geometry awareness**: Cycles 0002–0006 demonstrate that fixed frequency-gating constants (e.g., counter ≥ 2) are geometry-specific: threshold=2 over-filters balanced geometry (cycle 0003) but under-filters concentrated geometry (cycle 0004). Only adaptive, divisor-based formulas that scale with stash bucket count enable reliable composition across allocations.
+- **Hardcoded promotion thresholds across heterogeneous geometries**: When a fixed threshold (e.g., counter ≥ 2) was applied to multiple allocations, it achieved selectivity goals on some geometries but cascaded into failures on others (cycles 0006–0007). Parameter misalignment triggers eviction churn and hit-rate dilution; thresholds must adapt to capacity.
 
-- **Geometry extremes violate workload requirements**: Pushing allocation to 90/10 (cycle 0005) sacrifices hit-rate for latency; stash shrinks below functional threshold (3 buckets insufficient for Zipfian tail). Optimal lies in the 75/25–80/20 band where both metrics improve without trade-off.
+- **Pushing geometry to extremes**: Aggressive allocations beyond 85/15 (tested at 90/10 in cycle 0005) regressed hit-rate as stash capacity became insufficient for the Zipfian workload's tail. The frontier peaks around 80/20; further concentration optimizes for latency at the expense of cache effectiveness.
 
-- **Aggressive parameter combinations without inverse-tuning cause interference**: Cycle 0006's v001 paired tight geometry (85/15) with lenient threshold tuning (divisor 4), amplifying promotion pressure and triggering eviction cascades. Composition only succeeds when parameters are inversely scaled: tighter geometry requires stricter filtering (higher divisor).
+- **Frequency-aware eviction candidate ranking**: Cycles 0009–0010 confirmed that frequency information does not improve eviction candidate selection. On this workload, recency and frequency are well-correlated, making pure LRU sufficient; composite frequency-recency scoring adds overhead without benefit.
 
 ## Open questions
 
-- **Pareto frontier among cycle 0007 winners**: Do the three successful variants (85/15 + divisor 2, 80/20 + divisor 3, baseline + divisor 2) represent a strict ordering or incomparable trade-offs across hit-rate and latency percentiles? Is one dominant, or should future cycles explore all three?
+- Can frequency-aware demotion cascade gating from cycle 0010 compose with proven geometry-divisor pairs (e.g., 75/25 with adaptive divisor scaling) to compound latency improvements without hit-rate regression?
 
-- **Universal divisor meta-formula**: Can a single formula (scaling divisor by both geometry ratio and stash bucket count) achieve reliable composition across the entire allocation spectrum, or is each geometry band best served by a fixed constant?
+- Are there other orthogonal tier-crossing heuristics (adaptive cascade thresholds, frequency-aware promotion cascading, demotion-routing refinements) beyond the initial demotion-gating mechanism that could unlock further gains?
 
-- **Permissiveness frontier**: Cycle 0007 uses divisor 2 (most permissive) on baseline geometry. Does further reduction (e.g., 1.5, 1, or geometry-adaptive permissiveness) yield additional gains without regressing hit-rate, or has the frontier been reached?
+- Does the divisor meta-formula itself require additional adaptation (e.g., scaling divisor computation based on both geometry ratio and stash bucket count rather than stash bucket count alone) to achieve universal optimality across all allocation profiles?
 
-- **Orthogonal optimization axes beyond promotion and geometry**: All cycles focus on promotion ordering, bucket allocation, and frequency thresholds. Eviction policies (beyond LRU), bucket sizing, tier-crossing heuristics, or adaptive workload-dependent tuning could unlock improvements orthogonal to the current parameter space.
+- Can implementation efficiency gains (cycle 0009's in-place counter optimization for latency) and parameter co-optimization (cycle 0010's demotion gating) be combined without interference, or do they compete for the same performance budget?
 
 ## Per-policy notes
 
-- **Single two-tier LRU framework across all cycles**: All variants operate within a hash-indexed tier and stash tier with frequency-gated promotion between them. No alternative eviction policies (LFU, LIRS, ARC, etc.) were tested; all optimizations refine this single policy's parameter space.
+- All tested strategies (geometry allocation, promotion thresholds, demotion cascade gating, eviction candidate ranking) operate under LRU eviction policy on workload-a (Zipfian access pattern). No alternative eviction policies (LFU, ARC, CLOCK, etc.) have been explored.
 
-- **Zipfian workload consistently guides optimization**: All successful improvements prioritize capacity allocation (geometry tuning) and hot-key identification (frequency gating) over operation-level acceleration, confirming that workload's bottleneck is capacity utilization, not per-operation latency. Improvements align with the skewed nature of the trace.
+- Frequency information is valuable for tier-routing decisions (where items move; cycle 0010's demotion gating) but not for eviction candidate selection (which items leave). This distinction separates successful and failed frequency-based approaches.
 
-- **Adaptive initialization-time parameter computation as universal enabler**: The shift from hardcoded constants to divisor-based formulas that scale with stash capacity (cycles 0005–0007) eliminated the coupling between specific geometry instances and policy tuning. This single mechanism—geometry-aware threshold initialization—enables reliable composition and should become the default pattern for future cycles.
+- Hit-rate preservation remains the hardest metric to maintain under aggressive optimization. Latency improvements are more readily decoupled from capacity decisions; hit-rate degradation indicates crossing into unfavorable capacity regime or excessive promotion churn.
+
+- Promotion selectivity (threshold divisor) must scale inversely with geometry aggressiveness for stable composition. The relationship is mechanically coupled, not orthogonal; ignoring the coupling triggers cascading failures (cycles 0006–0007).
