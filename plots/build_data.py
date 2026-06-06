@@ -181,40 +181,57 @@ def backfill(row: dict, dims: dict) -> dict:
     return row
 
 
-def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
-    """Build the baseline row, or None if the run recorded no baseline.
+def leaderboard_baseline_dims(run_dir: Path) -> dict:
+    """Baseline fitness dims from the leaderboard's baseline row.
 
-    champions.json is authoritative when present; its dims are backfilled from
-    the diff. Hit-rate-only runs ship no champions.json, so the diff's baseline
-    row is the only baseline available — synthesize it from there.
+    Every run writes leaderboard.md with a "baseline" row, so this is the one
+    baseline source common to all runs. Hit-rate-only leaderboards carry just
+    hit-rate; full-fitness ones also carry metadata-size and per-op-time.
     """
-    diff_baseline = diff_rows.get((0, "baseline"), {})
-    champions = run_dir / "champions.json"
-    if champions.exists():
-        data = json.loads(champions.read_text())
-        for vector in data.get("fitness_vectors", []):
-            if vector.get("variant") == "baseline":
-                return backfill(
-                    make_row(
-                        dim_summaries(vector),
-                        subject=subject,
-                        cycle=0,
-                        variant="baseline",
-                        is_baseline=True,
-                        is_winner=False,
-                    ),
-                    diff_baseline,
-                )
-    if diff_baseline:
-        return make_row(
-            diff_baseline,
-            subject=subject,
-            cycle=0,
-            variant="baseline",
-            is_baseline=True,
-            is_winner=False,
-        )
-    return None
+    path = run_dir / "leaderboard.md"
+    if not path.exists():
+        return {}
+    header = None
+    for line in path.read_text().splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if header is None:
+            if "Cycle" in cells:
+                header = cells
+            continue
+        if all(set(cell) <= {"-"} for cell in cells):
+            continue  # markdown separator row
+        record = dict(zip(header, cells))
+        if record.get("Cycle") != "baseline":
+            continue
+        return {
+            dim: parse_number(record[dim])
+            for dim in CANONICAL_DIMS
+            if record.get(dim) and record[dim] != str(MISSING)
+        }
+    return {}
+
+
+def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
+    """Build the baseline row, or None if no source records a baseline.
+
+    The leaderboard's baseline row is the universal source (every run has it).
+    The diff's re-measured baseline is overlaid on top where present, so dash
+    hit-rate-only runs get the same machine's metadata-size and per-op-time
+    their winners were backfilled with.
+    """
+    dims = {**leaderboard_baseline_dims(run_dir), **diff_rows.get((0, "baseline"), {})}
+    if not dims:
+        return None
+    return make_row(
+        dims,
+        subject=subject,
+        cycle=0,
+        variant="baseline",
+        is_baseline=True,
+        is_winner=False,
+    )
 
 
 def build_run(run_dir: Path, subject: str):

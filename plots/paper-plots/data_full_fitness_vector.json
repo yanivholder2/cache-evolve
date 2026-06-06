@@ -19,6 +19,16 @@
       "variants": [
         {
           "subject-name": "dash",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.663,
+          "metadata-size": 40,
+          "per-op-time": 183
+        },
+        {
+          "subject-name": "dash",
           "cycle": 1,
           "variant": "v001",
           "is-baseline": false,
@@ -246,6 +256,16 @@
         ]
       },
       "variants": [
+        {
+          "subject-name": "dash",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.663,
+          "metadata-size": 40,
+          "per-op-time": 183
+        },
         {
           "subject-name": "dash",
           "cycle": 1,
@@ -537,6 +557,16 @@
       "variants": [
         {
           "subject-name": "lru_cache",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.665,
+          "metadata-size": 48,
+          "per-op-time": 41
+        },
+        {
+          "subject-name": "lru_cache",
           "cycle": 1,
           "variant": "v001",
           "is-baseline": false,
@@ -734,6 +764,16 @@
         ]
       },
       "variants": [
+        {
+          "subject-name": "lru_cache",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.665,
+          "metadata-size": 48,
+          "per-op-time": 41
+        },
         {
           "subject-name": "lru_cache",
           "cycle": 1,
@@ -1035,6 +1075,16 @@
       "variants": [
         {
           "subject-name": "s3_fifo",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.716,
+          "metadata-size": 24,
+          "per-op-time": 248
+        },
+        {
+          "subject-name": "s3_fifo",
           "cycle": 1,
           "variant": "v001",
           "is-baseline": false,
@@ -1322,6 +1372,16 @@
         ]
       },
       "variants": [
+        {
+          "subject-name": "s3_fifo",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.716,
+          "metadata-size": 24,
+          "per-op-time": 248
+        },
         {
           "subject-name": "s3_fifo",
           "cycle": 1,
@@ -1643,6 +1703,16 @@
       "variants": [
         {
           "subject-name": "tiny_lfu",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.736,
+          "metadata-size": 48,
+          "per-op-time": 132
+        },
+        {
+          "subject-name": "tiny_lfu",
           "cycle": 1,
           "variant": "v001",
           "is-baseline": false,
@@ -1930,6 +2000,16 @@
         ]
       },
       "variants": [
+        {
+          "subject-name": "tiny_lfu",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.736,
+          "metadata-size": 48,
+          "per-op-time": 132
+        },
         {
           "subject-name": "tiny_lfu",
           "cycle": 1,
