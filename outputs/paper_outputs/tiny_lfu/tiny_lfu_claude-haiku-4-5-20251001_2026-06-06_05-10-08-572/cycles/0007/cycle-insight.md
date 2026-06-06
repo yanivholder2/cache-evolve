@@ -1,0 +1,31 @@
+# Cycle 0007 Insight
+
+## Cohort outcome
+
+This cycle tested three refinements to the cycle 0006 baseline (N=2 frequency-aware eviction, depth-3 width-4 sketch): whether pure LRU eviction (N=1) suffices to reach the efficiency frontier (v001), whether caching frequency estimates reduces per-operation redundancy (v002), and whether sketch width can be shrunk from 4 to 3 without hit-rate loss (v003). **v001 and v003 advanced.** v001 definitively proved that even minimal frequency-aware scanning (N=2) is load-bearing, not dispensable overhead; reverting to pure LRU degraded both hit-rate and latency, confirming the eviction policy is near its optimal efficiency. v003 delivered a clean latency win (~17-18% improvement on both get and put) by reducing sketch width, with no hit-rate loss due to power-of-two memory alignment. v002 failed decisively—state-management overhead from caching frequency estimates exceeded the savings of eliminating one redundant sketch query.
+
+## Patterns
+
+- **Eviction policy efficiency is approaching a local optimum at N=2**: v001 tested whether stepping from N=2 (minimal frequency scanning) to N=1 (pure LRU recency) would reduce overhead without hit-rate loss. Instead, both metrics regressed—hit-rate dropped 0.27% and put latency increased 46%. This confirms that frequency-aware victim selection, even with a candidate pool of only 2 items, actively filters out cascading evictions and admission failures that pure recency-based selection permits. The scanning overhead, though real, is outweighed by its filtering benefit. N=2 appears to be a stable frontier: moving toward purer recency harms both latency and accuracy.
+
+- **Microarchitectural effects dominate algorithmic complexity at this operational scale**: v002 attempted a straightforward optimization—cache frequency estimates during victim candidate scanning to avoid redundant sketch queries. The algorithmic change was sound (reduce O(depth) calls), but per-operation latency increased 42-139% across all quantiles. This reveals that compiler optimization, register pressure, branch prediction, or cache effects matter more than call-count reduction for small, fast operations. The original code was either already near-optimal or the refactored state management created microarchitectural penalties that nullified the algorithmic savings. Complex optimizations that add variables or control flow tend to backfire; simple parameter tuning tends to succeed.
+
+- **Sketch geometry (width) remains a high-leverage tuning lever with untapped optimization room**: v003's reduction from width-4 to width-3 delivered ~17-18% latency improvement on both get and put operations with no detectable hit-rate harm (both metrics held constant). The hypothesis expected metadata overhead savings, but the heap footprint remained identical due to power-of-two alignment; the speedup came from a leaner computation path or better cache locality in the smaller sketch. Unlike eviction policy (which is approaching saturation at N=2), sketch geometry still has clear room for efficiency gains.
+
+- **Simple, localized parameter changes outperform complex state-management refactoring**: The cohort's success pattern (v003) vs. failure pattern (v002) reveals a clear asymmetry: changing a constant parameter (width-4 → width-3) delivered measurable gains with no downside, while refactoring code to add caching variables backfired. This suggests that at TinyLFU's scale, reducing surface area (fewer variables, fewer branches) matters more than reducing algorithmic complexity (fewer function calls).
+
+- **Negative results confirm the stability of prior-cycle advances**: v001's failure to improve on N=2 (from cycle 0006) validates that cycle 0006's move to minimal frequency-aware scanning was not a lucky accident—it is a genuine efficiency frontier. Cycle 0006 v001 saved 30% p99 latency on put operations with negligible hit-rate cost; this cycle's attempt to squeeze further by removing frequency awareness altogether confirms that win is structural, not an artifact.
+
+## Open questions
+
+- Is width-3 truly optimal, or can width be reduced further (to 2 or even 1) while maintaining hit-rate? v003's success suggests the current sketch is overprovisioned; the frontier may extend further toward minimal geometry.
+
+- Why does width reduction improve latency when depth reduction (cycle 0002) also delivered gains? Are both dimensions independent, or is there an interaction effect that would make further reductions compound sublinearly?
+
+- Can the sketch computation be made more efficient through hash function changes, vectorization, or memory layout optimizations, allowing a return to wider sketches without latency cost?
+
+- Does N=2 frequency-aware eviction truly represent a hard boundary, or could a probabilistic variant (e.g., checking N=2 candidates with some probability rather than always) recover some of N=1's simplicity while preserving most of N=2's benefit?
+
+## Continuation
+
+**Sketch geometry (width) is still fertile ground for optimization.** v003 proved width-3 improves latency without hit-rate loss; the next cycle should test whether width can shrink further (width-2, width-1) to establish the lower bound. **Confirm that N=2 eviction is optimal and freeze eviction policy**: v001 conclusively demonstrated that frequency-aware scanning at N=2 is load-bearing, not overhead. Accept N=2 as the stable eviction frontier and deprioritize further eviction-policy micro-tuning. **Reject state-management optimizations**: v002's failure shows that adding variables, caching, or refactoring to reduce algorithmic complexity tends to increase microarchitectural cost at this scale. Future work should focus on simple parameter tuning (like v003's constant change) rather than code refactors. **Explore sketch implementation efficiency orthogonal to geometry**: if width-3 is validated as optimal, shift focus to hash function cost, memory layout, or vectorization to improve the per-operation cost of sketch queries themselves, rather than tuning the sketch's width or depth parameters further. If minimal-geometry approaches plateau, the next frontier likely lies in reducing the sketch operation's hot-path cost, not just shrinking its size.
