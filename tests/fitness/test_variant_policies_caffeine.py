@@ -61,6 +61,14 @@ def test_variant_policies_reach_caffeine_end_to_end(tmp_path):
 	layout, variant = _stage_variant(tmp_path)
 	cfg = load_configs(layout.repo_root)
 
+	# POLICIES are the Rust eviction-selector families; only subjects that expose
+	# an eviction-policy selector (a `policy-key` in the manifest, e.g. dash /
+	# associative_cache) accept a multi-policy sweep. Single-policy subjects
+	# (lru_cache, tiny_lfu, s3_fifo) emit one fixed policy row, so this drift
+	# check does not apply — skip before the costly cdylib build.
+	if load_subject(layout.sources.subject_dir).caffeine.policy_key is None:
+		pytest.skip(f"subject {SUBJECT!r} has no eviction-policy selector")
+
 	variant_dir = variant.resolve(layout)
 	caffeine_out = variant_dir.caffeine_dir
 	caffeine_out.root.mkdir(parents=True, exist_ok=True)

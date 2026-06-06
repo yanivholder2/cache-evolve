@@ -114,14 +114,23 @@ class CargoWorkspace:
 
     root: Path
     cdylib_name: str
+    target_dir: Path | None = None
 
     @property
     def cargo_toml(self) -> Path:
         return self.root / "Cargo.toml"
 
     @property
+    def target_root(self) -> Path:
+        """Cargo's output directory for this workspace. Defaults to the
+        in-workspace `target/`; an explicit `target_dir` lets several of one
+        variant's builds share a single target so dependency crates compile once
+        instead of once per build."""
+        return self.target_dir if self.target_dir is not None else self.root / "target"
+
+    @property
     def cdylib(self) -> Path:
-        return self.root / "target" / "release" / cdylib_filename(sys.platform, self.cdylib_name)
+        return self.target_root / "release" / cdylib_filename(sys.platform, self.cdylib_name)
 
 
 @dataclass(frozen=True)

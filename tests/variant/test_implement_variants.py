@@ -47,6 +47,27 @@ def _layout(repo_root: Path) -> Layout:
     return Layout(repo_root=repo_root, outputs_root=repo_root / "outputs", subject=SUBJECT)
 
 
+def _pin_pareto_selection(repo_root: Path) -> None:
+    """Rewrite the copied repo's [selection] table to use the pareto method.
+
+    The cohort stubs ship empty overlays, so every variant is baseline-equivalent.
+    Under the repo's default `weighted` method such variants score ~0 against the
+    baseline anchor and the noisy per-op-time dimension makes the winner count
+    nondeterministic (sometimes 0, sometimes some). Pareto is scale-invariant and
+    crowns every non-dominated variant, so identical-to-baseline variants all land
+    on the front — giving these end-to-end cohort tests a deterministic winners
+    set. Weighted scoring itself is covered by the selector unit tests.
+
+    [selection] is the last table in config.toml, so dropping everything from its
+    header onward and re-emitting a minimal pareto block also removes the
+    [selection.weights] table (which pareto rejects)."""
+
+    config_toml = SourcesLayout(root=repo_root).config_toml
+    text = read_utf8(config_toml)
+    head = text[: text.index("[selection]")]
+    write_utf8(config_toml, head + '[selection]\nmethod = "pareto"\nwinners_count = 3\n')
+
+
 def _run_cycle(
     repo_root: Path,
     *,
@@ -86,6 +107,7 @@ def shared_cohort_run(tmp_path_factory):
     # Each cycle does ~10 cargo invocations (gates + fitness per variant);
     # sharing the fixture cuts the suite by ~3 full cycle runs.
     repo_root = _setup_repo(tmp_path_factory.mktemp("shared"))
+    _pin_pareto_selection(repo_root)
     log = _run_cycle(repo_root, cohort_size=3)
     return CohortRun(cycle_layout=_layout(repo_root).outputs.cycle(CycleId(1)), log=log)
 
@@ -153,7 +175,7 @@ def test_each_variant_flows_through_real_gates(shared_cohort_run):
     # fitness_vector.json is only written when build gate + contract gate +
     # invariant gate all pass, so a complete vector per variant is the
     # structural proof that every variant cleared the gates.
-    expected_dims = {"hit-rate"}
+    expected_dims = {"hit-rate", "metadata-size", "per-op-time"}
     for i in (1, 2, 3):
         variant_dir = shared_cohort_run.cycle_layout.variant(VariantId(i))
         fv = json.loads(read_utf8(variant_dir.fitness_vector_json))
