@@ -160,3 +160,45 @@
 10:09:29 INFO     [v001 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/variants/v001: ['insight.md']
 10:09:29 INFO     [v001 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v001
 10:09:29 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] insight done
+10:09:40 INFO     [v003 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=50, output_tokens=3980, cache_read_tokens=136820, cache_write_tokens=11258, cost_usd=0.048964 log=/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/variants/v003/variant-insight-writer.log.md
+10:09:40 INFO     [v003 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/variants/v003: ['insight.md']
+10:09:40 INFO     [v003 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v003
+10:09:40 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] insight done
+10:09:40 INFO     [MainThread : evolve.cli : _log_survival_summary] cycle 0010 survivors=3/3 rejected={}
+10:09:40 INFO     [MainThread : evolve.cli : _phase] --- per-variant done (539.5s) ---
+10:09:40 INFO     [MainThread : evolve.cli : _phase] --- cycle-level ---
+10:09:40 INFO     [MainThread : evolve.aggregate.cohort : compute_cycle_winners] cycle winners: ['v002', 'v001', 'v003']
+10:09:40 INFO     [cycle_insight : evolve.cycle.ledger_digest : digest_prior_cycles] digest_prior_cycles: ledger=/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles-ledger.jsonl total_rows=9 window=3 selected_cycles=['0007', '0008', '0009'] body_chars=17311
+10:09:40 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-winners.json done
+10:09:40 DEBUG    [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] wrote cycle-insight-writer task.md for cycle 0010
+10:09:40 INFO     [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-haiku-4-5-20251001) workspace=/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010 allow_edits=True
+10:09:40 DEBUG    [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/variants/v001/insight.md'), PosixPath('/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/variants/v002/insight.md'), PosixPath('/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/variants/v003/insight.md'), PosixPath('/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/hypotheses/H01.md'), PosixPath('/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/hypotheses/H02.md'), PosixPath('/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/hypotheses/H03.md')]
+10:10:28 INFO     [cycle_insight : evolve.llm.base_adapter : run] agent cycle-insight-writer finished status=ok usage=input_tokens=20, output_tokens=4542, cache_read_tokens=51218, cache_write_tokens=13635, cost_usd=0.049999 log=/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/cycle-insight-writer.log.md
+10:10:28 INFO     [cycle_insight : evolve.llm.base_adapter : _log_produced_artifacts] agent cycle-insight-writer produced 2 file(s) in /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010: ['cycle-insight.md', 'cycle-winners.json']
+10:10:28 INFO     [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] cycle insight written for cycle 0010
+10:10:28 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-insight-writer done
+10:10:28 INFO     [MainThread : evolve.cli : run_cycle] cycle 0010 winners: ['v002', 'v001', 'v003']
+10:10:28 INFO     [MainThread : evolve.aggregate.cross_cycle_winners : write_cross_cycle_winners] global cross_cycle_winners: 31 variants, winners=['cycle/0010/v002', 'cycle/0009/v001', 'cycle/0008/v002']
+10:10:28 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] cross-cycle-winners.json done
+10:10:28 DEBUG    [MainThread : evolve.cli : _run_post_cycle_insight] ledger row keys: ['cohort_size', 'cycle', 'cycle_dir', 'cycle_insight', 'winners']
+10:10:28 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] ledger-append done
+10:10:28 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] leaderboard-regen done
+10:10:28 INFO     [MainThread : evolve.cli : _phase] --- cycle-level done (48.4s) ---
+10:10:28 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights ---
+10:10:28 INFO     [MainThread : evolve.cycle.ledger_digest : digest_all_cycles] digest_all_cycles: ledger=/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles-ledger.jsonl total_rows=10 cycles=['0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0010'] body_chars=50273
+10:10:28 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-haiku-4-5-20251001) workspace=/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/cross-cycle allow_edits=True
+10:10:28 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles-ledger.jsonl')]
+10:12:50 INFO     [MainThread : evolve.llm.base_adapter : run] agent cross-cycle-insight-writer finished status=ok usage=input_tokens=50, output_tokens=12446, cache_read_tokens=233299, cache_write_tokens=26535, cost_usd=0.131045 log=/home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/cross-cycle/cross-cycle-insight-writer.log.md
+10:12:50 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent cross-cycle-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/cross-cycle: ['insights.md']
+10:12:50 WARNING  [MainThread : evolve.cli : run_cycle] cross-cycle-insight writer failed; cycle proceeds
+Traceback (most recent call last):
+  File "/home/user/cache-evolve/src/evolve/cli.py", line 549, in run_cycle
+    write_cross_cycle_insight(cycle_layout, layout=layout, adapter=adapter)
+  File "/home/user/cache-evolve/src/evolve/cycle/cross_cycle_insight_writer.py", line 78, in write_cross_cycle_insight
+    raise FileNotFoundError(f"adapter did not produce {OUTPUT_FILENAME} in {workspace}")
+FileNotFoundError: adapter did not produce cross-cycle-insights.md in /home/user/cache-evolve/outputs/paper_outputs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572/cycles/0010/cross-cycle
+10:12:50 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights done (142.3s) ---
+10:12:50 INFO     [MainThread : evolve.cli : run_cycle] cycle 0010 timings: total=881.3s write hypotheses=151.2s per-variant=539.5s cycle-level=48.4s cross-cycle-insights=142.3s
+10:12:50 INFO     [MainThread : evolve.cli : run_cycle] cycle 0010 cumulative tokens: cache_read_tokens=1734508 cache_write_tokens=188282 input_tokens=450 output_tokens=63058
+10:12:50 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0010 complete (cohort=3) ===
+10:12:50 INFO     [MainThread : evolve.cli : main] run-level cumulative tokens: cache_read_tokens=1734508 cache_write_tokens=188282 input_tokens=450 output_tokens=63058
