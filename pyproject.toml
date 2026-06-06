@@ -2,6 +2,8 @@
 name = "evolve"
 version = "0.1.0"
 description = "Agentic research loop for evolving cache policies"
+authors = [{ name = "Yaniv Holder", email = "yaniv.holder@gmail.com" }]
+readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
@@ -11,6 +13,9 @@ dependencies = [
     "claude-agent-sdk",
     "ollama",
 ]
+
+[project.urls]
+repository = "https://github.com/yanivholder2/cache-evolve"
 
 [project.scripts]
 evolve = "evolve.cli:main"
