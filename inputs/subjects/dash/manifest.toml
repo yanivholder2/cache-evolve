@@ -41,6 +41,12 @@ marker = "invariant gate violated: P[1-6] [a-z_]+"
 [contract]
 protected-files = ["src/dash/jni.rs", "src/factory.rs"]
 
+[bench]
+binary-name = "evolve-per-op-time"
+
+[metadata]
+binary-name = "evolve-metadata-size"
+
 [caffeine]
 config-prefix = "caffeine.simulator.dash"
 policy-spec-name = "dash.DashRust"

@@ -127,9 +127,12 @@ def test_loads_real_manifest():
         "bucketSize",
     }
     assert all(isinstance(value, int) for value in subject.caffeine.geometry.values())
-    # dash evolves for hit rate only; it declares neither [bench] nor [metadata].
-    assert subject.bench is None
-    assert subject.metadata is None
+    # dash declares both optional measurement bins for the per-op-time and
+    # metadata-size fitness dimensions.
+    assert subject.bench is not None
+    assert subject.bench.binary_name == "evolve-per-op-time"
+    assert subject.metadata is not None
+    assert subject.metadata.binary_name == "evolve-metadata-size"
 
 
 def test_associative_cache_geometry_is_list_valued():
@@ -194,6 +197,8 @@ def test_ep_scope_whitelist_is_union_of_impl_files():
         ("tests/invariant_gate.rs", True),  # gate harness
         ("src/test_utils/invariants.rs", True),  # invariant suite the gates run
         ("src/test_utils/mod.rs", True),
+        ("src/bin/evolve_metadata_size.rs", True),  # fitness measurement bin
+        ("src/bin/evolve_per_op_time.rs", True),  # fitness measurement bin
         ("src/dash/segments/dash_segment.rs", False),  # cache implementation
         ("src/shared/geometry.rs", False),
         ("src/logging.rs", False),
@@ -210,7 +215,7 @@ def test_pinned_overlay_display_lists_protected_and_conventions():
     subject = load_subject(DASH_SUBJECT)
     display = subject.pinned_overlay_display
     assert "src/dash/jni.rs" in display  # manifest protected-file
-    assert {"Cargo.toml", "src/lib.rs", "tests/", "src/test_utils/"} <= set(display)
+    assert {"Cargo.toml", "src/lib.rs", "tests/", "src/test_utils/", "src/bin/"} <= set(display)
     for shown in display:
         assert subject.is_pinned_overlay_path(Path(shown.rstrip("/")))
 

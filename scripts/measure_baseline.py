@@ -21,7 +21,10 @@ def main() -> None:
 
     repo_root = Path(__file__).resolve().parent.parent
 
-    cfg = load_configs(repo_root)
+    # Optional positional subject override so all subjects can be re-measured in a
+    # loop without editing config.toml between runs; falls back to config.toml.
+    subject = sys.argv[1] if len(sys.argv) > 1 else None
+    cfg = load_configs(repo_root, subject=subject)
     layout = Layout(
         repo_root=repo_root,
         outputs_root=cfg.framework.outputs_root,

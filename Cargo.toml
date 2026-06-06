@@ -2,7 +2,6 @@
 members = [
 	"framework-rs",
 	"inputs/subjects/dash",
-	"inputs/subjects/dash/bench",
 	"inputs/subjects/associative_cache",
 	"inputs/subjects/lru_cache",
 	"inputs/subjects/tiny_lfu",

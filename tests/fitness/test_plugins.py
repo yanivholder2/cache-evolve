@@ -1,6 +1,5 @@
 """Tests for fitness plugin output shape."""
 
-import json
 from pathlib import Path
 
 import pytest
@@ -58,39 +57,47 @@ def test_hit_rate_plugin_rejects_empty_results():
         hit_rate.compute(results=CaffeineResults(results=[]))
 
 
-def test_per_op_time_plugin_shape(monkeypatch, tmp_path):
-    # No subject currently declares [bench], so stub the subject the plugin loads
-    # and the bench build/run; the plugin only forwards the validated record.
+def test_per_op_time_builds_against_overlay(monkeypatch, tmp_path):
     layout = Layout(repo_root=REPO_ROOT, outputs_root=REPO_ROOT / "outputs", subject=SUBJECT)
+    variant = CycleVariant(CycleId(1), VariantId(1))
 
-    class _Bench:
-        binary_name = "dash-bench"
+    workspace_root = tmp_path / "variant-workspace"
+    workspace_root.mkdir()
+    workspace = CargoWorkspace(root=workspace_root, cdylib_name="stub")
+    seen = {}
 
-    class _Subject:
-        name = "dash"
-        bench = _Bench()
+    def fake_prepare(_variant, **_kw):
+        return workspace
 
-    record = {
-        "dim": "per-op-time",
-        "values": [
-            {"op": "get", "p50_ns": 10, "p99_ns": 20},
-            {"op": "put", "p50_ns": 100, "p99_ns": 200},
-        ],
-        "summary": 5.0,
-        "higher_is_better": False,
-    }
-    monkeypatch.setattr(per_op_time, "load_subject", lambda *_a, **_kw: _Subject())
-    monkeypatch.setattr(per_op_time, "cargo_build", lambda *_a, **_kw: None)
-    monkeypatch.setattr(per_op_time, "_resolve_target_dir", lambda *_a, **_kw: tmp_path)
-    monkeypatch.setattr(per_op_time.subprocess, "run", lambda *_a, **_kw: None)
-    monkeypatch.setattr(per_op_time, "read_utf8", lambda *_a, **_kw: json.dumps(record))
+    def fake_cargo_build(cwd, args, **_kw):
+        seen["cwd"] = cwd
+        seen["args"] = args
 
-    data = per_op_time.compute(layout=layout)
+    class _Result:
+        stdout = (
+            '{"dim": "per-op-time", '
+            '"values": [{"op": "get", "p50_ns": 10, "p99_ns": 20}, '
+            '{"op": "put", "p50_ns": 100, "p99_ns": 200}], '
+            '"summary": 5.0, "higher_is_better": false}'
+        )
+
+    monkeypatch.setattr(per_op_time, "prepare_variant_workspace", fake_prepare)
+    monkeypatch.setattr(per_op_time, "cargo_build", fake_cargo_build)
+    monkeypatch.setattr(per_op_time, "run_binary", lambda *_a, **_kw: _Result())
+
+    data = per_op_time.compute(
+        variant=variant, layout=layout, repo_root=REPO_ROOT, binary_name="evolve-per-op-time"
+    )
     _assert_shape(data, "per-op-time")
     assert data["higher_is_better"] is False
     get = next(v for v in data["values"] if v["op"] == "get")
     assert get["p50_ns"] == 10
     assert get["p99_ns"] == 20
+    # Built --release inside the variant's overlaid workspace, selecting the bin by name.
+    assert seen["cwd"] == workspace_root
+    assert seen["args"] == ["--release", "--bin", "evolve-per-op-time"]
+    # Workspace cleaned up on exit.
+    assert not workspace_root.exists()
 
 
 def test_metadata_size_builds_against_overlay(monkeypatch, tmp_path):

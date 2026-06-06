@@ -1,16 +1,19 @@
-//! Microbench harness — std-only, single-threaded.
-//! Measures p50/p99 ns for `get` and `put`, writes `bench.json` in per-op-time fitness-plugin shape.
+//! Per-op-time measurement for fitness plugin consumption.
+//!
+//! Drives the REAL dash cache built through `factory::make_cache` — the same
+//! factory the eval/JNI path uses — so variant overlay edits (e.g. geometry)
+//! show up in the timings. Measures p50/p99 ns for `get` and `put` and emits one
+//! plugin-shape JSON record on stdout:
+//! `{ "dim": "per-op-time", "values": [{"op","p50_ns","p99_ns"},...], "summary": <get p50 ns>, "higher_is_better": false }`.
+//!
+//! Methodology is carried over verbatim from the former standalone `bench/` crate,
+//! except the cache under test is the real boxed `framework::Cache<i64,i64>`
+//! instead of a fake fixture.
 
-mod cache_fixture;
-mod fitness_json;
+use std::time::{Duration, Instant};
 
-use std::{
-	env, fs,
-	time::{Duration, Instant},
-};
-
-use cache_fixture::CacheFixture;
-use fitness_json::write_plugin_json;
+use dash::dash::dash_settings::DashSettings;
+use dash::fitness_json::write_plugin_json;
 
 /// Untimed — excluded from samples so cold-start cost (branch predictors, allocator, CPU caches) doesn't skew p50/p99.
 const WARMUP: usize = 500;
@@ -18,26 +21,17 @@ const WARMUP: usize = 500;
 /// 2 000 × 1% = 20 tail samples for p99; small enough to stay sub-second per run.
 const TIMED_ITERS: usize = 2_000;
 
-/// Small so the working set fits in L1 — measures algorithmic cost, not memory-hierarchy effects.
-const CACHE_CAP: usize = 64;
-
-/// Must exceed `CACHE_CAP` so the workload produces a mix of hits, misses, and evictions.
-const KEY_RANGE: u64 = 128;
-
-/// Divisor for prefill count — half-fill so warmup starts with a mix of hits and misses possible.
-const PREFILL_FRACTION_DIV: usize = 2;
-
 /// Fixed PRNG seed: reproducible sample timings across runs and variants.
 const RNG_SEED: u64 = 0xdeadbeef_cafebabe;
 
-/// Percentile points reported in `bench.json`.
+/// Percentile points reported in the output.
 const P50_PCT: f64 = 50.0;
 const P99_PCT: f64 = 99.0;
 
 // ── measurement helpers ───────────────────────────────────────────────────────
 
 /// Returns the `pct`-th percentile (0–100) of `samples` in nanoseconds; `pct = 100` yields the maximum.
-fn percentile(samples: &mut Vec<Duration>, pct: f64) -> u64 {
+fn percentile(samples: &mut [Duration], pct: f64) -> u64 {
 	assert!(!samples.is_empty(), "percentile called with empty samples");
 	samples.sort_unstable();
 	let idx = ((samples.len() as f64 * pct / 100.0) as usize).min(samples.len() - 1);
@@ -62,47 +56,46 @@ fn measure<F: FnMut()>(mut f: F) -> Vec<Duration> {
 ///
 /// Uses xorshift64, a PRNG (pseudo-random number generator) — an algorithm whose output looks random
 /// but is fully determined by its seed, so the same seed always replays the same sequence. Needed because:
-/// - **Workload shape:** random-ish keys over a range larger than `CACHE_CAP` force a realistic mix of
+/// - **Workload shape:** random-ish keys over a range larger than the cache capacity force a realistic mix of
 ///   hits, misses, and evictions; sequential keys would degenerate into a predictable pattern.
 /// - **Reproducibility:** a fixed seed means p50/p99 differences across variants reflect cache changes,
 ///   not RNG noise — essential for fitness comparison.
 /// - **Cheap + std-only:** three shifts + one mod is a handful of ns, so it doesn't contaminate samples,
 ///   and avoids pulling in `rand`.
-fn next_key(state: &mut u64) -> u64 {
+fn next_key(state: &mut u64, key_range: u64) -> i64 {
 	*state ^= *state << 13;
 	*state ^= *state >> 7;
 	*state ^= *state << 17;
-	*state % KEY_RANGE + 1
+	(*state % key_range + 1) as i64
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
 
 fn main() {
-	let args: Vec<String> = env::args().collect();
-	let output = match args.iter().position(|a| a == "--output") {
-		Some(i) => args.get(i + 1).cloned().unwrap_or_else(|| {
-			eprintln!("error: --output requires a path argument");
-			std::process::exit(2);
-		}),
-		None => "bench.json".to_string(),
-	};
+	// Default topology: 1 segment × (28 normal + 4 stash) buckets × 16 slots = 512-slot capacity.
+	// Fixed so timings are comparable across runs; the geometry seam may refactor these fields,
+	// but `make_cache` conserves the total budget. Keys range over 2× capacity so the workload
+	// produces a steady mix of hits, misses, and evictions; the cache is half pre-filled before warmup.
+	let settings = DashSettings::default();
+	let capacity = settings.capacity() as u64;
+	let key_range = capacity * 2;
 
-	let mut cache = CacheFixture::new(CACHE_CAP);
+	let mut cache = dash::factory::make_cache(&settings);
 	let mut rng: u64 = RNG_SEED;
 
-	for i in 0..CACHE_CAP / PREFILL_FRACTION_DIV {
-		cache.put(i as u64 + 1, i as u64);
+	for i in 0..capacity / 2 {
+		cache.put(i as i64 + 1, i as i64);
 	}
 
 	// Pre-generate keys so RNG cost is excluded from per-op samples.
-	let get_keys: Vec<u64> = (0..WARMUP + TIMED_ITERS).map(|_| next_key(&mut rng)).collect();
-	let put_keys: Vec<u64> = (0..WARMUP + TIMED_ITERS).map(|_| next_key(&mut rng)).collect();
+	let get_keys: Vec<i64> = (0..WARMUP + TIMED_ITERS).map(|_| next_key(&mut rng, key_range)).collect();
+	let put_keys: Vec<i64> = (0..WARMUP + TIMED_ITERS).map(|_| next_key(&mut rng, key_range)).collect();
 
 	let mut gi = 0usize;
 	let mut get_samples = measure(|| {
 		let k = get_keys[gi];
 		gi += 1;
-		cache.get(k);
+		cache.get(&k);
 	});
 
 	let mut pi = 0usize;
@@ -121,16 +114,7 @@ fn main() {
 	let summary = get_p50;
 
 	let values = format!(
-		r#"[
-    {{"op": "get", "p50_ns": {get_p50}, "p99_ns": {get_p99}}},
-    {{"op": "put", "p50_ns": {put_p50}, "p99_ns": {put_p99}}}
-  ]"#,
+		r#"[{{"op":"get","p50_ns":{get_p50},"p99_ns":{get_p99}}},{{"op":"put","p50_ns":{put_p50},"p99_ns":{put_p99}}}]"#,
 	);
-	let json = write_plugin_json("per-op-time", &values, summary, false);
-
-	fs::write(&output, &json).unwrap_or_else(|e| {
-		eprintln!("error writing {output}: {e}");
-		std::process::exit(1);
-	});
-	print!("{json}");
+	println!("{}", write_plugin_json("per-op-time", &values, summary, false));
 }

@@ -1,8 +1,8 @@
 //! Plugin JSON contract writer (std-only).
 //!
-//! Mirrors `src/fitness_json.rs` in the main crate. Duplicated because the bench
-//! crate is std-only by design (no serde, no workspace deps), and the helper is
-//! small enough that duplication beats a shared crate.
+//! Shared by the `evolve-per-op-time` and `evolve-metadata-size` bins. Std-only
+//! by design (no serde) — the helper is small enough that duplication across
+//! subjects beats a shared crate.
 //!
 //! Contract: `{ "dim": <str>, "values": <json-array>, "summary": <number>, "higher_is_better": <bool> }`.
 

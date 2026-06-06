@@ -43,6 +43,9 @@ numOfBuckets = [128]
 [metadata]
 binary-name = "evolve-metadata-size"
 
+[bench]
+binary-name = "evolve-per-op-time"
+
 [docs]
 context = "CONTEXT.md"
 insight = "baseline/insight.md"

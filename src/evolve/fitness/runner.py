@@ -35,7 +35,6 @@ def compute_fitness(
     and write the aggregated fitness vector."""
 
     variant_dir = variant.resolve(layout)
-    target_dir = layout.outputs.target_dir
     fitness_dir = variant_dir.fitness_dir
     fitness_dir.mkdir(parents=True, exist_ok=True)
 
@@ -55,7 +54,12 @@ def compute_fitness(
     if "hit-rate" in active:
         plugins["hit-rate"] = lambda: hit_rate.compute(results=caffeine_results)
     if "per-op-time" in active:
-        plugins["per-op-time"] = lambda: per_op_time.compute(layout=layout, target_dir=target_dir)
+        plugins["per-op-time"] = lambda: per_op_time.compute(
+            variant=variant,
+            layout=layout,
+            repo_root=repo_root,
+            binary_name=subject.bench.binary_name,
+        )
     if "metadata-size" in active:
         plugins["metadata-size"] = lambda: metadata_size.compute(
             variant=variant,

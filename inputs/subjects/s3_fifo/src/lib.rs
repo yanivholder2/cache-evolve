@@ -1,3 +1,4 @@
+pub mod fitness_json;
 pub mod logging;
 pub mod s3_fifo;
 

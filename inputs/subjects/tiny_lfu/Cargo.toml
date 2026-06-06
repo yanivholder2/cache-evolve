@@ -14,6 +14,14 @@ crate-type = ["cdylib", "lib"]
 [features]
 test-utils = ["proptest"]
 
+[[bin]]
+name = "evolve-per-op-time"
+path = "src/bin/evolve_per_op_time.rs"
+
+[[bin]]
+name = "evolve-metadata-size"
+path = "src/bin/evolve_metadata_size.rs"
+
 [dependencies]
 framework = { path = "../../../framework-rs" }
 jni = "0.20.0"

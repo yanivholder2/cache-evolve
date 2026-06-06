@@ -9,7 +9,7 @@ use std::hash::Hash;
 pub mod lru_cache_jni;
 
 #[derive(Debug)]
-struct Node<K, V> {
+pub struct Node<K, V> {
 	key: K,
 	value: V,
 	prev: Option<usize>,

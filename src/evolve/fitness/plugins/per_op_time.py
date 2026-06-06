@@ -2,73 +2,42 @@
 
 from __future__ import annotations
 
-import json
-import subprocess
-import tempfile
+import logging
+import shutil
 from pathlib import Path
 
-from evolve._io import read_utf8
-from evolve.fitness._contract import validate_plugin_dict
-from evolve.fitness.plugins._common import cargo_build, cargo_env
-from evolve.paths import Layout
-from evolve.subject import load_subject
+from evolve.fitness._contract import parse_plugin_stdout
+from evolve.fitness.plugins._common import cargo_build, run_binary
+from evolve.paths import Layout, Variant
+from evolve.variant.build import prepare_variant_workspace
+
+log = logging.getLogger(__name__)
 
 RUN_TIMEOUT_S = 120
-METADATA_TIMEOUT_S = 60
 
 
-def _resolve_target_dir(bench_dir: Path, target_dir: Path | None) -> Path:
-    """Returns the bench crate's target directory.
+def compute(*, variant: Variant, layout: Layout, repo_root: Path, binary_name: str) -> dict:
+    """Runs the per-op-time microbench against the variant's overlaid workspace
+    and returns the validated record.
 
-    When target_dir is set it is authoritative (cargo_build runs with
-    CARGO_TARGET_DIR=target_dir), so return it without spawning cargo. Fall back
-    to `cargo metadata` only when target_dir is None, because a workspace
-    member's target lives at the workspace root, not under bench/.
-    """
+    The bin is built `--release` and run inside a per-variant workspace (subject
+    copytree + `overlay/`), mirroring the cdylib and metadata-size builds, so the
+    measured latencies reflect the variant's own cache edits rather than the
+    canonical subject. Release because debug timings are dominated by unoptimised
+    code and would not rank variants meaningfully. The bin must print its
+    plugin-shape JSON to stdout. The subject must declare a `[bench]` table in its
+    manifest (`runner` only schedules this plugin when it does)."""
 
-    if target_dir is not None:
-        return target_dir
-
-    result = subprocess.run(
-        ["cargo", "metadata", "--no-deps", "--format-version", "1"],
-        cwd=bench_dir,
-        capture_output=True,
-        text=True,
-        timeout=METADATA_TIMEOUT_S,
-        check=True,
-        env=cargo_env(target_dir),
-    )
-    return Path(json.loads(result.stdout)["target_directory"])
-
-
-def compute(*, layout: Layout, target_dir: Path | None = None) -> dict:
-    """Runs the selected subject's microbench and returns the validated record.
-
-    The subject must declare a `[bench]` table in its manifest (`runner` only
-    schedules this plugin when it does)."""
-
-    subject = load_subject(layout.sources.subject_dir)
-    if subject.bench is None:
-        raise RuntimeError(f"subject {subject.name!r} declares no [bench]; per-op-time is unavailable")
-    binary_name = subject.bench.binary_name
-
-    bench_dir = layout.sources.bench_dir
-    cargo_build(bench_dir, ["--release"], label=binary_name, target_dir=target_dir)
-    binary = _resolve_target_dir(bench_dir, target_dir) / "release" / binary_name
-
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
-        tmp_out = Path(f.name)
+    workspace = prepare_variant_workspace(variant, layout=layout, repo_root=repo_root)
     try:
-        subprocess.run(
-            [str(binary), "--output", str(tmp_out)],
-            capture_output=True,
-            text=True,
-            timeout=RUN_TIMEOUT_S,
-            check=True,
-        )
-        data = json.loads(read_utf8(tmp_out))
-        validate_plugin_dict(data, source=binary_name)
+        cargo_build(workspace.root, ["--release", "--bin", binary_name], label=binary_name)
+        binary = workspace.root / "target" / "release" / binary_name
+        result = run_binary([str(binary)], label=binary_name, timeout=RUN_TIMEOUT_S)
+        return parse_plugin_stdout(result.stdout, source=binary_name)
     finally:
-        tmp_out.unlink(missing_ok=True)
-
-    return data
+        shutil.rmtree(
+            workspace.root,
+            onexc=lambda fn, path, exception: log.warning(
+                "workspace cleanup failed for %s: %s", path, exception
+            ),
+        )
