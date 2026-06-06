@@ -1,8 +1,11 @@
 [package]
 name = "tiny_lfu"
 version = "0.1.0"
+description = "TinyLFU admission-policy cache subject"
 edition = "2021"
 license = "MIT"
+authors = ["Yaniv Holder <yaniv.holder@gmail.com>"]
+repository = "https://github.com/yanivholder2/cache-evolve"
 
 [lib]
 name = "tiny_lfu"

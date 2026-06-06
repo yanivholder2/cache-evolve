@@ -1,8 +1,11 @@
 [package]
 name = "lru_cache"
 version = "0.1.0"
+description = "Classic LRU cache baseline subject"
 edition = "2021"
 license = "MIT"
+authors = ["Yaniv Holder <yaniv.holder@gmail.com>"]
+repository = "https://github.com/yanivholder2/cache-evolve"
 
 [lib]
 name = "lru_cache"
