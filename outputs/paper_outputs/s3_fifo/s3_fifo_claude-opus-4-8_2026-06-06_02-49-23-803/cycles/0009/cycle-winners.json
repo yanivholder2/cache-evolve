@@ -1,0 +1,162 @@
+{
+  "cycle": "0009",
+  "winners": [
+    "v003",
+    "v001",
+    "v002"
+  ],
+  "scores": {
+    "v001": 0.2613200410655427,
+    "v002": 0.25970713783973626,
+    "v003": 0.3271802561193061
+  },
+  "fitness_vectors": [
+    {
+      "variant": "v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7312000000000001
+            }
+          ],
+          "summary": 0.7312,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Entry<u64,u64>",
+              "bytes": 16
+            },
+            {
+              "type": "S3Fifo<u64,u64>",
+              "bytes": 176
+            }
+          ],
+          "summary": 16,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 22,
+              "p99_ns": 39
+            },
+            {
+              "op": "put",
+              "p50_ns": 46,
+              "p99_ns": 137
+            }
+          ],
+          "summary": 22,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7312000000000001
+            }
+          ],
+          "summary": 0.7312,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Entry<u64,u64>",
+              "bytes": 16
+            },
+            {
+              "type": "S3Fifo<u64,u64>",
+              "bytes": 152
+            }
+          ],
+          "summary": 16,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 24,
+              "p99_ns": 63
+            },
+            {
+              "op": "put",
+              "p50_ns": 54,
+              "p99_ns": 183
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7312000000000001
+            }
+          ],
+          "summary": 0.7312,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Entry<u64,u64>",
+              "bytes": 8
+            },
+            {
+              "type": "S3Fifo<u64,u64>",
+              "bytes": 144
+            }
+          ],
+          "summary": 8,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 23,
+              "p99_ns": 38
+            },
+            {
+              "op": "put",
+              "p50_ns": 297,
+              "p99_ns": 832
+            }
+          ],
+          "summary": 23,
+          "higher_is_better": false
+        }
+      ]
+    }
+  ]
+}
