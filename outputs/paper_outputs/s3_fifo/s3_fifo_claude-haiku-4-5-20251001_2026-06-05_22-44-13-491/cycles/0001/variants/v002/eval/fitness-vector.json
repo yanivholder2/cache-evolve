@@ -1,0 +1,17 @@
+{
+  "variant": "v002",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "trace": "lirs:inputs/traces/workload-a.trace.gz",
+          "size": 2048,
+          "hit_rate": 0.7058
+        }
+      ],
+      "summary": 0.7058,
+      "higher_is_better": true
+    }
+  ]
+}
