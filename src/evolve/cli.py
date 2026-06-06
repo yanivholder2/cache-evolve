@@ -8,6 +8,7 @@ import concurrent.futures
 import json
 import logging
 import re
+import shutil
 import sys
 import threading
 import time
@@ -184,6 +185,66 @@ def _named_thread(name: str, fn, *args, **kwargs):
     """Rename the current thread to `name`, then call `fn`."""
     threading.current_thread().name = name
     return fn(*args, **kwargs)
+
+
+def _completed_cycle_ids(ledger: Path) -> set[CycleId]:
+    """Cycle ids that have a ledger row — the authority for which cycles
+    completed. A cycle dir on disk without a ledger row crashed mid-cycle and is
+    treated as incomplete (the ledger append is the cycle's commit point)."""
+    if not ledger.is_file():
+        return set()
+    completed: set[CycleId] = set()
+    for line in read_utf8(ledger).splitlines():
+        line = line.strip()
+        if line:
+            completed.add(CycleId.from_str(json.loads(line)["cycle"]))
+    return completed
+
+
+def _erase_incomplete_cycles(layout: Layout, completed: set[CycleId]) -> list[CycleId]:
+    """Delete every on-disk cycle directory (and its log) without a ledger row,
+    so resume re-allocates that cycle id from scratch. The cross-cycle artifacts
+    (cross-cycle-winners.json, leaderboard.md) are regenerated from the surviving
+    cycle dirs on the next cycle, so they self-heal once the partial is gone.
+    Returns the erased ids."""
+    cycles_dir = layout.outputs.cycles_dir
+    if not cycles_dir.is_dir():
+        return []
+    cycle_re = re.compile(rf"\d{{{CYCLE_ID_WIDTH}}}")
+    erased: list[CycleId] = []
+    for sub in sorted(cycles_dir.iterdir()):
+        if not (sub.is_dir() and cycle_re.fullmatch(sub.name)):
+            continue
+        cycle_id = CycleId.from_str(sub.name)
+        if cycle_id in completed:
+            continue
+        shutil.rmtree(sub)
+        layout.outputs.cycle_log(cycle_id).unlink(missing_ok=True)
+        erased.append(cycle_id)
+    return erased
+
+
+def _prepare_resume(layout: Layout, cfg: Configs) -> int:
+    """Ready an existing run directory for continuation: erase the crashed cycle
+    (if any) and report progress. Returns the count of completed cycles, where
+    the cycle loop picks up. Process-global token totals reset to zero, so this
+    invocation's cumulative-token logs cover only the resumed portion."""
+    completed = _completed_cycle_ids(layout.outputs.ledger)
+    for cycle_id in _erase_incomplete_cycles(layout, completed):
+        log.info("resume: erased incomplete cycle %s", cycle_id)
+    num_completed = len(completed)
+    remaining = cfg.framework.cycles - num_completed
+    if remaining <= 0:
+        log.info(
+            "resume: run already complete (%d/%d cycles); nothing to do",
+            num_completed, cfg.framework.cycles,
+        )
+    else:
+        log.info(
+            "resume: %d/%d cycles complete, running %d more in %s",
+            num_completed, cfg.framework.cycles, remaining, layout.outputs.root,
+        )
+    return num_completed
 
 
 def _run_variant_pipeline(
@@ -511,6 +572,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         prog="evolve",
         description="Run one or more evolve research cycles. Flags override config.toml.",
     )
+    parser.add_argument("--continue", dest="continue_from", metavar="PATH", default=None,
+                        help="Resume a crashed run: point at its outputs directory. Erases the "
+                             "incomplete cycle and continues to the snapshot's cycle target. "
+                             "Reuses the run's config snapshot verbatim; takes no other flags.")
     parser.add_argument("--subject", type=str, default=None,
                         help="Subject under evolution (dir under inputs/subjects/).")
     parser.add_argument("--cycles", type=int, default=None,
@@ -533,14 +598,37 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _reject_overrides_with_continue(args: argparse.Namespace) -> None:
+    """`--continue` resumes from the run's config snapshot verbatim; any other
+    setting flag would diverge the continuation from the original run, so reject
+    the combination instead of silently ignoring it.
+
+    Reuses `flag_overrides` rather than re-listing the flags: that mapping is the
+    one canonical enumeration of flag-overridable settings (anything added there
+    for the snapshot is automatically covered here), so this guard cannot drift
+    out of sync with the override surface."""
+    overrides = flag_overrides(args)
+    if overrides:
+        given = ", ".join(sorted(key for section in overrides.values() for key in section))
+        die(
+            "--continue resumes from the run's config snapshot verbatim and "
+            f"accepts no other setting flags; given: {given}"
+        )
+
+
 def main(argv: list[str] | None = None) -> None:
     args = _build_arg_parser().parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[2]
 
+    continue_from = Path(args.continue_from).resolve() if args.continue_from else None
+    if continue_from is not None:
+        _reject_overrides_with_continue(args)
+
     try:
         cfg = load_configs(
             repo_root,
+            continue_from=continue_from,
             cycles=args.cycles,
             cohort_size=args.cohort_size,
             ai_agent_tool=args.ai_agent_tool,
@@ -568,7 +656,9 @@ def main(argv: list[str] | None = None) -> None:
     )
     log.info("cycles=%d cohort_size=%d", cfg.framework.cycles, cfg.framework.cohort_size)
 
-    for i in range(1, cfg.framework.cycles + 1):
+    already_done = _prepare_resume(layout, cfg) if continue_from is not None else 0
+
+    for i in range(already_done + 1, cfg.framework.cycles + 1):
         log.info("--- evolve loop: cycle %d/%d ---", i, cfg.framework.cycles)
         run_cycle(layout=layout, repo_root=repo_root, adapter=adapter, cfg=cfg)
 
