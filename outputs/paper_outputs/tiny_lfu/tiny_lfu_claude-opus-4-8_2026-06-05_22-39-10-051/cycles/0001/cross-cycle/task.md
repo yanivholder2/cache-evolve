@@ -1,0 +1,66 @@
+# Task: cross-cycle-insight-writer
+
+## Ledger (all cycles, cumulative)
+
+### Cycle 0001
+
+# Cycle 0001 Insight
+
+## Cohort outcome
+
+All three variants forked from the baseline along canonical TinyLFU axes —
+sketch aging (v001), a W-TinyLFU admission window (v002), and frequency-aware
+victim selection (v003). Only v003 landed in the Winners, with a small but
+clean hit-rate gain and no regressions.
+
+## Patterns
+
+- The two variants that discarded or bypassed long-term frequency signal —
+  aggressive sketch decay and an unconditional admission window — both lost
+  hit-rate, while the one that *spent* the existing signal more carefully
+  (ranking a few tail candidates by estimate) won.
+- This workload appears popularity-stable and low-churn: mechanisms that
+  assume shifting popularity (aging) or burst protection (window) found no
+  problem to solve, so they only added noise.
+- Wins here are slim. v003's gain is bounded by how rarely the LRU tail hides
+  a much-colder item than the head, suggesting the trace has limited tail
+  churn for any victim-side change to exploit.
+
+## Open questions
+
+- Are the aging and window mechanisms inert because of *parameterization*
+  (10x-capacity threshold too aggressive, 1%-capacity window too small) or
+  because the workload genuinely lacks churn? v001/v002 takeaways blame the
+  former; v003's slim margin hints at the latter.
+- Does v003's effect grow with a larger sample size, or does it plateau fast?
+
+## Continuation
+
+Build on v003: it is the live Winner and the only change that improved fitness.
+Probe whether a larger frequency-ranked sample extends the gain before
+concluding the workload caps it. Treat sketch aging and the admission window as
+parked, not dead — they are likely mis-sized rather than wrong, so revisit them
+only as parameter sweeps (less aggressive reset threshold, larger window
+fraction) or if a churnier workload is introduced. Do not re-spend cycles on
+mechanisms that discard the baseline's long-term frequency signal.
+
+
+## Write
+
+Exactly one file: `cross-cycle-insights.md` in the output dir. Use the following four fixed sections — preserve names and order:
+
+## Recurring wins
+
+- <pattern that has held up across multiple cycles>
+
+## Recurring failures
+
+- <approach that keeps not paying off, and why>
+
+## Open questions
+
+- <thread worth probing in upcoming cycles>
+
+## Per-policy notes
+
+- <observations grouped by eviction policy>

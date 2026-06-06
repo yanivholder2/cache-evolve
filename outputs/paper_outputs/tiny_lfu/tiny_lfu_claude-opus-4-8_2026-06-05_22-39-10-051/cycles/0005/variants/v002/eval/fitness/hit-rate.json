@@ -1,0 +1,12 @@
+{
+  "dim": "hit-rate",
+  "values": [
+    {
+      "trace": "lirs:inputs/traces/workload-a.trace.gz",
+      "size": 2048,
+      "hit_rate": 0.7437999999999999
+    }
+  ],
+  "summary": 0.7438,
+  "higher_is_better": true
+}
