@@ -1,0 +1,31 @@
+# Cycle 0009 Insight
+
+## Cohort outcome
+
+This cycle shifted focus from the now-frozen eviction and sketch-geometry frontiers to admission-policy refinement, the orthogonal lever identified in cycle 0008's continuation. Three variants explored this axis: extending the victim-selection pool from N=2 to N=3 to capture further frequency diversity (v001), adding an absolute frequency floor to filter estimate noise (v002), and implementing an asymmetric admission gate that distinguishes updates to existing items from new entries (v003). **All three advanced**, but with sharply divergent success patterns. v001 achieves modest hit-rate gains (+0.37%) at tolerable latency cost (+119 ns p99 put), v002 fails decisively by improving average-case latency but creating catastrophic tail pathology on gets, and v003 achieves the rare win-win: hit-rate improvement with latency gains across both get and put operations. The cohort reveals that **admission policy design is now the high-leverage frontier, and asymmetric policies that respect workload semantics outperform simple symmetric thresholds**.
+
+## Patterns
+
+- **Asymmetric admission design beats symmetric threshold tuning**: v003's distinction between updates (always admit) and new entries (stricter gate) improved both hit-rate and latency without downside, while v002's absolute frequency floor (admit only if `freq >= 2`) improved average-case performance but introduced severe tail-latency spikes on get operations. The asymmetry in v003 succeeds because it leverages semantic information—existing cache members have proven utility, new items are unproven—whereas v002's symmetric rule treats all items identically regardless of their prior history. Workload-aware policies outperform workload-agnostic heuristics by a wide margin.
+
+- **Simple admission thresholds remain brittle; complexity pays if well-targeted**: Cycle 0008's continuation warned that "admission threshold tuning is brittle and workload-encoded." v002 validates this by adding a second gate that should filter noise but instead creates unpredictable sketch behavior, triggering expensive miss-handling chains when occasional low-frequency keys violate the floor. In contrast, v003's added complexity (a conditional check for key membership) is minimal and targets a specific semantic property (update vs. new entry) rather than a global heuristic. Complexity is only justified if it captures workload structure, not if it adds static filtering rules.
+
+- **Eviction pool size (N) continues to yield hit-rate gains but at increasing latency cost**: v001's extension from N=2 to N=3 improves hit-rate (+0.37%) by identifying colder items deeper in the LRU queue, validating cycle 0006's and cycle 0007's finding that N is exploitable. However, the put p99 regression (+43%) is 4× larger than the hit-rate gain in percentage terms, suggesting the cost-benefit frontier is tightening. The earlier cycle pattern—N=5 caused catastrophic spikes, N=2 was optimal—is now giving way to a more nuanced picture where N=3 is viable but increasingly costly.
+
+- **Tail-latency pathology in v002 is a red flag for threshold-based filters**: The severe get p99 regression in v002 (despite improvements to get p50 and put metrics) indicates that the absolute frequency floor creates outlier cases—occasional low-frequency key lookups that fall below the threshold and trigger cache misses, which in turn trigger expensive sketch operations or eviction chains. This asymmetric pathology (median improves, tail worsens) is characteristic of admission filters that inadvertently create worst-case access patterns. The lesson: symmetric thresholds can hide pathology at the tails.
+
+- **The admission-policy frontier is now more promising than eviction-pool expansion**: Cycle 0008 declared eviction and sketch geometry fully optimized. This cycle confirms that eviction pool expansion (v001) shows diminishing returns, while admission-policy innovation (v003) delivers orthogonal gains. v001 trades latency for hit-rate; v003 improves both. This suggests the system's remaining slack is in the admission layer, not the eviction mechanics.
+
+## Open questions
+
+- Can v003's asymmetric admission gate be combined with v001's N=3 eviction pool to compound the hit-rate gains without doubling the latency cost?
+
+- Is the absolute frequency floor in v002 fundamentally flawed, or would a different threshold (e.g., `freq >= 1.5` or adaptive thresholds based on workload phase) recover hit-rate benefits while avoiding tail pathology?
+
+- What is the upper bound on N for victim selection? v001 tests N=3; does N=4 remain tolerable, or does it approach N=5's catastrophic regime?
+
+- Why does v003's semantic distinction (update vs. new entry) work so cleanly when simple threshold rules consistently fail? Is the workload heavily biased toward update-heavy access patterns, or is asymmetry itself the key insight?
+
+## Continuation
+
+**Adopt v003's asymmetric admission policy as the new baseline.** It achieves hit-rate and latency gains simultaneously, a rare win that justifies immediate integration. The key insight—existing cache residents deserve preferential treatment over unproven newcomers—is both intuitive and effective. **Test the composition of v003's admission policy with v001's N=3 eviction pool** in the next cycle to determine if the gains compound or interact negatively. v003 and v001 target different mechanisms (admission vs. eviction); their orthogonality should preserve both benefits. **Deprioritize absolute-threshold admission filters** unless they can be made workload-adaptive. v002's failure to improve hit-rate and tail-latency pathology indicate that static frequency floors are not an effective lever; the workload does not benefit from filtering low-frequency admissions directly. **Shift focus to workload-semantic policies**: the success of v003 suggests future improvements lie in policies that explicitly model entry type, access history, or other semantic properties rather than global heuristics. If further admission policy work is pursued, prioritize policies that distinguish different classes of operations or exploit structural properties of the workload, not symmetric threshold rules.

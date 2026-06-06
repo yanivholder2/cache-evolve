@@ -1,0 +1,7 @@
+06:24:56 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0010 allocated at /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0010 ===
+06:24:56 INFO     [MainThread : evolve.cli : run_cycle] cohort_size=3 adapter=ClaudeSdkAdapter(model=claude-haiku-4-5-20251001)
+06:24:56 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses ---
+06:24:56 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] generating 3 hypotheses for cycle 0010 into /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0010/hypotheses
+06:24:56 DEBUG    [MainThread : evolve.hypothesis.writer : write_hypotheses] wrote task spec: /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0010/hypotheses/task.md
+06:24:56 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer adapter=ClaudeSdkAdapter(model=claude-haiku-4-5-20251001) workspace=/home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0010/hypotheses allow_edits=True
+06:24:56 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572'), PosixPath('/home/user/cache-evolve/inputs/subjects/tiny_lfu/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/tiny_lfu')]

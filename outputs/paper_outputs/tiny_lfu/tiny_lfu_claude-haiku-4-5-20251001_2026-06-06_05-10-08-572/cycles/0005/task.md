@@ -1,0 +1,117 @@
+# Task: cycle-insight-writer
+
+Cycle: 0005
+Output dir: /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0005
+
+## Winners
+
+- v001
+- v003
+
+## Variant insights
+
+- /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0005/variants/v001/insight.md
+- /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0005/variants/v002/insight.md
+- /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0005/variants/v003/insight.md
+
+## Hypotheses (this cycle)
+
+- /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0005/hypotheses/H01.md
+- /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0005/hypotheses/H02.md
+- /home/user/cache-evolve/outputs/tiny_lfu_2026-06-06_05-10-08-572/cycles/0005/hypotheses/H03.md
+
+## Prior cycles digest
+
+### Cycle 0002
+
+# Cycle 0002 Insight
+
+## Cohort outcome
+
+This cycle pursued two orthogonal directions: admission policy refinement (v001) and sketch geometry optimization (v002 and v003). v001 and v002 advanced; v003 dropped. **The admission threshold proved inflexible**: pairing cycle-0001's superior frequency estimation with relaxed admission (>=) backfired, admitting borderline items that degraded hit-rate despite the wider sketch's improved accuracy. Meanwhile, **moderate depth reduction is viable**: v002 achieved a favorable latency-accuracy trade, cutting per-operation work by 25% for only ~0.3% hit-rate loss.
+
+## Patterns
+
+- **Admission barrier is load-bearing; frequency accuracy alone does not overcome it**: v001 combined v001's wider sketch (SKETCH_WIDTH_FACTOR=8, which improved both hit-rate and latency in cycle 0001) with the relaxed admission policy, expecting synergy. Instead, hit-rate declined because the lowered threshold admitted items not hot enough to justify displacing cache residents. This reveals that the strict threshold (incoming_freq > victim_freq) encodes domain knowledge about workload temperature distribution that marginal frequency improvements cannot override.
+
+- **Depth reduction has a sweet spot around 3 layers**: v002 reduced depth from 4 to 3 and delivered a clean trade—25% per-operation latency gain (get: 132→90 ns) for <0.3% hit-rate loss. This vindicates cycle 0001's open question about the lower bound on sketch depth and challenges v003's expansion approach.
+
+- **Depth expansion yields diminishing returns**: v003's increase to 6 layers delivered only +0.33% hit-rate improvement but paid 11% latency cost and 50% more memory. This suggests collision reduction is no longer the bottleneck at depth 4, and that frequency estimation accuracy saturates before hitting depth constraints.
+
+- **Width and depth are not interchangeable levers**: Cycle 0001 showed width expansion is high-ROI; cycle 0002 shows depth expansion is low-ROI. The cohort indicates the cache bottleneck is not hash-row collisions (depth) but rather width-based collision density within rows.
+
+## Open questions
+
+- Can we recover v002's hit-rate loss by pairing depth 3 with increased width? A narrower sketch with more independent hashing might compound benefits from both directions.
+- Does the admission threshold have a gradient between > and >=? Is there an intermediate condition (e.g., incoming_freq >= victim_freq - 1) that admits slightly more while preserving hit-rate?
+- Why did relaxing admission with better frequency estimates still hurt, when cycle 0001's v001 standalone improved hit-rate? Did the wider sketch lose some advantage when paired with a permissive threshold, or is admission policy truly dominant?
+
+## Continuation
+
+**Pursue width-based optimization on a depth-3 baseline**: v002 proved depth 3 is stable for latency-accuracy balance. Test whether SKETCH_WIDTH_FACTOR expansion (e.g., 6–8) on depth 3 recovers hit-rate while preserving latency gains. **Abandon pure depth exploration**; v003's expansion shows diminishing returns and v002's moderate reduction is the viable direction. **Revisit admission policy as an independent lever**: the strict > threshold appears overfit to this workload; micro-tune it in isolation (without width changes) to understand its range. If possible, isolate whether the failure of v001 was due to frequency estimation or admission permissiveness.
+
+
+### Cycle 0003
+
+# Cycle 0003 Insight
+
+## Cohort outcome
+
+This cycle tested three orthogonal hypotheses: width-4-to-8 expansion on depth-3 (v001), micro-tuning the admission threshold with a -1 offset (v002), and periodic frequency sketch decay (v003). **Only sketch decay advanced as a winner**—the first variant in three cycles to improve both hit-rate and per-operation latency simultaneously. Width expansion proved counterproductive, and admission threshold tuning remains brittle. The cohort reveals that sketch geometry has reached saturation while temporal freshness of frequency estimates opens a new, unexplored dimension.
+
+## Patterns
+
+- **Width expansion hits diminishing returns and cost barriers on depth-3 baseline**: v001 doubled width (4→8) to recover hit-rate lost in cycle 0002's depth reduction, successfully raising hit-rate by ~0.6%. However, per-operation latency surged 60% (90→144 ns) and memory doubled, negating the latency gain that depth-3 achieved. This contradicts cycle 0001's finding that width expansion is high-ROI, suggesting the cost-benefit ratio is cache-size and workload specific. At this cache capacity, width 4 is near-optimal.
+
+- **Admission threshold remains a local optimum with no smooth gradient**: v002 tested a -1 offset (>= victim_freq - 1) as a middle ground between strict (>) and permissive (>=). It failed predictably: the relaxation admitted marginal items that displaced higher-value cache residents, hurting hit-rate (opposite of the hypothesis). This mirrors cycle 0002's failure with >=, indicating the strict inequality encodes workload-specific temperature distribution knowledge that marginal relaxations cannot overcome. The threshold is brittle and workload-dependent.
+
+- **Sketch decay is a breakthrough orthogonal axis**: v003's periodic decay (every ~500k operations) improved both hit-rate and latency simultaneously, a first across three cycles. Hit-rate gains are modest but consistent (responsive to workload phase changes), while latency improvements are substantial—both get (132→112 ns) and put (166→142 ns) operations accelerated. The mechanism appears to be two-fold: (1) temporal freshness for adaptive admission, and (2) reduced computational overhead as unbounded count growth is periodically reset. This suggests decay addresses a bottleneck orthogonal to sketch geometry.
+
+- **Latency-accuracy tradeoffs are not absolute**: Most prior optimizations traded one metric for another. v003 broke this pattern by improving both, hinting that sketch staleness is a distinct constraint from collision-density (geometry) or selectivity (admission).
+
+## Open questions
+
+- Does sketch decay synergize with width-4, depth-3 geometry (the likely stable baseline)? v003 was tested against the baseline; combining it with known-good geometry might compound gains.
+- What is the optimal decay frequency for this workload? v003 used ~500k operations; is this interval universal or workload-dependent? Longer intervals might reduce overhead further; shorter intervals might improve phase responsiveness.
+- Does decay scale to different cache sizes and Zipfian skews? All variants have been tuned on one trace; decay's responsiveness benefit may be more valuable on bursty or phase-shifting workloads.
+- Why did admission micro-tuning fail when sketch geometry tuning succeeded? Is the threshold truly load-bearing, or are the workload's phase transitions (which decay now handles) the hidden reason prior threshold tuning failed?
+
+## Continuation
+
+**Depth-3, width-4 baseline is near-optimal for sketch geometry**; v001's width expansion proved too costly, and v002's depth reduction already extracted the latency gain. Stop pursuing geometry changes. **Decay has opened a new frontier**: v003's co-benefits (hit-rate + latency improvement, not just tradeoffs) suggest temporal freshness is a first-class tuning lever. For cycle 0004, test decay decay-frequency tuning (e.g., 250k and 1M operations to bracket v003's 500k), and consider pairing optimal decay with a stable geometry baseline to measure compounding effects. **Abandon admission threshold micro-tuning**—the strict `>` condition is workload-optimized and has no smooth gradient. Shift focus entirely to decay mechanics and interactions with sketch geometry.
+
+
+### Cycle 0004
+
+# Cycle 0004 Insight
+
+## Cohort outcome
+
+This cycle tested whether sketch decay—identified as a breakthrough lever in cycle 0003—could be optimized through decay-frequency tuning and synergy with high-frequency geometry. Three decay variants were deployed: aggressive 250k-operation intervals on the stable depth-3 baseline (v001), conservative 1M-operation intervals on the same baseline (v002), and 500k decay paired with the wider width-8 geometry from cycle 0001 (v003). **All three regressed or showed mixed results.** The aggressive interval (v001) traded the depth-3 baseline's latency advantage for marginal hit-rate gains; the conservative interval (v002) added pure overhead with no hit-rate benefit; and decay paired with wide geometry (v003) created catastrophic tail-latency spikes without hit-rate recovery. The cohort reveals that **sketch decay's benefits are fragile and tightly coupled to specific geometry choices**, not a universally applicable tuning lever.
+
+## Patterns
+
+- **Decay overhead is proportional to sketch size and operation frequency**: v001 added modest latency (+3–7 ns per operation) on the smaller width-4 sketch; v003's decay on width-8 geometry created massive tail-latency degradation (p99 get: 154→243 ns). The O(depth×width) bitwise reset operation is expensive at scale, and checking on every operation exacerbates the cost. This suggests decay is fundamentally misaligned with high-frequency sketches.
+
+- **Decay interval thresholds operate in a tight range with no smooth gradient**: v002's conservative 1M interval rarely triggers on this workload, paying conditional overhead for zero hit-rate benefit—a pure fixed cost. v001's aggressive 250k interval triggers frequently enough to degrade latency visibly. Neither bracket the original cycle-0003 sweet spot of 500k, suggesting that point was either optimal by accident or was the result of orthogonal factors (e.g., workload phase transitions) not present on all traces.
+
+- **Decay does not fix collision or admission problems in wide sketches**: v003 expected that fresher frequency signals would help the width-8 geometry avoid noisy estimates during phase transitions. Instead, the decay mechanism's overhead dominated, and hit-rate degraded (0.7409→0.7405), indicating stale counts were not the limiting factor—collision density and width-based accuracy were. Decay appears orthogonal to, or even antagonistic with, geometry-based tuning.
+
+- **Cycle 0003's decay victory may have been workload-specific or a lucky local optimum**: v003 improved both hit-rate and latency on a narrow baseline (depth-3, width-4, 500k interval). Cycle 0004 shows that result does not generalize: shorter intervals add overhead without benefits, longer intervals are ineffective, and wider geometries amplify the cost. The prior cycle's "breakthrough" appears to have been fragile, confined to a specific parameter space rather than a robust, composable lever.
+
+## Open questions
+
+- Was cycle 0003's v003 (500k decay on depth-3 baseline) a genuine improvement or a statistical artifact? All attempts to re-tune or compose it failed. Should the baseline be re-validated to confirm the decay benefit was real?
+
+- Is there a decay interval sweet spot between 250k and 1M that was never tested? v001 and v002 bracket the space but don't hit the 500k midpoint on the depth-3 baseline. If 500k is truly optimal, what property of the workload (operation volume, phase transition frequency) makes that threshold special?
+
+- Why does decay's overhead scale so poorly with sketch width? v003's tail-latency spike suggests the bitwise right-shift on 32 counters (8×4 = width×depth) is expensive under contention. Could decay be implemented more efficiently (e.g., lazy resets, probabilistic sampling) to reduce per-operation cost?
+
+## Continuation
+
+**Decay as a tuning lever has reached diminishing returns and is brittle across parameter variations.** The cycle 0003 victory was likely a narrow optimum, not a robust pattern. **Stop pursuing decay frequency micro-tuning.** Instead, isolate decay's true benefit: re-validate cycle 0003's v003 on the depth-3 width-4 baseline with 500k interval to establish whether the gain was reproducible and how large it actually was. If genuine, **accept depth-3 width-4 with optional 500k decay as the stable geometry baseline** and shift focus to orthogonal levers: eviction policy variations, hash function choices, adaptive admission thresholds, or workload-dependent parameter schedules. If decay was a false positive, **discard it entirely and focus on unexplored dimensions** (e.g., victim selection, frequency aging strategies not based on periodic resets, or cache-oblivious tuning). Geometry optimization has plateaued; the next frontier is likely outside the sketch parameters.
+
+
+## Write
+
+Exactly one file: `cycle-insight.md` in the output dir.
