@@ -3,9 +3,10 @@ name: promote-run
 description: Curate a finished evolve run and promote it into the committed outputs/paper_outputs/ folder, then commit, push, and open a draft PR. Use when the user wants to keep/save/archive/promote a run for the paper — e.g. "move this run to paper outputs", "archive this run", "save this run for the paper". Strips the multi-GB caffeine logs so the copy is git-friendly.
 ---
 
-Copy this session's evolve run into the committed `outputs/paper_outputs/`,
-dropping the multi-GB caffeine logs, then commit, push, and open a PR. The
-conventions below are non-obvious — follow, don't rediscover.
+Move this session's evolve run into the committed `outputs/paper_outputs/`,
+dropping the multi-GB caffeine logs, deleting the original raw run dir once the
+copy verifies, then commit, push, and open a PR. The conventions below are
+non-obvious — follow, don't rediscover.
 
 ## Gotchas
 
@@ -36,7 +37,11 @@ conventions below are non-obvious — follow, don't rediscover.
 3. **Verify** the copy: single-digit MB, no rust-logs or gradle logs remain,
    git-trackable (not ignored), and the other subject folders untouched.
 
-4. **Commit + PR.** Commit (subject, cycles completed, cohort size, global-best
+4. **Delete the original.** Only after the copy verifies in step 3, remove the
+   raw run dir (`outputs/<subject>_<timestamp>/`) so the run isn't left
+   duplicated. Never delete before the copy is confirmed good.
+
+5. **Commit + PR.** Commit (subject, cycles completed, cohort size, global-best
    hit-rate vs baseline — from `leaderboard.md` / `cycles-ledger.jsonl`). Push,
    then open a **draft** PR, or update its title if one exists. Report the
    global-best and PR link.

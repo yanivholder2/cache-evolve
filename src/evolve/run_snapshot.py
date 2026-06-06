@@ -22,12 +22,18 @@ def snapshot_run_inputs(layout: Layout, config_overrides: Mapping[str, Mapping[s
     """Copy the run's config.toml and subject manifest.toml into the output
     root. `config_overrides` carries the CLI flags that won over config.toml;
     they are applied to the config snapshot so it reflects the values the run
-    actually used rather than the on-disk defaults the flags overrode."""
+    actually used rather than the on-disk defaults the flags overrode.
+
+    Write-if-absent: a resumed run (`--continue`) already has both snapshots
+    from its first invocation, and they are the run's identity — never overwrite
+    them with the current repo state."""
 
     layout.outputs.root.mkdir(parents=True, exist_ok=True)
-    source = read_utf8(layout.sources.config_toml)
-    layout.outputs.config_toml.write_text(overlay_config(source, config_overrides), encoding="utf-8")
-    shutil.copy2(layout.sources.subject_manifest, layout.outputs.manifest_toml)
+    if not layout.outputs.config_toml.exists():
+        source = read_utf8(layout.sources.config_toml)
+        layout.outputs.config_toml.write_text(overlay_config(source, config_overrides), encoding="utf-8")
+    if not layout.outputs.manifest_toml.exists():
+        shutil.copy2(layout.sources.subject_manifest, layout.outputs.manifest_toml)
 
 
 def flag_overrides(args: argparse.Namespace) -> dict[str, dict[str, object]]:
