@@ -2,13 +2,23 @@
 
 from __future__ import annotations
 
+import argparse
+import dataclasses
+import json
 import types
 from pathlib import Path
 
 import pytest
 
 from evolve._io import write_json
-from evolve.cli import _require_scope_supported, _validate_active_dimensions
+from evolve.cli import (
+    _completed_cycle_ids,
+    _erase_incomplete_cycles,
+    _prepare_resume,
+    _reject_overrides_with_continue,
+    _require_scope_supported,
+    _validate_active_dimensions,
+)
 from evolve.config import (
     AuthoringScope,
     Configs,
@@ -17,6 +27,7 @@ from evolve.config import (
     SelectionConfig,
     SimulatorConfig,
 )
+from evolve.identifiers import CycleId
 from evolve.paths import Layout
 
 
@@ -92,3 +103,106 @@ def test_extension_points_scope_allows_subject_with_extension_points():
 
 def test_full_autonomy_scope_allows_subject_without_extension_points():
     _require_scope_supported(_stub_subject(()), AuthoringScope.FULL_AUTONOMY)
+
+
+# --- resume (--continue) helpers ---
+
+
+def _run_layout(tmp_path: Path) -> Layout:
+    return Layout(repo_root=tmp_path / "repo", outputs_root=tmp_path / "out", subject="lru_cache")
+
+
+def _write_ledger(layout: Layout, cycle_values: list[int]) -> None:
+    layout.outputs.ledger.parent.mkdir(parents=True, exist_ok=True)
+    lines = [json.dumps({"cycle": str(CycleId(v))}) + "\n" for v in cycle_values]
+    layout.outputs.ledger.write_text("".join(lines), encoding="utf-8")
+
+
+def _make_cycle_dir(layout: Layout, value: int) -> None:
+    layout.outputs.cycle(CycleId(value)).variants_dir.mkdir(parents=True, exist_ok=True)
+    log = layout.outputs.cycle_log(CycleId(value))
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text("log", encoding="utf-8")
+
+
+def test_completed_cycle_ids_reads_ledger_rows(tmp_path):
+    layout = _run_layout(tmp_path)
+    _write_ledger(layout, [1, 2, 3])
+    assert _completed_cycle_ids(layout.outputs.ledger) == {CycleId(1), CycleId(2), CycleId(3)}
+
+
+def test_completed_cycle_ids_no_ledger_is_empty(tmp_path):
+    layout = _run_layout(tmp_path)
+    assert _completed_cycle_ids(layout.outputs.ledger) == set()
+
+
+def test_erase_incomplete_cycles_removes_uncommitted_dir_and_log(tmp_path):
+    layout = _run_layout(tmp_path)
+    _write_ledger(layout, [1, 2, 3])
+    for value in (1, 2, 3, 4):
+        _make_cycle_dir(layout, value)
+
+    erased = _erase_incomplete_cycles(layout, _completed_cycle_ids(layout.outputs.ledger))
+
+    assert erased == [CycleId(4)]
+    assert not layout.outputs.cycle(CycleId(4)).root.exists()
+    assert not layout.outputs.cycle_log(CycleId(4)).exists()
+    for value in (1, 2, 3):
+        assert layout.outputs.cycle(CycleId(value)).root.is_dir()
+
+
+def test_erase_incomplete_cycles_keeps_all_when_committed(tmp_path):
+    layout = _run_layout(tmp_path)
+    _write_ledger(layout, [1, 2, 3])
+    for value in (1, 2, 3):
+        _make_cycle_dir(layout, value)
+
+    assert _erase_incomplete_cycles(layout, _completed_cycle_ids(layout.outputs.ledger)) == []
+
+
+def _cfg_cycles(cycles: int) -> Configs:
+    cfg = _cfg(("hit-rate",))
+    return dataclasses.replace(cfg, framework=dataclasses.replace(cfg.framework, cycles=cycles))
+
+
+def test_prepare_resume_returns_completed_count_and_erases_partial(tmp_path):
+    layout = _run_layout(tmp_path)
+    _write_ledger(layout, [1, 2, 3])
+    for value in (1, 2, 3, 4):  # cycle 4 crashed mid-run
+        _make_cycle_dir(layout, value)
+
+    assert _prepare_resume(layout, _cfg_cycles(5)) == 3
+    assert not layout.outputs.cycle(CycleId(4)).root.exists()
+
+
+def test_prepare_resume_on_finished_run_is_noop(tmp_path):
+    layout = _run_layout(tmp_path)
+    _write_ledger(layout, [1, 2, 3])
+    for value in (1, 2, 3):
+        _make_cycle_dir(layout, value)
+
+    assert _prepare_resume(layout, _cfg_cycles(3)) == 3
+    for value in (1, 2, 3):
+        assert layout.outputs.cycle(CycleId(value)).root.is_dir()
+
+
+def _override_args(**given) -> argparse.Namespace:
+    flags = dict(
+        subject=None, cycles=None, cohort_size=None, ai_agent_tool=None, model=None,
+        log_level=None, max_workers=None, authoring_scope=None, simulator_timeout_s=None,
+    )
+    flags.update(given)
+    return argparse.Namespace(**flags)
+
+
+def test_reject_overrides_with_continue_allows_bare_continue():
+    _reject_overrides_with_continue(_override_args())  # no raise
+
+
+@pytest.mark.parametrize(
+    "given",
+    [{"cycles": 3}, {"subject": "dash"}, {"simulator_timeout_s": 30}],
+)
+def test_reject_overrides_with_continue_rejects_any_setting_flag(given):
+    with pytest.raises(SystemExit):
+        _reject_overrides_with_continue(_override_args(**given))

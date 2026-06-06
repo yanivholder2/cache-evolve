@@ -89,6 +89,7 @@ class Configs:
 def load_configs(
     repo_root: Path,
     *,
+    continue_from: Path | None = None,
     cycles: int | None = None,
     cohort_size: int | None = None,
     ai_agent_tool: str | None = None,
@@ -102,11 +103,26 @@ def load_configs(
     """Build `Configs` from `<repo_root>/config.toml`, with optional overrides
     taking precedence per field. Raises `ConfigError` for missing or invalid
     values.
+
+    When `continue_from` is set (resuming a crashed run), config is read from
+    that run's snapshot (`<continue_from>/config.toml`) instead of the repo
+    config, and `outputs_root` is the run directory itself rather than a fresh
+    timestamped one. The resumed run reuses the snapshot verbatim — the caller
+    rejects per-field overrides so the continuation stays faithful to the
+    original.
     """
 
-    cfg_path = SourcesLayout(root=repo_root).config_toml
-    if not cfg_path.is_file():
-        raise ConfigError(f"config.toml not found at {cfg_path}")
+    if continue_from is not None:
+        cfg_path = continue_from / "config.toml"
+        if not cfg_path.is_file():
+            raise ConfigError(
+                f"--continue: run config snapshot not found at {cfg_path}; "
+                "expected an evolve outputs directory from a prior run"
+            )
+    else:
+        cfg_path = SourcesLayout(root=repo_root).config_toml
+        if not cfg_path.is_file():
+            raise ConfigError(f"config.toml not found at {cfg_path}")
     with open(cfg_path, "rb") as f:
         data = tomllib.load(f)
     framework_defaults = data.get("framework", {})
@@ -116,12 +132,17 @@ def load_configs(
 
     resolved_subject = _resolve_subject(subject, framework_defaults, repo_root)
     resolved_ai_agent_tool = _resolve_ai_agent_tool(ai_agent_tool, framework_defaults)
+    outputs_root = (
+        continue_from.resolve()
+        if continue_from is not None
+        else (repo_root / "outputs" / f"{resolved_subject}_{_timestamp()}").resolve()
+    )
     framework = FrameworkConfig(
         cycles=_resolve_positive_int(cycles, framework_defaults, "cycles", "--cycles", "framework"),
         cohort_size=_resolve_positive_int(cohort_size, framework_defaults, "cohort_size", "--cohort-size", "framework"),
         ai_agent_tool=resolved_ai_agent_tool,
         model=_resolve_model(model, framework_defaults, resolved_ai_agent_tool),
-        outputs_root=(repo_root / "outputs" / f"{resolved_subject}_{_timestamp()}").resolve(),
+        outputs_root=outputs_root,
         log_level=_resolve_log_level(log_level, framework_defaults),
         digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
         max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
