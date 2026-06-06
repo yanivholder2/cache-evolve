@@ -1,0 +1,26 @@
+[subject]
+name = "tiny_lfu"
+crate-path = "."
+cdylib-name = "tiny_lfu"
+
+[[gates]]
+name = "invariant gate"
+test = "invariant_gate"
+marker = "invariant gate violated: P[1-3] [a-z_]+"
+
+[contract]
+protected-files = ["src/tiny_lfu/tiny_lfu_jni.rs"]
+
+[caffeine]
+config-prefix = "caffeine.simulator.tinyLfu"
+policy-spec-name = "tinylfu.TinyLfuRust"
+supports-log-path = false
+
+[docs]
+context = "CONTEXT.md"
+insight = "baseline/insight.md"
+
+[evaluation]
+fitness-vector = "baseline/eval/fitness-vector.json"
+traces = ["lirs:inputs/traces/workload-a.trace.gz"]
+sizes = [2048]
