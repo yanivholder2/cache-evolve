@@ -46,6 +46,66 @@ def dim_summaries(vector: dict) -> dict:
     return {dim["dim"]: dim.get("summary", MISSING) for dim in vector.get("dimensions", [])}
 
 
+# Dimensions the baseline-vs-winner diff re-measures and backfills onto rows
+# whose own vector never recorded them (hit-rate-only runs). hit-rate already
+# comes from the run's records, so the diff never overrides it on a real row.
+BACKFILL_DIMS = ("metadata-size", "per-op-time")
+
+
+def parse_number(text: str):
+    return float(text) if "." in text else int(text)
+
+
+def diff_variant_key(variant_cell: str):
+    """Map a diff-file Variant cell to a (cycle, variant) row key, or None.
+
+    "baseline" pairs with cycle 0; winners read as "cycle/<NNNN>/<vID>" and the
+    same variant id can recur across cycles with different re-measured numbers,
+    so the cycle is part of the key.
+    """
+    if variant_cell == "baseline":
+        return (0, "baseline")
+    parts = variant_cell.split("/")
+    if len(parts) == 3 and parts[0] == "cycle":
+        return (int(parts[1]), parts[2])
+    return None
+
+
+def fitness_diff_rows(run_dir: Path) -> dict:
+    """Parse baseline-vs-winner-fitness-diff.md into {(cycle, variant): dims}.
+
+    Hit-rate-only runs carry this hand-authored file with metadata-size and
+    per-op-time re-measured together (on one machine) for the baseline and the
+    net-beating winners; it backfills dims the run itself never recorded. An
+    absent file (e.g. full-fitness-vector runs) means no rows.
+    """
+    diff_path = run_dir / "baseline-vs-winner-fitness-diff.md"
+    if not diff_path.exists():
+        return {}
+    rows = {}
+    header = None
+    for line in diff_path.read_text().splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if header is None:
+            if "Variant" in cells:
+                header = cells
+            continue
+        if all(set(cell) <= {"-"} for cell in cells):
+            continue  # markdown separator row
+        record = dict(zip(header, cells))
+        key = diff_variant_key(record.get("Variant", ""))
+        if key is None:
+            continue
+        rows[key] = {
+            dim: parse_number(record[dim])
+            for dim in CANONICAL_DIMS
+            if record.get(dim) and record[dim] != str(MISSING)
+        }
+    return rows
+
+
 def make_row(summaries, *, subject, cycle, variant, is_baseline, is_winner):
     row = {
         "subject-name": subject,
@@ -113,22 +173,47 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
     return setup
 
 
-def baseline_row(run_dir: Path, subject: str):
-    """Pull the baseline vector from champions.json, if the run recorded one."""
+def backfill(row: dict, dims: dict) -> dict:
+    """Fill a row's re-measured dims from the diff, leaving hit-rate untouched."""
+    for dim in BACKFILL_DIMS:
+        if dim in dims:
+            row[dim] = dims[dim]
+    return row
+
+
+def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
+    """Build the baseline row, or None if the run recorded no baseline.
+
+    champions.json is authoritative when present; its dims are backfilled from
+    the diff. Hit-rate-only runs ship no champions.json, so the diff's baseline
+    row is the only baseline available — synthesize it from there.
+    """
+    diff_baseline = diff_rows.get((0, "baseline"), {})
     champions = run_dir / "champions.json"
-    if not champions.exists():
-        return None
-    data = json.loads(champions.read_text())
-    for vector in data.get("fitness_vectors", []):
-        if vector.get("variant") == "baseline":
-            return make_row(
-                dim_summaries(vector),
-                subject=subject,
-                cycle=0,
-                variant="baseline",
-                is_baseline=True,
-                is_winner=False,
-            )
+    if champions.exists():
+        data = json.loads(champions.read_text())
+        for vector in data.get("fitness_vectors", []):
+            if vector.get("variant") == "baseline":
+                return backfill(
+                    make_row(
+                        dim_summaries(vector),
+                        subject=subject,
+                        cycle=0,
+                        variant="baseline",
+                        is_baseline=True,
+                        is_winner=False,
+                    ),
+                    diff_baseline,
+                )
+    if diff_baseline:
+        return make_row(
+            diff_baseline,
+            subject=subject,
+            cycle=0,
+            variant="baseline",
+            is_baseline=True,
+            is_winner=False,
+        )
     return None
 
 
@@ -142,9 +227,10 @@ def build_run(run_dir: Path, subject: str):
     if not (run_dir / "cycles-ledger.jsonl").exists():
         return None  # run never reached a sealed cycle
     winners = winners_by_cycle(run_dir)
+    diff_rows = fitness_diff_rows(run_dir)
 
     variants = []
-    baseline = baseline_row(run_dir, subject)
+    baseline = baseline_row(run_dir, subject, diff_rows)
     if baseline is not None:
         variants.append(baseline)
 
@@ -158,13 +244,16 @@ def build_run(run_dir: Path, subject: str):
                 continue  # variant produced no vector (e.g. build or gate failure)
             summaries = dim_summaries(json.loads(vector_path.read_text()))
             variants.append(
-                make_row(
-                    summaries,
-                    subject=subject,
-                    cycle=cycle,
-                    variant=variant_dir.name,
-                    is_baseline=False,
-                    is_winner=variant_dir.name in cycle_winners,
+                backfill(
+                    make_row(
+                        summaries,
+                        subject=subject,
+                        cycle=cycle,
+                        variant=variant_dir.name,
+                        is_baseline=False,
+                        is_winner=variant_dir.name in cycle_winners,
+                    ),
+                    diff_rows.get((cycle, variant_dir.name), {}),
                 )
             )
 

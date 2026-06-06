@@ -17,6 +17,16 @@
       "variants": [
         {
           "subject-name": "dash",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.6634,
+          "metadata-size": 40,
+          "per-op-time": 244
+        },
+        {
+          "subject-name": "dash",
           "cycle": 1,
           "variant": "v001",
           "is-baseline": false,
@@ -302,8 +312,8 @@
           "is-baseline": false,
           "is-winner": true,
           "hit-rate": 0.714,
-          "metadata-size": -1,
-          "per-op-time": -1
+          "metadata-size": 40,
+          "per-op-time": 278
         },
         {
           "subject-name": "dash",
@@ -332,6 +342,16 @@
         ]
       },
       "variants": [
+        {
+          "subject-name": "dash",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.6634,
+          "metadata-size": 40,
+          "per-op-time": 265
+        },
         {
           "subject-name": "dash",
           "cycle": 1,
@@ -589,8 +609,8 @@
           "is-baseline": false,
           "is-winner": true,
           "hit-rate": 0.719,
-          "metadata-size": -1,
-          "per-op-time": -1
+          "metadata-size": 40,
+          "per-op-time": 223
         },
         {
           "subject-name": "dash",
@@ -619,8 +639,8 @@
           "is-baseline": false,
           "is-winner": true,
           "hit-rate": 0.719,
-          "metadata-size": -1,
-          "per-op-time": -1
+          "metadata-size": 40,
+          "per-op-time": 231
         },
         {
           "subject-name": "dash",
@@ -649,6 +669,16 @@
         ]
       },
       "variants": [
+        {
+          "subject-name": "dash",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.6634,
+          "metadata-size": 40,
+          "per-op-time": 118
+        },
         {
           "subject-name": "dash",
           "cycle": 1,
@@ -916,8 +946,8 @@
           "is-baseline": false,
           "is-winner": true,
           "hit-rate": 0.724,
-          "metadata-size": -1,
-          "per-op-time": -1
+          "metadata-size": 40,
+          "per-op-time": 145
         },
         {
           "subject-name": "dash",
