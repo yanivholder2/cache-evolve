@@ -174,12 +174,14 @@ def simulate_variant(
     layout: Layout,
     repo_root: Path,
     cfg: Configs,
+    target_dir: Path | None = None,
 ) -> CaffeineResults:
     """Build the variant cdylib, invoke caffeine once, parse and aggregate.
 
     Persists caffeine outputs under `<variant_dir>/caffeine/` for inspection.
     Raises `CaffeineSimulatorError` on any failure (build, invocation,
-    timeout, missing/malformed CSV).
+    timeout, missing/malformed CSV). `target_dir`, when given, shares one cargo
+    target with the variant's bench-bin builds so dependency crates compile once.
     """
 
     variant_dir = variant.resolve(layout)
@@ -195,7 +197,9 @@ def simulate_variant(
     caffeine_out.rust_logs_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        workspace, cdylib_path = compile_cdylib(variant, layout=layout, repo_root=repo_root)
+        workspace, cdylib_path = compile_cdylib(
+            variant, layout=layout, repo_root=repo_root, target_dir=target_dir
+        )
     except (RuntimeError, subprocess.CalledProcessError) as exception:
         raise CaffeineSimulatorError(f"cdylib build failed for {variant}: {exception}") from exception
 

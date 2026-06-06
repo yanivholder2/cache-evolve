@@ -1,22 +1,15 @@
 """Shared helpers for fitness plugin scripts."""
 
-import os
 import subprocess
 from pathlib import Path
+
+from evolve.variant.build import cargo_env
 
 BUILD_TIMEOUT_S = 300
 
 
 class PluginError(RuntimeError):
     """Raised when a plugin's subprocess (cargo build, binary run) fails."""
-
-
-def cargo_env(target_dir: Path | None) -> dict[str, str] | None:
-    """Returns an env overlay setting CARGO_TARGET_DIR, or None to inherit."""
-
-    if target_dir is None:
-        return None
-    return {**os.environ, "CARGO_TARGET_DIR": str(target_dir)}
 
 
 def cargo_build(

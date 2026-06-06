@@ -16,7 +16,14 @@ log = logging.getLogger(__name__)
 RUN_TIMEOUT_S = 120
 
 
-def compute(*, variant: Variant, layout: Layout, repo_root: Path, binary_name: str) -> dict:
+def compute(
+    *,
+    variant: Variant,
+    layout: Layout,
+    repo_root: Path,
+    binary_name: str,
+    target_dir: Path | None = None,
+) -> dict:
     """Runs the per-op-time microbench against the variant's overlaid workspace
     and returns the validated record.
 
@@ -26,12 +33,19 @@ def compute(*, variant: Variant, layout: Layout, repo_root: Path, binary_name: s
     canonical subject. Release because debug timings are dominated by unoptimised
     code and would not rank variants meaningfully. The bin must print its
     plugin-shape JSON to stdout. The subject must declare a `[bench]` table in its
-    manifest (`runner` only schedules this plugin when it does)."""
+    manifest (`runner` only schedules this plugin when it does). `target_dir`, when
+    given, shares one cargo target with the variant's other builds so the release
+    dependency crates compile once (see `cargo_env`)."""
 
-    workspace = prepare_variant_workspace(variant, layout=layout, repo_root=repo_root)
+    workspace = prepare_variant_workspace(
+        variant, layout=layout, repo_root=repo_root, target_dir=target_dir
+    )
     try:
-        cargo_build(workspace.root, ["--release", "--bin", binary_name], label=binary_name)
-        binary = workspace.root / "target" / "release" / binary_name
+        cargo_build(
+            workspace.root, ["--release", "--bin", binary_name],
+            label=binary_name, target_dir=target_dir,
+        )
+        binary = workspace.target_root / "release" / binary_name
         result = run_binary([str(binary)], label=binary_name, timeout=RUN_TIMEOUT_S)
         return parse_plugin_stdout(result.stdout, source=binary_name)
     finally:

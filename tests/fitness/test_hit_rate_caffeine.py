@@ -76,6 +76,11 @@ def test_hit_rate_caffeine_end_to_end(tmp_path):
     assert caffeine_out.hit_rate_csv(expected_size).is_file()
     assert caffeine_out.gradle_stdout_log.is_file()
     assert caffeine_out.gradle_stderr_log.is_file()
-    cdylib_name = load_subject(layout.sources.subject_dir).cdylib_name
-    rust_logs = list(caffeine_out.rust_logs_dir.glob(f"{cdylib_name}_*.log"))
-    assert rust_logs, f"no rust JNI log under {caffeine_out.rust_logs_dir}"
+    subject = load_subject(layout.sources.subject_dir)
+    rust_logs = list(caffeine_out.rust_logs_dir.glob(f"{subject.cdylib_name}_*.log"))
+    # Only subjects that declare supports-log-path receive a log path over JNI and
+    # write rust logs; the rest (e.g. lru_cache) must not, so assert each way.
+    if subject.caffeine.supports_log_path:
+        assert rust_logs, f"no rust JNI log under {caffeine_out.rust_logs_dir}"
+    else:
+        assert not rust_logs, f"subject declares no log-path support but wrote {rust_logs}"

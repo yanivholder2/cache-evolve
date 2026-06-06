@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import json
 import logging
+import shutil
 from pathlib import Path
+from tempfile import mkdtemp
 from typing import Callable
 
 from evolve._io import read_utf8, write_json
@@ -38,42 +40,59 @@ def compute_fitness(
     fitness_dir = variant_dir.fitness_dir
     fitness_dir.mkdir(parents=True, exist_ok=True)
 
-    log.debug("[%s] caffeine simulate (build cdylib + run)", variant)
+    # One cargo target shared by this variant's cdylib + bench bin builds, so the
+    # dependency crates compile once instead of once per build. Per-variant (the
+    # builds are sequential here, and a per-run target would let variants clobber
+    # each other's same-named artifacts). Cleaned once all builds are done.
+    target_dir = Path(mkdtemp(prefix="variant-target-"))
     try:
-        caffeine_results = simulate_variant(variant, layout=layout, repo_root=repo_root, cfg=cfg)
-    except CaffeineSimulatorError as exception:
-        log.error("[%s] caffeine simulator failed: %s", variant, exception)
-        raise FitnessError(f"caffeine simulator failed for {variant}: {exception}") from exception
-
-    subject = load_subject(layout.sources.subject_dir)
-    # Capability (an active dimension's subject can measure it) is enforced once at
-    # the boundary by cli._validate_active_dimensions; the runner trusts it and just
-    # builds a plugin per active dimension.
-    active = set(cfg.fitness.dimensions)
-    plugins: dict[str, Callable[[], dict]] = {}
-    if "hit-rate" in active:
-        plugins["hit-rate"] = lambda: hit_rate.compute(results=caffeine_results)
-    if "per-op-time" in active:
-        plugins["per-op-time"] = lambda: per_op_time.compute(
-            variant=variant,
-            layout=layout,
-            repo_root=repo_root,
-            binary_name=subject.bench.binary_name,
-        )
-    if "metadata-size" in active:
-        plugins["metadata-size"] = lambda: metadata_size.compute(
-            variant=variant,
-            layout=layout,
-            repo_root=repo_root,
-            binary_name=subject.metadata.binary_name,
-        )
-    for name, fn in plugins.items():
-        log.debug("[%s] plugin %s", variant, name)
+        log.debug("[%s] caffeine simulate (build cdylib + run)", variant)
         try:
-            record = fn()
-        except PluginError as exception:
-            raise FitnessError(f"plugin {name} failed for {variant}: {exception}") from exception
-        write_json(fitness_dir / f"{name}.json", record)
+            caffeine_results = simulate_variant(
+                variant, layout=layout, repo_root=repo_root, cfg=cfg, target_dir=target_dir
+            )
+        except CaffeineSimulatorError as exception:
+            log.error("[%s] caffeine simulator failed: %s", variant, exception)
+            raise FitnessError(f"caffeine simulator failed for {variant}: {exception}") from exception
+
+        subject = load_subject(layout.sources.subject_dir)
+        # Capability (an active dimension's subject can measure it) is enforced once at
+        # the boundary by cli._validate_active_dimensions; the runner trusts it and just
+        # builds a plugin per active dimension.
+        active = set(cfg.fitness.dimensions)
+        plugins: dict[str, Callable[[], dict]] = {}
+        if "hit-rate" in active:
+            plugins["hit-rate"] = lambda: hit_rate.compute(results=caffeine_results)
+        if "per-op-time" in active:
+            plugins["per-op-time"] = lambda: per_op_time.compute(
+                variant=variant,
+                layout=layout,
+                repo_root=repo_root,
+                binary_name=subject.bench.binary_name,
+                target_dir=target_dir,
+            )
+        if "metadata-size" in active:
+            plugins["metadata-size"] = lambda: metadata_size.compute(
+                variant=variant,
+                layout=layout,
+                repo_root=repo_root,
+                binary_name=subject.metadata.binary_name,
+                target_dir=target_dir,
+            )
+        for name, fn in plugins.items():
+            log.debug("[%s] plugin %s", variant, name)
+            try:
+                record = fn()
+            except PluginError as exception:
+                raise FitnessError(f"plugin {name} failed for {variant}: {exception}") from exception
+            write_json(fitness_dir / f"{name}.json", record)
+    finally:
+        shutil.rmtree(
+            target_dir,
+            onexc=lambda fn, path, exception: log.warning(
+                "shared target cleanup failed for %s: %s", path, exception
+            ),
+        )
 
     log.debug("[%s] aggregate fitness-vector", variant)
     fv = _aggregate(variant.label, fitness_dir)

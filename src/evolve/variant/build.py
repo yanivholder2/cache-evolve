@@ -5,6 +5,7 @@ variant by overlaying its `overlay/` tree on a copy of the subject crate, so
 from __future__ import annotations
 
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -17,6 +18,19 @@ from evolve.paths import Layout, Variant, CargoWorkspace
 from evolve.subject import load_subject
 
 log = logging.getLogger(__name__)
+
+
+def cargo_env(target_dir: Path | None) -> dict[str, str] | None:
+    """Env overlay routing cargo to a shared CARGO_TARGET_DIR, or None to inherit.
+
+    Pointing several of one variant's builds at a single target dir lets the
+    dependency crates compile once and be reused across builds. Isolating the dir
+    per variant (rather than per run) keeps each variant's same-named artifacts
+    (the cdylib, the bench bins) from clobbering another variant's."""
+
+    if target_dir is None:
+        return None
+    return {**os.environ, "CARGO_TARGET_DIR": str(target_dir)}
 
 
 def _rewrite_framework_path(cargo_toml: Path, framework_crate_dir: Path) -> None:
@@ -73,10 +87,15 @@ def prepare_variant_workspace(
     *,
     layout: Layout,
     repo_root: Path,
+    target_dir: Path | None = None,
 ) -> CargoWorkspace:
     """Materialise a cargo workspace for `variant`: subject copytree → overlay
     `overlay/` → rewrite the framework dep path to absolute. Returns a `CargoWorkspace`
-    rooted at a fresh tempdir; the caller owns cleanup."""
+    rooted at a fresh tempdir; the caller owns cleanup.
+
+    `target_dir`, when given, is recorded on the workspace so its build outputs
+    resolve under that shared cargo target instead of the in-workspace `target/`;
+    the caller must pass the same dir to the cargo invocation (see `cargo_env`)."""
 
     variant_dir = variant.resolve(layout)
     subject_dir = layout.sources.subject_dir
@@ -108,7 +127,7 @@ def prepare_variant_workspace(
         raise
 
     log.debug("workspace=%s subject=%s repo_root=%s", root, subject_dir, repo_root)
-    return CargoWorkspace(root=root, cdylib_name=subject.cdylib_name)
+    return CargoWorkspace(root=root, cdylib_name=subject.cdylib_name, target_dir=target_dir)
 
 
 def compile_for_gates(
@@ -156,27 +175,31 @@ def compile_for_gates(
 
 
 def compile_cdylib(
-    variant: Variant, *, layout: Layout, repo_root: Path
+    variant: Variant, *, layout: Layout, repo_root: Path, target_dir: Path | None = None
 ) -> tuple[CargoWorkspace, Path]:
     """Prepare a workspace and run `cargo build --release` to produce a
     Caffeine-loadable cdylib.
 
     Returns `(workspace, cdylib_path)`. The caller owns the workspace's
     lifecycle and is responsible for cleaning it up once the artifact is no
-    longer needed.
+    longer needed. `target_dir`, when given, shares one cargo target across a
+    variant's builds so dependency crates compile once (see `cargo_env`).
 
     Raises:
         RuntimeError: platform is unsupported.
         subprocess.CalledProcessError: cargo build failed (workspace removed).
     """
 
-    workspace = prepare_variant_workspace(variant, layout=layout, repo_root=repo_root)
+    workspace = prepare_variant_workspace(
+        variant, layout=layout, repo_root=repo_root, target_dir=target_dir
+    )
     try:
         log.info("building cdylib for variant %s ...", variant)
         proc = subprocess.run(
             ["cargo", "build", "--release", "--manifest-path", str(workspace.cargo_toml)],
             capture_output=True,
             text=True,
+            env=cargo_env(target_dir),
         )
         if proc.returncode != 0:
             log.error("cdylib build FAILED for %s\n%s", variant, proc.stdout + proc.stderr)

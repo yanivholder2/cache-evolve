@@ -16,7 +16,14 @@ log = logging.getLogger(__name__)
 RUN_TIMEOUT_S = 60
 
 
-def compute(*, variant: Variant, layout: Layout, repo_root: Path, binary_name: str) -> dict:
+def compute(
+    *,
+    variant: Variant,
+    layout: Layout,
+    repo_root: Path,
+    binary_name: str,
+    target_dir: Path | None = None,
+) -> dict:
     """Runs the metadata-size bin against the variant's overlaid workspace and
     returns the validated record.
 
@@ -24,12 +31,18 @@ def compute(*, variant: Variant, layout: Layout, repo_root: Path, binary_name: s
     `overlay/`), mirroring the cdylib build, so `size_of` reflects the variant's
     own type edits rather than the canonical subject types. The subject must
     declare a `[metadata]` table in its manifest (`runner` only schedules this
-    plugin when it does)."""
+    plugin when it does). `target_dir`, when given, shares one cargo target with
+    the variant's other builds so the debug dependency crates compile once (see
+    `cargo_env`)."""
 
-    workspace = prepare_variant_workspace(variant, layout=layout, repo_root=repo_root)
+    workspace = prepare_variant_workspace(
+        variant, layout=layout, repo_root=repo_root, target_dir=target_dir
+    )
     try:
-        cargo_build(workspace.root, ["--bin", binary_name], label=binary_name)
-        binary = workspace.root / "target" / "debug" / binary_name
+        cargo_build(
+            workspace.root, ["--bin", binary_name], label=binary_name, target_dir=target_dir
+        )
+        binary = workspace.target_root / "debug" / binary_name
         result = run_binary([str(binary)], label=binary_name, timeout=RUN_TIMEOUT_S)
         return parse_plugin_stdout(result.stdout, source=binary_name)
     finally:
