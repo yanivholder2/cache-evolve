@@ -1,0 +1,10 @@
+[package]
+name = "associative_cache-bench"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+# std-only — no external dependencies
+[[bin]]
+name = "associative_cache-bench"
+path = "src/main.rs"

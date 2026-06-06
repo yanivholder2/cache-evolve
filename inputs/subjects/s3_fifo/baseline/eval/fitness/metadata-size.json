@@ -1,0 +1,11 @@
+{
+  "dim": "metadata-size",
+  "values": [
+    {
+      "type": "S3Fifo<u64,u64>",
+      "bytes": 112
+    }
+  ],
+  "summary": 112,
+  "higher_is_better": false
+}

@@ -1,0 +1,10 @@
+[package]
+name = "s3_fifo-bench"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+# std-only — no external dependencies
+[[bin]]
+name = "s3_fifo-bench"
+path = "src/main.rs"

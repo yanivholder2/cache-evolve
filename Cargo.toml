@@ -4,8 +4,12 @@ members = [
 	"inputs/subjects/dash",
 	"inputs/subjects/dash/bench",
 	"inputs/subjects/associative_cache",
+	"inputs/subjects/associative_cache/bench",
 	"inputs/subjects/lru_cache",
+	"inputs/subjects/lru_cache/bench",
 	"inputs/subjects/tiny_lfu",
+	"inputs/subjects/tiny_lfu/bench",
 	"inputs/subjects/s3_fifo",
+	"inputs/subjects/s3_fifo/bench",
 ]
 resolver = "2"

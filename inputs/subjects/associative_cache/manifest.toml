@@ -40,6 +40,9 @@ supports-log-path = false
 [caffeine.geometry]
 numOfBuckets = [128]
 
+[bench]
+binary-name = "associative_cache-bench"
+
 [metadata]
 binary-name = "evolve-metadata-size"
 

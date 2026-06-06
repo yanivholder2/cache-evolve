@@ -64,7 +64,7 @@ timeout_s = 600
 # Must be a subset of the dimensions the subject can measure: "hit-rate" is
 # always available; "per-op-time" needs the subject manifest [bench] table;
 # "metadata-size" needs its [metadata] table. The runner measures only these.
-dimensions = ["hit-rate"]
+dimensions = ["hit-rate", "metadata-size", "per-op-time"]
 
 [selection]
 # How Winners are chosen from the fitness vectors. One of the keys in
@@ -73,7 +73,7 @@ dimensions = ["hit-rate"]
 #   "weighted": top-N by weighted percentage improvement over the baseline
 #               anchor; only variants that net-beat the baseline can win
 #               (requires the [selection.weights] table below).
-method = "pareto"
+method = "weighted"
 
 # How many Winners each selection stage keeps (cohort-local and cross-cycle),
 # clamped to the population. The "pareto" method ignores it (the front sets the
@@ -84,5 +84,7 @@ winners_count = 3
 # change from the baseline is scaled by its weight, so weights say which
 # dimensions matter more (they should sum to 1). Keys MUST match
 # fitness.dimensions exactly. Leave the whole table absent under "pareto".
-# [selection.weights]
-# hit-rate = 1.0
+[selection.weights]
+hit-rate = 0.6
+metadata-size = 0.2
+per-op-time = 0.2

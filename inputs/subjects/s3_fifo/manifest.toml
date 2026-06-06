@@ -16,6 +16,12 @@ config-prefix = "caffeine.simulator.s3fifo"
 policy-spec-name = "s3fifo.S3FifoRust"
 supports-log-path = false
 
+[bench]
+binary-name = "s3_fifo-bench"
+
+[metadata]
+binary-name = "evolve-metadata-size"
+
 [docs]
 context = "CONTEXT.md"
 insight = "baseline/insight.md"

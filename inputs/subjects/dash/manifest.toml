@@ -52,6 +52,12 @@ numOfNormalBuckets = 8
 numOfStashBuckets = 24
 bucketSize = 64
 
+[bench]
+binary-name = "dash-bench"
+
+[metadata]
+binary-name = "evolve-metadata-size"
+
 [docs]
 context = "CONTEXT.md"
 insight = "baseline/insight.md"

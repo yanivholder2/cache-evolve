@@ -16,6 +16,12 @@ config-prefix = "caffeine.simulator.tinyLfu"
 policy-spec-name = "tinylfu.TinyLfuRust"
 supports-log-path = false
 
+[bench]
+binary-name = "tiny_lfu-bench"
+
+[metadata]
+binary-name = "evolve-metadata-size"
+
 [docs]
 context = "CONTEXT.md"
 insight = "baseline/insight.md"

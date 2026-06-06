@@ -20,6 +20,12 @@ config-prefix = "caffeine.simulator.lruRust"
 policy-spec-name = "lrurust.LruRust"
 supports-log-path = false
 
+[bench]
+binary-name = "lru_cache-bench"
+
+[metadata]
+binary-name = "evolve-metadata-size"
+
 [docs]
 context = "CONTEXT.md"
 insight = "baseline/insight.md"

@@ -37,6 +37,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "associative_cache-bench"
+version = "0.1.0"
+
+[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -355,6 +359,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "lru_cache-bench"
+version = "0.1.0"
+
+[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -559,6 +567,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "s3_fifo-bench"
+version = "0.1.0"
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -708,6 +720,10 @@ dependencies = [
  "rand 0.8.5",
  "simplelog",
 ]
+
+[[package]]
+name = "tiny_lfu-bench"
+version = "0.1.0"
 
 [[package]]
 name = "unarray"

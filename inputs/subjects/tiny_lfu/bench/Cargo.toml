@@ -1,0 +1,10 @@
+[package]
+name = "tiny_lfu-bench"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+# std-only — no external dependencies
+[[bin]]
+name = "tiny_lfu-bench"
+path = "src/main.rs"

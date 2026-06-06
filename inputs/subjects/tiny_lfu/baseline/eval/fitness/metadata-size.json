@@ -1,0 +1,11 @@
+{
+  "dim": "metadata-size",
+  "values": [
+    {
+      "type": "TinyLfuCache<u64,u64>",
+      "bytes": 152
+    }
+  ],
+  "summary": 152,
+  "higher_is_better": false
+}
