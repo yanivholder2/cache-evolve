@@ -6,8 +6,8 @@
 //! `summary` is `mem::size_of::<Item<u64,u64>>()` — the per-entry overhead that scales with cache population.
 use dash::dash::segments::DashSegment;
 use dash::dash::Dash;
-use dash::fitness_json::write_plugin_json;
 use dash::shared::item::Item;
+use framework::bench::write_plugin_json;
 use std::mem;
 
 fn main() {

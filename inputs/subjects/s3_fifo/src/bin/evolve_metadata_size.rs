@@ -7,7 +7,7 @@
 //! cache population. S3-FIFO holds entries across its small and main queues, but the per-entry
 //! `size_of` is still the right per-element metric.
 
-use s3_fifo::fitness_json::write_plugin_json;
+use framework::bench::write_plugin_json;
 use s3_fifo::s3_fifo::{Entry, S3Fifo};
 use std::mem;
 

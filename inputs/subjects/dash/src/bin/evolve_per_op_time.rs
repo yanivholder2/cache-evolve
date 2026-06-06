@@ -6,70 +6,12 @@
 //! plugin-shape JSON record on stdout:
 //! `{ "dim": "per-op-time", "values": [{"op","p50_ns","p99_ns"},...], "summary": <get p50 ns>, "higher_is_better": false }`.
 //!
-//! Methodology is carried over verbatim from the former standalone `bench/` crate,
-//! except the cache under test is the real boxed `framework::Cache<i64,i64>`
-//! instead of a fake fixture.
+//! The timing loop, key stream, and JSON writer come from `framework::bench`; the
+//! cache under test is the real boxed `framework::Cache<i64,i64>`.
 
-use std::time::{Duration, Instant};
+use framework::bench::{measure, next_key, percentile, write_plugin_json, P50_PCT, P99_PCT, RNG_SEED, TIMED_ITERS, WARMUP};
 
 use dash::dash::dash_settings::DashSettings;
-use dash::fitness_json::write_plugin_json;
-
-/// Untimed — excluded from samples so cold-start cost (branch predictors, allocator, CPU caches) doesn't skew p50/p99.
-const WARMUP: usize = 500;
-
-/// 2 000 × 1% = 20 tail samples for p99; small enough to stay sub-second per run.
-const TIMED_ITERS: usize = 2_000;
-
-/// Fixed PRNG seed: reproducible sample timings across runs and variants.
-const RNG_SEED: u64 = 0xdeadbeef_cafebabe;
-
-/// Percentile points reported in the output.
-const P50_PCT: f64 = 50.0;
-const P99_PCT: f64 = 99.0;
-
-// ── measurement helpers ───────────────────────────────────────────────────────
-
-/// Returns the `pct`-th percentile (0–100) of `samples` in nanoseconds; `pct = 100` yields the maximum.
-fn percentile(samples: &mut [Duration], pct: f64) -> u64 {
-	assert!(!samples.is_empty(), "percentile called with empty samples");
-	samples.sort_unstable();
-	let idx = ((samples.len() as f64 * pct / 100.0) as usize).min(samples.len() - 1);
-	samples[idx].as_nanos() as u64
-}
-
-/// Times `TIMED_ITERS` calls to `f`, preceded by `WARMUP` untimed iterations; keeps all samples so p99 stays meaningful.
-fn measure<F: FnMut()>(mut f: F) -> Vec<Duration> {
-	for _ in 0..WARMUP {
-		f();
-	}
-	let mut samples = Vec::with_capacity(TIMED_ITERS);
-	for _ in 0..TIMED_ITERS {
-		let t = Instant::now();
-		f();
-		samples.push(t.elapsed());
-	}
-	samples
-}
-
-/// Deterministic key stream for the bench workload, mapped to `[1, KEY_RANGE]`.
-///
-/// Uses xorshift64, a PRNG (pseudo-random number generator) — an algorithm whose output looks random
-/// but is fully determined by its seed, so the same seed always replays the same sequence. Needed because:
-/// - **Workload shape:** random-ish keys over a range larger than the cache capacity force a realistic mix of
-///   hits, misses, and evictions; sequential keys would degenerate into a predictable pattern.
-/// - **Reproducibility:** a fixed seed means p50/p99 differences across variants reflect cache changes,
-///   not RNG noise — essential for fitness comparison.
-/// - **Cheap + std-only:** three shifts + one mod is a handful of ns, so it doesn't contaminate samples,
-///   and avoids pulling in `rand`.
-fn next_key(state: &mut u64, key_range: u64) -> i64 {
-	*state ^= *state << 13;
-	*state ^= *state >> 7;
-	*state ^= *state << 17;
-	(*state % key_range + 1) as i64
-}
-
-// ── main ──────────────────────────────────────────────────────────────────────
 
 fn main() {
 	// Default topology: 1 segment × (28 normal + 4 stash) buckets × 16 slots = 512-slot capacity.
@@ -110,7 +52,7 @@ fn main() {
 	let put_p50 = percentile(&mut put_samples, P50_PCT);
 	let put_p99 = percentile(&mut put_samples, P99_PCT);
 
-	// `summary` is get-p50: single representative latency for Pareto sorting.
+	// `summary` is get-p50: single representative latency for selection sorting.
 	let summary = get_p50;
 
 	let values = format!(

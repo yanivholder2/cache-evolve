@@ -1,4 +1,3 @@
-pub mod fitness_json;
 pub mod logging;
 pub mod lru_cache;
 

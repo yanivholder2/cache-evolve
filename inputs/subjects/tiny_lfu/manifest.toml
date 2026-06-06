@@ -17,10 +17,10 @@ policy-spec-name = "tinylfu.TinyLfuRust"
 supports-log-path = false
 
 [bench]
-binary-name = "evolve-per-op-time"
+binary-name = "tiny_lfu-evolve-per-op-time"
 
 [metadata]
-binary-name = "evolve-metadata-size"
+binary-name = "tiny_lfu-evolve-metadata-size"
 
 [docs]
 context = "CONTEXT.md"

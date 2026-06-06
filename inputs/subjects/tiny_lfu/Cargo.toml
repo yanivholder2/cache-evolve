@@ -15,11 +15,11 @@ crate-type = ["cdylib", "lib"]
 test-utils = ["proptest"]
 
 [[bin]]
-name = "evolve-per-op-time"
+name = "tiny_lfu-evolve-per-op-time"
 path = "src/bin/evolve_per_op_time.rs"
 
 [[bin]]
-name = "evolve-metadata-size"
+name = "tiny_lfu-evolve-metadata-size"
 path = "src/bin/evolve_metadata_size.rs"
 
 [dependencies]

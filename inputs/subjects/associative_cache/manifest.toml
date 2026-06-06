@@ -41,10 +41,10 @@ supports-log-path = false
 numOfBuckets = [128]
 
 [metadata]
-binary-name = "evolve-metadata-size"
+binary-name = "associative_cache-evolve-metadata-size"
 
 [bench]
-binary-name = "evolve-per-op-time"
+binary-name = "associative_cache-evolve-per-op-time"
 
 [docs]
 context = "CONTEXT.md"

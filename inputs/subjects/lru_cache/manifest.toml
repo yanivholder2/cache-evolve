@@ -21,10 +21,10 @@ policy-spec-name = "lrurust.LruRust"
 supports-log-path = false
 
 [bench]
-binary-name = "evolve-per-op-time"
+binary-name = "lru_cache-evolve-per-op-time"
 
 [metadata]
-binary-name = "evolve-metadata-size"
+binary-name = "lru_cache-evolve-metadata-size"
 
 [docs]
 context = "CONTEXT.md"

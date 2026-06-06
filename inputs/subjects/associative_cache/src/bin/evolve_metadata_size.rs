@@ -5,8 +5,8 @@
 //!
 //! `summary` is `mem::size_of::<Item<u64,u64>>()` — the per-entry overhead that scales with cache population.
 use associative_cache::associative_cache::AssociativeCache;
-use associative_cache::fitness_json::write_plugin_json;
 use associative_cache::shared::item::Item;
+use framework::bench::write_plugin_json;
 use std::mem;
 
 fn main() {

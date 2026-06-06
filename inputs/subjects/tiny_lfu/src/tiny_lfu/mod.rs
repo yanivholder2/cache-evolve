@@ -136,7 +136,7 @@ where
 }
 
 #[derive(Debug)]
-pub struct CountMinSketch {
+struct CountMinSketch {
 	width: usize,
 	depth: usize,
 	counts: Vec<Vec<u32>>,

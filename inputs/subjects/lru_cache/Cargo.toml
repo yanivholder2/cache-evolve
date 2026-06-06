@@ -28,11 +28,11 @@ proptest = "1"
 framework = { path = "../../../framework-rs", features = ["test-suite"] }
 
 [[bin]]
-name = "evolve-per-op-time"
+name = "lru_cache-evolve-per-op-time"
 path = "src/bin/evolve_per_op_time.rs"
 
 [[bin]]
-name = "evolve-metadata-size"
+name = "lru_cache-evolve-metadata-size"
 path = "src/bin/evolve_metadata_size.rs"
 
 [[test]]

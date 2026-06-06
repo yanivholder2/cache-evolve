@@ -12,10 +12,10 @@ marker = "invariant gate violated: P[1-3] [a-z_]+"
 protected-files = ["src/s3_fifo/s3_fifo_jni.rs"]
 
 [bench]
-binary-name = "evolve-per-op-time"
+binary-name = "s3_fifo-evolve-per-op-time"
 
 [metadata]
-binary-name = "evolve-metadata-size"
+binary-name = "s3_fifo-evolve-metadata-size"
 
 [caffeine]
 config-prefix = "caffeine.simulator.s3fifo"

@@ -12,11 +12,11 @@ name = "s3_fifo"
 crate-type = ["cdylib", "lib"]
 
 [[bin]]
-name = "evolve-per-op-time"
+name = "s3_fifo-evolve-per-op-time"
 path = "src/bin/evolve_per_op_time.rs"
 
 [[bin]]
-name = "evolve-metadata-size"
+name = "s3_fifo-evolve-metadata-size"
 path = "src/bin/evolve_metadata_size.rs"
 
 [features]

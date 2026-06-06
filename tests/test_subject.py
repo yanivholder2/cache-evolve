@@ -130,9 +130,9 @@ def test_loads_real_manifest():
     # dash declares both optional measurement bins for the per-op-time and
     # metadata-size fitness dimensions.
     assert subject.bench is not None
-    assert subject.bench.binary_name == "evolve-per-op-time"
+    assert subject.bench.binary_name == "dash-evolve-per-op-time"
     assert subject.metadata is not None
-    assert subject.metadata.binary_name == "evolve-metadata-size"
+    assert subject.metadata.binary_name == "dash-evolve-metadata-size"
 
 
 def test_associative_cache_geometry_is_list_valued():

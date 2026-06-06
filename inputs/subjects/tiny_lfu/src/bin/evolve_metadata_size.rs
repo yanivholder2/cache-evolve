@@ -14,6 +14,7 @@
 //! is only knowable at runtime (it depends on capacity), so we construct a real
 //! `TinyLfuCache::<u64,u64>::new(CAP)` and read its `sketch_heap_bytes()` accessor; both the sketch
 //! bytes and the whole-struct `size_of` are reported in `values` so the fixed overhead stays visible.
+use framework::bench::write_plugin_json;
 use std::mem;
 use tiny_lfu::tiny_lfu::{Node, TinyLfuCache};
 
@@ -38,5 +39,5 @@ fn main() {
 	let values = format!("[{}]", values_inner.join(","));
 	let summary = mem::size_of::<Node<u64, u64>>();
 
-	print!("{}", tiny_lfu::fitness_json::write_plugin_json("metadata-size", &values, summary, false));
+	println!("{}", write_plugin_json("metadata-size", &values, summary, false));
 }

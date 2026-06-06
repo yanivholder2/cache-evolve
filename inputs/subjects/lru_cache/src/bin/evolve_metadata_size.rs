@@ -5,6 +5,7 @@
 //!
 //! `summary` is `mem::size_of::<Node<u64,u64>>()` — the per-entry arena node overhead
 //! that scales with cache population.
+use framework::bench::write_plugin_json;
 use lru_cache::lru_cache::{LruCache, Node};
 use std::mem;
 
@@ -21,5 +22,5 @@ fn main() {
 	let values = format!("[{}]", values_inner.join(","));
 	let summary = mem::size_of::<Node<u64, u64>>();
 
-	print!("{}", lru_cache::fitness_json::write_plugin_json("metadata-size", &values, summary, false));
+	println!("{}", write_plugin_json("metadata-size", &values, summary, false));
 }
