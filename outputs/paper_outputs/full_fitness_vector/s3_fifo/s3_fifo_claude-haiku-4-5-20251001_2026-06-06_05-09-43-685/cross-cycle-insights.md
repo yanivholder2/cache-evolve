@@ -2,52 +2,44 @@
 
 ## Recurring wins
 
-- **Occupancy-responsive thresholds remain the most robust baseline**: Cycle 0003/v003 established that making promotion thresholds respond to queue occupancy delivers latency improvements without hit-rate loss. This design validated across Cycles 0005–0007 as a strong dual-metric baseline, even as other mechanisms failed.
+- **Occupancy-responsive threshold adaptation**: Cycles 0003, 0007–0009 consistently demonstrated that promotion thresholds responding to main-queue occupancy unlock latency improvements without sacrificing hit-rate. This contrasts sharply with fixed tight thresholds (cycles 0001–0002), which trade hit-rate for latency. The occupancy signal is more durable than frequency-distribution percentiles and enables state-responsive decisions at zero hot-path overhead.
 
-- **Computational placement (hot vs. cold path) is the primary leverage point**: Expensive operations (occupancy computation, frequency decay, filtering logic) cause latency degradation when on hot paths (especially small-queue operations), but incur zero overhead when placed on cold paths (eviction decisions, ghost-hit re-admission). Validated consistently across Cycles 0008–0009; this is now the frontier.
+- **Cold-path computational placement as leverage**: Cycles 0009–0010 validated that moving expensive operations (occupancy computation, frequency decay) off hot paths enables richer ghost-queue state without per-operation cost. Batch amortization proved particularly effective when aligned with small-queue eviction frequency, delivering dramatic latency gains while preserving hit-rate.
 
-- **Amortization unlocks richer state without cost**: Cycle 0009/v003 proved batch-amortizing expensive operations (frequency decay every N evictions) enables richer ghost-queue metadata and dramatic latency wins (44% faster gets, 37% faster puts) while maintaining hit-rate—key insight for future architectural choices.
+- **Ghost-queue frequency filtering at eviction time**: Cycles 0008–0009 established that filtering ghost entries to preserve only frequently-accessed items (freq > 0) is a robust latency lever with minimal implementation overhead. This boundary point was validated through relaxation experiments showing that looser retention (freq ≥ -1) reintroduced search overhead without gain.
 
-- **Pre-computed ghost-queue metadata with eviction-time filtering**: Storing frequency depth or recency position in ghost entries, computed at eviction time (infrequent cold path), enables efficient downstream decisions. Both filtering (Cycle 0008/v001) and decay (Cycle 0009/v003) at eviction time are overhead-efficient.
-
-- **Occupancy is a stable state signal**: Across multiple cycles attempting different signals (frequency distribution, age, recency), occupancy ratio consistently outperforms as a basis for adaptive decisions, requiring no workload-specific calibration.
+- **Pre-computed ghost metadata for efficient re-admission**: Cycles 0006+ consistently showed that storing state tuples in ghost entries enables cold-path re-admission decisions without expensive runtime lookups, provided operations are computationally cheap (arithmetic, bit flags, not floating-point or complex branching).
 
 ## Recurring failures
 
-- **Ghost-queue structural separation fails consistently**: Cycles 0003–0005 repeatedly showed that attempts to isolate frequency information into separate tracking structures (warm-ghost, deferred promotion) fail because the isolation breaks the coupling between frequency state and eviction decisions. Ghost works best integrated into the critical eviction path, not separated.
+- **Per-operation structural adaptation is fundamentally expensive**: Cycles 0004–0005 demonstrated that dynamic queue sizing with per-operation overhead (occupancy tracking, resizing logic) degrades latency despite hit-rate benefits. The cost scales with operation frequency and is unavoidable through parameter tuning—avoiding this path entirely is more productive than attempting to optimize it.
 
-- **Per-operation occupancy-aware mechanics degrade latency**: Whenever occupancy-based logic is added to hot paths (Cycles 0004/v003, 0006/v001, 0006/v003, 0008/v003), latency suffers—occupancy ratios, conditional branching, and ratio-scaled decisions on every put/get compound into measurable overhead. Cold-path occupancy is safe; hot-path is not.
+- **Frequency-decay tracking on lean baselines**: Cycles 0005, 0007 showed that attempts to preserve frequency information via decay tracking without structural backing either corrupt admission signals (loose retention semantics) or reintroduce per-operation overhead that erases intended gains. Ghost-frequency preservation requires either batch amortization (cycle 0009/v003) or deeper architectural redesign; intermediate approaches fail.
 
-- **Fixed re-admission formulas don't adapt to workload state**: Cycles 0006–0007 showed fixed arithmetic boosts (e.g., `ghost_freq + 3`) overshooting some occupancy states and undershooting others, causing hit-rate loss during capacity transitions. Occupancy-responsive formulas (Cycle 0009/v002) adapt but require careful tuning.
+- **Frequency-distribution as a signal**: Cycle 0006 proved that frequency distribution percentiles (75th percentile threshold) require workload-specific calibration and are sensitive to access-pattern shifts. Occupancy—which directly reflects queue state—proved more robust and does not demand percentile recomputation.
 
-- **Frequency distribution as a threshold signal is brittle**: Cycle 0004/v002 showed using frequency percentiles as promotion thresholds is less robust than occupancy—requires workload-specific calibration, adds sampling overhead, and is sensitive to access-pattern shifts.
+- **Parameter tuning to escape local optima**: Cycles 0009–0010 revealed that fine-grained threshold tuning (0.4/0.7 vs 0.5/0.8), linear vs quadratic boost scaling, and other adjustments to existing mechanisms explore noise rather than new optima. Five consecutive cycles of parameter refinement yielded only trade-offs, suggesting the search space around established mechanisms is exhausted.
 
-- **Recency alone is a weak re-admission signal**: Cycle 0007/v003 achieved dramatic latency gains but at the cost of hit-rate loss—temporal distance from eviction does not capture re-access patterns as well as frequency or occupancy-based signals.
-
-- **Relaxing ghost-queue admission filters reintroduces noise**: Cycle 0009/v001 tested relaxing aggressive filtering (freq > 0 → freq ≥ -1) and degraded put latency by 378ns p50 without recovering hit-rate, confirming Cycle 0008's tight boundary was correct.
+- **Implementation complexity on hot paths**: Cycle 0010 demonstrated that architecturally sound mechanisms (frequency-threshold gating for re-admission selectivity) collapse under implementation cost if they require expensive operations (floating-point arithmetic, extended data structures, complex conditionals) on hot paths. Cheap operations scale; complex ones do not.
 
 ## Open questions
 
-- **Occupancy-responsive boost formula calibration**: Can Cycle 0009/v002's quadratic formula `(2.0 + occupancy_ratio²)` be tuned (lower magnitude, occupancy gating, frequency-percentile scaling) to recover hit-rate while preserving the 19% latency gain?
+- **Can frequency-selective re-admission be optimized for latency?** Cycle 0010/v003 proved that selective re-admission (only re-admitting items with freq > threshold) correctly prevents low-frequency ghost items from crowding the working set, yielding a +1.14% hit-rate gain. However, implementation overhead (extended ghost tuples, frequency lookups) caused 36% get latency degradation. Can inline frequency storage, bit-packing, or sampled checks recover latency while preserving the hit-rate improvement?
 
-- **Combining orthogonal cold-path mechanisms**: Does Cycle 0009/v002's occupancy-responsive re-admission combined with v003's batch-amortized decay unlock dual-metric wins? The two succeed independently; their interaction is untested.
+- **Has a true Pareto frontier been reached?** Five cycles of signal innovation, placement optimization, and parameter refinement have yielded only trade-offs. Does an alternative mechanism (recency weighting, bimodal admission, frequency-decay scheduling independent of eviction) exist that could improve both latency and hit-rate, or is the frontier fundamental to the queue structure?
 
-- **Amortization window parameter space**: Is Cycle 0009/v003's 32-eviction batch window optimal for this workload, or do different batch sizes (16, 64) balance decay freshness against amortization overhead differently?
+- **What metric priority should drive next exploration?** Cycle 0009/v003's baseline delivers 44%+ latency improvements with negligible hit-rate cost (<0.1% degradation). Should future cycles pursue latency specialization (production-ready) or invest engineering effort in hit-rate recovery mechanisms?
 
-- **Multi-signal re-admission with adaptive weighting**: Can frequency + occupancy (or frequency + recency) signals with workload-responsive weights improve re-admission prediction beyond single-signal approaches?
+- **Can occupancy-responsive mechanisms be made implementation-efficient?** Occupancy signals proved architecturally sound and enable adaptive re-admission, but floating-point calculations carry hidden overhead (cycle 0010/v002). Are there low-cost proxy signals (occupancy buckets, bit flags, coarse thresholds) that preserve adaptive benefits without computation cost?
 
-- **True Pareto frontier boundaries**: Is the current latency–hit-rate tradeoff fundamental, or do unexplored mechanisms (recency weighting in ghost, hybrid frequency-occupancy scoring, per-zone adaptive thresholds) exist that improve both metrics simultaneously?
-
-- **Ghost-frequency decay retention depth**: Across decay strategies tested (depths from -1 to -3), what is the optimal retention threshold that preserves warm candidates without per-operation cost?
+- **Can batch-amortized decay parameters be tuned?** Cycle 0009/v003's 32-eviction window proved effective, but is it optimal? Should decay depth (−2 vs −3) or amortization frequency be varied to maximize hit-rate recovery or reduce decay staleness?
 
 ## Per-policy notes
 
-- **Three-tier architecture (main + small + ghost) supports occupancy-responsive design**: All winning variants leverage this structure. Main-queue occupancy ratio drives threshold adaptation; ghost queue stores pre-computed frequency or position metadata; small queue absorbs low-frequency working set. The tiers are coupled via promotion decisions—occupancy is the signal that coordinates them.
+- **Promotion-threshold policy**: Fixed tight frequency thresholds (cycles 0001–0002) achieve latency but sacrifice hit-rate significantly. Occupancy-responsive thresholds (cycles 0003, 0007–0009) decouple metrics and represent the strongest baseline for balanced performance. Further parameter refinement of fixed or occupancy-responsive thresholds shows diminishing returns; mechanism innovation is required for new progress.
 
-- **Small-queue is the latency-critical path**: Per-operation overhead on small-queue puts and gets degrades both operations most severely. This is the hot path; any mechanism added here must be overhead-free. Cycles 0004–0009 consistently show this bottleneck.
+- **Ghost-queue filtering policy**: Eviction-time filtering (cycles 0008–0009) is overhead-efficient and should be the foundation for ghost management. Cold-path re-admission decisions enable adaptive signals (occupancy-responsive boosts, frequency-selective gating) without hot-path cost, provided operations remain computationally cheap. Preservation of frequency depth through batch amortization (cycle 0009/v003) avoids the signal-corruption problem that loose retention creates.
 
-- **Eviction-time decisions are architectural zero-cost**: Filtering (Cycle 0008/v001: freq > 0 ghost filter) and decay (Cycle 0009/v003: batch-amortized frequency decay) at eviction time incur no measurable latency penalty because evictions are infrequent relative to hits. This is the safe place to add complex logic.
+- **Queue structure and sizing**: Fixed proportions (main/small queue ratios) with occupancy-responsive thresholds outperform dynamic resizing approaches (cycles 0004–0005, 0010). Per-operation structural adaptation is a losing direction; the architecture stabilized in cycles 0003–0006 and should not be revisited unless the workload fundamentally shifts.
 
-- **Ghost-queue re-admission is a cold-path signal opportunity**: Ghost hits are rarer than hits to live entries; occupancy-responsive re-admission formulas (Cycle 0009/v002) can be expensive here without hot-path cost, unlike main-queue promotion decisions (which must be overhead-free).
-
-- **Occupancy stability enables parameter-free adaptation**: Unlike frequency distribution (workload-sensitive, requires calibration) or recency (poor predictor), occupancy ratio is a workload-agnostic measure of queue load. Multiple cycles confirm it requires minimal tuning across different workloads.
+- **Frequency tracking and decay**: Per-operation decay tracking fails (cycles 0005, 0007); batch amortization succeeds (cycle 0009/v003). This distinction—whether state tracking happens per-operation or per-batch—is more consequential than the specific decay formula or retention depth. When frequency preservation is required, batch amortization is the only viable approach at acceptable latency cost.
