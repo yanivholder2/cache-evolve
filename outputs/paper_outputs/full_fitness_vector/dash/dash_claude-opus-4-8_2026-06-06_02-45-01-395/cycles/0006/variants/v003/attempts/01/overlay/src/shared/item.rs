@@ -1,0 +1,105 @@
+//! This module defines a key-value data object stored in the Dash cache.
+//!
+//! # Examples
+//!
+//! ```ignore
+//! use dash::shared::item::Item;
+//!
+//! let item = Item::new(1, 2);
+//! assert_eq!(item.key, 1);
+//! assert_eq!(item.value, 2);
+//! ```
+//!
+//! # Layout (H01/H03)
+//!
+//! The promotion heat counter that used to live here (`lfu_counter`) was
+//! relocated out of `Item`. H01 moved it into a segment-owned side table; H03
+//! moves it again into a per-bucket byte vector kept index-aligned with the
+//! items. Either way `Item<u64, u64>` carries only `key` and `value` — two
+//! 8-byte fields = 16 bytes, instead of the 24 bytes a trailing `u8` counter
+//! forced via 8-byte alignment padding.
+
+use std::{
+	fmt::{Display, Formatter},
+	hash::Hash,
+};
+
+#[derive(Debug, Clone)]
+pub struct Item<K, V>
+where
+	K: Hash + Eq + Clone,
+	V: Eq + Clone,
+{
+	pub key: K,
+	pub value: V,
+}
+
+impl<K, V> Item<K, V>
+where
+	K: Hash + Eq + Clone,
+	V: Eq + Clone,
+{
+	pub fn new(key: K, value: V) -> Self {
+		Self { key, value }
+	}
+}
+
+impl<K, V> PartialEq for Item<K, V>
+where
+	K: Hash + Eq + Clone,
+	V: Eq + Clone,
+{
+	fn eq(&self, other: &Item<K, V>) -> bool {
+		self.key == other.key && self.value == other.value
+	}
+}
+
+impl<K, V> Eq for Item<K, V>
+where
+	K: Hash + Eq + Clone,
+	V: Eq + Clone,
+{
+}
+
+impl<K, V> Display for Item<K, V>
+where
+	K: Hash + Eq + Clone + Display,
+	V: Eq + Clone + Display,
+{
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Bucket Item {{ key: {}, value: {} }}", self.key, self.value)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn new_initializes_fields() {
+		let item = Item::new(42, "hello");
+		assert_eq!(item.key, 42);
+		assert_eq!(item.value, "hello");
+	}
+
+	#[test]
+	fn equality_compares_key_and_value() {
+		let a = Item::new(1, 10);
+		let b = Item::new(1, 10);
+		let c = Item::new(1, 20);
+		let d = Item::new(2, 10);
+
+		assert_eq!(a, b);
+		assert_ne!(a, c); // different value
+		assert_ne!(a, d); // different key
+	}
+
+	#[test]
+	fn clone_produces_independent_copy() {
+		let mut a = Item::new(1, 10);
+		let b = a.clone();
+		a.value = 20;
+		assert_eq!(a.value, 20);
+		assert_eq!(b.value, 10);
+	}
+}
