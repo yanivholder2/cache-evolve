@@ -1,0 +1,202 @@
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/tinylfu/TinyLfuRustPolicy.java:19: warning: [restricted] System.loadLibrary(String) is a restricted method.
+    System.loadLibrary("tiny_lfu");
+          ^
+  (Restricted methods are unsafe and, if used incorrectly, might crash the Java runtime or corrupt memory)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/s3fifo/S3FifoRustPolicy.java:19: warning: [restricted] System.loadLibrary(String) is a restricted method.
+    System.loadLibrary("s3_fifo");
+          ^
+  (Restricted methods are unsafe and, if used incorrectly, might crash the Java runtime or corrupt memory)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:20: warning: [restricted] System.loadLibrary(String) is a restricted method.
+    System.loadLibrary("dash");
+          ^
+  (Restricted methods are unsafe and, if used incorrectly, might crash the Java runtime or corrupt memory)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/lrurust/LruRustPolicy.java:19: warning: [restricted] System.loadLibrary(String) is a restricted method.
+    System.loadLibrary("lru_cache");
+          ^
+  (Restricted methods are unsafe and, if used incorrectly, might crash the Java runtime or corrupt memory)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:22: warning: [restricted] System.loadLibrary(String) is a restricted method.
+    System.loadLibrary("associative_cache");
+          ^
+  (Restricted methods are unsafe and, if used incorrectly, might crash the Java runtime or corrupt memory)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/tinylfu/TinyLfuRustPolicy.java:9: warning: [WildcardImport] Wildcard imports, static or otherwise, should not be used
+import java.util.*;
+^
+    (see https://google.github.io/styleguide/javaguide.html?cl=head#s3.3.1-wildcard-imports)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/tinylfu/TinyLfuRustPolicy.java:13: warning: [RequireExplicitNullMarking] [RequireExplicitNullMarking] Top-level classes must either be directly annotated with @NullMarked/@NullUnmarked, be in a package that is explicitly @NullMarked/@NullUnmarked, or be in a module that is explicitly @NullMarked.
+public class TinyLfuRustPolicy implements Policy.KeyOnlyPolicy {
+       ^
+    (see https://github.com/uber/NullAway/wiki/JSpecify-Support#requireexplicitnullmarking-checker)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/tinylfu/TinyLfuRustPolicy.java:34: warning: [ThrowSpecificExceptions] Base exception classes should be treated as abstract. If the exception is intended to be caught, throw a domain-specific exception. Otherwise, prefer a more specific exception for clarity. Common alternatives include: AssertionError, IllegalArgumentException, IllegalStateException, and (Guava's) VerifyException.
+      throw new RuntimeException("Failed to initialize Rust TinyLfu cache");
+            ^
+    (see https://errorprone.info/bugpattern/ThrowSpecificExceptions)
+  Did you mean 'throw new VerifyException("Failed to initialize Rust TinyLfu cache");'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/tinylfu/TinyLfuRustPolicy.java:64: warning: [SystemExitOutsideMain] Code that contains System.exit() is untestable.
+        exit(1);
+            ^
+    (see https://errorprone.info/bugpattern/SystemExitOutsideMain)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/tinylfu/TinyLfuRustPolicy.java:93: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but debug_mode is not; did you mean 'debugMode'?
+  private static native long tinyLfuInitCache(long capacity, long debug_mode);
+                                                                  ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/s3fifo/S3FifoRustPolicy.java:9: warning: [WildcardImport] Wildcard imports, static or otherwise, should not be used
+import java.util.*;
+^
+    (see https://google.github.io/styleguide/javaguide.html?cl=head#s3.3.1-wildcard-imports)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/s3fifo/S3FifoRustPolicy.java:13: warning: [RequireExplicitNullMarking] [RequireExplicitNullMarking] Top-level classes must either be directly annotated with @NullMarked/@NullUnmarked, be in a package that is explicitly @NullMarked/@NullUnmarked, or be in a module that is explicitly @NullMarked.
+public class S3FifoRustPolicy implements Policy.KeyOnlyPolicy {
+       ^
+    (see https://github.com/uber/NullAway/wiki/JSpecify-Support#requireexplicitnullmarking-checker)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/s3fifo/S3FifoRustPolicy.java:34: warning: [ThrowSpecificExceptions] Base exception classes should be treated as abstract. If the exception is intended to be caught, throw a domain-specific exception. Otherwise, prefer a more specific exception for clarity. Common alternatives include: AssertionError, IllegalArgumentException, IllegalStateException, and (Guava's) VerifyException.
+      throw new RuntimeException("Failed to initialize Rust S3Fifo cache");
+            ^
+    (see https://errorprone.info/bugpattern/ThrowSpecificExceptions)
+  Did you mean 'throw new VerifyException("Failed to initialize Rust S3Fifo cache");'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/s3fifo/S3FifoRustPolicy.java:64: warning: [SystemExitOutsideMain] Code that contains System.exit() is untestable.
+        exit(1);
+            ^
+    (see https://errorprone.info/bugpattern/SystemExitOutsideMain)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/s3fifo/S3FifoRustPolicy.java:93: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but debug_mode is not; did you mean 'debugMode'?
+  private static native long s3FifoInitCache(long capacity, long debug_mode);
+                                                                 ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:9: warning: [WildcardImport] Wildcard imports, static or otherwise, should not be used
+import java.util.*;
+^
+    (see https://google.github.io/styleguide/javaguide.html?cl=head#s3.3.1-wildcard-imports)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:32: warning: [Refaster Rule] StringRules.StringFormatted: Refactoring opportunity
+      throw new IllegalArgumentException(String.format(
+                                                      ^
+    (see https://error-prone.picnic.tech/refasterrules/StringRules#StringFormatted)
+  Did you mean 'throw new IllegalArgumentException(("Dash topology must fill maximumSize exactly: numOfSegments(%d) * (numOfNormalBuckets(%d) + numOfStashBuckets(%d)) * bucketSize(%d) = %d != maximumSize(%d)").formatted(numOfSegments, settings.numOfNormalBuckets(), settings.numOfStashBuckets(), settings.bucketSize(), capacity, settings.maximumSize()));'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:14: warning: [RequireExplicitNullMarking] [RequireExplicitNullMarking] Top-level classes must either be directly annotated with @NullMarked/@NullUnmarked, be in a package that is explicitly @NullMarked/@NullUnmarked, or be in a module that is explicitly @NullMarked.
+public class DashRustPolicy implements Policy.KeyOnlyPolicy {
+       ^
+    (see https://github.com/uber/NullAway/wiki/JSpecify-Support#requireexplicitnullmarking-checker)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:32: warning: [DefaultLocale] Implicit use of the JVM default locale, which can result in differing behaviour between JVM executions.
+      throw new IllegalArgumentException(String.format(
+                                                      ^
+    (see https://errorprone.info/bugpattern/DefaultLocale)
+  Did you mean 'Locale.ROOT, "Dash topology must fill maximumSize exactly: numOfSegments(%d) * (numOfNormalBuckets(%d) + numOfSta' or 'Locale.getDefault(), "Dash topology must fill maximumSize exactly: numOfSegments(%d) * (numOfNormalBuckets(%d) + numOfSta' or 'Locale.getDefault(FORMAT), "Dash topology must fill maximumSize exactly: numOfSegments(%d) * (numOfNormalBuckets(%d) + numOfSta'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:48: warning: [ThrowSpecificExceptions] Base exception classes should be treated as abstract. If the exception is intended to be caught, throw a domain-specific exception. Otherwise, prefer a more specific exception for clarity. Common alternatives include: AssertionError, IllegalArgumentException, IllegalStateException, and (Guava's) VerifyException.
+      throw new RuntimeException("Failed to initialize Rust DashRust cache");
+            ^
+    (see https://errorprone.info/bugpattern/ThrowSpecificExceptions)
+  Did you mean 'throw new VerifyException("Failed to initialize Rust DashRust cache");'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:76: warning: [SystemExitOutsideMain] Code that contains System.exit() is untestable.
+        exit(1);
+            ^
+    (see https://errorprone.info/bugpattern/SystemExitOutsideMain)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:143: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but num_of_segments is not; did you mean 'numOfSegments'?
+  private static native long initCache(long num_of_segments, long num_of_normal_buckets, long num_of_stash_buckets,
+                                            ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:143: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but num_of_normal_buckets is not; did you mean 'numOfNormalBuckets'?
+  private static native long initCache(long num_of_segments, long num_of_normal_buckets, long num_of_stash_buckets,
+                                                                  ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:143: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but num_of_stash_buckets is not; did you mean 'numOfStashBuckets'?
+  private static native long initCache(long num_of_segments, long num_of_normal_buckets, long num_of_stash_buckets,
+                                                                                              ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:144: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but bucket_size is not; did you mean 'bucketSize'?
+      long bucket_size, String eviction_policy, long debug_mode, final String logPath);
+           ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:144: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but eviction_policy is not; did you mean 'evictionPolicy'?
+      long bucket_size, String eviction_policy, long debug_mode, final String logPath);
+                               ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:144: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but debug_mode is not; did you mean 'debugMode'?
+      long bucket_size, String eviction_policy, long debug_mode, final String logPath);
+                                                     ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:144: warning: [UnnecessaryFinal] Since Java 8, it's been unnecessary to make local variables and parameters `final` for use in lambdas or anonymous classes. Marking them as `final` is weakly discouraged, as it adds a fair amount of noise for minimal benefit.
+      long bucket_size, String eviction_policy, long debug_mode, final String logPath);
+                                                                              ^
+    (see https://errorprone.info/bugpattern/UnnecessaryFinal)
+  Did you mean 'long bucket_size, String eviction_policy, long debug_mode,  String logPath);'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:144: warning: [Var] Unnecessary 'final' modifier.
+      long bucket_size, String eviction_policy, long debug_mode, final String logPath);
+                                                                              ^
+    (see https://errorprone.info/bugpattern/Var)
+  Did you mean 'long bucket_size, String eviction_policy, long debug_mode, String logPath);'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/lrurust/LruRustPolicy.java:9: warning: [WildcardImport] Wildcard imports, static or otherwise, should not be used
+import java.util.*;
+^
+    (see https://google.github.io/styleguide/javaguide.html?cl=head#s3.3.1-wildcard-imports)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/lrurust/LruRustPolicy.java:13: warning: [RequireExplicitNullMarking] [RequireExplicitNullMarking] Top-level classes must either be directly annotated with @NullMarked/@NullUnmarked, be in a package that is explicitly @NullMarked/@NullUnmarked, or be in a module that is explicitly @NullMarked.
+public class LruRustPolicy implements Policy.KeyOnlyPolicy {
+       ^
+    (see https://github.com/uber/NullAway/wiki/JSpecify-Support#requireexplicitnullmarking-checker)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/lrurust/LruRustPolicy.java:34: warning: [ThrowSpecificExceptions] Base exception classes should be treated as abstract. If the exception is intended to be caught, throw a domain-specific exception. Otherwise, prefer a more specific exception for clarity. Common alternatives include: AssertionError, IllegalArgumentException, IllegalStateException, and (Guava's) VerifyException.
+      throw new RuntimeException("Failed to initialize Rust LRU cache");
+            ^
+    (see https://errorprone.info/bugpattern/ThrowSpecificExceptions)
+  Did you mean 'throw new VerifyException("Failed to initialize Rust LRU cache");'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/lrurust/LruRustPolicy.java:64: warning: [SystemExitOutsideMain] Code that contains System.exit() is untestable.
+        exit(1);
+            ^
+    (see https://errorprone.info/bugpattern/SystemExitOutsideMain)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/lrurust/LruRustPolicy.java:93: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but debug_mode is not; did you mean 'debugMode'?
+  private static native long lruInitCache(long capacity, long debug_mode);
+                                                              ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:11: warning: [WildcardImport] Wildcard imports, static or otherwise, should not be used
+import java.util.*;
+^
+    (see https://google.github.io/styleguide/javaguide.html?cl=head#s3.3.1-wildcard-imports)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:16: warning: [RequireExplicitNullMarking] [RequireExplicitNullMarking] Top-level classes must either be directly annotated with @NullMarked/@NullUnmarked, be in a package that is explicitly @NullMarked/@NullUnmarked, or be in a module that is explicitly @NullMarked.
+public class AssociativeCacheRustPolicy implements Policy.KeyOnlyPolicy {
+       ^
+    (see https://github.com/uber/NullAway/wiki/JSpecify-Support#requireexplicitnullmarking-checker)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:39: warning: [EnumOrdinal] You should almost never invoke the Enum.ordinal() method or depend on the enum values by index.
+    this.cachePointer = associativeInitCache(numOfBuckets, bucketSize, evictionPolicy.ordinal(), this.debugMode);
+                                                                                             ^
+    (see https://errorprone.info/bugpattern/EnumOrdinal)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:41: warning: [ThrowSpecificExceptions] Base exception classes should be treated as abstract. If the exception is intended to be caught, throw a domain-specific exception. Otherwise, prefer a more specific exception for clarity. Common alternatives include: AssertionError, IllegalArgumentException, IllegalStateException, and (Guava's) VerifyException.
+      throw new RuntimeException("Failed to initialize Rust AssociativeCache (invalid settings or eviction policy)");
+            ^
+    (see https://errorprone.info/bugpattern/ThrowSpecificExceptions)
+  Did you mean 'throw new VerifyException("Failed to initialize Rust AssociativeCache (invalid settings or eviction policy)");'?
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:79: warning: [SystemExitOutsideMain] Code that contains System.exit() is untestable.
+        exit(1);
+            ^
+    (see https://errorprone.info/bugpattern/SystemExitOutsideMain)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:136: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but num_of_buckets is not; did you mean 'numOfBuckets'?
+  private static native long associativeInitCache(long num_of_buckets, long bucket_size, long eviction_policy, long debug_mode);
+                                                       ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:136: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but bucket_size is not; did you mean 'bucketSize'?
+  private static native long associativeInitCache(long num_of_buckets, long bucket_size, long eviction_policy, long debug_mode);
+                                                                            ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:136: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but eviction_policy is not; did you mean 'evictionPolicy'?
+  private static native long associativeInitCache(long num_of_buckets, long bucket_size, long eviction_policy, long debug_mode);
+                                                                                              ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:136: warning: [IdentifierName] Methods and non-static variables should be named in lowerCamelCase, but debug_mode is not; did you mean 'debugMode'?
+  private static native long associativeInitCache(long num_of_buckets, long bucket_size, long eviction_policy, long debug_mode);
+                                                                                                                    ^
+    (see https://google.github.io/styleguide/javaguide.html#s5.2-specific-identifier-names)
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/tinylfu/TinyLfuRustPolicy.java:24: warning: [this-escape] possible 'this' escape before subclass is fully initialized
+    this.policyStats = new PolicyStats(name());
+                                           ^
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/s3fifo/S3FifoRustPolicy.java:24: warning: [this-escape] possible 'this' escape before subclass is fully initialized
+    this.policyStats = new PolicyStats(name());
+                                           ^
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/dash/DashRustPolicy.java:24: warning: [this-escape] possible 'this' escape before subclass is fully initialized
+    this.policyStats = new PolicyStats(name() + " (%s)", evictionPolicy);
+                                           ^
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/lrurust/LruRustPolicy.java:24: warning: [this-escape] possible 'this' escape before subclass is fully initialized
+    this.policyStats = new PolicyStats(name());
+                                           ^
+/home/user/caffeine/simulator/src/main/java/com/github/benmanes/caffeine/cache/simulator/policy/associative/AssociativeCacheRustPolicy.java:27: warning: [this-escape] possible 'this' escape before subclass is fully initialized
+    this.policyStats = new PolicyStats(name() + " (%s) - %d way", evictionPolicy, numOfBuckets);
+                                           ^
+48 warnings
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::loadLibrary has been called by com.github.benmanes.caffeine.cache.simulator.policy.tinylfu.TinyLfuRustPolicy in an unnamed module (file:/home/user/caffeine/simulator/build/classes/java/main/)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
