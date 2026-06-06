@@ -8,9 +8,11 @@ from pathlib import Path
 import pytest
 
 from evolve.subject import (
+    Bench,
     Docs,
     Evaluation,
     ExtensionPoint,
+    Metadata,
     Subject,
     SubjectManifestError,
     load_subject,
@@ -127,9 +129,10 @@ def test_loads_real_manifest():
         "bucketSize",
     }
     assert all(isinstance(value, int) for value in subject.caffeine.geometry.values())
-    # dash evolves for hit rate only; it declares neither [bench] nor [metadata].
-    assert subject.bench is None
-    assert subject.metadata is None
+    # dash declares both [bench] and [metadata], so it can be evolved for the full
+    # fitness vector (hit-rate + per-op-time + metadata-size), not hit-rate alone.
+    assert subject.bench == Bench(binary_name="dash-bench")
+    assert subject.metadata == Metadata(binary_name="evolve-metadata-size")
 
 
 def test_associative_cache_geometry_is_list_valued():

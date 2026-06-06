@@ -40,7 +40,27 @@ def _setup_repo(tmp_path: Path) -> Path:
             "__pycache__", "*.pyc", "logs", "outputs", "traces",
         ),
     )
+    _pin_single_dim_pareto(repo_dst / "config.toml")
     return repo_dst
+
+
+def _pin_single_dim_pareto(config_path: Path) -> None:
+    """Pin the copied repo's fitness/selection to single-dimension Pareto.
+
+    These pipeline-mechanics tests assert hit-rate-only fitness vectors and a
+    non-empty Pareto front spanning the cohort, so they must not inherit the
+    repo's production default (which may activate multiple dimensions or
+    weighted selection — under weighted, baseline-equivalent stub variants
+    correctly produce zero winners). Pinning here keeps the tests hermetic
+    against changes to config.toml's default fitness policy."""
+
+    text = config_path.read_text(encoding="utf-8")
+    text = re.sub(r'(?m)^dimensions\s*=.*$', 'dimensions = ["hit-rate"]', text)
+    text = re.sub(r'(?m)^method\s*=.*$', 'method = "pareto"', text)
+    # Pareto ignores [selection.weights], and a stale table whose keys no longer
+    # match the pinned single dimension would be dead config — drop it.
+    text = re.sub(r'(?ms)^\[selection\.weights\].*?(?=^\[|\Z)', '', text)
+    config_path.write_text(text, encoding="utf-8")
 
 
 def _layout(repo_root: Path) -> Layout:
