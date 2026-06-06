@@ -275,10 +275,6 @@ class SourcesLayout:
         return VariantDir(root=self.subject_dir / "baseline")
 
     @property
-    def bench_dir(self) -> Path:
-        return self.subject_dir / "bench"
-
-    @property
     def subject_src(self) -> Path:
         return self.subject_dir / "src"
 

@@ -112,7 +112,7 @@ class Metadata:
 # Crate-relative paths an overlay may never author, under any authoring scope:
 # the gate-integrity surface. See `Subject.is_pinned_overlay_path`.
 _PINNED_OVERLAY_FILES = (Path("Cargo.toml"), Path("src/lib.rs"))
-_PINNED_OVERLAY_DIRS = (Path("tests"), Path("src/test_utils"))
+_PINNED_OVERLAY_DIRS = (Path("tests"), Path("src/test_utils"), Path("src/bin"))
 
 
 @dataclass(frozen=True)
@@ -147,7 +147,10 @@ class Subject:
           - `src/lib.rs` (the crate's module wiring, which could otherwise
             shadow the invariant suite with a gutted inline module);
           - everything under `tests/` (the gate harnesses) and `src/test_utils/`
-            (the invariant suite those gates run).
+            (the invariant suite those gates run);
+          - everything under `src/bin/` (the fitness measurement binaries —
+            metadata-size and per-op-time — which judge a variant just as the
+            gates do, so a variant must not overlay them to fake its own fitness).
         """
         if rel_path in self.protected_files:
             return True

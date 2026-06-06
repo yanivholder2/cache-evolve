@@ -11,7 +11,7 @@ const MIN_SKETCH_WIDTH: usize = 16;
 const MAX_COUNT: u32 = u32::MAX;
 
 #[derive(Debug)]
-struct Node<K, V> {
+pub struct Node<K, V> {
 	key: K,
 	value: V,
 	prev: Option<usize>,
@@ -54,6 +54,15 @@ where
 
 	pub fn new(capacity: usize) -> Self {
 		Self::try_new(capacity).expect("TinyLfuCache::new: initialization failed")
+	}
+
+	/// Heap bytes held by the frequency sketch for this cache: `depth * width * size_of::<u32>()`.
+	///
+	/// This is the FIXED metadata overhead TinyLfu carries beyond the per-entry nodes — it is
+	/// sized at construction from capacity (see `try_new`) and does not grow with population.
+	/// The metadata-size fitness bin reports it so variant edits to the sketch geometry are visible.
+	pub fn sketch_heap_bytes(&self) -> usize {
+		self.sketch.heap_bytes()
 	}
 
 	pub fn get(&mut self, key: &K) -> Option<&V> {
@@ -138,6 +147,11 @@ impl CountMinSketch {
 		let depth = SKETCH_DEPTH;
 		let counts = vec![vec![0; width]; depth];
 		Self { width, depth, counts }
+	}
+
+	/// Heap bytes backing the counter table: `depth * width * size_of::<u32>()`.
+	fn heap_bytes(&self) -> usize {
+		self.depth * self.width * std::mem::size_of::<u32>()
 	}
 
 	fn increment<K: Hash>(&mut self, key: &K) {

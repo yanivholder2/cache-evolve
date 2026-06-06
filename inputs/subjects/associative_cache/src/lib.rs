@@ -1,6 +1,5 @@
 pub mod associative_cache;
 pub mod factory;
-pub mod fitness_json;
 pub mod shared;
 pub use shared::utils::get_index;
 

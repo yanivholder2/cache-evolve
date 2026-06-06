@@ -11,6 +11,14 @@ repository = "https://github.com/yanivholder2/cache-evolve"
 name = "s3_fifo"
 crate-type = ["cdylib", "lib"]
 
+[[bin]]
+name = "s3_fifo-evolve-per-op-time"
+path = "src/bin/evolve_per_op_time.rs"
+
+[[bin]]
+name = "s3_fifo-evolve-metadata-size"
+path = "src/bin/evolve_metadata_size.rs"
+
 [features]
 test-utils = ["proptest"]
 

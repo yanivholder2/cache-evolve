@@ -1,7 +1,11 @@
 //! Cross-subject cache contract: runtime behaviour ([`Cache`]) and
-//! correctness gate ([`Invariants`]).
+//! correctness gate ([`Invariants`]), plus the shared fitness-measurement
+//! harness ([`bench`]) the subjects' measurement bins build on.
 
 use std::hash::Hash;
+
+/// Shared, un-overlayable timing/JSON harness for the measurement bins.
+pub mod bench;
 
 /// A key-value cache.
 pub trait Cache<K: Hash + Eq, V> {

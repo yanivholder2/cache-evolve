@@ -11,7 +11,7 @@ pub mod s3_fifo_jni;
 const MAX_FREQ: u8 = 3;
 
 #[derive(Debug)]
-struct Entry<K, V> {
+pub struct Entry<K, V> {
 	key: K,
 	value: V,
 	freq: u8,

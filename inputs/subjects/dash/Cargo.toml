@@ -29,7 +29,11 @@ proptest = "1"
 framework = { path = "../../../framework-rs", features = ["test-suite"] }
 
 [[bin]]
-name = "evolve-metadata-size"
+name = "dash-evolve-per-op-time"
+path = "src/bin/evolve_per_op_time.rs"
+
+[[bin]]
+name = "dash-evolve-metadata-size"
 path = "src/bin/evolve_metadata_size.rs"
 
 [[test]]
