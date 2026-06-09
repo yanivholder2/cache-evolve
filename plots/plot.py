@@ -238,6 +238,72 @@ def generate_plots(data_file, out_dir):
 
     print(f"Successfully generated 4 grouped bar charts in the '{out_dir}/' directory.")
 
+    # ==========================================
+    # PART 3: SCATTER PLOTS (Cost/Runtime vs Score)
+    # ==========================================
+    
+    scatter_rows = []
+    for run in data['runs']:
+        cumulative_cost = 0.0
+        cumulative_runtime = 0.0
+        for v in run['variants']:
+            cost = v.get('cost-usd', MISSING)
+            if cost != MISSING and cost != -1:
+                cumulative_cost += cost
+
+            runtime = v.get('total-seconds-to-generate', MISSING)
+            if runtime != MISSING and runtime != -1:
+                cumulative_runtime += runtime
+            
+            score = v.get('weighted_score', v.get('weighted-score', MISSING))
+            if score != MISSING and score != -1:
+                scatter_rows.append({
+                    'subject': v['subject-name'],
+                    'cumulative_cost': cumulative_cost,
+                    'cumulative_runtime': cumulative_runtime,
+                    'score': score
+                })
+
+    df_scatter = pd.DataFrame(scatter_rows)
+    if not df_scatter.empty:
+        # Plot Cost vs Score
+        plt.figure(figsize=(8, 6))
+        for subj in subjects:
+            subj_data = df_scatter[df_scatter['subject'] == subj]
+            if subj_data.empty:
+                continue
+            plt.scatter(subj_data['cumulative_cost'], subj_data['score'],
+                        color=style_map[subj]['color'], marker=style_map[subj]['marker'],
+                        label=subj, alpha=0.7, edgecolors='k', s=60)
+            
+        plt.xlabel('Total Cost (USD)', fontsize=12)
+        plt.ylabel('Score', fontsize=12)
+        plt.title('Total Cost vs Score', fontsize=14)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, 'cost-vs-score-scatter.png'), dpi=300)
+        plt.close()
+        print(f"Successfully generated cost vs score scatter plot in the '{out_dir}/' directory.")
+
+        # Plot Runtime vs Score
+        plt.figure(figsize=(8, 6))
+        for subj in subjects:
+            subj_data = df_scatter[df_scatter['subject'] == subj]
+            if subj_data.empty:
+                continue
+            plt.scatter(subj_data['cumulative_runtime'], subj_data['score'],
+                        color=style_map[subj]['color'], marker=style_map[subj]['marker'],
+                        label=subj, alpha=0.7, edgecolors='k', s=60)
+            
+        plt.xlabel('Total Runtime (Seconds)', fontsize=12)
+        plt.ylabel('Score', fontsize=12)
+        plt.title('Total Runtime vs Score', fontsize=14)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, 'runtime-vs-score-scatter.png'), dpi=300)
+        plt.close()
+        print(f"Successfully generated runtime vs score scatter plot in the '{out_dir}/' directory.")
+
 # Run plot generation on both files, dispatching output into their respective folders.
 generate_plots('plots/paper-plots/data_full_fitness_vector.json', 'plots/paper-plots/full_fitness_vector')
 generate_plots('plots/paper-plots/data_only_hit_rate.json', 'plots/paper-plots/only_hit_rate')
