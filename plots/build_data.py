@@ -142,13 +142,29 @@ def fitness_diff_rows(run_dir: Path) -> dict:
     return rows
 
 
-def make_row(summaries, *, subject, cycle, variant, is_baseline, is_winner):
+def make_row(
+    summaries,
+    *,
+    subject,
+    cycle,
+    variant,
+    is_baseline,
+    is_winner,
+    count_attempts=MISSING,
+    variant_seconds_to_generate=MISSING,
+    total_seconds_to_generate=MISSING,
+    cost_usd=MISSING,
+):
     row = {
         "subject-name": subject,
         "cycle": cycle,
         "variant": variant,
         "is-baseline": is_baseline,
         "is-winner": is_winner,
+        "count-attempts": count_attempts,
+        "variant-seconds-to-generate": variant_seconds_to_generate,
+        "total-seconds-to-generate": total_seconds_to_generate,
+        "cost-usd": cost_usd,
     }
     for dim in CANONICAL_DIMS:
         row[dim] = summaries.get(dim, MISSING)
@@ -319,6 +335,25 @@ def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
     )
 
 
+def extract_agent_stats(log_path: Path):
+    duration = 0.0
+    cost = 0.0
+    if log_path.exists():
+        for line in reversed(log_path.read_text().splitlines()[-20:]):
+            line = line.strip()
+            if line.startswith("- duration:"):
+                try:
+                    duration = float(line.split(":", 1)[1].replace("s", "").strip())
+                except ValueError:
+                    pass
+            elif line.startswith("- cost_usd:"):
+                try:
+                    cost = float(line.split(":", 1)[1].strip())
+                except ValueError:
+                    pass
+    return duration, cost
+
+
 def build_run(run_dir: Path, subject: str, batch: str = ORIGINAL_BATCH):
     """Return the {setup, variants} block for one run, or None if incomplete.
 
@@ -348,6 +383,28 @@ def build_run(run_dir: Path, subject: str, batch: str = ORIGINAL_BATCH):
             if not vector_path.exists():
                 continue  # variant produced no vector (e.g. build or gate failure)
             summaries = dim_summaries(json.loads(vector_path.read_text()))
+            
+            count_attempts = 0
+            variant_seconds = 0.0
+            total_seconds = 0.0
+            cost = 0.0
+            
+            attempts_dir = variant_dir / "attempts"
+            if attempts_dir.exists():
+                for attempt_dir in attempts_dir.iterdir():
+                    if attempt_dir.is_dir():
+                        count_attempts += 1
+                        d, c = extract_agent_stats(attempt_dir / "variant-implementer.log.md")
+                        variant_seconds += d
+                        total_seconds += d
+                        cost += c
+            else:
+                count_attempts = 1
+                
+            ins_d, ins_c = extract_agent_stats(variant_dir / "variant-insight-writer.log.md")
+            total_seconds += ins_d
+            cost += ins_c
+            
             row = backfill(
                 make_row(
                     summaries,
@@ -356,6 +413,10 @@ def build_run(run_dir: Path, subject: str, batch: str = ORIGINAL_BATCH):
                     variant=variant_dir.name,
                     is_baseline=False,
                     is_winner=variant_dir.name in cycle_winners,
+                    count_attempts=count_attempts,
+                    variant_seconds_to_generate=round(variant_seconds, 2) if variant_seconds else MISSING,
+                    total_seconds_to_generate=round(total_seconds, 2) if total_seconds else MISSING,
+                    cost_usd=round(cost, 6) if cost else MISSING,
                 ),
                 diff_rows.get((cycle, variant_dir.name), {}),
             )
