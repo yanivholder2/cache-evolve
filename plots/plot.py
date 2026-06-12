@@ -9,6 +9,16 @@ import pandas as pd
 # was not calculated for that variant and must not be plotted.
 MISSING = -1
 
+def get_model_from_run(run):
+    subj = run['setup']['subject-name']
+    run_name = run['setup'].get('run', '')
+    if run_name.startswith(subj + '_'):
+        suffix = run_name[len(subj) + 1:]
+        # Extract the model part by taking everything before the first year string like _202
+        model = suffix.split('_202')[0] if '_202' in suffix else suffix.split('_')[0]
+        return model
+    return run['setup'].get('ai-agent-tool', 'unknown')
+
 def generate_plots(data_file, out_dir):
     # Create the figures directory if it doesn't exist
     os.makedirs(out_dir, exist_ok=True)
@@ -110,7 +120,7 @@ def generate_plots(data_file, out_dir):
     # are averaged; -1 dimensions stay missing and are skipped by the bars.
     final_variants = []
     for run in data['runs']:
-        agent_tool = run['setup']['ai-agent-tool']
+        agent_tool = get_model_from_run(run)
         winners = [v for v in run['variants'] if v['is-winner']]
         if not winners:
             continue
@@ -185,10 +195,15 @@ def generate_plots(data_file, out_dir):
     # PART 3: SCATTER PLOTS (Cost/Runtime vs Score)
     # ==========================================
     
+    agent_tools = list(set(get_model_from_run(r) for r in data['runs']))
+    all_markers = ['o', 's', '^', 'D', 'v', 'p', '*', 'X', '<', '>']
+    agent_marker_map = {agent: all_markers[i % len(all_markers)] for i, agent in enumerate(agent_tools)}
+
     scatter_rows = []
     for run in data['runs']:
         cumulative_cost = 0.0
         cumulative_runtime = 0.0
+        agent_tool = get_model_from_run(run)
         for v in run['variants']:
             cost = v.get('cost-usd', MISSING)
             if cost != MISSING and cost != -1:
@@ -202,6 +217,7 @@ def generate_plots(data_file, out_dir):
             if score != MISSING and score != -1:
                 scatter_rows.append({
                     'subject': v['subject-name'],
+                    'agent_tool': agent_tool,
                     'cumulative_cost': cumulative_cost,
                     'cumulative_runtime': cumulative_runtime,
                     'score': score
@@ -212,40 +228,143 @@ def generate_plots(data_file, out_dir):
         # Plot Cost vs Score
         plt.figure(figsize=(8, 6))
         for subj in subjects:
-            subj_data = df_scatter[df_scatter['subject'] == subj]
-            if subj_data.empty:
-                continue
-            plt.scatter(subj_data['cumulative_cost'], subj_data['score'],
-                        color=style_map[subj]['color'], marker=style_map[subj]['marker'],
-                        label=subj, alpha=0.7, edgecolors='k', s=60)
+            for agent in agent_tools:
+                subj_data = df_scatter[(df_scatter['subject'] == subj) & (df_scatter['agent_tool'] == agent)]
+                if subj_data.empty:
+                    continue
+                plt.scatter(subj_data['cumulative_cost'], subj_data['score'],
+                            color=style_map[subj]['color'], marker=agent_marker_map[agent],
+                            label=f"{subj} ({agent})", alpha=0.7, edgecolors='k', s=60)
             
         plt.xlabel('Total Cost (USD)', fontsize=12)
         plt.ylabel('Score', fontsize=12)
         plt.title('Total Cost vs Score', fontsize=14)
         plt.grid(True, linestyle='--', alpha=0.7)
+        # Deduplicate legend labels
+        handles, labels = plt.gca().get_legend_handles_labels()
+        if labels:
+            by_label = dict(zip(labels, handles))
+            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, 'cost-vs-score-scatter.png'), dpi=300)
+        plt.savefig(os.path.join(out_dir, 'cost-vs-score-scatter.png'), dpi=300, bbox_inches='tight')
         plt.close()
         print(f"Successfully generated cost vs score scatter plot in the '{out_dir}/' directory.")
 
         # Plot Runtime vs Score
         plt.figure(figsize=(8, 6))
         for subj in subjects:
-            subj_data = df_scatter[df_scatter['subject'] == subj]
-            if subj_data.empty:
-                continue
-            plt.scatter(subj_data['cumulative_runtime'], subj_data['score'],
-                        color=style_map[subj]['color'], marker=style_map[subj]['marker'],
-                        label=subj, alpha=0.7, edgecolors='k', s=60)
+            for agent in agent_tools:
+                subj_data = df_scatter[(df_scatter['subject'] == subj) & (df_scatter['agent_tool'] == agent)]
+                if subj_data.empty:
+                    continue
+                plt.scatter(subj_data['cumulative_runtime'], subj_data['score'],
+                            color=style_map[subj]['color'], marker=agent_marker_map[agent],
+                            label=f"{subj} ({agent})", alpha=0.7, edgecolors='k', s=60)
             
         plt.xlabel('Total Runtime (Seconds)', fontsize=12)
         plt.ylabel('Score', fontsize=12)
         plt.title('Total Runtime vs Score', fontsize=14)
         plt.grid(True, linestyle='--', alpha=0.7)
+        # Deduplicate legend labels
+        handles, labels = plt.gca().get_legend_handles_labels()
+        if labels:
+            by_label = dict(zip(labels, handles))
+            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, 'runtime-vs-score-scatter.png'), dpi=300)
+        plt.savefig(os.path.join(out_dir, 'runtime-vs-score-scatter.png'), dpi=300, bbox_inches='tight')
         plt.close()
         print(f"Successfully generated runtime vs score scatter plot in the '{out_dir}/' directory.")
+
+    # ==========================================
+    # PART 4: LINE PLOTS (Best Score vs Cost/Runtime)
+    # ==========================================
+
+    line_rows = []
+    for run_idx, run in enumerate(data['runs']):
+        cumulative_cost = 0.0
+        cumulative_runtime = 0.0
+        best_score = -float('inf')
+        agent_tool = get_model_from_run(run)
+        
+        for v in run['variants']:
+            cost = v.get('cost-usd', MISSING)
+            if cost != MISSING and cost != -1:
+                cumulative_cost += cost
+
+            runtime = v.get('total-seconds-to-generate', MISSING)
+            if runtime != MISSING and runtime != -1:
+                cumulative_runtime += runtime
+            
+            score = v.get('weighted_score', v.get('weighted-score', MISSING))
+            if score != MISSING and score != -1:
+                if score > best_score:
+                    best_score = score
+                line_rows.append({
+                    'run_idx': run_idx,
+                    'subject': v['subject-name'],
+                    'agent_tool': agent_tool,
+                    'cumulative_cost': cumulative_cost,
+                    'cumulative_runtime': cumulative_runtime,
+                    'best_score': best_score
+                })
+
+    df_line = pd.DataFrame(line_rows)
+    if not df_line.empty:
+        # Plot Cost vs Best Score
+        plt.figure(figsize=(8, 6))
+        for subj in subjects:
+            subj_data = df_line[df_line['subject'] == subj]
+            if subj_data.empty:
+                continue
+            for run_idx in subj_data['run_idx'].unique():
+                run_data = subj_data[subj_data['run_idx'] == run_idx].sort_values('cumulative_cost')
+                agent = run_data['agent_tool'].iloc[0]
+                plt.plot(run_data['cumulative_cost'], run_data['best_score'],
+                         color=style_map[subj]['color'], marker=agent_marker_map[agent],
+                         label=f"{subj} ({agent})", alpha=0.7, linewidth=2)
+            
+        plt.xlabel('Total Cost (USD)', fontsize=12)
+        plt.ylabel('Best Score', fontsize=12)
+        plt.title('Total Cost vs Best Score', fontsize=14)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        # Deduplicate legend labels
+        handles, labels = plt.gca().get_legend_handles_labels()
+        if labels:
+            by_label = dict(zip(labels, handles))
+            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+        plt.xscale('log')
+        plt.savefig(os.path.join(out_dir, 'cost-vs-best-score-line.png'), dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Successfully generated cost vs best score line plot in the '{out_dir}/' directory.")
+
+        # Plot Runtime vs Best Score
+        plt.figure(figsize=(8, 6))
+        for subj in subjects:
+            subj_data = df_line[df_line['subject'] == subj]
+            if subj_data.empty:
+                continue
+            for run_idx in subj_data['run_idx'].unique():
+                run_data = subj_data[subj_data['run_idx'] == run_idx].sort_values('cumulative_runtime')
+                agent = run_data['agent_tool'].iloc[0]
+                plt.plot(run_data['cumulative_runtime'], run_data['best_score'],
+                         color=style_map[subj]['color'], marker=agent_marker_map[agent],
+                         label=f"{subj} ({agent})", alpha=0.7, linewidth=2)
+            
+        plt.xlabel('Total Runtime (Seconds)', fontsize=12)
+        plt.ylabel('Best Score', fontsize=12)
+        plt.title('Total Runtime vs Best Score', fontsize=14)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.xscale('log')
+        # Deduplicate legend labels
+        handles, labels = plt.gca().get_legend_handles_labels()
+        if labels:
+            by_label = dict(zip(labels, handles))
+            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, 'runtime-vs-best-score-line.png'), dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Successfully generated runtime vs best score line plot in the '{out_dir}/' directory.")
 
 # Run plot generation on both files, dispatching output into their respective folders.
 generate_plots('plots/paper-plots/data_full_fitness_vector.json', 'plots/paper-plots/full_fitness_vector')

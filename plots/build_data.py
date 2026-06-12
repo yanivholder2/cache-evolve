@@ -303,7 +303,7 @@ def extract_agent_stats(log_path: Path):
     duration = 0.0
     cost = 0.0
     if log_path.exists():
-        for line in reversed(log_path.read_text().splitlines()[-20:]):
+        for line in reversed(log_path.read_text(encoding="utf-8").splitlines()[-20:]):
             line = line.strip()
             if line.startswith("- duration:"):
                 try:
