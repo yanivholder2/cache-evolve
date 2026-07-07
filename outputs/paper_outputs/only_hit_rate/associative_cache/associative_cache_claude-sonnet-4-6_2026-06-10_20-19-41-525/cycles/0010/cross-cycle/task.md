@@ -1,0 +1,518 @@
+# Task: cross-cycle-insight-writer
+
+## Ledger (all cycles, cumulative)
+
+### Cycle 0001
+
+# Cycle 0001 Insight
+
+## Cohort outcome
+
+The cohort probed three independent axes — bucket geometry, per-item metadata size,
+and LRU operation complexity — against the baseline on the LIRS workload-a trace.
+Only the geometry change (fewer, wider buckets) landed in the Winners; the latency
+optimisation hurt hit-rate, and the metadata compaction went unmeasured on the
+dimensions it targeted.
+
+## Patterns
+
+- **Wider buckets directly improve hit-rate.** Repartitioning the same total capacity
+  into fewer, larger sets gives the per-set LRU a bigger eviction pool, reducing
+  premature expulsion of still-live items. The baseline's narrow buckets were a real
+  bottleneck on this workload.
+- **Strict LRU ordering is load-bearing.** The O(1) swap-to-back optimisation
+  preserved the two boundary indices (eviction candidate and MRU) but corrupted the
+  recency gradient across intermediate slots, and that degradation was large enough to
+  register as a clear hit-rate regression. The O(n) cost buys correctness worth keeping.
+- **Unmeasured hypotheses remain open, not disproven.** The timestamp-removal variant
+  neither helped nor hurt hit-rate (expected, since ClassicLRU never reads the field),
+  but the evaluators for the dimensions it actually targeted — metadata size and
+  per-op latency — never ran, leaving the structural benefit unconfirmed.
+
+## Open questions
+
+- Does the bucket-widening gain hold beyond the LIRS workload-a trace, or is it
+  specific to its locality pattern?
+- Is there a recency-aware O(1) promotion strategy that preserves eviction quality
+  better than a plain swap (e.g., a clock approximation or segmented LRU)?
+- Can the metadata-size and per-op-time evaluators be enabled so the timestamp-removal
+  change gets a real verdict?
+
+## Continuation
+
+The geometry axis is the strongest lead: wider buckets produced a real win, and the
+direction has not been saturated — next cycle should test pushing the bucket-width
+further or making it adaptive. Drop the O(1) swap angle for ClassicLRU unless a
+recency-preserving variant emerges. Before spawning a new metadata-compaction
+hypothesis, ensure the necessary evaluators are running so any structural benefit can
+actually be confirmed.
+
+
+### Cycle 0002
+
+# Cycle 0002 Insight
+
+## Cohort outcome
+
+The cohort probed three anti-scan-pollution strategies — further bucket widening,
+cold-first eviction, and mid-point insertion — on top of cycle 0001's geometry win.
+The cold-first eviction variant (v002) was the clear winner, delivering a large
+hit-rate gain built on the wider-bucket foundation; the other two produced smaller
+or marginal returns without being selected.
+
+## Patterns
+
+- **Geometry widening has reached diminishing returns.** Pushing the bucket factor
+  from 4 to 16 yielded only a fraction of the gain the first widening step produced.
+  The LIRS workload-a hot set largely fits within 64-slot buckets; further geometric
+  expansion is unlikely to pay off.
+- **Cold-first eviction is the strongest lever found so far.** Preferring
+  counter==0 items as eviction candidates shields any item that has received even a
+  single GET hit from being displaced by scan insertions. The wider buckets from
+  cycle 0001 are a necessary enabler: they provide enough resident cold items to
+  absorb scan traffic without immediately exhausting the cold pool and collapsing
+  back to plain LRU.
+- **Mid-point insertion addresses the same root cause from the insertion side.**
+  Landing new items at the bucket midpoint rather than the MRU back also improved
+  hit-rate without hurting any measured dimension, but produced a smaller gain than
+  cold-first eviction and carries an unmeasured O(n) insertion-latency cost.
+- **Both winning angles converge on scan-pollution as the dominant bottleneck.**
+  v002 and v003 attacked the problem from eviction and insertion respectively;
+  neither was combined with the other this cycle.
+
+## Open questions
+
+- Can cold-first eviction (v002) and mid-point insertion (v003) be stacked, and do
+  they compound or merely overlap in their benefit?
+- Does v002's linear scan across bucket slots to find a cold item add meaningful
+  per-op latency at scale, particularly in wide buckets?
+- As the cache warms up over a long trace, does the cold pool thin out — causing
+  the fallback to plain LRU to trigger more often — and if so, does the win degrade?
+- Do the gains from v002 and v003 generalise beyond the LIRS workload-a trace?
+
+## Continuation
+
+The cold-first eviction approach (v002) is the strongest lead: it produced a large
+hit-rate gain, has a clear correctness story, and the geometry axis it depends on is
+already confirmed. Next cycle should explore stacking mid-point insertion on top of
+v002, probe whether a frequency threshold greater than 1 (e.g., counter ≥ 2) improves
+separation further, and add a `per-op-time` evaluation pass to v002 to measure the
+scan cost before widening buckets further. Drop pure geometry pushing — that axis
+is saturated.
+
+
+### Cycle 0003
+
+# Cycle 0003 Insight
+
+## Cohort outcome
+
+The cohort tested three refinements of the cold-first eviction strategy: stacking
+mid-point insertion on top of the cycle 0002 winner, tightening the cold threshold
+from counter==0 to counter≤1, and applying cold-first eviction on narrow-bucket
+geometry via mid-point insertion. The stacked combination (v001) won on a marginal
+hit-rate gain; threshold tightening (v002) regressed; and the narrow-geometry
+cold-first variant (v003) improved over its parent without being selected, because the
+wide-bucket baseline it competed against started from a higher absolute floor.
+
+## Patterns
+
+- **The `counter == 0` eviction boundary is already well-calibrated.** Raising the
+  warmth threshold to require two accesses before shielding an item caused genuine
+  hot-set members to be evicted prematurely. On workload-a a single access is a
+  reliable signal of future reuse, not scan noise; the threshold tuned in cycle 0002
+  should be treated as settled for this trace.
+- **Cold-first eviction and mid-point insertion are weakly additive when the eviction
+  mechanism already dominates.** Stacking both together on wide-bucket geometry
+  produced only a marginal gain over cold-first eviction alone, because cold-first
+  selection already targets counter==0 items regardless of their vector position —
+  insertion site becomes a tiebreaker rather than a primary lever.
+- **Mid-point insertion can substitute for bucket widening as a cold-item concentrator.**
+  Cold-first eviction delivered a hit-rate improvement even on narrow 16-slot buckets
+  when mid-point insertion was present. This challenges the cycle 0002 conclusion that
+  geometry widening is a necessary prerequisite; the two mechanisms appear to solve the
+  same underlying problem — ensuring enough cold candidates exist per bucket — via
+  different means.
+
+## Open questions
+
+- Does the mid-point-insertion-as-geometry-substitute trade-off hold under workloads
+  with different locality profiles, or is it specific to workload-a's scan pattern?
+- What is the per-op latency cost of mid-point insertion's O(n) `vec.insert` relative
+  to the cold-first scan; is the marginal hit-rate gain worth the combined cost?
+- At what bucket size does mid-point insertion's substitution effect break down — i.e.,
+  is there a minimum slot count below which neither trick maintains enough cold
+  candidates?
+
+## Continuation
+
+The cold-first + wide-bucket baseline remains the strongest configuration found so far,
+with mid-point insertion adding a small incremental win. Before stacking further
+mechanisms, next cycle should instrument per-op latency for both v001 and v003 to
+determine whether the narrow-geometry + mid-point path offers a better hit-rate/latency
+trade-off than the wide-bucket path. The discovery that geometry widening and mid-point
+insertion are substitutable opens a new comparison axis worth probing directly. Drop
+threshold-tightening hypotheses — the `counter == 0` boundary is confirmed for this
+workload.
+
+
+### Cycle 0004
+
+# Cycle 0004 Insight
+
+## Cohort outcome
+
+All three variants converged on the same root problem — what happens when the cold
+pool runs dry — and each attacked it from a distinct angle: restoring cold candidates
+via counter decay (winner v001), improving warm-fallback selection quality via LFU
+(v002), and enlarging the cold pool via modest geometry widening (v003). Only the
+counter-decay variant was selected, but all three showed consistent hit-rate gains,
+confirming that warm-lock is a real, non-trivial steady-state failure mode for the
+cold-first eviction family.
+
+## Patterns
+
+- **Counter decay is an effective self-correcting patch for warm-lock.** Decrementing
+  all counters by 1 only when no cold candidate exists fires rarely but reliably,
+  re-enabling cold-first selection without touching the normal eviction path. Its win
+  confirms that cold pool exhaustion does degrade hit-rate in steady state and that a
+  targeted, infrequent intervention is sufficient to fix it.
+- **LFU warm-fallback is independently valuable.** On narrow geometry — where cold
+  pool exhaustion is routine — replacing the LRU-position fallback with minimum-counter
+  selection produced a substantial hit-rate gain with no geometry change. This is a
+  clean orthogonal axis: it improves eviction quality during the warm phase without
+  depending on bucket width or insertion site.
+- **Mid-point + cold-first geometry gains saturate at ~32 slots per bucket.** Adding a
+  factor-2 widening to the narrow-geometry mid-point path matched or marginally exceeded
+  the wide-bucket (factor-4) configuration from cycle 0003, confirming that further
+  geometry pushing on mid-point paths is exhausted. The useful geometry range for
+  mid-point insertion ends around 32 slots.
+
+## Open questions
+
+- Can counter-decay (v001) and LFU warm-fallback (v002) be stacked productively? They
+  are aimed at different aspects of warm-lock — restoring cold candidates versus
+  choosing better among warm ones — and may compound rather than overlap.
+- Does the counter-decay mechanism remain stable over very long traces, or does periodic
+  bulk decrement cause oscillation in counter values that destabilises the cold/warm
+  boundary?
+- Would the LFU fallback add further gain to v001's wide-bucket + mid-point + decay
+  configuration, or is decay sufficient to keep the cold pool from exhausting on wide
+  geometry?
+
+## Continuation
+
+The most promising next step is combining v001's counter-decay with v002's LFU fallback:
+the two mechanisms are orthogonal in function (one restores cold supply, the other
+improves warm selection quality) and each was tested independently without the other.
+Drop pure geometry widening — that axis is now doubly confirmed saturated for mid-point
+insertion paths. Before adding further mechanisms, run a per-op latency pass on v001 to
+verify that the decay scan does not impose a meaningful overhead on the normal eviction
+path.
+
+
+### Cycle 0005
+
+# Cycle 0005 Insight
+
+## Cohort outcome
+
+The cohort tested three refinements of the cycle 0004 decay-based winner: replacing
+positional-LRU fallback with LFU minimum-counter selection after decay, stacking
+mid-point insertion onto the narrow-geometry LFU-fallback configuration, and capping
+counters at a bounded maximum. All three failed to improve on their parents — two
+regressed and one was neutral — making the counter-cap variant (v003) the winner by
+elimination rather than by merit.
+
+## Patterns
+
+- **Uniform counter decay destroys the frequency signal it was meant to preserve.**
+  After a single pass that decrements every counter by the same amount, inter-item
+  counter differences compress to near-zero; a minimum-counter scan then becomes
+  noisier than the recency order already encoded in bucket position. The positional
+  `remove_at(0)` fallback was already well-aligned with insertion ordering and
+  outperforms frequency selection in this compressed regime.
+- **Mid-point insertion and LFU warm-fallback are adversarial, not additive.**
+  Cold-first eviction scans by counter value and is position-agnostic, so mid-point
+  insertion's benefit — keeping new items away from the eviction front — is irrelevant
+  to it. Meanwhile, the LFU warm-fallback still implicitly relies on the
+  promotion-to-back recency structure; disrupting that structure with midpoint inserts
+  costs more than the reduced cold-pool exhaustion saves. The two mechanisms should
+  not be combined on narrow geometry.
+- **The counter-cap hypothesis was sound in theory but inert on this workload.**
+  Unbounded accumulation does not manifest as a measurable hit-rate problem on
+  workload-a at the tested scale; the decay mechanism already fires frequently enough
+  to prevent permanent warm-lock from high-counter items. The cap is safe to carry
+  forward as defensive hardening but opens no new lever.
+- **The wide-bucket + mid-point + cold-first + decay configuration is a local optimum
+  for hit-rate on workload-a.** Two consecutive cycles of refinement attempts have
+  returned regressions or neutrality; the design space of eviction-policy tuning on
+  this geometry and trace appears saturated.
+
+## Open questions
+
+- Is hit-rate on workload-a genuinely saturated, or do structurally different eviction
+  families (CLOCK, ARC-style adaptive replacement, LIRS-proper) offer a path past the
+  current ceiling?
+- Per-op latency has not been measured for the accumulated mechanism stack; is the
+  combined cost of cold-first scan + decay pass + mid-point insertion acceptable, and
+  does narrow geometry + LFU fallback offer a better hit-rate/latency trade-off?
+- Do the current regressions generalise — i.e., would LFU-after-decay and mid-point +
+  LFU also fail on traces with different locality profiles, or are these failures
+  specific to workload-a's scan-dominated pattern?
+
+## Continuation
+
+Hit-rate improvements on workload-a appear exhausted for the current mechanism family.
+Next cycle should pivot on one of two axes: (a) measure per-op latency across the
+full accumulated stack to determine whether the narrow-geometry or wide-geometry path
+offers a better efficiency trade-off — this is the last unprobed dimension with a
+clear comparison point — or (b) introduce a structurally different eviction policy
+(e.g., CLOCK or an adaptive two-queue scheme) to break out of the local optimum. Do
+not revisit LFU-after-decay fallback or mid-point + LFU combinations — both are
+confirmed counter-productive. The counter cap (v003) is confirmed safe and should
+be inherited silently as part of the baseline.
+
+
+### Cycle 0006
+
+# Cycle 0006 Insight
+
+## Cohort outcome
+
+The cohort probed whether the accumulated mechanism stack could be reformed: CLOCK replaced bulk-decay eviction, selective decay targeted only minimum-counter items, and a clean-slate pure-LFU probe tested wide geometry without any positional tricks. All three fell short of the prior best; selective decay (v002) was selected as the least-disruptive departure.
+
+## Patterns
+
+- **Positional recency in the accumulated stack is non-redundant.** Both CLOCK and selective decay improved frequency discrimination but lost the recency signal embedded in bucket position — the LRU-front (index-0) tie-breaker implicitly encodes insertion age and rewards workload-a's temporal locality. Removing that signal cost more than better frequency ordering gained in either case.
+- **Episodic bulk decay outperforms per-item incremental aging on this workload.** CLOCK's sweep decrements counters on every eviction call, steadily eroding active items' protection. The bulk-decay fallback fires rarely, concentrating its counter-compression cost; CLOCK trades that infrequent cost for a steady one that makes still-relevant items evictable sooner.
+- **Pure min-counter LFU on wide buckets is a near-approximation of the full stack.** Wide geometry plus frequency-only eviction closed most of the gap from the unmodified baseline to the accumulated best-known, confirming that a large candidate pool largely substitutes for cold-first bias and decay. The remaining shortfall quantifies the combined contribution of those positional mechanisms — small but real.
+- **The local optimum is increasingly confirmed as robust.** Three consecutive cycles of structural challenges have each returned regressions. The accumulated stack's lead is not narrow-margin luck; it reflects genuine complementarity between its components.
+
+## Open questions
+
+- Is the recency benefit of the LRU-front tie-breaker workload-specific, or would it persist on traces with weaker temporal locality?
+- Per-op latency remains unmeasured: does the simpler pure-LFU wide-bucket path offer a better hit-rate/latency trade-off than the full stack, even at a small hit-rate penalty?
+- Could a hybrid — LFU eviction with the decay trigger retained but selective-decay semantics applied — recover the recency loss while preserving counter differentiation?
+
+## Continuation
+
+The accumulated stack continues to hold despite sustained pressure. The closest alternative is v003's pure-LFU + wide-geometry configuration, which approaches but does not match the best-known. Next cycle should pivot to latency measurement: compare the full accumulated stack against v003's simpler path to determine whether the hit-rate delta is worth the mechanism complexity. If those results show acceptable parity, the simpler path becomes the preferred baseline for subsequent exploration. Do not revisit CLOCK or selective decay — both confirm that disrupting positional recency costs more than it gains on this workload. An adaptive two-queue or ARC-style policy that separates recency and frequency into explicit queues (rather than encoding both in position) remains the most promising structural alternative if the latency comparison does not resolve the choice.
+
+
+### Cycle 0007
+
+# Cycle 0007 Insight
+
+## Cohort outcome
+
+All three variants probed distinct tuning axes — replacing the warm-lock eviction
+heuristic with a post-decay cold scan, adding ARC-style ghost-buffer re-admission,
+and halving the counter ceiling — and every one regressed or was negligibly neutral.
+v003 was selected as winner purely by elimination, carrying the smallest regression.
+
+## Patterns
+
+- **The positional recency of `remove_at(0)` is already the best warm-lock target.**
+  Under mid-point insertion, index 0 is the oldest item in the bucket; swapping to a
+  post-decay cold scan risks selecting a more recently inserted item whose counter
+  happened to reach zero first, losing the recency signal for no frequency gain. The
+  parent's blind index-0 removal was not a design debt — it was the right heuristic
+  for this layout.
+- **Ghost-buffer re-admission requires workload-a's missing property: frequent
+  post-eviction re-access.** The ARC-style mechanism elevated re-admitted keys to
+  warm-pool status, but those keys proved no warmer than ordinary new arrivals on this
+  trace. The overhead (ghost scan per put, extra eviction on every ghost hit) was
+  real; the benefit was not. Re-admission schemes belong on traces with scan-then-reuse
+  patterns, not on workload-a.
+- **The counter ceiling axis is conclusively exhausted.** Cap=4 was confirmed inert in
+  cycle 0005; cap=2 now produces a marginal regression without any compensating gain.
+  Neither the ceiling magnitude nor its existence is a meaningful lever on this workload
+  at this cache size.
+- **Four consecutive cycles of structural and parametric challenges have failed to
+  dislodge the accumulated-stack local optimum.** The pattern is no longer ambiguous:
+  the complementarity of cold-first eviction, positional recency, mid-point insertion,
+  and episodic bulk decay is robust on workload-a.
+
+## Open questions
+
+- The per-op latency comparison recommended since cycle 0005 remains unmeasured. Does
+  the simpler pure-LFU + wide-geometry path (cycle 0006 v003) offer a competitive
+  efficiency trade-off despite its hit-rate deficit?
+- Would ARC-style ghost re-admission perform differently on a trace with stronger
+  post-eviction temporal locality, or is the mechanism structurally mismatched to the
+  cold-first eviction family?
+
+## Continuation
+
+The current mechanism family is saturated on hit-rate for workload-a; further
+eviction-policy tuning is unlikely to yield gains. The single most actionable next
+step is the latency audit deferred across multiple cycles: measure per-op cost for the
+full accumulated stack versus the simpler pure-LFU + wide-geometry alternative to
+determine whether the hit-rate delta justifies the mechanism complexity. If latency
+parity is found, the simpler path should become the new baseline and free up design
+space for structural alternatives. Do not revisit ghost re-admission, post-decay cold
+scans, or any further counter-ceiling variation — all three axes are now confirmed
+closed on this workload.
+
+
+### Cycle 0008
+
+# Cycle 0008 Insight
+
+## Cohort outcome
+
+The cohort tested three distinct axes: removing mid-point insertion to save shift cost (v001), introducing an SLRU two-queue partition separating probationary and protected items (v002), and doubling the decay magnitude to collapse the lukewarm counter tier faster (v003). Notably, both v002 and v003 improved hit-rate — the first time in four consecutive cycles that any variant has done so — while v001 regressed. v003 was selected as winner.
+
+## Patterns
+
+- **The hit-rate design space is not saturated after all; structural separation of recency tiers helps.** SLRU's explicit probationary/protected split improved hit-rate by preventing scan traffic from displacing the confirmed working set — validating the long-standing suggestion that an adaptive two-queue scheme could break the local optimum. The co-encoding of position and counter in a single queue is no longer the only viable model.
+- **Faster lukewarm demotion is a genuine, if narrow, lever.** Doubling the decay step converts the counter-2 tier directly to cold in one warm-lock event, modestly enlarging the eviction-candidate pool. The gain's small size indicates this tier is real but thin relative to the hot core.
+- **The latency audit (v001) answered the hit-rate side but not the latency side.** Back-append removal of mid-point insertion confirmed that mid-point placement provides non-trivial eviction-ordering value — it was not merely cosmetic. However, per-op-time was again not captured, leaving the efficiency trade-off that has been deferred since cycle 0005 still unresolved.
+
+## Open questions
+
+- v002's SLRU design improved hit-rate but did not win the cycle; how does it compare quantitatively to v003, and is it the stronger long-term branch?
+- Should SLRU segment sizing and promotion threshold be tuned, or is the current split geometry already near-optimal for workload-a?
+- Per-op latency remains unmeasured across all variants; without it, the mid-point insertion trade-off and SLRU's additional bookkeeping cost cannot be evaluated.
+
+## Continuation
+
+SLRU is the most promising branch to pursue: it improved hit-rate through structural means rather than parametric tuning, opening a new evolutionary direction that the single-queue family could not reach. Next cycle should explore SLRU further — varying segment size ratios and promotion thresholds — while treating v003's doubled decay as the new parametric baseline. The latency measurement gap is urgent: SLRU introduces non-trivial per-operation bookkeeping, and without per-op-time data the efficiency case for or against it is blind. Do not revisit back-append as a hit-rate strategy unless the fitness vector is extended to include latency.
+
+
+### Cycle 0009
+
+# Cycle 0009 Insight
+
+## Cohort outcome
+
+The cohort tested position-split decay on the accumulated single-queue stack (v001),
+SLRU with wide-bucket geometry added (v002), and a full SLRU combination that merged
+cold-first eviction, decay-by-2 confined to probationary, and wide buckets (v003).
+All three fell short of the parent incumbent; v001 was selected as winner for having
+the smallest regression.
+
+## Patterns
+
+- **Counter value, not bucket position, is the reliable frequency discriminator under
+  cap-4.** Upper-half items span the full counter range 1–4, so sparing them with a
+  gentler rate-1 decay preserves lukewarm items just as often as hot ones — the
+  position split provides no useful signal that the counter itself does not already
+  encode. Uniform rate-2 decay remains the better choice.
+- **Wide geometry closes most but not all of the SLRU gap.** Adding the 4× wide-bucket
+  overlay to SLRU (v002) confirmed geometry was suppressing v002's prior result, yet
+  the design still trailed the single-queue family by a meaningful margin. The
+  bottleneck is SLRU's demotion/promotion logic or its probationary-first eviction
+  priority, not the bucket layout.
+- **The strongest SLRU configuration yet still does not match the accumulated stack.**
+  v003's three-way combination — SLRU tier separation, wide geometry, cold-first +
+  decay scoped to probationary — produced the best SLRU result across any cycle, yet
+  it was measured against ClassicLRU as baseline rather than against the parent
+  incumbent, and it did not win. The single-queue family's implicit recency encoding
+  (mid-point insertion + positional eviction) appears to carry less overhead than
+  SLRU's explicit bookkeeping while achieving equivalent or better ordering.
+- **The SLRU branch is converging toward a ceiling.** Two focused cycles of SLRU
+  exploration (0008–0009) have each improved the design but have not crossed the
+  single-queue threshold.
+
+## Open questions
+
+- What proportion of SLRU's deficit is attributable to the 50/50 segment split? A
+  protected-heavy split (e.g., 25/75) might retain more of the working set per
+  bucket.
+- Per-op latency remains unmeasured. If v003's SLRU combination nearly matches the
+  single-queue hit-rate, a lower per-op cost could make it the preferred
+  implementation even without a hit-rate lead.
+- Could a counter-value-based asymmetric decay (rate-1 for items at counter ≥ 3,
+  rate-2 for items at counter ≤ 2) unlock the incremental gain that position-split
+  decay failed to deliver?
+
+## Continuation
+
+The single-queue accumulated stack continues to hold. The SLRU branch has been
+thoroughly explored and is approaching its apparent ceiling without overtaking the
+incumbent — further SLRU geometry or eviction tuning is unlikely to be decisive. The
+next cycle should execute the long-deferred latency audit: measure per-op cost for the
+full accumulated stack versus the best SLRU configuration (v003 this cycle) to
+determine whether the hit-rate delta justifies the mechanism complexity. If latency
+parity or advantage is found for SLRU, it becomes the preferred baseline for further
+exploration; if not, the single-queue branch should be declared the winner and
+exploration should pivot to a qualitatively different policy family. Do not revisit
+position-split decay — counter value is the correct discrimination axis.
+
+
+### Cycle 0010
+
+# Cycle 0010 Insight
+
+## Cohort outcome
+
+Three hypotheses probed the two live design branches in parallel: value-split decay on the
+single-queue stack (v001), a 25/75 SLRU segment re-split (v002), and a post-decay cold
+re-scan in the warm-lock path (v003). None improved hit-rate materially; v001 was selected
+as winner by virtue of being exactly neutral rather than a regression.
+
+## Patterns
+
+- **The counter gradient above the lukewarm tier carries no actionable eviction signal.**
+  Preserving hot items at counter 2–3 rather than 1–2 after decay made no difference:
+  the pre-decay cold-first scan already shields hot items from eviction, so the frequency
+  signal conserved by the asymmetric decay never changes which item gets removed. Both
+  the position-split (cycle 0009) and value-split (this cycle) decay variants are now
+  confirmed inert, closing the decay-asymmetry axis entirely.
+- **SLRU segment ratio is a near-zero lever on workload-a.** The 25/75 split yielded a
+  small positive nudge but not a meaningful gain; the offsetting shrinkage of the
+  probationary buffer erased most of the benefit from the larger protected tier. The
+  ratio knob is exhausted alongside the SLRU family more broadly.
+- **Post-decay cold re-scan recapitulates the cycle-0007 lesson.** Selecting a
+  counter-0 interior item instead of the LRU front discards temporal locality — the
+  mid-array item is typically fresher, not staler, than index 0. Index 0 remains the
+  correct warm-lock eviction target on this layout.
+- **Three consecutive cycles of null or negative results signal a hard local optimum.**
+  Cycles 0008–0010 have together closed asymmetric decay, SLRU segment geometry, and
+  post-decay re-scans. The single-queue accumulated stack is not improving; the SLRU
+  branch never surpassed it. The hit-rate frontier appears saturated for workload-a.
+
+## Open questions
+
+- Per-op latency has been deferred since cycle 0005 and remains the sole unmeasured
+  dimension. Is the single-queue stack's hit-rate advantage worth its mechanism
+  complexity versus a simpler design?
+- Is workload-a itself the binding constraint? A trace with stronger post-eviction
+  temporal locality or a heavier scan component might rank the candidate designs
+  differently.
+
+## Continuation
+
+The hit-rate story is conclusive: the single-queue accumulated stack dominates every
+challenger on workload-a, and no parametric or structural variant within the current
+design family has moved the needle across ten cycles. The single actionable next step
+is the long-deferred latency audit — measure per-op cost for the accumulated stack
+versus the best SLRU combination (cycle 0009 v003) to determine whether the hit-rate
+lead also comes with a latency advantage, or whether a simpler design is competitive
+on efficiency. If the single-queue stack wins on latency too, declare it the final
+design for workload-a and pivot to either a new workload or a qualitatively different
+policy family. Do not revisit decay asymmetry, SLRU segment ratios, post-decay cold
+re-scans, or any other axis already confirmed closed.
+
+
+## Write
+
+Exactly one file: `cross-cycle-insights.md` in the output dir. Use the following four fixed sections — preserve names and order:
+
+## Recurring wins
+
+- <pattern that has held up across multiple cycles>
+
+## Recurring failures
+
+- <approach that keeps not paying off, and why>
+
+## Open questions
+
+- <thread worth probing in upcoming cycles>
+
+## Per-policy notes
+
+- <observations grouped by eviction policy>
