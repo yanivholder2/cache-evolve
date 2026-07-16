@@ -1,2 +1,0 @@
-Policy,Hit Rate,Miss Rate,Hits,Misses,Requests,Evictions,Time
-associative.AssociativeCacheRust (CLASSICLRU) - 128 way,68.12,31.88,340580,159420,500000,0,6750
