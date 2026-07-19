@@ -145,12 +145,17 @@ class ClaudeSdkAdapter(LLMAdapter):
 
         # `setting_sources=[]` prevents user/project `permissions.allow` rules
         # from pre-approving tools and bypassing `gate`.
+        # The websocket-auth FD override: remote Claude Code sessions inject
+        # CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR pointing at an fd that only
+        # exists in the harness process; an SDK-spawned CLI inheriting it hangs
+        # at the initialize handshake. Blank it out — harmless when unset.
         options = ClaudeAgentOptions(
             model=self.model,
             system_prompt=system_prompt,
             cwd=str(workspace_root),
             can_use_tool=gate,
             setting_sources=[],
+            env={"CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR": ""},
         )
 
         events: list[tuple[str, str, str]] = []
