@@ -151,6 +151,10 @@ class ClaudeSdkAdapter(LLMAdapter):
             cwd=str(workspace_root),
             can_use_tool=gate,
             setting_sources=[],
+            # Remote Claude Code sessions inject this var pointing at an fd
+            # that only exists in the harness process; an SDK-spawned CLI
+            # inheriting it hangs at the initialize handshake.
+            env={"CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR": ""},
         )
 
         events: list[tuple[str, str, str]] = []
