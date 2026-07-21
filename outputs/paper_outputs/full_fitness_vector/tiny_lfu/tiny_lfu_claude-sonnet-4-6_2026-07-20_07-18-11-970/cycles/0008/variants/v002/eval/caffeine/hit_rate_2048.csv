@@ -1,0 +1,2 @@
+Policy,Hit Rate,Miss Rate,Hits,Misses,Requests,Evictions,Time
+tinylfu.TinyLfuRust,73.68,26.32,368419,131581,500000,0,151

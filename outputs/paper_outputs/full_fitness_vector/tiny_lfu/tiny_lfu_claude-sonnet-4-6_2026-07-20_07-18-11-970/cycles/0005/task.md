@@ -1,0 +1,101 @@
+# Task: cycle-insight-writer
+
+Cycle: 0005
+Output dir: C:\Users\yaniv\Projects\cache-evolve\outputs\tiny_lfu_2026-07-20_07-18-11-970\cycles\0005
+
+## Winners
+
+- v002
+
+## Variant insights
+
+- C:\Users\yaniv\Projects\cache-evolve\outputs\tiny_lfu_2026-07-20_07-18-11-970\cycles\0005\variants\v001\insight.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\tiny_lfu_2026-07-20_07-18-11-970\cycles\0005\variants\v002\insight.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\tiny_lfu_2026-07-20_07-18-11-970\cycles\0005\variants\v003\insight.md
+
+## Hypotheses (this cycle)
+
+- C:\Users\yaniv\Projects\cache-evolve\outputs\tiny_lfu_2026-07-20_07-18-11-970\cycles\0005\hypotheses\H01.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\tiny_lfu_2026-07-20_07-18-11-970\cycles\0005\hypotheses\H02.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\tiny_lfu_2026-07-20_07-18-11-970\cycles\0005\hypotheses\H03.md
+
+## Prior cycles digest
+
+### Cycle 0002
+
+# Cycle 0002 Insight
+
+## Cohort outcome
+
+All three variants targeted the CountMinSketch or node memory layout — one refining the node-encoding fix from the prior cycle, one consolidating sketch allocation, and one trimming sketch depth — but none crossed the winner threshold; the closest (NonZeroU32 node encoding) merely returned to baseline parity without surpassing it.
+
+## Patterns
+
+- **The CountMinSketch resists structural simplification on this workload.** Both sketch modifications failed in opposite ways: flattening to a single allocation introduced cache-set conflicts that more than doubled latency, while halving depth degraded collision suppression enough to hurt hit rate and latency simultaneously. The baseline's four-row, multi-allocation design is well-balanced for the trace's capacity and access pattern.
+- **v001 confirmed NonZeroU32 as the correct node encoding, but node compaction is now fitness-neutral.** Recovering v002's latency regression with idiomatic `Option<NonZeroU32>` match arms proved the discriminant-test codegen was the culprit — not node footprint itself. However, the 24-byte node yields no measurable winner-level improvement over baseline, exhausting the node-layout axis.
+- **Flat allocation is not a reliable substitute for multiple independent heap segments.** The pointer-indirection cost of `Vec<Vec<u32>>` was lower than predicted; the real cost at runtime is the cache-set pressure created by the large row strides in the flat layout, which the separate-allocation baseline avoided by chance of heap placement.
+- **Depth redundancy in the sketch is load-bearing, not padding.** The four rows provide meaningful collision suppression on this Zipfian trace — removing two rows at this sketch width causes enough estimation noise to cascade into eviction errors and overall latency increase.
+
+## Open questions
+
+- Is there a sketch modification that preserves four-row accuracy while reducing the per-call hashing cost — e.g., computing all four positions from a single seeded hash rather than four independent hash invocations?
+- Are there fitness gains still available on the admission or eviction logic side (e.g., window/protected segment sizing, admission threshold tuning) that are orthogonal to the sketch and node axes now both largely exhausted?
+
+## Continuation
+
+Next cycle should abandon sketch-structure changes (both flat allocation and depth reduction are definitively closed) and node-layout changes (NonZeroU32 is the correct encoding but offers no further gains). The one remaining open thread from Cycle 0001 — adaptive or longer-interval sketch decay — has not been tested and should be prioritized: the stable working set may tolerate a much longer reset window that ages stale keys without disturbing the hot-set frequency signal. Alternatively, shifting focus to admission and eviction policy parameters (window size, protected/probationary ratio) offers an unexplored axis.
+
+
+### Cycle 0003
+
+# Cycle 0003 Insight
+
+## Cohort outcome
+
+This cycle tested three independent axes: sketch decay cadence, hash-work reduction, and eviction candidate selection. Only the single-hash bit-slicing approach (v002) earned a winner, by eliminating three redundant hash computations per sketch call; the decay variant repeated a prior failure pattern, and the best-of-2 eviction variant improved hit rate but not enough to offset its latency cost.
+
+## Patterns
+
+- **Sketch decay is definitively closed.** The moderate `capacity × 10` interval — intentionally longer than the cycle 0001 failure — still hurt both hit rate and latency: blanket half-decay penalises hot keys and cold keys identically, and the periodic full-table sweep is large enough to pressure L2/L3, raising the median. Two intervals have now failed on this workload; the stable LIRS working set makes accumulated frequency a reliable signal that decay degrades rather than improves.
+- **Hash-work reduction wins when it eliminates serial dependencies.** Bit-slicing a single SipHash output into four non-overlapping windows removes three redundant full hash invocations with no intra-iteration data dependency, confirming the cycle 0001 prediction about ILP. The put p50 and get p99 both showed slight regression, suggesting that four non-overlapping 16-bit windows of one 64-bit value provide marginally weaker row independence than four independently seeded hashes — visible in collision-sensitive tail paths but not in the overall median.
+- **Eviction logic is a live axis with a real signal.** v003 is the first variant in any cycle to improve hit rate through candidate selection rather than sketch changes. Comparing the two LRU-oldest entries and evicting the lower-frequency one corrects a real class of admission error, but firing two extra sketch probes on every full-cache `put` makes the latency trade-off unfavorable at current eviction frequency.
+
+## Open questions
+
+- Can two-phase hashing (e.g., two seeded hashes, each sliced into two row positions) recover the independence advantage of four independent hashes while still halving the hash cost — preserving v002's gain while closing its tail regression?
+- Is there an amortized or deferred form of best-of-2 eviction that batches or lazily skips the second sketch probe to reduce the per-eviction overhead while retaining most of the hit-rate benefit?
+
+## Continuation
+
+Next cycle should build on v002's win: the single-hash bit-slice approach is the new baseline to beat, and the open thread is whether replacing it with two half-hashes (each covering two rows with an independent seed) recovers row independence without re-introducing full redundant hashing. The eviction-axis hypothesis from v003 should be carried forward in a cheaper form — deferred or sampled frequency comparison rather than a mandatory probe on every eviction — since the hit-rate signal it found is real. Decay should not be revisited; both tried intervals have failed and the axis is exhausted.
+
+
+### Cycle 0004
+
+# Cycle 0004 Insight
+
+## Cohort outcome
+
+This cycle pursued two independent axes — recovering sketch row-independence from v002's single-hash baseline, and refining eviction candidate selection — producing two winners: a two-hash bit-slice approach (v001) that improved hit rate at the cost of p99 tail latency, and an amortised best-of-2 eviction scheme (v002) that recovered both hit rate and per-op-time parity simultaneously. A stricter admission gate (v003) also raised hit rate but incurred a substantial latency regression.
+
+## Patterns
+
+- **Two independent axes both improved hit rate, via different mechanisms.** Better sketch row independence (v001) reduced frequency-estimation collisions, while sampled victim comparison (v002) corrected frequency-blind evictions without touching the sketch. This confirms that hit-rate gains are still available on both the sketch accuracy and the eviction policy sides — they are not redundant.
+- **Eviction firing rate is a hidden latency lever.** Whether firing fewer evictions (v002's 7-in-8 skip) or harder-to-satisfy evictions (v003's stricter admission gate), the downstream memory-access pattern shifts enough to move latency measurably. v002 turned this sensitivity into a win by reducing the common path; v003 stumbled by disrupting it without compensating elsewhere.
+- **The hash count / row independence trade-off is quantified.** v001 sits between the original four-hash baseline (maximum independence) and the cycle 0003 winner (minimum hashing): the second seeded hash costs p99 tail latency without hurting p50, implying the overhead concentrates on contention and cold-miss paths rather than the warm-hit median. Cheaper independence-preserving transforms remain an open opportunity.
+- **Amortised sampling is a reliable pattern.** v002's 1-in-8 probe rate preserved per-op-time while still yielding a real, stable hit-rate improvement — the gain survives sampling, which proves the signal is strong enough to exploit at coarser granularity.
+
+## Open questions
+
+- Is there an amortisation ratio finer than 1-in-8 (e.g., 1-in-4 or 1-in-2) that captures proportionally more of the hit-rate benefit while remaining latency-neutral, or does latency break before 1-in-2?
+- Can the second seeded hash in v001 be replaced with a cheaper bijective re-mix of the first hash output (e.g., a single multiply-xorshift step) to recover row independence without the full cost of a second SipHash invocation?
+- Would combining v003's stricter admission gate with v002's amortised eviction compound their hit-rate signals — and does the reduced eviction rate from v002 neutralise v003's latency disruption?
+
+## Continuation
+
+Next cycle should push the amortisation ratio of v002's best-of-2 eviction: 1-in-4 is the natural next step, and the key question is whether latency stays neutral at that rate. Separately, v001 motivates a cheaper two-row hash variant — a bijective re-mix of the first hash into a second row pair rather than a full second seeded hash call — which could close the p99 gap while preserving the independence gain. Combining v003's admission gate with v002's amortised eviction is a lower-priority but plausible compound hypothesis once both individual axes stabilize.
+
+
+## Write
+
+Exactly one file: `cycle-insight.md` in the output dir.

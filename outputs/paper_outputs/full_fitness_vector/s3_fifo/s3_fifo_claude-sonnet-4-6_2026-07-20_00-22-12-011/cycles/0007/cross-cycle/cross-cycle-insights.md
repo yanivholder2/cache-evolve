@@ -1,0 +1,34 @@
+## Recurring wins
+
+- **O(n) → O(1) hot-path replacements always pay off**: Every cycle that eliminated a linear scan in a hot path (ghost-set membership in `put()`, lazy tombstone deletion amortised across evictions, `position()` deque scan in `get()`/`put()`, unified `resident_map` probe) delivered durable, large latency gains. The pattern is consistent across cycles 1–5 regardless of which path was targeted.
+- **Orthogonal changes compose cleanly**: Structural changes touching disjoint code paths (queue sizing, entry layout, ghost-check algorithm) stacked without interaction penalties. The cycle 1 triple win composed faithfully in cycle 2's composite variant and has not regressed since.
+- **Amortising cleanup beats eager per-operation work**: Lazy ghost tombstoning (defer deque cleanup to future capacity-guard evictions) cut put tail latency substantially and has introduced no observed backlog problem across subsequent cycles. The principle generalises: pushing low-priority cleanup off the hot path is consistently safe here.
+- **Small-queue fraction reduction from 1/4 to 1/20 was monotonically beneficial**: Each halving step (1/4 → 1/10 → 1/20) improved hit-rate and latency on Zipfian workloads with no observed penalty, until the fraction crossed below 1/20 (cycles 1–3). The 1/20 setting is the confirmed optimum.
+- **Consolidated `resident_map<K,(V,u8)>` is the structurally correct data layout**: Single-probe O(1) value lookup, frequency update, and membership check in one hash operation, eliminating two separate freq deques and the Entry value field. Confirmed in cycle 5; decomposition ruled out in cycle 6.
+
+## Recurring failures
+
+- **Pushing the small-queue fraction below 1/20**: At 1/40 a latency penalty begins to emerge; at 1/80 it is decisive. The dominant cost is `evict_small()` *invocation frequency*, not per-call overhead — more frequent small-queue turnover is the mechanism, and it is independent of the position() scan that previously masked the crossover (cycles 4, 6, 7).
+- **Expanding the ghost window beyond `main_size`**: Doubling the ghost capacity accumulated stale tombstones on the Zipfian cold tail rather than recapturing useful keys, degrading both hit-rate and put latency. The original `main_size` bound is tight and correct for this workload (cycle 6).
+- **Splitting or decomposing the unified `resident_map`**: Separating `data<K,V>` and `freq_map<K,u8>` to improve read-path cache density was offset by doubled write cost on every admission and eviction. The consolidated layout is not a decomposition candidate (cycle 6).
+- **O(1) random victim selection in `evict_main()`**: Two-random-choices eliminated deque churn but allowed hot entries to be discarded on bad draws, causing a material hit-rate regression. Complexity class and eviction quality are coupled here (cycle 3).
+- **Bounded second-chance scan cap**: Falsified — on Zipfian workloads, cold entries cluster at the deque tail naturally, so the second-chance loop already terminates early without a cap. Imposing a cap forces eviction of still-hot entries beyond the budget (cycle 4).
+- **Frequency step acceleration (step=2)**: Faster frequency drain increased ghost-hit-driven `evict_main()` calls; total eviction work rose even as individual scan lengths shortened. Scan-length reduction and total-eviction-work reduction are decoupled and can oppose each other (cycle 4).
+- **Ghost-hit frequency initialisation at `freq=1`**: Extended `evict_main()` scan depth and displaced hotter entries. The Zipfian cold tail does not reliably re-access soon enough to justify the deferral. `freq=0` on ghost admission is confirmed correct (cycle 7).
+- **`MAX_FREQ` widening beyond 3**: Marginal hit-rate gain (the Zipfian hot set is already well-retained at cap=3) is outweighed by proportionally deeper `evict_main()` traversal. This knob is exhausted on Zipfian workloads (cycle 7).
+- **Hash load-factor pre-sizing**: Zero measurable effect at any tested capacity, definitively ruling out probe-chain length as a latency source (cycle 7).
+
+## Open questions
+
+- **What is the current dominant per-operation cost?** All previously identified bottlenecks (position() scan, O(n) ghost lookup, split-map overhead, hash collision depth) have been eliminated. Candidates for the next target are: `evict_small()` call-rate overhead, deque memory-access pattern under frequency churn in `evict_main()`, and `ghost_set` HashSet probe cost on every `put()`.
+- **What is the most expensive sub-operation within `evict_small()` at high invocation rates?** Cycle 7 pinpointed invocation frequency as the binding cost driver, but did not decompose the per-call work — deque churn, ghost-set membership test, and data-map removal are all candidates.
+- **Can `evict_small()` invocation rate be reduced by batching or amortisation?** Driving multiple `put()` calls per `evict_small()` invocation, or deferring eviction until a high-water mark, may cut the dominant cost without changing queue sizing or per-call logic.
+- **Is the Winners fitness function weighting obscuring regressions?** Net-negative variants (hit-rate regressed, no latency gain) have appeared in the Winners list in cycles 3, 6, and 7. The mechanism is uncharacterised; it may reflect weighting of a specific latency percentile or aggregate score that these variants happen to clear.
+
+## Per-policy notes
+
+- **S3-FIFO baseline (as of cycle 5/v003)**: consolidated `resident_map<K,(V,u8)>` with 1/20 small-queue fraction, O(1) ghost-set membership, lazy tombstone deletion, `MAX_FREQ=3`, `freq=0` ghost-hit initialisation. This is the reference for all future cycles.
+- **Ghost channel is a dual gate — frequency *and* demand confirmation**: The `freq > 1` promotion threshold enforces that main receives only keys re-requested *after* ghost-listing, not merely re-accessed while still in small. Lowering this threshold floods main with once-warm entries lacking recency evidence (cycle 3). This rule is load-bearing and should not be revisited.
+- **`evict_main()` second-chance scan is self-terminating on Zipfian**: Cold entries naturally cluster at the deque tail on Zipfian workloads, so the loop exits early without any cap. No structural change to this loop has produced a net win; it is not a productive target.
+- **Ghost deque tombstone backlog is bounded in practice**: Lazy deletion has not caused observable backlog growth across all cycles since cycle 2. The capacity-guard drain is effective; the concern from cycle 2's open question has not materialised.
+- **Zipfian cold tail does not benefit from extended recency windows**: Extended ghost capacity, higher `MAX_FREQ`, and `freq=1` ghost initialisation all assume cold entries will re-request promptly — that assumption fails systematically on Zipfian. Tuning decisions that implicitly depend on cold-tail recency should be treated as falsified on this workload.
