@@ -8,6 +8,25 @@ For the concepts, the end-to-end flow, the simulator setup, and per-subject deta
 
 ## Environment setup
 
+### Prerequisites
+
+- **Python** ≥3.12 (`pyproject.toml` `requires-python`)
+- **[uv](https://github.com/astral-sh/uv)** — any recent version
+- **Rust** (`cargo`/`rustc`), stable toolchain — builds each subject's cdylib; no MSRV pinned
+- **JDK** ≥25 — Caffeine's Gradle toolchain floor
+- **git** — any recent version; clones/updates the `caffeine` sibling checkout
+- **[Claude Code CLI](https://docs.claude.com/en/docs/claude-code)** (`claude`), authenticated — the default `ai_agent_tool = "claude-sdk"` drives it via `claude-agent-sdk`
+
+On Windows:
+
+- `google-antigravity` (the `antigravity-sdk` backend's dependency) has no
+  `win_amd64` wheel, so `pyproject.toml` excludes it there via a `sys_platform`
+  marker — `claude-sdk` and `ollama-local` are unaffected.
+- rustup's default MSVC target needs the MSVC linker, which is *not* installed
+  by rustup itself — install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio)
+  with the "Desktop development with C++" workload, or `cargo build` fails
+  with a `link.exe` error.
+
 ### With uv (recommended)
 
 Dependencies are managed by [uv](https://github.com/astral-sh/uv) and installed into a local `.venv/`:
@@ -67,6 +86,16 @@ evolve --cycles 3 --cohort-size 4
 ```
 
 Each cycle ends with a `cycle <NNNN> complete` line naming the sealed cycle directory.
+
+### Resuming a crashed run
+
+Point `--continue` at the run's outputs directory to resume a run that stopped mid-cycle:
+
+```bash
+evolve --continue outputs/<subject>/<run-dir>
+```
+
+It reuses the run's config snapshot verbatim (no other flags allowed alongside it), erases the incomplete cycle, and continues to the snapshot's original cycle target.
 
 ### One-shot runs via the `evolve-run` skill
 
