@@ -69,7 +69,7 @@ def generate_plots(data_file, out_dir):
         }
 
     def plot_evolution(metric_col, title, ylabel, filename):
-        plt.figure(figsize=(6, 4))
+        plt.figure()
         for subj in subjects:
             subj_data = df_agg[df_agg['subject'] == subj].sort_values('cycle')
             # Drop cycles where this metric was never calculated.
@@ -80,7 +80,6 @@ def generate_plots(data_file, out_dir):
                      color=style_map[subj]['color'], marker=style_map[subj]['marker'], linewidth=2)
         plt.xlabel('Cycles', fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        plt.title(title, fontsize=14)
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, filename), dpi=300)
@@ -148,7 +147,7 @@ def generate_plots(data_file, out_dir):
 
     # Setup plotting function for grouped bars
     def plot_grouped_bar(metric_col, title, ylabel, filename):
-        plt.figure(figsize=(8, 5))
+        plt.figure()
 
         subjects_final = df_final['subject'].unique()
         agent_tools = df_final['agent_tool'].unique()
@@ -174,7 +173,6 @@ def generate_plots(data_file, out_dir):
 
         plt.xlabel('Cache Architecture (Subject)', fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        plt.title(title, fontsize=14)
         plt.xticks(x, subjects_final, rotation=15)
 
         plt.grid(axis='y', linestyle='--', alpha=0.7)
@@ -192,100 +190,32 @@ def generate_plots(data_file, out_dir):
     print(f"Successfully generated 4 grouped bar charts in the '{out_dir}/' directory.")
 
     # ==========================================
-    # PART 3: SCATTER PLOTS (Cost/Runtime vs Score)
+    # PART 3: PARETO FRONTIER PLOTS (Best Score vs Cost/Runtime)
     # ==========================================
-    
+
     agent_tools = list(set(get_model_from_run(r) for r in data['runs']))
     all_markers = ['o', 's', '^', 'D', 'v', 'p', '*', 'X', '<', '>']
     agent_marker_map = {agent: all_markers[i % len(all_markers)] for i, agent in enumerate(agent_tools)}
 
-    scatter_rows = []
-    for run in data['runs']:
-        cumulative_cost = 0.0
-        cumulative_runtime = 0.0
-        agent_tool = get_model_from_run(run)
-        for v in run['variants']:
-            cost = v.get('cost-usd', MISSING)
-            if cost != MISSING and cost != -1:
-                cumulative_cost += cost
-
-            runtime = v.get('total-seconds-to-generate', MISSING)
-            if runtime != MISSING and runtime != -1:
-                cumulative_runtime += runtime
-            
-            score = v.get('weighted_score', v.get('weighted-score', MISSING))
-            if score != MISSING and score != -1:
-                scatter_rows.append({
-                    'subject': v['subject-name'],
-                    'agent_tool': agent_tool,
-                    'cumulative_cost': cumulative_cost,
-                    'cumulative_runtime': cumulative_runtime,
-                    'score': score
-                })
-
-    df_scatter = pd.DataFrame(scatter_rows)
-    if not df_scatter.empty:
-        # Plot Cost vs Score
-        plt.figure(figsize=(8, 6))
-        for subj in subjects:
-            for agent in agent_tools:
-                subj_data = df_scatter[(df_scatter['subject'] == subj) & (df_scatter['agent_tool'] == agent)]
-                if subj_data.empty:
-                    continue
-                plt.scatter(subj_data['cumulative_cost'], subj_data['score'],
-                            color=style_map[subj]['color'], marker=agent_marker_map[agent],
-                            label=f"{subj} ({agent})", alpha=0.7, edgecolors='k', s=60)
-            
-        plt.xlabel('Total Cost (USD)', fontsize=12)
-        plt.ylabel('Score', fontsize=12)
-        plt.title('Total Cost vs Score', fontsize=14)
-        plt.grid(True, linestyle='--', alpha=0.7)
-        # Deduplicate legend labels
-        handles, labels = plt.gca().get_legend_handles_labels()
-        if labels:
-            by_label = dict(zip(labels, handles))
-            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, 'cost-vs-score-scatter.png'), dpi=300, bbox_inches='tight')
-        plt.close()
-        print(f"Successfully generated cost vs score scatter plot in the '{out_dir}/' directory.")
-
-        # Plot Runtime vs Score
-        plt.figure(figsize=(8, 6))
-        for subj in subjects:
-            for agent in agent_tools:
-                subj_data = df_scatter[(df_scatter['subject'] == subj) & (df_scatter['agent_tool'] == agent)]
-                if subj_data.empty:
-                    continue
-                plt.scatter(subj_data['cumulative_runtime'], subj_data['score'],
-                            color=style_map[subj]['color'], marker=agent_marker_map[agent],
-                            label=f"{subj} ({agent})", alpha=0.7, edgecolors='k', s=60)
-            
-        plt.xlabel('Total Runtime (Seconds)', fontsize=12)
-        plt.ylabel('Score', fontsize=12)
-        plt.title('Total Runtime vs Score', fontsize=14)
-        plt.grid(True, linestyle='--', alpha=0.7)
-        # Deduplicate legend labels
-        handles, labels = plt.gca().get_legend_handles_labels()
-        if labels:
-            by_label = dict(zip(labels, handles))
-            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, 'runtime-vs-score-scatter.png'), dpi=300, bbox_inches='tight')
-        plt.close()
-        print(f"Successfully generated runtime vs score scatter plot in the '{out_dir}/' directory.")
-
-    # ==========================================
-    # PART 4: LINE PLOTS (Best Score vs Cost/Runtime)
-    # ==========================================
-
-    line_rows = []
+    frontier_rows = []
     for run_idx, run in enumerate(data['runs']):
         cumulative_cost = 0.0
         cumulative_runtime = 0.0
-        best_score = -float('inf')
+        # Start at 0 for baseline. Negative scores are ignored for champions.
+        best_score = 0.0
         agent_tool = get_model_from_run(run)
-        
+        subject_name = run['setup']['subject-name']
+
+        # Add the baseline/start point
+        frontier_rows.append({
+            'run_idx': run_idx,
+            'subject': subject_name,
+            'agent_tool': agent_tool,
+            'cumulative_cost': 0.0,
+            'cumulative_runtime': 0.0,
+            'score': 0.0
+        })
+
         for v in run['variants']:
             cost = v.get('cost-usd', MISSING)
             if cost != MISSING and cost != -1:
@@ -294,38 +224,38 @@ def generate_plots(data_file, out_dir):
             runtime = v.get('total-seconds-to-generate', MISSING)
             if runtime != MISSING and runtime != -1:
                 cumulative_runtime += runtime
-            
+
             score = v.get('weighted_score', v.get('weighted-score', MISSING))
             if score != MISSING and score != -1:
+                # Only keep point if it's strictly greater than the highest score seen so far
                 if score > best_score:
                     best_score = score
-                line_rows.append({
-                    'run_idx': run_idx,
-                    'subject': v['subject-name'],
-                    'agent_tool': agent_tool,
-                    'cumulative_cost': cumulative_cost,
-                    'cumulative_runtime': cumulative_runtime,
-                    'best_score': best_score
-                })
+                    frontier_rows.append({
+                        'run_idx': run_idx,
+                        'subject': v['subject-name'],
+                        'agent_tool': agent_tool,
+                        'cumulative_cost': cumulative_cost,
+                        'cumulative_runtime': cumulative_runtime,
+                        'score': best_score
+                    })
 
-    df_line = pd.DataFrame(line_rows)
-    if not df_line.empty:
-        # Plot Cost vs Best Score
-        plt.figure(figsize=(8, 6))
+    df_frontier = pd.DataFrame(frontier_rows)
+    if not df_frontier.empty:
+        # Plot Cost vs Score (Pareto Frontier)
+        plt.figure()
         for subj in subjects:
-            subj_data = df_line[df_line['subject'] == subj]
+            subj_data = df_frontier[df_frontier['subject'] == subj]
             if subj_data.empty:
                 continue
             for run_idx in subj_data['run_idx'].unique():
                 run_data = subj_data[subj_data['run_idx'] == run_idx].sort_values('cumulative_cost')
                 agent = run_data['agent_tool'].iloc[0]
-                plt.plot(run_data['cumulative_cost'], run_data['best_score'],
+                plt.step(run_data['cumulative_cost'], run_data['score'], where='post',
                          color=style_map[subj]['color'], marker=agent_marker_map[agent],
                          label=f"{subj} ({agent})", alpha=0.7, linewidth=2)
-            
+
         plt.xlabel('Total Cost (USD)', fontsize=12)
         plt.ylabel('Best Score', fontsize=12)
-        plt.title('Total Cost vs Best Score', fontsize=14)
         plt.grid(True, linestyle='--', alpha=0.7)
         # Deduplicate legend labels
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -333,38 +263,195 @@ def generate_plots(data_file, out_dir):
             by_label = dict(zip(labels, handles))
             plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
-        plt.xscale('log')
-        plt.savefig(os.path.join(out_dir, 'cost-vs-best-score-line.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(out_dir, 'cost-vs-score-pareto.png'), dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Successfully generated cost vs best score line plot in the '{out_dir}/' directory.")
+        print(f"Successfully generated cost vs capability pareto plot in the '{out_dir}/' directory.")
 
-        # Plot Runtime vs Best Score
-        plt.figure(figsize=(8, 6))
+        # Plot Runtime vs Score (Pareto Frontier)
+        plt.figure()
         for subj in subjects:
-            subj_data = df_line[df_line['subject'] == subj]
+            subj_data = df_frontier[df_frontier['subject'] == subj]
             if subj_data.empty:
                 continue
             for run_idx in subj_data['run_idx'].unique():
                 run_data = subj_data[subj_data['run_idx'] == run_idx].sort_values('cumulative_runtime')
                 agent = run_data['agent_tool'].iloc[0]
-                plt.plot(run_data['cumulative_runtime'], run_data['best_score'],
+                plt.step(run_data['cumulative_runtime'], run_data['score'], where='post',
                          color=style_map[subj]['color'], marker=agent_marker_map[agent],
                          label=f"{subj} ({agent})", alpha=0.7, linewidth=2)
-            
+
         plt.xlabel('Total Runtime (Seconds)', fontsize=12)
         plt.ylabel('Best Score', fontsize=12)
-        plt.title('Total Runtime vs Best Score', fontsize=14)
+        plt.title('Pareto Frontier: Runtime vs Capability', fontsize=14)
         plt.grid(True, linestyle='--', alpha=0.7)
-        plt.xscale('log')
         # Deduplicate legend labels
         handles, labels = plt.gca().get_legend_handles_labels()
         if labels:
             by_label = dict(zip(labels, handles))
             plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, 'runtime-vs-best-score-line.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(out_dir, 'runtime-vs-score-pareto.png'), dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Successfully generated runtime vs best score line plot in the '{out_dir}/' directory.")
+        print(f"Successfully generated runtime vs capability pareto plot in the '{out_dir}/' directory.")
+
+    # ==========================================
+    # PART 4: SUNK COST OVERHEAD PLOTS (Stacked Bar Chart)
+    # ==========================================
+
+    cost_rows = []
+    for run in data['runs']:
+        setup = run.get('setup', {})
+        agent_tool = get_model_from_run(run)
+        subject_name = setup.get('subject-name', 'unknown')
+        productive_cost = setup.get('productive-cost-usd', 0.0)
+        sunk_cost = setup.get('sunk-cost-usd', 0.0)
+        
+        if productive_cost == MISSING or productive_cost is None: productive_cost = 0.0
+        if sunk_cost == MISSING or sunk_cost is None: sunk_cost = 0.0
+            
+        cost_rows.append({
+            'agent_tool': agent_tool,
+            'subject': subject_name,
+            'productive_cost': productive_cost,
+            'sunk_cost': sunk_cost
+        })
+        
+    df_cost = pd.DataFrame(cost_rows)
+    if not df_cost.empty:
+        models = sorted(df_cost['agent_tool'].unique())
+        subjects_list = sorted(df_cost['subject'].unique())
+        
+        n_models = len(models)
+        n_subjects = len(subjects_list)
+        
+        plt.figure()
+        
+        bar_width = 0.8 / n_subjects
+        x_indexes = np.arange(n_models)
+        
+        color_productive = '#2b5b84' 
+        color_sunk = '#e74c3c' 
+        
+        for i, subj in enumerate(subjects_list):
+            subj_productive = []
+            subj_sunk = []
+            
+            for model in models:
+                match = df_cost[(df_cost['agent_tool'] == model) & (df_cost['subject'] == subj)]
+                if not match.empty:
+                    p_cost = match['productive_cost'].mean()
+                    s_cost = match['sunk_cost'].mean()
+                else:
+                    p_cost = 0.0
+                    s_cost = 0.0
+                subj_productive.append(p_cost)
+                subj_sunk.append(s_cost)
+                
+            subj_productive = np.array(subj_productive)
+            subj_sunk = np.array(subj_sunk)
+            
+            x_offset = (i - n_subjects / 2 + 0.5) * bar_width
+            bars_p = plt.bar(x_indexes + x_offset, subj_productive, bar_width, 
+                             color=color_productive, edgecolor='black', alpha=0.9)
+            bars_s = plt.bar(x_indexes + x_offset, subj_sunk, bar_width, bottom=subj_productive, 
+                             color=color_sunk, edgecolor='black', hatch='//', alpha=0.8)
+            
+            for j, (p, s, bar) in enumerate(zip(subj_productive, subj_sunk, bars_p)):
+                total = p + s
+                # Percentage label at the top
+                if total > 0.01:
+                    ratio = s / total
+                    plt.text(x_indexes[j] + x_offset, total + (total * 0.05) + 0.05, f"{ratio:.0%}", 
+                             ha='center', va='bottom', fontsize=9, rotation=90)
+                # Subject label at the bottom of the bar
+                if p > 0.01:
+                    plt.text(bar.get_x() + bar.get_width()/2, p * 0.1, subj, 
+                             rotation=90, color='white', ha='center', va='bottom', fontsize=10, fontweight='bold')
+        
+        plt.xlabel('Model (Agent Tool)', fontsize=12)
+        plt.ylabel('Total Cost (USD)', fontsize=12)
+        plt.xticks(x_indexes, models)
+        
+        import matplotlib.patches as mpatches
+        legend_handles = [
+            mpatches.Patch(facecolor=color_productive, edgecolor='black', label='Productive Cost'),
+            mpatches.Patch(facecolor=color_sunk, edgecolor='black', hatch='//', label='Sunk Cost (Waste)')
+        ]
+        plt.legend(handles=legend_handles, fontsize=11, loc='upper left')
+        
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, 'cost-sunk-stacked-bar.png'), dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Successfully generated cost sunk stacked bar plot in the '{out_dir}/' directory.")
+
+    # ==========================================
+    # PART 5: FAILED VARIANTS (Grouped Bar Chart with Error Bars)
+    # ==========================================
+    print("Generating count attempts bar plot...")
+    failed_rows = []
+    for run in data['runs']:
+        setup = run.get('setup', {})
+        agent_tool = get_model_from_run(run)
+        subject_name = setup.get('subject-name', 'unknown')
+        variants = run.get('variants', [])
+        
+        # Flatten variants so each attempt is its own row
+        for v in variants:
+            attempts = v.get('count-attempts', MISSING)
+            if attempts != MISSING and attempts != -1:
+                failed_rows.append({
+                    'agent_tool': agent_tool,
+                    'subject': subject_name,
+                    'count_attempts': attempts
+                })
+        
+    df_failed = pd.DataFrame(failed_rows)
+    if not df_failed.empty:
+        plt.figure()
+
+        subjects_failed = sorted(df_failed['subject'].unique())
+        agent_tools = sorted(df_failed['agent_tool'].unique())
+
+        x = np.arange(len(subjects_failed))
+        width = 0.8 / len(agent_tools)
+
+        colors_bar = plt.cm.Set2(np.linspace(0, 1, len(agent_tools)))
+
+        for i, agent_tool in enumerate(agent_tools):
+            tool_means = []
+            tool_stds = []
+            for subj in subjects_failed:
+                match = df_failed[(df_failed['subject'] == subj) & (df_failed['agent_tool'] == agent_tool)]
+                if not match.empty:
+                    val_mean = match['count_attempts'].mean()
+                    val_std = match['count_attempts'].std()
+                    # Pandas std() returns NaN if there's only 1 item. Replace with 0.0
+                    if pd.isna(val_std):
+                        val_std = 0.0
+                else:
+                    val_mean = 0.0
+                    val_std = 0.0
+                    
+                tool_means.append(val_mean)
+                tool_stds.append(val_std)
+
+            offset = (i - len(agent_tools) / 2 + 0.5) * width
+            # Added yerr=tool_stds and capsize=4 for the error bars
+            plt.bar(x + offset, tool_means, width, yerr=tool_stds, label=agent_tool, 
+                    color=colors_bar[i], edgecolor='black', capsize=4)
+
+        plt.xlabel('Cache Architecture (Subject)', fontsize=12)
+        plt.ylabel('Count of Attempts (Mean ± StdDev)', fontsize=12)
+        plt.xticks(x, subjects_failed, rotation=15)
+        plt.legend(fontsize=11, loc='upper left', bbox_to_anchor=(1, 1))
+
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, 'count-attempts-bar.png'), dpi=300)
+        plt.close()
+        print(f"Successfully generated count attempts bar plot in the '{out_dir}/' directory.")
 
 # Run plot generation on both files, dispatching output into their respective folders.
 generate_plots('plots/paper-plots/data_full_fitness_vector.json', 'plots/paper-plots/full_fitness_vector')

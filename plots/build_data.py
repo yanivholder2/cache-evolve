@@ -338,14 +338,19 @@ def build_run(run_dir: Path, subject: str):
         variants.append(baseline)
 
     cycle_dirs = sorted((run_dir / "cycles").glob("[0-9]" * 4))
+    total_productive_cost_usd = 0.0
+    total_sunk_cost_usd = 0.0
+    total_failed_variants = 0
+
     for cycle_dir in cycle_dirs:
         cycle = int(cycle_dir.name)
         cycle_winners = winners.get(cycle, set())
         for variant_dir in sorted((cycle_dir / "variants").glob("v*")):
             vector_path = variant_dir / "eval" / "fitness-vector.json"
-            if not vector_path.exists():
-                continue  # variant produced no vector (e.g. build or gate failure)
-            summaries = dim_summaries(json.loads(vector_path.read_text()))
+            is_successful = vector_path.exists()
+            
+            variant_productive_cost = 0.0
+            variant_sunk_cost = 0.0
             
             count_attempts = 0
             variant_seconds = 0.0
@@ -354,19 +359,37 @@ def build_run(run_dir: Path, subject: str):
             
             attempts_dir = variant_dir / "attempts"
             if attempts_dir.exists():
-                for attempt_dir in attempts_dir.iterdir():
-                    if attempt_dir.is_dir():
-                        count_attempts += 1
-                        d, c = extract_agent_stats(attempt_dir / "variant-implementer.log.md")
-                        variant_seconds += d
-                        total_seconds += d
-                        cost += c
+                attempts = sorted([d for d in attempts_dir.iterdir() if d.is_dir()], key=lambda x: int(x.name))
+                for i, attempt_dir in enumerate(attempts):
+                    count_attempts += 1
+                    d, c_cost = extract_agent_stats(attempt_dir / "variant-implementer.log.md")
+                    variant_seconds += d
+                    total_seconds += d
+                    cost += c_cost
+                    if is_successful and i == len(attempts) - 1:
+                        variant_productive_cost += c_cost
+                    else:
+                        variant_sunk_cost += c_cost
             else:
                 count_attempts = 1
                 
             ins_d, ins_c = extract_agent_stats(variant_dir / "variant-insight-writer.log.md")
             total_seconds += ins_d
             cost += ins_c
+            
+            if is_successful:
+                variant_productive_cost += ins_c
+            else:
+                variant_sunk_cost += ins_c
+                
+            total_productive_cost_usd += variant_productive_cost
+            total_sunk_cost_usd += variant_sunk_cost
+
+            if not is_successful:
+                total_failed_variants += 1
+                continue  # variant produced no vector (e.g. build or gate failure)
+                
+            summaries = dim_summaries(json.loads(vector_path.read_text()))
             
             row = backfill(
                 make_row(
@@ -387,6 +410,9 @@ def build_run(run_dir: Path, subject: str):
             variants.append(row)
 
     setup = run_setup(run_dir, subject, len(cycle_dirs))
+    setup["productive-cost-usd"] = round(total_productive_cost_usd, 6)
+    setup["sunk-cost-usd"] = round(total_sunk_cost_usd, 6)
+    setup["failed-variants"] = total_failed_variants
     return {"setup": setup, "variants": variants}
 
 
