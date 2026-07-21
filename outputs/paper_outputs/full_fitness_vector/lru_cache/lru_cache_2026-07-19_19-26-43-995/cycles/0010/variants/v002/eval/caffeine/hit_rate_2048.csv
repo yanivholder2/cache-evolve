@@ -1,2 +1,0 @@
-Policy,Hit Rate,Miss Rate,Hits,Misses,Requests,Evictions,Time
-lrurust.LruRust,72.92,27.08,364584,135416,500000,0,103

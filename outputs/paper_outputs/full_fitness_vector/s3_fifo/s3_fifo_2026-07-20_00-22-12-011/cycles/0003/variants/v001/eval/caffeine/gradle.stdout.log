@@ -1,6 +1,0 @@
-^^^^^^^^^^^^^^^^^^^^^^ S3FifoRust Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
-capacity: 2048
-^^^^^^^^^^^^^^^^^^^^^^ S3FifoRust Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
-2,048: Executed in 981.0 ms
-Did not generate a chart as only one data point
-Wrote report to C:\Users\yaniv\Projects\cache-evolve\outputs\s3_fifo_2026-07-20_00-22-12-011\cycles\0003\variants\v001\eval\caffeine\hit_rate_2048.csv

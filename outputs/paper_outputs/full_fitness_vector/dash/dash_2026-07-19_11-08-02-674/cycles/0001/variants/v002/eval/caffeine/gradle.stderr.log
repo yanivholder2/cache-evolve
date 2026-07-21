@@ -1,1 +1,0 @@
-caffeine simulator timed out after 600s (trace=lirs:inputs/traces/workload-a.trace.gz, sizes=[2048], policies=['classiclru'])
