@@ -1,7 +1,9 @@
 import json
 import os
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
 
@@ -111,6 +113,13 @@ def generate_plots(data_file, out_dir):
 
     print(f"Successfully generated 4 cycle evolution plots and 1 standalone legend in the '{out_dir}/' directory.")
 
+    # Consistent color per model (agent tool), shared across the wasted-cost
+    # and attempts-count bar charts so a color always means the same model,
+    # backed by one standalone legend instead of a per-chart legend.
+    all_models = sorted(set(get_model_from_run(r) for r in data['runs']))
+    model_colors = plt.cm.Set2(np.linspace(0, 1, len(all_models)))
+    model_style_map = {model: model_colors[i] for i, model in enumerate(all_models)}
+
     # ==========================================
     # PART 2: GROUPED BAR CHARTS (Final Performance by Agent Tool)
     # ==========================================
@@ -192,19 +201,27 @@ def generate_plots(data_file, out_dir):
     # ==========================================
     # PART 3: PARETO FRONTIER PLOTS (Best Score vs Cost/Runtime)
     # ==========================================
+    # Restricted to s3_fifo and lru_cache to keep the frontier legible; color
+    # encodes model (matching model_style_map elsewhere), marker encodes subject.
 
-    agent_tools = list(set(get_model_from_run(r) for r in data['runs']))
+    PARETO_SUBJECTS = ('s3_fifo', 'lru_cache')
     all_markers = ['o', 's', '^', 'D', 'v', 'p', '*', 'X', '<', '>']
-    agent_marker_map = {agent: all_markers[i % len(all_markers)] for i, agent in enumerate(agent_tools)}
+    subject_marker_map = {subj: all_markers[i % len(all_markers)] for i, subj in enumerate(PARETO_SUBJECTS)}
+    # s3_fifo dashed, lru_cache solid, so the two policies are readable even
+    # in grayscale/without markers.
+    subject_linestyle_map = {'s3_fifo': '--', 'lru_cache': '-'}
 
     frontier_rows = []
     for run_idx, run in enumerate(data['runs']):
+        subject_name = run['setup']['subject-name']
+        if subject_name not in PARETO_SUBJECTS:
+            continue
+
         cumulative_cost = 0.0
         cumulative_runtime = 0.0
         # Start at 0 for baseline. Negative scores are ignored for champions.
         best_score = 0.0
         agent_tool = get_model_from_run(run)
-        subject_name = run['setup']['subject-name']
 
         # Add the baseline/start point
         frontier_rows.append({
@@ -243,7 +260,7 @@ def generate_plots(data_file, out_dir):
     if not df_frontier.empty:
         # Plot Cost vs Score (Pareto Frontier)
         plt.figure()
-        for subj in subjects:
+        for subj in PARETO_SUBJECTS:
             subj_data = df_frontier[df_frontier['subject'] == subj]
             if subj_data.empty:
                 continue
@@ -251,17 +268,22 @@ def generate_plots(data_file, out_dir):
                 run_data = subj_data[subj_data['run_idx'] == run_idx].sort_values('cumulative_cost')
                 agent = run_data['agent_tool'].iloc[0]
                 plt.step(run_data['cumulative_cost'], run_data['score'], where='post',
-                         color=style_map[subj]['color'], marker=agent_marker_map[agent],
+                         color=model_style_map[agent], marker=subject_marker_map[subj],
+                         linestyle=subject_linestyle_map[subj],
                          label=f"{subj} ({agent})", alpha=0.7, linewidth=2)
 
         plt.xlabel('Total Cost (USD)', fontsize=12)
         plt.ylabel('Best Score', fontsize=12)
         plt.grid(True, linestyle='--', alpha=0.7)
-        # Deduplicate legend labels
-        handles, labels = plt.gca().get_legend_handles_labels()
-        if labels:
-            by_label = dict(zip(labels, handles))
-            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
+        # Legend shows only the subject/policy shape and line style, filled
+        # white — color already encodes model via the shared model-legend.png.
+        shape_handles = [
+            Line2D([0], [0], marker=subject_marker_map[subj], color='black',
+                   linestyle=subject_linestyle_map[subj],
+                   markersize=8, markerfacecolor='white', label=subj)
+            for subj in PARETO_SUBJECTS
+        ]
+        plt.legend(handles=shape_handles, fontsize=10, loc='lower right')
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, 'cost-vs-score-pareto.png'), dpi=300, bbox_inches='tight')
         plt.close()
@@ -269,7 +291,7 @@ def generate_plots(data_file, out_dir):
 
         # Plot Runtime vs Score (Pareto Frontier)
         plt.figure()
-        for subj in subjects:
+        for subj in PARETO_SUBJECTS:
             subj_data = df_frontier[df_frontier['subject'] == subj]
             if subj_data.empty:
                 continue
@@ -277,26 +299,31 @@ def generate_plots(data_file, out_dir):
                 run_data = subj_data[subj_data['run_idx'] == run_idx].sort_values('cumulative_runtime')
                 agent = run_data['agent_tool'].iloc[0]
                 plt.step(run_data['cumulative_runtime'], run_data['score'], where='post',
-                         color=style_map[subj]['color'], marker=agent_marker_map[agent],
+                         color=model_style_map[agent], marker=subject_marker_map[subj],
+                         linestyle=subject_linestyle_map[subj],
                          label=f"{subj} ({agent})", alpha=0.7, linewidth=2)
 
         plt.xlabel('Total Runtime (Seconds)', fontsize=12)
         plt.ylabel('Best Score', fontsize=12)
-        plt.title('Pareto Frontier: Runtime vs Capability', fontsize=14)
         plt.grid(True, linestyle='--', alpha=0.7)
-        # Deduplicate legend labels
-        handles, labels = plt.gca().get_legend_handles_labels()
-        if labels:
-            by_label = dict(zip(labels, handles))
-            plt.legend(by_label.values(), by_label.keys(), fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
+        # Legend shows only the subject/policy shape and line style, filled
+        # white — color already encodes model via the shared model-legend.png.
+        shape_handles = [
+            Line2D([0], [0], marker=subject_marker_map[subj], color='black',
+                   linestyle=subject_linestyle_map[subj],
+                   markersize=8, markerfacecolor='white', label=subj)
+            for subj in PARETO_SUBJECTS
+        ]
+        plt.legend(handles=shape_handles, fontsize=10, loc='lower right')
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, 'runtime-vs-score-pareto.png'), dpi=300, bbox_inches='tight')
         plt.close()
         print(f"Successfully generated runtime vs capability pareto plot in the '{out_dir}/' directory.")
 
     # ==========================================
-    # PART 4: SUNK COST OVERHEAD PLOTS (Stacked Bar Chart)
+    # PART 4: WASTED COST (Grouped Stacked Bar Chart: Productive vs Wasted)
     # ==========================================
+    print("Generating wasted cost bar plot...")
 
     cost_rows = []
     for run in data['runs']:
@@ -305,85 +332,165 @@ def generate_plots(data_file, out_dir):
         subject_name = setup.get('subject-name', 'unknown')
         productive_cost = setup.get('productive-cost-usd', 0.0)
         sunk_cost = setup.get('sunk-cost-usd', 0.0)
-        
+
         if productive_cost == MISSING or productive_cost is None: productive_cost = 0.0
         if sunk_cost == MISSING or sunk_cost is None: sunk_cost = 0.0
-            
+
         cost_rows.append({
             'agent_tool': agent_tool,
             'subject': subject_name,
             'productive_cost': productive_cost,
-            'sunk_cost': sunk_cost
+            'sunk_cost': sunk_cost,
         })
-        
+
     df_cost = pd.DataFrame(cost_rows)
     if not df_cost.empty:
-        models = sorted(df_cost['agent_tool'].unique())
-        subjects_list = sorted(df_cost['subject'].unique())
-        
-        n_models = len(models)
-        n_subjects = len(subjects_list)
-        
         plt.figure()
-        
-        bar_width = 0.8 / n_subjects
-        x_indexes = np.arange(n_models)
-        
-        color_productive = '#2b5b84' 
-        color_sunk = '#e74c3c' 
-        
-        for i, subj in enumerate(subjects_list):
-            subj_productive = []
-            subj_sunk = []
-            
-            for model in models:
-                match = df_cost[(df_cost['agent_tool'] == model) & (df_cost['subject'] == subj)]
+
+        subjects_cost = sorted(df_cost['subject'].unique())
+        agent_tools_cost = sorted(df_cost['agent_tool'].unique())
+
+        x = np.arange(len(subjects_cost))
+        width = 0.8 / len(agent_tools_cost)
+        max_total = 0.0
+
+        for i, agent_tool in enumerate(agent_tools_cost):
+            productive_vals = []
+            sunk_vals = []
+            for subj in subjects_cost:
+                match = df_cost[(df_cost['subject'] == subj) & (df_cost['agent_tool'] == agent_tool)]
                 if not match.empty:
-                    p_cost = match['productive_cost'].mean()
-                    s_cost = match['sunk_cost'].mean()
+                    productive_vals.append(match['productive_cost'].mean())
+                    sunk_vals.append(match['sunk_cost'].mean())
                 else:
-                    p_cost = 0.0
-                    s_cost = 0.0
-                subj_productive.append(p_cost)
-                subj_sunk.append(s_cost)
-                
-            subj_productive = np.array(subj_productive)
-            subj_sunk = np.array(subj_sunk)
-            
-            x_offset = (i - n_subjects / 2 + 0.5) * bar_width
-            bars_p = plt.bar(x_indexes + x_offset, subj_productive, bar_width, 
-                             color=color_productive, edgecolor='black', alpha=0.9)
-            bars_s = plt.bar(x_indexes + x_offset, subj_sunk, bar_width, bottom=subj_productive, 
-                             color=color_sunk, edgecolor='black', hatch='//', alpha=0.8)
-            
-            for j, (p, s, bar) in enumerate(zip(subj_productive, subj_sunk, bars_p)):
+                    productive_vals.append(0.0)
+                    sunk_vals.append(0.0)
+
+            productive_vals = np.array(productive_vals)
+            sunk_vals = np.array(sunk_vals)
+            max_total = max(max_total, (productive_vals + sunk_vals).max())
+
+            offset = (i - len(agent_tools_cost) / 2 + 0.5) * width
+            color = model_style_map[agent_tool]
+            # Bottom segment: productive cost, solid. Top segment: wasted (sunk)
+            # cost, same model color but hatched so the split reads at a glance.
+            plt.bar(x + offset, productive_vals, width, color=color, edgecolor='black')
+            plt.bar(x + offset, sunk_vals, width, bottom=productive_vals,
+                    color=color, edgecolor='black', hatch='//', alpha=0.6)
+
+            for xi, p, s in zip(x + offset, productive_vals, sunk_vals):
                 total = p + s
-                # Percentage label at the top
-                if total > 0.01:
-                    ratio = s / total
-                    plt.text(x_indexes[j] + x_offset, total + (total * 0.05) + 0.05, f"{ratio:.0%}", 
-                             ha='center', va='bottom', fontsize=9, rotation=90)
-                # Subject label at the bottom of the bar
-                if p > 0.01:
-                    plt.text(bar.get_x() + bar.get_width()/2, p * 0.1, subj, 
-                             rotation=90, color='white', ha='center', va='bottom', fontsize=10, fontweight='bold')
-        
-        plt.xlabel('Model (Agent Tool)', fontsize=12)
+                if total > 1e-9:
+                    pct = s / total * 100
+                    plt.text(xi, total + total * 0.05 + 0.05, f"{pct:.0f}%",
+                             ha='center', va='bottom', fontsize=8, rotation=90)
+
+        # Headroom above the tallest bar so the rotated percentage labels
+        # (which sit above the bar) aren't clipped by the plot's top edge.
+        plt.ylim(0, max_total * 1.3)
+
+        plt.xlabel('Cache Architecture (Subject)', fontsize=12)
         plt.ylabel('Total Cost (USD)', fontsize=12)
-        plt.xticks(x_indexes, models)
-        
-        import matplotlib.patches as mpatches
-        legend_handles = [
-            mpatches.Patch(facecolor=color_productive, edgecolor='black', label='Productive Cost'),
-            mpatches.Patch(facecolor=color_sunk, edgecolor='black', hatch='//', label='Sunk Cost (Waste)')
+        plt.xticks(x, subjects_cost, rotation=15)
+
+        shading_handles = [
+            mpatches.Patch(facecolor='lightgray', edgecolor='black', label='Productive Cost'),
+            mpatches.Patch(facecolor='lightgray', edgecolor='black', hatch='//', alpha=0.6, label='Wasted Cost'),
         ]
-        plt.legend(handles=legend_handles, fontsize=11, loc='upper left')
-        
+        plt.legend(handles=shading_handles, fontsize=9, loc='upper left')
+
         plt.grid(axis='y', linestyle='--', alpha=0.7)
+
         plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, 'cost-sunk-stacked-bar.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(out_dir, 'wasted-cost-bar.png'), dpi=300)
         plt.close()
-        print(f"Successfully generated cost sunk stacked bar plot in the '{out_dir}/' directory.")
+        print(f"Successfully generated wasted cost bar plot in the '{out_dir}/' directory.")
+
+    # ==========================================
+    # PART 4b: WASTED RUNTIME (Grouped Stacked Bar Chart: Productive vs Wasted)
+    # ==========================================
+    print("Generating wasted runtime bar plot...")
+
+    runtime_rows = []
+    for run in data['runs']:
+        setup = run.get('setup', {})
+        agent_tool = get_model_from_run(run)
+        subject_name = setup.get('subject-name', 'unknown')
+        productive_seconds = setup.get('productive-runtime-seconds', 0.0)
+        sunk_seconds = setup.get('sunk-runtime-seconds', 0.0)
+
+        if productive_seconds == MISSING or productive_seconds is None: productive_seconds = 0.0
+        if sunk_seconds == MISSING or sunk_seconds is None: sunk_seconds = 0.0
+
+        runtime_rows.append({
+            'agent_tool': agent_tool,
+            'subject': subject_name,
+            'productive_seconds': productive_seconds,
+            'sunk_seconds': sunk_seconds,
+        })
+
+    df_runtime = pd.DataFrame(runtime_rows)
+    if not df_runtime.empty:
+        plt.figure()
+
+        subjects_runtime = sorted(df_runtime['subject'].unique())
+        agent_tools_runtime = sorted(df_runtime['agent_tool'].unique())
+
+        x = np.arange(len(subjects_runtime))
+        width = 0.8 / len(agent_tools_runtime)
+        max_total = 0.0
+
+        for i, agent_tool in enumerate(agent_tools_runtime):
+            productive_vals = []
+            sunk_vals = []
+            for subj in subjects_runtime:
+                match = df_runtime[(df_runtime['subject'] == subj) & (df_runtime['agent_tool'] == agent_tool)]
+                if not match.empty:
+                    productive_vals.append(match['productive_seconds'].mean())
+                    sunk_vals.append(match['sunk_seconds'].mean())
+                else:
+                    productive_vals.append(0.0)
+                    sunk_vals.append(0.0)
+
+            productive_vals = np.array(productive_vals)
+            sunk_vals = np.array(sunk_vals)
+            max_total = max(max_total, (productive_vals + sunk_vals).max())
+
+            offset = (i - len(agent_tools_runtime) / 2 + 0.5) * width
+            color = model_style_map[agent_tool]
+            # Bottom segment: productive runtime, solid. Top segment: wasted (sunk)
+            # runtime, same model color but hatched so the split reads at a glance.
+            plt.bar(x + offset, productive_vals, width, color=color, edgecolor='black')
+            plt.bar(x + offset, sunk_vals, width, bottom=productive_vals,
+                    color=color, edgecolor='black', hatch='//', alpha=0.6)
+
+            for xi, p, s in zip(x + offset, productive_vals, sunk_vals):
+                total = p + s
+                if total > 1e-9:
+                    pct = s / total * 100
+                    plt.text(xi, total + total * 0.05 + 0.05, f"{pct:.0f}%",
+                             ha='center', va='bottom', fontsize=8, rotation=90)
+
+        # Headroom above the tallest bar so the rotated percentage labels
+        # (which sit above the bar) aren't clipped by the plot's top edge.
+        plt.ylim(0, max_total * 1.3)
+
+        plt.xlabel('Cache Architecture (Subject)', fontsize=12)
+        plt.ylabel('Total Runtime (Seconds)', fontsize=12)
+        plt.xticks(x, subjects_runtime, rotation=15)
+
+        shading_handles = [
+            mpatches.Patch(facecolor='lightgray', edgecolor='black', label='Productive Runtime'),
+            mpatches.Patch(facecolor='lightgray', edgecolor='black', hatch='//', alpha=0.6, label='Wasted Runtime'),
+        ]
+        plt.legend(handles=shading_handles, fontsize=9, loc='upper left')
+
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, 'wasted-runtime-bar.png'), dpi=300)
+        plt.close()
+        print(f"Successfully generated wasted runtime bar plot in the '{out_dir}/' directory.")
 
     # ==========================================
     # PART 5: FAILED VARIANTS (Grouped Bar Chart with Error Bars)
@@ -416,8 +523,6 @@ def generate_plots(data_file, out_dir):
         x = np.arange(len(subjects_failed))
         width = 0.8 / len(agent_tools)
 
-        colors_bar = plt.cm.Set2(np.linspace(0, 1, len(agent_tools)))
-
         for i, agent_tool in enumerate(agent_tools):
             tool_means = []
             tool_stds = []
@@ -438,13 +543,12 @@ def generate_plots(data_file, out_dir):
 
             offset = (i - len(agent_tools) / 2 + 0.5) * width
             # Added yerr=tool_stds and capsize=4 for the error bars
-            plt.bar(x + offset, tool_means, width, yerr=tool_stds, label=agent_tool, 
-                    color=colors_bar[i], edgecolor='black', capsize=4)
+            plt.bar(x + offset, tool_means, width, yerr=tool_stds, label=agent_tool,
+                    color=model_style_map[agent_tool], edgecolor='black', capsize=4)
 
         plt.xlabel('Cache Architecture (Subject)', fontsize=12)
         plt.ylabel('Count of Attempts (Mean ± StdDev)', fontsize=12)
         plt.xticks(x, subjects_failed, rotation=15)
-        plt.legend(fontsize=11, loc='upper left', bbox_to_anchor=(1, 1))
 
         plt.grid(axis='y', linestyle='--', alpha=0.7)
 
@@ -452,6 +556,23 @@ def generate_plots(data_file, out_dir):
         plt.savefig(os.path.join(out_dir, 'count-attempts-bar.png'), dpi=300)
         plt.close()
         print(f"Successfully generated count attempts bar plot in the '{out_dir}/' directory.")
+
+    # Standalone legend for the model color coding shared by the wasted-cost
+    # and attempts-count bar charts above, instead of a legend on each chart.
+    fig_leg = plt.figure(figsize=(10, 1.2))
+    ax_leg = fig_leg.add_subplot(111)
+    ax_leg.axis('off')
+
+    legend_handles = [
+        mpatches.Patch(facecolor=model_style_map[model], edgecolor='black', label=model)
+        for model in all_models
+    ]
+    ax_leg.legend(handles=legend_handles, loc='center', ncol=len(all_models),
+                  frameon=False, fontsize=12)
+
+    fig_leg.savefig(os.path.join(out_dir, 'model-legend.png'), bbox_inches='tight', dpi=300)
+    plt.close()
+    print(f"Successfully generated model legend in the '{out_dir}/' directory.")
 
 # Run plot generation on both files, dispatching output into their respective folders.
 generate_plots('plots/paper-plots/data_full_fitness_vector.json', 'plots/paper-plots/full_fitness_vector')
