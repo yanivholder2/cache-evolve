@@ -1,0 +1,113 @@
+# Task: cycle-insight-writer
+
+Cycle: 0005
+Output dir: C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_13-12-55-552\cycles\0005
+
+## Winners
+
+(none)
+
+## Variant insights
+
+- C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_13-12-55-552\cycles\0005\variants\v001\insight.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_13-12-55-552\cycles\0005\variants\v002\insight.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_13-12-55-552\cycles\0005\variants\v003\insight.md
+
+## Hypotheses (this cycle)
+
+- C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_13-12-55-552\cycles\0005\hypotheses\H01.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_13-12-55-552\cycles\0005\hypotheses\H02.md
+- C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_13-12-55-552\cycles\0005\hypotheses\H03.md
+
+## Prior cycles digest
+
+### Cycle 0002
+
+# Cycle 0002 Insight
+
+## Cohort outcome
+
+This cohort tested three orthogonal approaches to improve upon ClassicLRU: replacing item-movement bookkeeping with timestamp updates (TimestampLRU), minimizing bookkeeping entirely (FIFO), and consolidating cache geometry into wider, denser buckets (64 × 32). All three variants regressed on per-operation latency by 40–45%, while hit-rate either held steady or improved modestly (+0.24%). No variant achieved a fitness win over the baseline, revealing that ClassicLRU is not just a reasonable policy for this workload but a particulary well-optimized implementation of one.
+
+## Patterns
+
+- **Latency regressed uniformly despite different mechanisms**: Whether changing eviction policy (TimestampLRU, FIFO) or cache geometry (wider buckets), all variants slowed by ~40–45% on per-op time, suggesting ClassicLRU's vector operations on small buckets (16 items) have unusually good cache locality or compiler optimization that alternatives could not match.
+- **Hit-rate insensitivity to policy details**: FIFO maintained 0.6611 hit-rate despite dropping recency awareness entirely, confirming that Zipfian access patterns alone can sustain high hit-rate without explicit recency tracking. TimestampLRU also held 0.6611, showing the bookkeeping method is orthogonal to hit-rate. Only geometry change (V002) moved hit-rate (+0.24%), but at a larger latency cost than policy changes.
+- **Geometry trade-off: hash table vs. bucket scan**: Wider buckets (64 × 32) improved cache density and hit-rate but increased the cost of sequential intra-bucket searches, suggesting that for this workload, the latency penalty of scanning longer lists outweighs the benefit of fewer hash table lookups and better memory packing.
+- **Theory-practice inversion deepens**: V001 (TimestampLRU) pursued O(1) timestamping vs. ClassicLRU's O(n) vector ops, yet achieved worse latency. This repeats the pattern from cycle 0001's Swap variant: asymptotic complexity gains evaporate under cache-level micro-architecture and implementation overhead.
+
+## Open questions
+
+- Why does ClassicLRU's O(n) vector manipulation (remove + append on 16-item vectors) outperform O(1) timestamp updates or zero-cost FIFO hits? Is the answer cache line coherency, branch prediction stability, or compiler loop optimization?
+- Does the current geometry (128 × 16) happen to be locally optimal for this Zipfian workload and benchmark scale, or is it more broadly robust?
+- Would batched or vectorized bucket scans recover the geometry advantage, or is the per-item cost of scanning inherently the bottleneck?
+
+## Continuation
+
+ClassicLRU appears not simply correct but finely optimized for this workload and hardware—attempts to improve hit-rate, reduce bookkeeping, or tune geometry all degraded latency without achieving a net fitness gain. Rather than continuing policy or geometry variations, the next cycle should: (1) understand *why* ClassicLRU is fast (profile micro-architectural effects, examine compiled code patterns), (2) test ClassicLRU's robustness across different workload distributions, cache sizes, or multi-core scenarios to identify conditions where it breaks, or (3) explore implementation-level refinements (prefetching, cache-aligned layouts, vectorization) that preserve ClassicLRU's performance profile while addressing potential bottlenecks outside the policy itself. If policy is revisited, focus on hybrid or adaptive strategies that can fall back to ClassicLRU's proven efficiency rather than replacement.
+
+
+### Cycle 0003
+
+# Cycle 0003 Insight
+
+## Cohort outcome
+
+This cohort tested the bounds of cache geometry: narrower buckets to reduce scan depth, a policy swap (FIFO) to avoid per-hit bookkeeping overhead at wider bucket sizes, and even wider buckets to push the hit-rate improvement trajectory. Narrower geometry (256×8) regressed both hit-rate and latency. The FIFO policy variant failed to execute its intended change, leaving the latency-improvement hypothesis untested. Wider geometry (32×64) extended hit-rate marginally but caused tail latencies to spike significantly, signaling an inflection point in the geometry trade-off space.
+
+## Patterns
+
+- **Geometry trade-off is saturating**: Cycle 0002's wider buckets (64×32) yielded hit-rate gain (+0.24%) at latency cost (-45%). Cycle 0003's even wider buckets (32×64) produced minimal hit-rate gain (+0.0005%) while tail latencies degraded sharply (p99 doubling), indicating diminishing returns and accelerating latency penalty as bucket width increases.
+- **ClassicLRU's O(n) scan overhead is the bottleneck at scale**: Both v002 and v003 demonstrate that intra-bucket linear search becomes increasingly expensive as bucket size grows. The sharp tail-latency spike in v003 suggests that outlier scans on full buckets are dominating percentile performance, a micro-architectural constraint that narrower buckets avoid but at other costs.
+- **Narrow buckets backfire despite theory**: The prediction that reducing scan depth (16→8 items) would improve latency was contradicted by v001's 45% regression. Hash-function distribution overhead and memory-layout effects across 256 buckets outweigh any benefit from shallower scans, repeating the pattern from prior cycles where theoretical asymptotic gains fail in practice.
+- **Policy pivot was blocked**: H02's hypothesis—that FIFO's zero per-hit bookkeeping would decouple latency from bucket width—was sound but the variant either failed to compile the policy change or it was overridden. This leaves the testable claim unresolved and suggests a build/integration issue.
+
+## Open questions
+
+- Why did v002 (H02) not execute the FIFO policy change despite the hypothesis specifying it? Was this a build failure, override, or integration issue that could be fixed in the next cycle?
+- If FIFO were correctly implemented on 64×32 geometry, would it flatten the latency cost while retaining the hit-rate gain, or does the policy change require additional structural changes?
+- Is the tail-latency spike in v003 an inherent worst-case of linear bucket search, or an implementation artifact (e.g., cache misses, branch mispredictions) that could be mitigated?
+- Has the cache geometry reached a local optimum, or does the fitness landscape favor wider buckets at different workload distributions or sizes?
+
+## Continuation
+
+The cohort has identified a clear frontier: wider buckets improve hit-rate but at an accelerating latency cost under ClassicLRU's per-hit movement operations. The next cycle should: (1) resolve the H02/FIFO integration issue and re-run v002 with the intended policy change to test whether decoupling latency from bucket width is feasible, (2) if FIFO succeeds, probe the local optimum around 64×32 FIFO to confirm it is a fitness win, or (3) if FIFO fails or shows no improvement, accept that ClassicLRU + 64×32 is the current Pareto frontier and shift focus to orthogonal avenues: robustness across different workload distributions, multi-core contention, or policies designed for large-bucket efficiency (e.g., segment-based or batched eviction).
+
+
+### Cycle 0004
+
+# Cycle 0004 Insight
+
+## Cohort outcome
+
+This cohort pursued two competing strategies for managing wide-bucket latency: policy changes to reduce per-hit overhead (FIFO with timestamp victim selection, segment-based LRU), and implementation-level micro-optimizations (early-exit scanning and cache-line alignment) applied to ClassicLRU. The policy variants failed with latency regressions of 2×–4×. Only v003—which abandoned policy change and instead optimized the implementation—achieved a net improvement, preserving the 32×64 geometry's hit-rate gain (0.664) while halving tail latencies through early-exit and cache-aligned layouts.
+
+## Patterns
+
+- **Policy changes incur hidden per-operation costs that outweigh asymptotic gains**: Both v001 (FIFO) and v002 (segment-based LRU) suffered from changes that were theoretically sound but practically expensive. v001's timestamp-based victim selection replaced ClassicLRU's O(1) position lookup with O(n) bucket scan, adding 100–200 ns per operation. v002 added per-operation segment metadata maintenance that yielded nearly 4× latency regression despite bounding eviction scans. Both confirm the pattern from prior cycles: optimizing the eviction path must not burden the critical hit path.
+
+- **Micro-optimization succeeds where policy fails**: v003 kept ClassicLRU's proven policy and geometry (32×64) but improved implementation details—early-exit on key match eliminates unnecessary bucket iterations, and 64-byte cache-line alignment reduces memory access latency. Result: 50% latency improvement on get operations and 33–50% on puts, with hit-rate preserved. This is the first variant to demonstrate that wide geometry's theoretical advantage (hit-rate) can be realized in practice through careful engineering.
+
+- **Wide buckets are viable if latency is solved**: Cycle 0003 identified a latency crisis (p99 ≈300 ns) that made 32×64 geometry impractical. v003 proves the crisis was not geometric but implementational: address tail latencies through early-exit and cache alignment, and the geometry becomes a clear win—hit-rate +0.004 relative to ClassicLRU, latency returned to baseline levels.
+
+- **Eviction optimization is a trap for high-occupancy buckets**: Both v001 and v002 optimized the eviction path, but at a bucket size (32–64 items), eviction is rare while hits are common. Spending per-hit cost to save infrequent eviction scans is a losing trade-off. v003 succeeds by optimizing the hot path (hit detection) instead.
+
+## Open questions
+
+- Is v003 a true Pareto win relative to ClassicLRU and all prior cycles? How does its fitness (hit-rate + latency) rank across the entire evolution history?
+- Can v003's optimizations (early-exit, cache-line alignment) be backported to narrower bucket geometries, or are they specific to wide-bucket scanning efficiency?
+- Does v003 maintain its advantage across different workload distributions, cache sizes, or multi-core contention scenarios, or is it optimized narrowly for the current Zipfian benchmark?
+- Why does FIFO's victim selection require O(n) scan while ClassicLRU achieves O(1)? Could a data structure (e.g., linked list, heap, or O(1) min tracker) recover FIFO's zero-bookkeeping advantage without scan overhead?
+
+## Continuation
+
+The cohort demonstrates a critical insight: wide-bucket geometry is not inherently unviable, but requires micro-optimization to realize its hit-rate advantage without latency penalty. v003 is a turning point—it shows that the latency/hit-rate trade-off space has room for improvement through implementation cleverness rather than policy change.
+
+Next cycle should: (1) confirm v003's fitness rank relative to the full evolution history and identify whether it is the current Pareto leader, (2) explore whether v003's optimizations (early-exit, cache-line alignment) generalize to other bucket sizes or narrow geometries, potentially unlocking further efficiency gains, (3) if v003 is the leader, probe its robustness across different workload distributions and cache sizes to identify its failure modes, or (4) if a larger policy innovation is desired, design approaches that prioritize hit-path efficiency—e.g., hybrid policies that fall back to ClassicLRU-like operations when micro-costs are high, or deferred/batched bookkeeping to amortize overhead.
+
+Abandon further attempts to reduce per-hit bookkeeping overhead through policy isolation (v001, v002 both failed); the modern CPU memory hierarchy favors correct implementation of simple policies over complex policies with per-hit overhead.
+
+
+## Write
+
+Exactly one file: `cycle-insight.md` in the output dir.

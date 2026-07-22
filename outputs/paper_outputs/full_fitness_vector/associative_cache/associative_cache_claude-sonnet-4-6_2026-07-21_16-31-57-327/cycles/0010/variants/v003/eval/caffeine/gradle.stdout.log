@@ -1,0 +1,9 @@
+^^^^^^^^^^^^^^^^^^^^^^ AssociativeCache Constructor ^^^^^^^^^^^^^^^^^^^^^^^^^^
+maximumSize: 2048
+numOfBuckets: [128.0]
+bucketSize: 16
+evictionPolicy: CLASSICLRU
+^^^^^^^^^^^^^^^^^^^^^^ AssociativeCache Finished ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2,048: Executed in 37.80 s
+Did not generate a chart as only one data point
+Wrote report to C:\Users\yaniv\Projects\cache-evolve\outputs\associative_cache_2026-07-21_16-31-57-327\cycles\0010\variants\v003\eval\caffeine\hit_rate_2048.csv

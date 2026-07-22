@@ -1,0 +1,50 @@
+[package]
+name = "associative_cache"
+version = "0.1.0"
+description = "N-way associative cache baseline subject"
+edition = "2021"
+license = "MIT"
+authors = ["Yaniv Holder <yaniv.holder@gmail.com>"]
+repository = "https://github.com/yanivholder2/cache-evolve"
+
+[lib]
+name = "associative_cache"
+crate-type = ["cdylib", "lib"]
+
+[features]
+test-utils = ["proptest"]
+
+[dependencies]
+framework = { path = "../../../../../../../framework-rs" }
+jni = "0.20.0"
+log = "0.4"
+simplelog = "0.11"
+chrono = "0.4"
+rand = "0.8.5"
+proptest = { version = "1", optional = true }
+
+[dev-dependencies]
+rand = "0.8.5"
+proptest = "1"
+framework = { path = "../../../../../../../framework-rs", features = ["test-suite"] }
+
+[[bin]]
+name = "associative_cache-evolve-metadata-size"
+path = "src/bin/evolve_metadata_size.rs"
+
+[[bin]]
+name = "associative_cache-evolve-per-op-time"
+path = "src/bin/evolve_per_op_time.rs"
+
+[[test]]
+name = "invariant_gate"
+path = "tests/invariant_gate.rs"
+required-features = ["test-utils"]
+
+[[test]]
+name = "contract_gate"
+path = "tests/contract_gate.rs"
+
+[[test]]
+name = "universal_invariant_gate"
+path = "tests/universal_invariant_gate.rs"
