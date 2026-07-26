@@ -11,6 +11,17 @@ import pandas as pd
 # was not calculated for that variant and must not be plotted.
 MISSING = -1
 
+FONTSIZE = 12
+
+plt.rcParams.update({
+    'font.size': FONTSIZE,          # Global baseline
+    'axes.labelsize': FONTSIZE,     # X and Y axis titles
+    'axes.titlesize': FONTSIZE,     # Individual subplot titles
+    'xtick.labelsize': FONTSIZE,    # X-axis tick numbers
+    'ytick.labelsize': FONTSIZE,    # Y-axis tick numbers
+    'legend.fontsize': FONTSIZE
+})
+
 def get_model_from_run(run):
     subj = run['setup']['subject-name']
     run_name = run['setup'].get('run', '')
@@ -29,6 +40,14 @@ def generate_plots(data_file, out_dir):
     with open(data_file, 'r') as f:
         data = json.load(f)
 
+    # Consistent color/marker per model (agent tool), computed up front so both
+    # the per-policy evolution plots and the later bar charts share one mapping.
+    all_models = sorted(set(get_model_from_run(r) for r in data['runs']))
+    model_color_palette = ['tab:green', 'tab:purple', 'tab:orange']
+    model_style_map = {model: model_color_palette[i % len(model_color_palette)] for i, model in enumerate(all_models)}
+    model_markers = ['o', 's', '^', 'D', 'v', 'p', '*', 'X']
+    model_marker_map = {model: model_markers[i % len(model_markers)] for i, model in enumerate(all_models)}
+
     # ==========================================
     # PART 1: LINE CHARTS (Evolution over Cycles)
     # ==========================================
@@ -37,11 +56,13 @@ def generate_plots(data_file, out_dir):
     # lines track the cycle frontier, so only winners (plus the baseline) count.
     rows = []
     for run in data['runs']:
+        model = get_model_from_run(run)
         for v in run['variants']:
             if not (v['is-winner'] or v['is-baseline']):
                 continue
             rows.append({
                 'subject': v['subject-name'],
+                'model': model,
                 'cycle': v['cycle'],
                 'hit_rate': v['hit-rate'],
                 'metadata_size': v['metadata-size'],
@@ -55,18 +76,20 @@ def generate_plots(data_file, out_dir):
     for col in ('hit_rate', 'metadata_size', 'per_op_time', 'weighted_score'):
         df[col] = df[col].replace(MISSING, np.nan)
 
+    metric_cols = ['hit_rate', 'metadata_size', 'per_op_time', 'weighted_score']
+
     # Group by subject and cycle, averaging across co-winners of a cycle.
-    df_agg = df.groupby(['subject', 'cycle']).mean().reset_index()
+    df_agg = df.groupby(['subject', 'cycle'])[metric_cols].mean().reset_index()
 
     # Setup consistent styles for each subject
     subjects = df_agg['subject'].unique()
-    colors = plt.cm.tab10(np.linspace(0, 1, len(subjects)))
+    colors = ['tab:red', 'tab:blue', 'tab:brown', 'tab:olive', 'tab:cyan']
     markers = ['o', 's', '^', 'D', 'v', 'p']
 
     style_map = {}
     for i, subj in enumerate(subjects):
         style_map[subj] = {
-            'color': colors[i],
+            'color': colors[i % len(colors)],
             'marker': markers[i % len(markers)]
         }
 
@@ -113,12 +136,44 @@ def generate_plots(data_file, out_dir):
 
     print(f"Successfully generated 4 cycle evolution plots and 1 standalone legend in the '{out_dir}/' directory.")
 
-    # Consistent color per model (agent tool), shared across the wasted-cost
-    # and attempts-count bar charts so a color always means the same model,
-    # backed by one standalone legend instead of a per-chart legend.
-    all_models = sorted(set(get_model_from_run(r) for r in data['runs']))
-    model_colors = plt.cm.Set2(np.linspace(0, 1, len(all_models)))
-    model_style_map = {model: model_colors[i] for i, model in enumerate(all_models)}
+    # ==========================================
+    # PART 1b: PER-POLICY EVOLUTION, ONE LINE PER MODEL
+    # ==========================================
+    # No inline legend here — color-to-model is shared across every plot in
+    # this run and is documented once in the standalone model-legend.png.
+    df_policy = df.groupby(['subject', 'model', 'cycle'])[metric_cols].mean().reset_index()
+
+    def plot_policy_metric(subj_data, metric_col, ylabel, filename):
+        if subj_data[metric_col].isna().all():
+            return False
+        plt.figure()
+        for model in all_models:
+            model_data = subj_data[subj_data['model'] == model].sort_values('cycle')
+            model_data = model_data.dropna(subset=[metric_col])
+            if model_data.empty:
+                continue
+            plt.plot(model_data['cycle'], model_data[metric_col],
+                      color=model_style_map[model], marker=model_marker_map[model],
+                      linewidth=2, label=model)
+        plt.xlabel('Cycles', fontsize=12)
+        plt.ylabel(ylabel, fontsize=12)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, filename), dpi=300)
+        plt.close()
+        return True
+
+    policy_plot_count = 0
+    for subj in subjects:
+        subj_data = df_policy[df_policy['subject'] == subj]
+        if plot_policy_metric(subj_data, 'hit_rate', 'Hit Rate', f'model-hitrate-vs-cycles-{subj}.png'):
+            policy_plot_count += 1
+        # weighted-score stays -1/NaN for hit-rate-only runs, so this plot is
+        # skipped for policies that never computed a composite score.
+        if plot_policy_metric(subj_data, 'weighted_score', 'Weighted Score', f'model-score-vs-cycles-{subj}.png'):
+            policy_plot_count += 1
+
+    print(f"Successfully generated {policy_plot_count} per-policy model evolution plots in the '{out_dir}/' directory.")
 
     # ==========================================
     # PART 2: GROUPED BAR CHARTS (Final Performance by Agent Tool)
@@ -164,9 +219,6 @@ def generate_plots(data_file, out_dir):
         x = np.arange(len(subjects_final))
         width = 0.8 / len(agent_tools)  # Dynamically size bars based on number of agent tools
 
-        # Define a colormap for the agent tools
-        colors_bar = plt.cm.Set2(np.linspace(0, 1, len(agent_tools)))
-
         for i, agent_tool in enumerate(agent_tools):
             # Extract values for this agent tool across all subjects
             tool_data = []
@@ -178,7 +230,7 @@ def generate_plots(data_file, out_dir):
 
             # Offset the bars so they group together side-by-side
             offset = (i - len(agent_tools) / 2 + 0.5) * width
-            plt.bar(x + offset, tool_data, width, label=agent_tool, color=colors_bar[i], edgecolor='black')
+            plt.bar(x + offset, tool_data, width, label=agent_tool, color=model_style_map[agent_tool], edgecolor='black')
 
         plt.xlabel('Cache Architecture (Subject)', fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
@@ -549,7 +601,6 @@ def generate_plots(data_file, out_dir):
         plt.xlabel('Cache Architecture (Subject)', fontsize=12)
         plt.ylabel('Count of Attempts (Mean ± StdDev)', fontsize=12)
         plt.xticks(x, subjects_failed, rotation=15)
-
         plt.grid(axis='y', linestyle='--', alpha=0.7)
 
         plt.tight_layout()
