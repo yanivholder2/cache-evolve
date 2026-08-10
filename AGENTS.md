@@ -10,6 +10,16 @@ Research framework at the repo root that drives the cache-policy evolution loop 
 - Run `uv sync` to create the venv and install dependencies if missing.
 - Testing: keep the feedback loop tight. Run the fast suite first (no opt-in flags), then run each slower marker one at a time — never combine markers in a single run. See `README.md` for the current marker flags.
 
+# LaTeX docs
+
+To compile a `.tex` doc (e.g. `docs/research-proposal.tex`) and review the result:
+
+1. `scripts/setup-latex.sh` — installs TeX Live + poppler-utils via apt if missing (auto-installs only in remote containers; pass `--install` locally). Use TeX Live, not tectonic — tectonic's bundle host is blocked by the remote network policy.
+2. `scripts/compile-latex.sh <file.tex>` — two pdflatex passes; prints the PDF path on stdout and errors/warnings on stderr.
+3. Review visually by reading the PDF with the Read tool (poppler renders pages as images) — check layout, overflow, figures, and references yourself before asking the user.
+
+Build artifacts (`docs/*.aux`, `*.pdf`, …) are gitignored; don't commit them.
+
 # Caffeine Simulator Integration
 Each Subject cache integrates with [Caffeine](https://github.com/ben-manes/caffeine)'s cache simulator via JNI. Per-subject wiring lives in the subject's `manifest.toml` `[caffeine]` table; the runner is subject-agnostic.
 

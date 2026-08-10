@@ -225,3 +225,11 @@ __pycache__/
 # logs), which the global *.log rule above would otherwise drop. Logs anywhere
 # else stay ignored.
 !outputs/paper_outputs/**/*.log
+
+# LaTeX build artifacts (docs/*.tex compiles; PDF is regenerated on demand)
+docs/*.aux
+docs/*.bbl
+docs/*.blg
+docs/*.out
+docs/*.toc
+docs/*.pdf
