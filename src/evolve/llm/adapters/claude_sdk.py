@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from enum import StrEnum
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -12,11 +11,11 @@ from evolve.llm.base_adapter import LLMAdapter, write_timeline
 from evolve.llm.token_usage import Usage
 
 
-class Model(StrEnum):
-    OPUS_4_8 = "claude-opus-4-8"
-    OPUS_4_7 = "claude-opus-4-7"
-    SONNET_4_6 = "claude-sonnet-4-6"
-    HAIKU_4_5 = "claude-haiku-4-5-20251001"
+# The claude-sdk model namespace is open: any `claude-*` id is passed through to
+# the Claude Code CLI, which is the authority on what it can drive. New model
+# releases then need no code change, only a CLI new enough to know them. A typo
+# or unsupported id fails on the run's first agent call with the CLI's own error.
+MODEL_PREFIX = "claude-"
 
 
 READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
@@ -66,7 +65,13 @@ def _usage_from_result(message: Any) -> Usage | None:
 
 
 class ClaudeSdkAdapter(LLMAdapter):
-    MODELS = Model
+    @classmethod
+    def validate_model(cls, model: str) -> None:
+        if not model.startswith(MODEL_PREFIX):
+            raise ValueError(
+                f"{cls.__name__} drives Claude models only; model ids start with "
+                f"{MODEL_PREFIX!r} (e.g. 'claude-opus-5-5'), got: {model!r}"
+            )
 
     async def call_llm_and_log(
         self,

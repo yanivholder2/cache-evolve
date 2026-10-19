@@ -200,18 +200,17 @@ def _resolve_ai_agent_tool(override: str | None, defaults: dict) -> str:
 def _resolve_model(override: str | None, defaults: dict, ai_agent_tool: str) -> str:
     """Resolve `framework.model` and reject any model the chosen adapter can't drive.
 
-    The model namespace is per-adapter (each adapter's `MODELS` enum), so the
-    valid set depends on `ai_agent_tool`. Switching tools without switching model
+    The model namespace is per-adapter (`LLMAdapter.validate_model`), so what is
+    valid depends on `ai_agent_tool`. Switching tools without switching model
     dies here rather than mid-run.
     """
     value = str(_resolve(override, defaults, "model", "--model", "framework"))
-    models_enum = ADAPTER_REGISTRY[ai_agent_tool].MODELS
-    valid = {member.value for member in models_enum} if models_enum is not None else set()
-    if value not in valid:
+    try:
+        ADAPTER_REGISTRY[ai_agent_tool].validate_model(value)
+    except ValueError as exception:
         raise ConfigError(
-            f"framework.model {value!r} is not valid for ai_agent_tool {ai_agent_tool!r}; "
-            f"valid models: {sorted(valid)}"
-        )
+            f"framework.model {value!r} is not valid for ai_agent_tool {ai_agent_tool!r}: {exception}"
+        ) from exception
     return value
 
 

@@ -241,3 +241,22 @@ def test_weighted_non_positive_weight_raises(tmp_path: Path):
     )
     with pytest.raises(ConfigError, match="must be a positive number"):
         load_configs(tmp_path)
+
+# --- model namespace (claude-sdk is open: any `claude-*` id) ---
+
+def test_claude_sdk_accepts_new_claude_model(tmp_path: Path):
+    _write_config(tmp_path, ai_agent_tool="claude-sdk", model="claude-opus-4-8")
+    configs = load_configs(tmp_path, model="claude-opus-5-5")
+    assert configs.framework.model == "claude-opus-5-5"
+
+
+def test_claude_sdk_rejects_gemini_model_with_reason(tmp_path: Path):
+    _write_config(tmp_path, ai_agent_tool="claude-sdk")
+    with pytest.raises(ConfigError, match=r"not valid for ai_agent_tool 'claude-sdk'.*claude-"):
+        load_configs(tmp_path, model="gemini-3-pro-preview")
+
+
+def test_enum_adapter_still_rejects_unknown_model(tmp_path: Path):
+    _write_config(tmp_path, ai_agent_tool="ollama-local", model="claude-opus-5-5")
+    with pytest.raises(ConfigError, match="not valid for ai_agent_tool 'ollama-local'"):
+        load_configs(tmp_path)

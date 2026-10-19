@@ -31,18 +31,30 @@ class LLMAdapter:
 
     # Subclasses set this to their `Model` StrEnum — the set of models the
     # backend can drive. The config boundary reads it to validate `framework.model`
-    # against the chosen adapter. `None` on test doubles that ignore the model.
+    # against the chosen adapter (via `validate_model`). `None` on test doubles
+    # that ignore the model and on open-namespace adapters that override
+    # `validate_model` instead.
     MODELS: ClassVar[type[StrEnum] | None] = None
 
     def __init__(self, model: str | None = None) -> None:
-        if model is not None and self.MODELS is not None:
-            valid = {member.value for member in self.MODELS}
-            if model not in valid:
-                raise ValueError(
-                    f"{type(self).__name__} does not support model {model!r}; "
-                    f"valid models: {sorted(valid)}"
-                )
+        if model is not None:
+            self.validate_model(model)
         self.model = model
+
+    @classmethod
+    def validate_model(cls, model: str) -> None:
+        """Raise `ValueError` if this backend cannot drive `model`.
+
+        Default: membership in `MODELS` (no check when it is `None`). Adapters
+        with an open model namespace (claude-sdk) override this instead."""
+        if cls.MODELS is None:
+            return
+        valid = {member.value for member in cls.MODELS}
+        if model not in valid:
+            raise ValueError(
+                f"{cls.__name__} does not support model {model!r}; "
+                f"valid models: {sorted(valid)}"
+            )
 
     def identity(self) -> str:
         """Short string identifying adapter + model."""
