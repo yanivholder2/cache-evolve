@@ -83,6 +83,18 @@ else
   exit 1
 fi
 
+# 3. Remote containers only: route Gradle through a Maven Central mirror and
+#    warm its dependency cache. repo.maven.apache.org answers 429 to shared cloud
+#    egress IPs, and a cold cache then fails the first variant's fitness run.
+#    The warm-up is best-effort: a failure is logged, not fatal.
+if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
+  mkdir -p "$HOME/.gradle/init.d"
+  cp "$repo_root/scripts/gradle/maven-central-mirror.gradle" "$HOME/.gradle/init.d/"
+  log "caffeine: warming the Gradle dependency cache"
+  (cd "$caffeine_dir" && JAVA_HOME="$jdk_home" ./gradlew simulator:classes simulator:dependencies --configuration runtimeClasspath -q >&2) \
+    || log "caffeine: Gradle warm-up failed; the first simulator run will retry the downloads"
+fi
+
 log "caffeine simulator ready — CAFFEINE_DIR=$caffeine_dir JAVA_HOME=$jdk_home"
 # Final stdout line: the JDK 25 home, for callers to capture into JAVA_HOME.
 printf '%s\n' "$jdk_home"

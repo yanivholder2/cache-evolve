@@ -1,0 +1,27 @@
+// Swap Maven Central for Google's mirror of it: repo.maven.apache.org answers
+// HTTP 429 to shared cloud egress IPs. Prepending the mirror is not enough —
+// dynamic versions (e.g. `[2.2,3)`) list metadata from every repository, so
+// Central itself must go. Other repositories (plugin portal, etc.) are kept.
+def mirrorUrl = 'https://maven-central.storage-download.googleapis.com/maven2/'
+def centralHosts = ['repo.maven.apache.org', 'repo1.maven.org']
+def swap = { RepositoryHandler repos ->
+    def central = repos.withType(MavenArtifactRepository).findAll { it.url?.host in centralHosts }
+    repos.removeAll(central)
+    if (repos.findByName('centralMirror') == null) {
+        def mirror = repos.maven { name = 'centralMirror'; url = mirrorUrl }
+        repos.remove(mirror)
+        repos.add(0, mirror)
+    }
+}
+beforeSettings { settings ->
+    swap(settings.pluginManagement.repositories)
+    settings.pluginManagement.repositories.gradlePluginPortal()
+    settings.pluginManagement.repositories.whenObjectAdded { swap(settings.pluginManagement.repositories) }
+    settings.dependencyResolutionManagement.repositories.whenObjectAdded {
+        swap(settings.dependencyResolutionManagement.repositories)
+    }
+}
+allprojects {
+    buildscript.repositories.whenObjectAdded { swap(buildscript.repositories) }
+    repositories.whenObjectAdded { swap(repositories) }
+}
