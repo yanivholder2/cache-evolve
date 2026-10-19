@@ -99,6 +99,13 @@ def load_configs(
     max_workers: int | None = None,
     authoring_scope: AuthoringScope | str | None = None,
     subject: str | None = None,
+    digest_cycles: int | None = None,
+    implementation_attempts: int | None = None,
+    hypothesis_attempts: int | None = None,
+    dimensions: list[str] | tuple[str, ...] | None = None,
+    selection_method: str | None = None,
+    winners_count: int | None = None,
+    weights: dict[str, float] | None = None,
 ) -> Configs:
     """Build `Configs` from `<repo_root>/config.toml`, with optional overrides
     taking precedence per field. Raises `ConfigError` for missing or invalid
@@ -144,18 +151,28 @@ def load_configs(
         model=_resolve_model(model, framework_defaults, resolved_ai_agent_tool),
         outputs_root=outputs_root,
         log_level=_resolve_log_level(log_level, framework_defaults),
-        digest_cycles=_resolve_positive_int(None, framework_defaults, "digest_cycles", None, "framework"),
+        digest_cycles=_resolve_positive_int(digest_cycles, framework_defaults, "digest_cycles", "--digest-cycles", "framework"),
         max_workers=_resolve_non_negative_int(max_workers, framework_defaults, "max_workers", "--max-workers", "framework"),
-        implementation_attempts=_resolve_positive_int(None, framework_defaults, "implementation_attempts", None, "framework"),
-        hypothesis_attempts=_resolve_positive_int(None, framework_defaults, "hypothesis_attempts", None, "framework"),
+        implementation_attempts=_resolve_positive_int(
+            implementation_attempts, framework_defaults, "implementation_attempts", "--implementation-attempts", "framework"
+        ),
+        hypothesis_attempts=_resolve_positive_int(
+            hypothesis_attempts, framework_defaults, "hypothesis_attempts", "--hypothesis-attempts", "framework"
+        ),
         authoring_scope=_resolve_authoring_scope(authoring_scope, framework_defaults),
         subject=resolved_subject,
     )
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),
     )
-    fitness = FitnessConfig(dimensions=_resolve_dimensions(fitness_defaults))
-    selection = _resolve_selection(selection_defaults, fitness.dimensions)
+    fitness = FitnessConfig(dimensions=_resolve_dimensions(dimensions, fitness_defaults))
+    selection = _resolve_selection(
+        selection_defaults,
+        fitness.dimensions,
+        method=selection_method,
+        winners_count=winners_count,
+        weights=weights,
+    )
     return Configs(framework=framework, simulator=simulator, fitness=fitness, selection=selection)
 
 
@@ -175,7 +192,7 @@ def _resolve(override, defaults: dict, key: str, flag: str | None, section: str)
 def _resolve_positive_int(override: int | None, defaults: dict, key: str, flag: str | None, section: str) -> int:
     value = int(_resolve(override, defaults, key, flag, section))
     if value < 1:
-        source = flag if flag else f"{section}.{key}"
+        source = flag if flag and override is not None else f"{section}.{key}"
         raise ConfigError(f"{source} must be a positive integer, got: {value}")
     return value
 
@@ -183,7 +200,7 @@ def _resolve_positive_int(override: int | None, defaults: dict, key: str, flag: 
 def _resolve_non_negative_int(override: int | None, defaults: dict, key: str, flag: str | None, section: str) -> int:
     value = int(_resolve(override, defaults, key, flag, section))
     if value < 0:
-        source = flag if flag else f"{section}.{key}"
+        source = flag if flag and override is not None else f"{section}.{key}"
         raise ConfigError(f"{source} must be a non-negative integer, got: {value}")
     return value
 
@@ -214,8 +231,10 @@ def _resolve_model(override: str | None, defaults: dict, ai_agent_tool: str) -> 
     return value
 
 
-def _resolve_dimensions(defaults: dict) -> tuple[str, ...]:
-    value = _resolve(None, defaults, "dimensions", None, "fitness")
+def _resolve_dimensions(override: list[str] | tuple[str, ...] | None, defaults: dict) -> tuple[str, ...]:
+    value = _resolve(
+        list(override) if override is not None else None, defaults, "dimensions", "--dimensions", "fitness"
+    )
     if not isinstance(value, list) or not value:
         raise ConfigError("fitness.dimensions must be a non-empty list of strings")
     if any(not isinstance(dim, str) or not dim for dim in value):
@@ -225,27 +244,50 @@ def _resolve_dimensions(defaults: dict) -> tuple[str, ...]:
     return tuple(value)
 
 
-def _resolve_selection(defaults: dict, dimensions: tuple[str, ...]) -> SelectionConfig:
-    method = str(_resolve(None, defaults, "method", None, "selection"))
-    winners_count = _resolve_positive_int(None, defaults, "winners_count", None, "selection")
-    weights = _resolve_weights(defaults)
+def _resolve_selection(
+    defaults: dict,
+    dimensions: tuple[str, ...],
+    *,
+    method: str | None = None,
+    winners_count: int | None = None,
+    weights: dict[str, float] | None = None,
+) -> SelectionConfig:
+    resolved_method = str(_resolve(method, defaults, "method", "--selection-method", "selection"))
+    resolved_winners_count = _resolve_positive_int(
+        winners_count, defaults, "winners_count", "--winners-count", "selection"
+    )
+    if weights is not None:
+        resolved_weights = _validate_weights(weights)
+    elif method == "pareto":
+        # Pareto takes no weights. When the flag switches to it, drop config.toml's
+        # table rather than reject it, so `--selection-method pareto` works against
+        # a weighted config.toml. (A pareto config.toml with weights still errors.)
+        resolved_weights = None
+    else:
+        resolved_weights = _resolve_weights(defaults)
     # Build the selector now so any method-specific inconsistency (weights present
     # under pareto, weight keys not matching the active dimensions, unknown method)
     # dies at config load rather than mid-run. The instance is discarded; the
     # boundary rebuilds it from this pure-data SelectionConfig.
     try:
         build_selector(
-            method=method, winners_count=winners_count, dimensions=dimensions, weights=weights
+            method=resolved_method,
+            winners_count=resolved_winners_count,
+            dimensions=dimensions,
+            weights=resolved_weights,
         )
     except SelectorConfigError as exception:
         raise ConfigError(str(exception)) from exception
-    return SelectionConfig(method=method, winners_count=winners_count, weights=weights)
+    return SelectionConfig(method=resolved_method, winners_count=resolved_winners_count, weights=resolved_weights)
 
 
 def _resolve_weights(defaults: dict) -> dict[str, float] | None:
     if "weights" not in defaults:
         return None
-    raw = defaults["weights"]
+    return _validate_weights(defaults["weights"])
+
+
+def _validate_weights(raw: object) -> dict[str, float]:
     if not isinstance(raw, dict) or not raw:
         raise ConfigError("selection.weights must be a non-empty table of dimension weights")
     weights: dict[str, float] = {}

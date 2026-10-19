@@ -12,6 +12,7 @@ import pytest
 
 from evolve._io import write_json
 from evolve.cli import (
+    _build_arg_parser,
     _completed_cycle_ids,
     _erase_incomplete_cycles,
     _prepare_resume,
@@ -187,12 +188,11 @@ def test_prepare_resume_on_finished_run_is_noop(tmp_path):
 
 
 def _override_args(**given) -> argparse.Namespace:
-    flags = dict(
-        subject=None, cycles=None, cohort_size=None, ai_agent_tool=None, model=None,
-        log_level=None, max_workers=None, authoring_scope=None, simulator_timeout_s=None,
-    )
-    flags.update(given)
-    return argparse.Namespace(**flags)
+    # Start from the real parser's defaults so new flags are covered automatically.
+    args = _build_arg_parser().parse_args([])
+    for key, value in given.items():
+        setattr(args, key, value)
+    return args
 
 
 def test_reject_overrides_with_continue_allows_bare_continue():
@@ -206,3 +206,30 @@ def test_reject_overrides_with_continue_allows_bare_continue():
 def test_reject_overrides_with_continue_rejects_any_setting_flag(given):
     with pytest.raises(SystemExit):
         _reject_overrides_with_continue(_override_args(**given))
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--digest-cycles", "2"],
+        ["--implementation-attempts", "2"],
+        ["--hypothesis-attempts", "2"],
+        ["--dimensions", "hit-rate"],
+        ["--selection-method", "pareto"],
+        ["--selection-method", "weighted"],
+        ["--winners-count", "2"],
+        ["--weights", "hit-rate=1.0"],
+    ],
+)
+def test_reject_overrides_with_continue_rejects_new_flags(argv, capsys):
+    args = _build_arg_parser().parse_args(["--continue", "/tmp/run", *argv])
+    with pytest.raises(SystemExit):
+        _reject_overrides_with_continue(args)
+    assert "--continue" in capsys.readouterr().err
+
+
+def test_main_rejects_continue_with_new_flag(tmp_path):
+    from evolve.cli import main
+
+    with pytest.raises(SystemExit):
+        main(["--continue", str(tmp_path), "--weights", "hit-rate=1.0"])

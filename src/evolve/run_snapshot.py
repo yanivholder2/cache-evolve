@@ -18,6 +18,12 @@ from evolve._io import read_utf8
 from evolve.paths import Layout
 
 
+# Tables whose override replaces the whole section rather than merging keys:
+# their keys are data (dimension names), so a stale key left behind would change
+# the run's meaning.
+WHOLE_TABLES = frozenset({"selection.weights"})
+
+
 def snapshot_run_inputs(layout: Layout, config_overrides: Mapping[str, Mapping[str, object]]) -> None:
     """Copy the run's config.toml and subject manifest.toml into the output
     root. `config_overrides` carries the CLI flags that won over config.toml;
@@ -50,14 +56,26 @@ def flag_overrides(args: argparse.Namespace) -> dict[str, dict[str, object]]:
             "log_level": args.log_level,
             "max_workers": args.max_workers,
             "authoring_scope": args.authoring_scope,
+            "digest_cycles": args.digest_cycles,
+            "implementation_attempts": args.implementation_attempts,
+            "hypothesis_attempts": args.hypothesis_attempts,
         },
         "simulator": {"timeout_s": args.simulator_timeout_s},
+        "fitness": {"dimensions": args.dimensions},
+        "selection": {"method": args.selection_method, "winners_count": args.winners_count},
     }
     overrides: dict[str, dict[str, object]] = {}
     for section, values in by_section.items():
         given = {key: value for key, value in values.items() if value is not None}
         if given:
             overrides[section] = given
+    # The weights table is replaced wholesale (see `WHOLE_TABLES`). Switching to
+    # pareto by flag drops config.toml's table, mirroring `load_configs`; an
+    # empty replacement removes it from the snapshot.
+    if args.weights is not None:
+        overrides["selection.weights"] = dict(args.weights)
+    elif args.selection_method == "pareto":
+        overrides["selection.weights"] = {}
     return overrides
 
 
@@ -65,17 +83,24 @@ def overlay_config(source: str, overrides: Mapping[str, Mapping[str, object]]) -
     """Return config.toml `source` with `overrides` (section to key to value)
     applied, preserving comments and untouched lines. Keys present in their
     section are rewritten in place; keys absent are appended to the section
-    (the section header is created if missing)."""
+    (the section header is created if missing). Sections in `WHOLE_TABLES` are
+    replaced wholesale instead; an empty replacement removes the section."""
+
+    lines = source.splitlines(keepends=True)
+    for table in WHOLE_TABLES & overrides.keys():
+        _drop_section(lines, table)
+        for key, value in overrides[table].items():
+            _append_key(lines, table, key, value)
 
     pending = {
         (section, key): value
         for section, keys in overrides.items()
+        if section not in WHOLE_TABLES
         for key, value in keys.items()
     }
     if not pending:
-        return source
+        return "".join(lines)
 
-    lines = source.splitlines(keepends=True)
     section: str | None = None
     for index, line in enumerate(lines):
         header = re.match(r"\s*\[([^\]]+)\]", line)
@@ -117,13 +142,31 @@ def _line_trailer(line: str) -> str:
 
 
 def _toml_value(value: object) -> str:
-    """Render `value` as a TOML scalar for the config snapshot. Covers only the
-    flag-overridable types: bool, int, and string-likes (str, StrEnum)."""
+    """Render `value` as a TOML value for the config snapshot. Covers only the
+    flag-overridable types: bool, int, float, string-likes (str, StrEnum), and
+    lists of those."""
     if isinstance(value, bool):
         return "true" if value else "false"
-    if isinstance(value, int):
+    if isinstance(value, (int, float)):
         return str(value)
+    if isinstance(value, (list, tuple)):
+        return "[" + ", ".join(_toml_value(item) for item in value) + "]"
     return f'"{value}"'
+
+
+def _drop_section(lines: list[str], section: str) -> None:
+    """Remove `section`'s header and body (up to the next header) from `lines`."""
+    start = next(
+        (i for i, line in enumerate(lines) if re.match(rf"\s*\[{re.escape(section)}\]", line)),
+        None,
+    )
+    if start is None:
+        return
+    end = next(
+        (i for i in range(start + 1, len(lines)) if re.match(r"\s*\[", lines[i])),
+        len(lines),
+    )
+    del lines[start:end]
 
 
 def _append_key(lines: list[str], section: str, key: str, value: object) -> None:
