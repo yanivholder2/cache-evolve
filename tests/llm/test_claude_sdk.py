@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import time
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 
 from evolve.llm.adapters import claude_sdk
@@ -14,7 +17,10 @@ def test_accepts_any_claude_model(model):
     assert ClaudeSdkAdapter(model=model).model == model
 
 
-@pytest.mark.parametrize("model", ["gemini-3-pro-preview", "gemma4:e4b", "opus-5-5", ""])
+@pytest.mark.parametrize(
+    "model",
+    ["gemini-3-pro-preview", "gemma4:e4b", "opus-5-5", "", "claude-", "claude-opus-5.5", "claude-opus"],
+)
 def test_rejects_non_claude_model(model):
     with pytest.raises(ValueError, match="claude-"):
         ClaudeSdkAdapter.validate_model(model)
@@ -26,9 +32,9 @@ def test_rejects_non_claude_model(model):
 def fresh_cli_cache(monkeypatch):
     monkeypatch.delenv(CLI_PATH_ENV, raising=False)
     monkeypatch.setattr(claude_sdk.os, "name", "posix")
-    resolve_cli_path.cache_clear()
+    claude_sdk._resolve_cli_path.cache_clear()
     yield
-    resolve_cli_path.cache_clear()
+    claude_sdk._resolve_cli_path.cache_clear()
 
 
 def _versions(monkeypatch, *, bundled, system, table):
@@ -88,6 +94,25 @@ def test_result_is_cached(fresh_cli_cache, monkeypatch):
     monkeypatch.setattr(claude_sdk.shutil, "which", lambda name: None)
     monkeypatch.setattr(claude_sdk, "_cli_version", version)
     assert resolve_cli_path() == resolve_cli_path() == "/sdk/claude"
+    assert calls == ["/sdk/claude"]
+
+
+def test_concurrent_first_calls_probe_once(fresh_cli_cache, monkeypatch):
+    # Per-variant worker threads start their first agent calls together; only
+    # one of them may run the `--version` probes.
+    calls = []
+
+    def version(path):
+        calls.append(path)
+        time.sleep(0.05)
+        return (1, 0, 0)
+
+    monkeypatch.setattr(claude_sdk, "_bundled_cli", lambda: "/sdk/claude")
+    monkeypatch.setattr(claude_sdk.shutil, "which", lambda name: None)
+    monkeypatch.setattr(claude_sdk, "_cli_version", version)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(lambda _: resolve_cli_path(), range(4)))
+    assert results == ["/sdk/claude"] * 4
     assert calls == ["/sdk/claude"]
 
 

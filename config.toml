@@ -17,7 +17,7 @@ ai_agent_tool = "claude-sdk"
 
 # Model the chosen adapter drives (--model). Must be valid for the selected
 # ai_agent_tool adapter, else config load fails:
-#   claude-sdk:      open namespace — any `claude-*` id is passed to the Claude
+#   claude-sdk:      open namespace — any `claude-<family>-<version>` id is passed to the Claude
 #                    Code CLI, e.g. claude-opus-5-5, claude-sonnet-5-5,
 #                    claude-haiku-5-5, claude-opus-4-8, claude-opus-4-7,
 #                    claude-sonnet-4-6, claude-haiku-4-5-20251001. The newest of

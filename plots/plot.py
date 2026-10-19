@@ -33,10 +33,10 @@ def model_sort_key(model):
     first within a family; unparseable / unknown models go last, by name."""
     parsed = parse_model(model)
     if parsed is None:
-        return (2, 0, (0, 0), model)
+        return (2, 0, model, (0, 0))
     family, (major, minor) = parsed
     family_rank = FAMILY_ORDER.index(family) if family in FAMILY_ORDER else len(FAMILY_ORDER)
-    return (0 if family in FAMILY_ORDER else 1, family_rank, (-major, -minor), family)
+    return (0 if family in FAMILY_ORDER else 1, family_rank, family, (-major, -minor))
 
 
 def model_label(model):
