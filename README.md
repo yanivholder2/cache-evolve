@@ -92,7 +92,7 @@ Each cycle ends with a `cycle <NNNN> complete` line naming the sealed cycle dire
 Point `--continue` at the run's outputs directory to resume a run that stopped mid-cycle:
 
 ```bash
-evolve --continue outputs/<subject>/<run-dir>
+evolve --continue outputs/<subject>_<timestamp>
 ```
 
 It reuses the run's config snapshot verbatim (no other flags allowed alongside it), erases the incomplete cycle, and continues to the snapshot's original cycle target.
@@ -109,11 +109,13 @@ It runs pre-flight checks (venv, Caffeine, JDK 25, `cargo build`), launches the 
 
 Evolve reads a **subject** — the cache implementation to evolve — from `inputs/subjects/<name>/`. Which subject to run is a setting like any other (see [Configuration](#configuration)). The repo ships several (`dash`, `associative_cache`, `lru_cache`); each is a self-contained crate with its own manifest and measured baseline. See the [wiki](../../wiki/Subjects) for what a subject is and how to point at your own.
 
-Everything a run produces lands under the **outputs** directory (default `outputs/<timestamp>/`, gitignored): the per-cycle artifacts, the cross-cycle ledger and leaderboard, and the logs. The subject and the rest of the repository are never modified by a run.
+Everything a run produces lands under the **outputs** directory (default `outputs/<subject>_<timestamp>/`, gitignored): the per-cycle artifacts, the cross-cycle ledger and leaderboard, and the logs. The subject and the rest of the repository are never modified by a run.
 
 ## Configuration
 
 Defaults for every setting live in [`config.toml`](config.toml) — edit it to change them persistently, or pass the matching flag to override on a single run. Precedence is **flag > `config.toml`**: a setting with no flag and no config value (for example, the AI-agent backend, which has no default) aborts the run with an instructive message rather than guessing.
+
+Under `claude-sdk`, `--model` takes any `claude-*` id (e.g. `claude-opus-5-5`); new model releases need no code change. The adapter drives the newest of the SDK-bundled Claude Code CLI and `claude` on `PATH` — set `EVOLVE_CLAUDE_CLI` to pin one.
 
 ## License
 
