@@ -233,3 +233,30 @@ def test_main_rejects_continue_with_new_flag(tmp_path):
 
     with pytest.raises(SystemExit):
         main(["--continue", str(tmp_path), "--weights", "hit-rate=1.0"])
+
+
+@pytest.mark.parametrize(
+    ("argv", "flag"),
+    [
+        (["--weights", "hit-rate=0.6"], "--weights"),
+        (["--selection-method", "pareto"], "--selection-method"),
+        (["--simulator-timeout-s", "30"], "--simulator-timeout-s"),
+        (["--dimensions", "hit-rate"], "--dimensions"),
+        (["--max-workers", "2"], "--max-workers"),
+    ],
+)
+def test_reject_overrides_with_continue_names_the_flag(argv, flag, capsys):
+    args = _build_arg_parser().parse_args(["--continue", "/tmp/run", *argv])
+    with pytest.raises(SystemExit):
+        _reject_overrides_with_continue(args)
+    given = capsys.readouterr().err.rsplit("given: ", 1)[1]
+    assert flag in given
+    assert "hit-rate" not in given
+
+
+def test_main_rejects_duplicate_weights(capsys):
+    from evolve.cli import main
+
+    with pytest.raises(SystemExit):
+        main(["--weights", "hit-rate=0.6", "hit-rate=0.9"])
+    assert "--weights repeats a dimension: hit-rate" in capsys.readouterr().err

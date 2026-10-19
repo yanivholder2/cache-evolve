@@ -239,7 +239,7 @@ def test_weighted_non_positive_weight_raises(tmp_path: Path):
         tmp_path,
         selection_body='[selection]\nmethod = "weighted"\nwinners_count = 2\n[selection.weights]\nhit-rate = 0.0\n',
     )
-    with pytest.raises(ConfigError, match="must be a positive number"):
+    with pytest.raises(ConfigError, match="must be a positive finite number"):
         load_configs(tmp_path)
 
 
@@ -329,7 +329,7 @@ def test_pareto_flag_with_weights_flag_raises(tmp_path: Path):
 def test_weighted_dimensions_flag_without_weights_flag_raises(tmp_path: Path):
     # Narrowing the dimensions leaves config.toml's 3-key weights table stale.
     _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
-    with pytest.raises(ConfigError, match="must exactly match"):
+    with pytest.raises(ConfigError, match=r"--dimensions hit-rate does not match.*--weights.*--selection-method pareto"):
         load_configs(tmp_path, dimensions=["hit-rate"])
 
 
@@ -342,7 +342,7 @@ def test_weights_flag_replaces_config_table(tmp_path: Path):
 
 def test_weights_flag_non_positive_raises(tmp_path: Path):
     _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
-    with pytest.raises(ConfigError, match="must be a positive number"):
+    with pytest.raises(ConfigError, match="must be a positive finite number"):
         load_configs(tmp_path, weights={"hit-rate": 0.0, "metadata-size": 0.5, "per-op-time": 0.5})
 
 
@@ -376,4 +376,26 @@ def test_claude_sdk_rejects_gemini_model_with_reason(tmp_path: Path):
 def test_enum_adapter_still_rejects_unknown_model(tmp_path: Path):
     _write_config(tmp_path, ai_agent_tool="ollama-local", model="claude-opus-5-5")
     with pytest.raises(ConfigError, match="not valid for ai_agent_tool 'ollama-local'"):
+        load_configs(tmp_path)
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_weights_flag_non_finite_raises(tmp_path: Path, bad: float):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    with pytest.raises(ConfigError, match="--weights hit-rate must be a positive finite number"):
+        load_configs(tmp_path, weights={"hit-rate": bad, "metadata-size": 0.5, "per-op-time": 0.5})
+
+
+def test_dimensions_flag_error_names_flag(tmp_path: Path):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    with pytest.raises(ConfigError, match="^--dimensions must not repeat"):
+        load_configs(tmp_path, dimensions=["hit-rate", "hit-rate"])
+
+
+def test_config_weights_error_names_config_key(tmp_path: Path):
+    _write_config(
+        tmp_path,
+        selection_body='[selection]\nmethod = "weighted"\nwinners_count = 2\n[selection.weights]\nhit-rate = nan\n',
+    )
+    with pytest.raises(ConfigError, match="^selection.weights.hit-rate must be a positive finite number"):
         load_configs(tmp_path)

@@ -292,3 +292,46 @@ def test_parse_weight_rejects_malformed(raw):
 def test_weights_flag_malformed_exits_via_argparse():
     with pytest.raises(SystemExit):
         _parse(["--weights", "hit-rate"])
+
+
+def test_overlay_config_rewrites_multiline_array(tmp_path):
+    source = _WEIGHTED_SOURCE.replace(
+        'dimensions = ["hit-rate", "metadata-size", "per-op-time"]',
+        'dimensions = [\n  "hit-rate",  # [primary]\n  "metadata-size",\n  "per-op-time",\n]  # trailing',
+    )
+    assert source != _WEIGHTED_SOURCE
+    args = _parse(["--dimensions", "hit-rate", "--selection-method", "pareto"])
+    out = overlay_config(source, flag_overrides(args))
+    assert 'dimensions = ["hit-rate"]  # trailing\n' in out
+    assert tomllib.loads(out)["fitness"]["dimensions"] == ["hit-rate"]
+    assert _reload_snapshot(tmp_path, out).fitness.dimensions == ("hit-rate",)
+
+
+def test_overlay_config_skips_untouched_multiline_array():
+    # A continuation line that looks like an assignment must not be rewritten.
+    source = '[a]\nitems = [\n  "x",\n]\ncycles = 1\n'
+    out = overlay_config(source, {"a": {"cycles": 2}})
+    assert out == '[a]\nitems = [\n  "x",\n]\ncycles = 2\n'
+
+
+_DOCUMENTED_WEIGHTS = (
+    '[selection]\nmethod = "weighted"\nwinners_count = 3\n\n'
+    "# Weights doc: keys MUST match.\n"
+    "[selection.weights]\nhit-rate = 0.6\nper-op-time = 0.4\n\n"
+    "# Simulator doc.\n"
+    "[simulator]\ntimeout_s = 600\n"
+)
+
+
+def test_overlay_config_pareto_drops_weights_doc_keeps_next_section_doc():
+    out = overlay_config(_DOCUMENTED_WEIGHTS, {"selection": {"method": "pareto"}, "selection.weights": {}})
+    assert "Weights doc" not in out
+    assert "[selection.weights]" not in out
+    assert "# Simulator doc.\n[simulator]" in out
+    assert tomllib.loads(out)["simulator"] == {"timeout_s": 600}
+
+
+def test_overlay_config_weights_replaced_in_place_under_its_doc():
+    out = overlay_config(_DOCUMENTED_WEIGHTS, {"selection.weights": {"hit-rate": 1.0}})
+    assert "# Weights doc: keys MUST match.\n[selection.weights]\nhit-rate = 1.0\n\n# Simulator doc." in out
+    assert tomllib.loads(out)["selection"]["weights"] == {"hit-rate": 1.0}

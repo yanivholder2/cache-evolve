@@ -79,6 +79,25 @@ def flag_overrides(args: argparse.Namespace) -> dict[str, dict[str, object]]:
     return overrides
 
 
+# Flags whose name is not `--<key with dashes>` of the config key they set.
+_FLAG_NAMES = {
+    ("simulator", "timeout_s"): "--simulator-timeout-s",
+    ("selection", "method"): "--selection-method",
+}
+
+
+def override_flag_names(overrides: Mapping[str, Mapping[str, object]]) -> list[str]:
+    """The CLI flags behind `overrides` (as built by `flag_overrides`), sorted."""
+    names = set()
+    for section, keys in overrides.items():
+        if section in WHOLE_TABLES:
+            names.add("--" + section.rsplit(".", 1)[-1])
+            continue
+        for key in keys:
+            names.add(_FLAG_NAMES.get((section, key), "--" + key.replace("_", "-")))
+    return sorted(names)
+
+
 def overlay_config(source: str, overrides: Mapping[str, Mapping[str, object]]) -> str:
     """Return config.toml `source` with `overrides` (section to key to value)
     applied, preserving comments and untouched lines. Keys present in their
@@ -88,9 +107,7 @@ def overlay_config(source: str, overrides: Mapping[str, Mapping[str, object]]) -
 
     lines = source.splitlines(keepends=True)
     for table in WHOLE_TABLES & overrides.keys():
-        _drop_section(lines, table)
-        for key, value in overrides[table].items():
-            _append_key(lines, table, key, value)
+        _replace_table(lines, table, overrides[table])
 
     pending = {
         (section, key): value
@@ -102,25 +119,60 @@ def overlay_config(source: str, overrides: Mapping[str, Mapping[str, object]]) -
         return "".join(lines)
 
     section: str | None = None
-    for index, line in enumerate(lines):
+    index = 0
+    while index < len(lines):
+        line = lines[index]
         header = re.match(r"\s*\[([^\]]+)\]", line)
+        assignment = None if header or _is_comment(line) else re.match(r"\s*([A-Za-z0-9_]+)\s*=", line)
         if header:
             section = header.group(1)
-            continue
-        if line.lstrip().startswith("#"):
-            continue
-        assignment = re.match(r"\s*([A-Za-z0-9_]+)\s*=", line)
-        if assignment is None:
-            continue
-        key = assignment.group(1)
-        if (section, key) in pending:
-            value = pending.pop((section, key))
-            trailer = _line_trailer(line)
-            lines[index] = f"{key} = {_toml_value(value)}{trailer}"
+        elif assignment is not None:
+            key = assignment.group(1)
+            # A multi-line value (e.g. an array spread over several lines) spans
+            # up to `last`; the rewrite collapses it onto one line.
+            last = _value_end(lines, index)
+            if (section, key) in pending:
+                value = pending.pop((section, key))
+                trailer = _line_trailer(lines[last])
+                lines[index:last + 1] = [f"{key} = {_toml_value(value)}{trailer}"]
+            else:
+                index = last
+        index += 1
 
     for (section, key), value in pending.items():
         _append_key(lines, section, key, value)
     return "".join(lines)
+
+
+def _is_comment(line: str) -> bool:
+    return line.lstrip().startswith("#")
+
+
+def _value_end(lines: list[str], start: int) -> int:
+    """Index of the last line of the assignment starting at `lines[start]`:
+    `start` itself unless an array opened on it closes on a later line. Brackets
+    inside strings and comments do not count."""
+    depth = 0
+    for index in range(start, len(lines)):
+        body = lines[index]
+        if index == start:
+            body = body.split("=", 1)[1]
+        in_string: str | None = None
+        for char in body:
+            if in_string:
+                if char == in_string:
+                    in_string = None
+            elif char in "\"'":
+                in_string = char
+            elif char == "#":
+                break
+            elif char == "[":
+                depth += 1
+            elif char == "]":
+                depth -= 1
+        if depth <= 0:
+            return index
+    return len(lines) - 1
 
 
 def _line_trailer(line: str) -> str:
@@ -154,19 +206,41 @@ def _toml_value(value: object) -> str:
     return f'"{value}"'
 
 
-def _drop_section(lines: list[str], section: str) -> None:
-    """Remove `section`'s header and body (up to the next header) from `lines`."""
+def _replace_table(lines: list[str], section: str, values: Mapping[str, object]) -> None:
+    """Replace `section`'s keys with `values` in place, keeping its header and the
+    comment block documenting it. Empty `values` removes the table together with
+    that comment block. Comments introducing the next section are left alone. A
+    missing table with non-empty `values` is appended at the end."""
     start = next(
         (i for i, line in enumerate(lines) if re.match(rf"\s*\[{re.escape(section)}\]", line)),
         None,
     )
     if start is None:
+        for key, value in values.items():
+            _append_key(lines, section, key, value)
         return
     end = next(
         (i for i in range(start + 1, len(lines)) if re.match(r"\s*\[", lines[i])),
         len(lines),
     )
-    del lines[start:end]
+    if end < len(lines):
+        # The comment block directly above the next header belongs to it.
+        while end > start + 1 and _is_comment(lines[end - 1]):
+            end -= 1
+    if not values:
+        # So does the comment block directly above this header.
+        while start > 0 and _is_comment(lines[start - 1]):
+            start -= 1
+        del lines[start:end]
+        return
+    # Keep the blank lines separating the table from what follows.
+    gap = end
+    while gap > start + 1 and not lines[gap - 1].strip():
+        gap -= 1
+    if not lines[start].endswith("\n"):
+        lines[start] += "\n"
+    rendered = [f"{key} = {_toml_value(value)}\n" for key, value in values.items()]
+    lines[start + 1:end] = rendered + lines[gap:end]
 
 
 def _append_key(lines: list[str], section: str, key: str, value: object) -> None:

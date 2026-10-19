@@ -7,6 +7,7 @@ downstream callable. Sinks must read settings via `Configs` — never from
 
 from __future__ import annotations
 
+import math
 import tomllib
 from dataclasses import dataclass
 from datetime import datetime
@@ -169,6 +170,7 @@ def load_configs(
     selection = _resolve_selection(
         selection_defaults,
         fitness.dimensions,
+        dimensions_from_flag=dimensions is not None,
         method=selection_method,
         winners_count=winners_count,
         weights=weights,
@@ -235,12 +237,13 @@ def _resolve_dimensions(override: list[str] | tuple[str, ...] | None, defaults: 
     value = _resolve(
         list(override) if override is not None else None, defaults, "dimensions", "--dimensions", "fitness"
     )
+    source = "--dimensions" if override is not None else "fitness.dimensions"
     if not isinstance(value, list) or not value:
-        raise ConfigError("fitness.dimensions must be a non-empty list of strings")
+        raise ConfigError(f"{source} must be a non-empty list of strings")
     if any(not isinstance(dim, str) or not dim for dim in value):
-        raise ConfigError(f"fitness.dimensions must be a list of non-empty strings, got: {value!r}")
+        raise ConfigError(f"{source} must be a list of non-empty strings, got: {value!r}")
     if len(set(value)) != len(value):
-        raise ConfigError(f"fitness.dimensions must not repeat a dimension, got: {value!r}")
+        raise ConfigError(f"{source} must not repeat a dimension, got: {value!r}")
     return tuple(value)
 
 
@@ -248,6 +251,7 @@ def _resolve_selection(
     defaults: dict,
     dimensions: tuple[str, ...],
     *,
+    dimensions_from_flag: bool = False,
     method: str | None = None,
     winners_count: int | None = None,
     weights: dict[str, float] | None = None,
@@ -257,7 +261,7 @@ def _resolve_selection(
         winners_count, defaults, "winners_count", "--winners-count", "selection"
     )
     if weights is not None:
-        resolved_weights = _validate_weights(weights)
+        resolved_weights = _validate_weights(weights, from_flag=True)
     elif method == "pareto":
         # Pareto takes no weights. When the flag switches to it, drop config.toml's
         # table rather than reject it, so `--selection-method pareto` works against
@@ -265,6 +269,19 @@ def _resolve_selection(
         resolved_weights = None
     else:
         resolved_weights = _resolve_weights(defaults)
+        if (
+            dimensions_from_flag
+            and resolved_method == "weighted"
+            and resolved_weights is not None
+            and set(resolved_weights) != set(dimensions)
+        ):
+            # config.toml's weights are keyed to its own dimensions; a narrower
+            # or different `--dimensions` set needs its own weights (or pareto).
+            raise ConfigError(
+                f"--dimensions {' '.join(dimensions)} does not match config.toml's "
+                f"selection.weights keys {sorted(resolved_weights)}; pass matching "
+                "--weights DIM=W ... or --selection-method pareto"
+            )
     # Build the selector now so any method-specific inconsistency (weights present
     # under pareto, weight keys not matching the active dimensions, unknown method)
     # dies at config load rather than mid-run. The instance is discarded; the
@@ -287,18 +304,21 @@ def _resolve_weights(defaults: dict) -> dict[str, float] | None:
     return _validate_weights(defaults["weights"])
 
 
-def _validate_weights(raw: object) -> dict[str, float]:
+def _validate_weights(raw: object, *, from_flag: bool = False) -> dict[str, float]:
+    table = "--weights" if from_flag else "selection.weights"
     if not isinstance(raw, dict) or not raw:
-        raise ConfigError("selection.weights must be a non-empty table of dimension weights")
+        raise ConfigError(f"{table} must be a non-empty table of dimension weights")
     weights: dict[str, float] = {}
     for key, value in raw.items():
+        source = f"--weights {key}" if from_flag else f"selection.weights.{key}"
         if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ConfigError(f"selection.weights.{key} must be a number, got: {value!r}")
-        if value <= 0:
+            raise ConfigError(f"{source} must be a number, got: {value!r}")
+        if not math.isfinite(value) or value <= 0:
             # Keys must match dimensions exactly, so a dimension can't be dropped by
             # omission; a zero weight would silently neutralize a still-measured
-            # dimension and a negative one would invert it. Require positive.
-            raise ConfigError(f"selection.weights.{key} must be a positive number, got: {value!r}")
+            # dimension and a negative one would invert it. NaN / inf would poison
+            # every weighted score. Require positive and finite.
+            raise ConfigError(f"{source} must be a positive finite number, got: {value!r}")
         weights[key] = float(value)
     return weights
 

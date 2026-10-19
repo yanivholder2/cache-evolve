@@ -28,13 +28,13 @@ a flag for it). With no description at all, run with config defaults only.
 | prior insights in the insight-writer prompt | `--digest-cycles <n>` |
 | implementation / self-repair attempts per variant | `--implementation-attempts <n>` |
 | hypothesis attempts per cycle | `--hypothesis-attempts <n>` |
-| fitness dimensions ("hit-rate only", "full vector") | `--dimensions DIM [DIM ...]` |
+| fitness dimensions ("hit-rate only", "full vector") | `--dimensions DIM [DIM ...]` (under weighted, also pass matching `--weights`, or use pareto) |
 | winner selection | `--selection-method {pareto,weighted}` (pareto drops config.toml's weights) |
 | how many winners | `--winners-count <n>` |
 | dimension weights | `--weights DIM=W [DIM=W ...]` (replaces the whole table) |
 
 Every `config.toml` setting has a flag; `"$EVOLVE" --help` is authoritative.
-Under `claude-sdk`, `--model` takes any `claude-*` id (e.g. `claude-opus-5-5`,
+Under `claude-sdk`, `--model` takes any `claude-<family>-<version>` id (e.g. `claude-opus-5-5`,
 `claude-sonnet-5-5`, `claude-haiku-5-5`) — don't reject an id for being absent
 from a list.
 

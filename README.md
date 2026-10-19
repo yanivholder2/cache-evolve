@@ -115,7 +115,7 @@ Everything a run produces lands under the **outputs** directory (default `output
 
 Defaults for every setting live in [`config.toml`](config.toml) — edit it to change them persistently, or pass the matching flag to override on a single run. Precedence is **flag > `config.toml`**: a setting with no flag and no config value (for example, the AI-agent backend, which has no default) aborts the run with an instructive message rather than guessing.
 
-Under `claude-sdk`, `--model` takes any `claude-*` id (e.g. `claude-opus-5-5`); new model releases need no code change. The adapter drives the newest of the SDK-bundled Claude Code CLI and `claude` on `PATH` — set `EVOLVE_CLAUDE_CLI` to pin one.
+Under `claude-sdk`, `--model` takes any well-formed `claude-<family>-<version>` id (e.g. `claude-opus-5-5`, `claude-haiku-4-5-20251001`); new model releases need no code change, and a malformed id (e.g. `claude-opus-5.5`) fails at config load. The adapter drives the newest of the SDK-bundled Claude Code CLI and `claude` on `PATH` — set `EVOLVE_CLAUDE_CLI` to pin one.
 
 ## License
 
