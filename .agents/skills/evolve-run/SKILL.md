@@ -38,6 +38,11 @@ Under `claude-sdk`, `--model` takes any `claude-*` id (e.g. `claude-opus-5-5`,
 `claude-sonnet-5-5`, `claude-haiku-5-5`) — don't reject an id for being absent
 from a list.
 
+**Paper runs.** If the request references the paper run plan or a plan row id
+(e.g. `F01`), read `docs/paper-runs-plan.md` first and launch that row's exact
+command — every setting pinned, no natural-language translation — and update
+the row as that doc's rules say.
+
 Confirm the assembled command line back to the user in one line before
 launching. Flags are non-persistent overrides — never edit `config.toml` or any
 committed input, so the run leaves no persistent change.
