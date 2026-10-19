@@ -11,7 +11,8 @@ recorded one. Each canonical fitness dimension absent from a variant's
 vector is written as -1.
 
 Run-setup fields are read from the config.toml snapshot the runner copies
-into each run folder at start. Runs predating that snapshot fall back to
+into each run folder at start, except the model, which is parsed from the
+run dir name (see model_from_run_name). Runs predating that snapshot fall back to
 the authoritative cycle count and ledger cohort size, with the rest left
 as "unknown" / -1.
 
@@ -25,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import tomllib
 from pathlib import Path
 
@@ -40,6 +42,24 @@ UNKNOWN = "unknown"
 # vector omits one of these gets MISSING for that dimension.
 CANONICAL_DIMS = ("hit-rate", "metadata-size", "per-op-time")
 MISSING = -1
+
+
+# Run dir names are "<subject>_<model>_<YYYY-MM-DD>_<HH-MM-SS-mmm>"; the
+# subject prefix is stripped separately because subject names contain "_".
+RUN_NAME_MODEL_RE = re.compile(r"^(?P<model>.+)_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}$")
+
+
+def model_from_run_name(run_name: str, subject: str) -> str | None:
+    """Parse the model id out of a "<subject>_<model>_<date>_<time>" run dir name.
+
+    Returns None when the name does not have that shape (e.g. an older
+    "<subject>_<date>_<time>" run with no model segment).
+    """
+    prefix = f"{subject}_"
+    if not run_name.startswith(prefix):
+        return None
+    match = RUN_NAME_MODEL_RE.match(run_name[len(prefix):])
+    return match.group("model") if match else None
 
 
 def dim_summaries(vector: dict) -> dict:
@@ -157,6 +177,10 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
     Cycle count and ledger cohort size are authoritative run artifacts and
     always win. Everything else comes from the config.toml snapshot the runner
     copies into the run folder; runs predating that snapshot get sentinels.
+
+    The model comes from the run dir name, which is authoritative: some older
+    snapshots carry a wrong or missing [framework].model. The snapshot's value
+    is only a fallback for names that do not parse.
     """
     setup = {
         "run": run_dir.name,
@@ -164,6 +188,7 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
         "total-cycles": cycle_count,
         "cohort-size": ledger_cohort_size(run_dir),
         "ai-agent-tool": UNKNOWN,
+        "model": model_from_run_name(run_dir.name, subject) or UNKNOWN,
         "implementation-attempts": MISSING,
         "hypothesis-attempts": MISSING,
         "authoring-scope": UNKNOWN,
@@ -175,6 +200,8 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
         framework = config.get("framework", {})
         fitness = config.get("fitness", {})
         setup["ai-agent-tool"] = framework.get("ai_agent_tool", UNKNOWN)
+        if setup["model"] == UNKNOWN:
+            setup["model"] = framework.get("model", UNKNOWN)
         setup["implementation-attempts"] = framework.get("implementation_attempts", MISSING)
         setup["hypothesis-attempts"] = framework.get("hypothesis_attempts", MISSING)
         setup["authoring-scope"] = framework.get("authoring_scope", UNKNOWN)
@@ -286,9 +313,10 @@ def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
 def build_run(run_dir: Path, subject: str):
     """Return the {setup, variants} block for one run, or None if incomplete.
 
-    Subject comes from the run's parent folder; the run dir name embeds the
-    agent (e.g. "lru_cache_claude-opus-4-8_<date>_<time>") and is not safely
-    parseable for subjects whose names contain underscores.
+    Subject comes from the run's parent folder: the run dir name (e.g.
+    "lru_cache_claude-opus-4-8_<date>_<time>") is not safely splittable for
+    subjects whose names contain underscores. Knowing the subject, the model
+    segment is then parsed from the name (see model_from_run_name).
     """
     if not (run_dir / "cycles-ledger.jsonl").exists():
         return None  # run never reached a sealed cycle

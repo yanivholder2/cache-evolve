@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,44 @@ import pandas as pd
 # Fitness dimensions carried per variant. A value of -1 means the dimension
 # was not calculated for that variant and must not be plotted.
 MISSING = -1
+
+# Display order of model families in the grouped bars. Families not listed
+# here, and model ids that do not parse, sort after these.
+FAMILY_ORDER = ('opus', 'sonnet', 'haiku')
+
+# "claude-<family>-<major>[-<minor>][-<YYYYMMDD>]", e.g. claude-opus-4-8,
+# claude-haiku-4-5-20251001.
+MODEL_ID_RE = re.compile(r'^claude-(?P<family>[a-z]+)-(?P<major>\d+)(?:-(?P<minor>\d{1,2}))?(?:-\d{8})?$')
+
+
+def parse_model(model):
+    """Return (family, (major, minor)) for a Claude model id, or None."""
+    match = MODEL_ID_RE.match(model)
+    if not match:
+        return None
+    version = (int(match.group('major')), int(match.group('minor') or 0))
+    return match.group('family'), version
+
+
+def model_sort_key(model):
+    """Family (opus, sonnet, haiku, then other families), newest version
+    first within a family; unparseable / unknown models go last, by name."""
+    parsed = parse_model(model)
+    if parsed is None:
+        return (2, 0, (0, 0), model)
+    family, (major, minor) = parsed
+    family_rank = FAMILY_ORDER.index(family) if family in FAMILY_ORDER else len(FAMILY_ORDER)
+    return (0 if family in FAMILY_ORDER else 1, family_rank, (-major, -minor), family)
+
+
+def model_label(model):
+    """Human label, e.g. claude-haiku-4-5-20251001 -> "Haiku 4.5"."""
+    parsed = parse_model(model)
+    if parsed is None:
+        return model
+    family, (major, minor) = parsed
+    return f"{family.capitalize()} {major}.{minor}"
+
 
 def generate_plots(data_file, out_dir):
     # Create the figures directory if it doesn't exist
@@ -103,14 +142,14 @@ def generate_plots(data_file, out_dir):
     print(f"Successfully generated 4 cycle evolution plots and 1 standalone legend in the '{out_dir}/' directory.")
 
     # ==========================================
-    # PART 2: GROUPED BAR CHARTS (Final Performance by Agent Tool)
+    # PART 2: GROUPED BAR CHARTS (Final Performance by Model)
     # ==========================================
 
     # Extract the final-cycle winner for each run. Co-winners of the last cycle
     # are averaged; -1 dimensions stay missing and are skipped by the bars.
     final_variants = []
     for run in data['runs']:
-        agent_tool = run['setup']['ai-agent-tool']
+        setup = run['setup']
         winners = [v for v in run['variants'] if v['is-winner']]
         if not winners:
             continue
@@ -127,7 +166,8 @@ def generate_plots(data_file, out_dir):
 
         final_variants.append({
             'subject': last_winners[0]['subject-name'],
-            'agent_tool': agent_tool,
+            'model': setup.get('model', 'unknown'),
+            'agent_tool': setup.get('ai-agent-tool', 'unknown'),
             'hit_rate': mean_metric('hit-rate'),
             'metadata_size': mean_metric('metadata-size'),
             'per_op_time': mean_metric('per-op-time'),
@@ -136,36 +176,53 @@ def generate_plots(data_file, out_dir):
 
     df_final = pd.DataFrame(final_variants)
 
+    # One bar series per model (per model + agent tool when the tool varies,
+    # with the tool appended to the legend label).
+    tool_varies = df_final['agent_tool'].nunique() > 1
+    series = sorted(
+        df_final[['model', 'agent_tool']].drop_duplicates().itertuples(index=False, name=None),
+        key=lambda pair: (model_sort_key(pair[0]), pair[1]),
+    )
+
+    def series_label(model, agent_tool):
+        label = model_label(model)
+        return f"{label} ({agent_tool})" if tool_varies else label
+
     # Setup plotting function for grouped bars
     def plot_grouped_bar(metric_col, title, ylabel, filename):
-        plt.figure(figsize=(8, 5))
+        plt.figure(figsize=(10, 5))
 
         subjects_final = df_final['subject'].unique()
-        agent_tools = df_final['agent_tool'].unique()
 
         x = np.arange(len(subjects_final))
-        width = 0.8 / len(agent_tools)  # Dynamically size bars based on number of agent tools
+        width = 0.8 / len(series)  # Dynamically size bars based on number of series
 
-        # Define a colormap for the agent tools
-        colors_bar = plt.cm.Set2(np.linspace(0, 1, len(agent_tools)))
+        colors_bar = plt.cm.tab10(np.arange(len(series)) % 10)
 
-        for i, agent_tool in enumerate(agent_tools):
-            # Extract values for this agent tool across all subjects
-            tool_data = []
+        for i, (model, agent_tool) in enumerate(series):
+            # Extract values for this series across all subjects
+            series_data = []
             for subj in subjects_final:
-                val = df_final[(df_final['subject'] == subj) & (df_final['agent_tool'] == agent_tool)]
+                val = df_final[
+                    (df_final['subject'] == subj)
+                    & (df_final['model'] == model)
+                    & (df_final['agent_tool'] == agent_tool)
+                ]
                 metric = val[metric_col].mean() if not val.empty else np.nan
                 # A NaN bar (dimension never calculated) renders as no bar.
-                tool_data.append(0 if np.isnan(metric) else metric)
+                series_data.append(0 if np.isnan(metric) else metric)
 
             # Offset the bars so they group together side-by-side
-            offset = (i - len(agent_tools) / 2 + 0.5) * width
-            plt.bar(x + offset, tool_data, width, label=agent_tool, color=colors_bar[i], edgecolor='black')
+            offset = (i - len(series) / 2 + 0.5) * width
+            plt.bar(x + offset, series_data, width, label=series_label(model, agent_tool),
+                    color=colors_bar[i], edgecolor='black')
 
         plt.xlabel('Cache Architecture (Subject)', fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
         plt.title(title, fontsize=14)
         plt.xticks(x, subjects_final, rotation=15)
+        plt.legend(title='Model', fontsize=9, title_fontsize=10,
+                   loc='upper left', bbox_to_anchor=(1.01, 1), frameon=False)
 
         plt.grid(axis='y', linestyle='--', alpha=0.7)
 
@@ -174,10 +231,10 @@ def generate_plots(data_file, out_dir):
         plt.close()
 
     # Generate the four bar plots
-    plot_grouped_bar('hit_rate', 'Final Hit Rate by Agent Tool and Subject', 'Hit Rate', 'final-hitrate-bar.png')
-    plot_grouped_bar('metadata_size', 'Final Metadata Overhead by Agent Tool and Subject', 'Metadata Size (bytes)', 'final-metadata-bar.png')
-    plot_grouped_bar('per_op_time', 'Final Per-op Time by Agent Tool and Subject', 'Per-op Time', 'final-per-op-time-bar.png')
-    plot_grouped_bar('weighted_score', 'Final Weighted Score by Agent Tool and Subject', 'Weighted Score', 'final-weighted-score-bar.png')
+    plot_grouped_bar('hit_rate', 'Final Hit Rate by Model and Subject', 'Hit Rate', 'final-hitrate-bar.png')
+    plot_grouped_bar('metadata_size', 'Final Metadata Overhead by Model and Subject', 'Metadata Size (bytes)', 'final-metadata-bar.png')
+    plot_grouped_bar('per_op_time', 'Final Per-op Time by Model and Subject', 'Per-op Time', 'final-per-op-time-bar.png')
+    plot_grouped_bar('weighted_score', 'Final Weighted Score by Model and Subject', 'Weighted Score', 'final-weighted-score-bar.png')
 
     print(f"Successfully generated 4 grouped bar charts in the '{out_dir}/' directory.")
 

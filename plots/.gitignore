@@ -1,2 +1,2 @@
-# Generated figures (rendered by plot.py from data.json)
+# Generated figures (rendered by plot.py from paper-plots/data_<group>.json)
 *.png
