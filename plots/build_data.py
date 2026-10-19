@@ -3,8 +3,12 @@
 
 Runs are grouped under outputs/paper_outputs/<group>/<subject>/<run>/, where
 <group> is the fitness configuration the runs share (e.g. only_hit_rate,
-full_fitness_vector). Each group becomes its own plots/paper-plots/data_<group>.json
-so hit-rate-only and full-fitness-vector runs stay in separate datasets.
+full_fitness_vector). Later batches of runs live one level down, under
+outputs/paper_outputs/<batch>/<group>/<subject>/<run>/ with <batch> named
+`v<N>_runs` (e.g. v2_runs); the original runs are batch "v1". Each group becomes
+its own plots/paper-plots/data_<group>.json holding the runs of every batch, so
+hit-rate-only and full-fitness-vector runs stay in separate datasets while the
+models of different batches are compared side by side.
 
 Emits one row per variant per cycle, plus a baseline row when the run
 recorded one. Each canonical fitness dimension absent from a variant's
@@ -37,6 +41,11 @@ PLOTS_DIR = REPO_ROOT / "plots"
 PAPER_PLOTS_DIR = PLOTS_DIR / "paper-plots"
 
 UNKNOWN = "unknown"
+
+# Batch folders under paper_outputs/ (e.g. v2_runs); anything else at that level
+# is a group of the original batch.
+BATCH_DIR_RE = re.compile(r"^v\d+_runs$")
+ORIGINAL_BATCH = "v1"
 
 # Every fitness dimension the framework currently emits. A variant whose
 # vector omits one of these gets MISSING for that dimension.
@@ -171,7 +180,7 @@ def ledger_cohort_size(run_dir: Path) -> int:
     return MISSING
 
 
-def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
+def run_setup(run_dir: Path, subject: str, cycle_count: int, batch: str = ORIGINAL_BATCH) -> dict:
     """Build the run's setup block.
 
     Cycle count and ledger cohort size are authoritative run artifacts and
@@ -184,6 +193,7 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
     """
     setup = {
         "run": run_dir.name,
+        "batch": batch,
         "subject-name": subject,
         "total-cycles": cycle_count,
         "cohort-size": ledger_cohort_size(run_dir),
@@ -310,7 +320,7 @@ def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
     )
 
 
-def build_run(run_dir: Path, subject: str):
+def build_run(run_dir: Path, subject: str, batch: str = ORIGINAL_BATCH):
     """Return the {setup, variants} block for one run, or None if incomplete.
 
     Subject comes from the run's parent folder: the run dir name (e.g.
@@ -353,7 +363,7 @@ def build_run(run_dir: Path, subject: str):
             row["weighted-score"] = scores.get((cycle, variant_dir.name), MISSING)
             variants.append(row)
 
-    setup = run_setup(run_dir, subject, len(cycle_dirs))
+    setup = run_setup(run_dir, subject, len(cycle_dirs), batch)
     return {"setup": setup, "variants": variants}
 
 
@@ -366,29 +376,51 @@ def group_run_dirs(group_dir: Path) -> list[tuple[Path, str]]:
     return pairs
 
 
-def resolve_groups(selectors: list[str]) -> list[Path]:
-    """Map CLI selectors to group dirs under outputs/paper_outputs/. A selector
-    is a group folder name. Empty selectors means every group."""
+def batch_dirs() -> list[tuple[str, Path]]:
+    """(batch name, dir holding that batch's groups), original batch first."""
+    batches = [(ORIGINAL_BATCH, PAPER_OUTPUTS_DIR)]
+    batches += [
+        (p.name, p)
+        for p in sorted(PAPER_OUTPUTS_DIR.iterdir())
+        if p.is_dir() and BATCH_DIR_RE.match(p.name)
+    ]
+    return batches
+
+
+def group_dirs_by_name() -> dict[str, list[tuple[str, Path]]]:
+    """Map each group name to its (batch, group dir) pairs across all batches."""
+    groups: dict[str, list[tuple[str, Path]]] = {}
+    for batch, root in batch_dirs():
+        for group_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+            if root == PAPER_OUTPUTS_DIR and BATCH_DIR_RE.match(group_dir.name):
+                continue
+            groups.setdefault(group_dir.name, []).append((batch, group_dir))
+    return groups
+
+
+def resolve_groups(selectors: list[str]) -> dict[str, list[tuple[str, Path]]]:
+    """Map CLI selectors to groups. A selector is a group folder name; empty
+    selectors means every group."""
+    groups = group_dirs_by_name()
     if not selectors:
-        return sorted(p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir())
-    group_dirs = []
-    for selector in selectors:
-        group_dir = PAPER_OUTPUTS_DIR / selector
-        if not group_dir.is_dir():
-            raise SystemExit(f"group dir not found: {group_dir}")
-        group_dirs.append(group_dir)
-    return group_dirs
+        return groups
+    missing = [selector for selector in selectors if selector not in groups]
+    if missing:
+        raise SystemExit(f"group(s) not found under {PAPER_OUTPUTS_DIR}: {', '.join(missing)}")
+    return {selector: groups[selector] for selector in selectors}
 
 
-def build_group(group_dir: Path) -> Path:
-    """Aggregate one group into plots/paper-plots/data_<group>.json; return its path."""
+def build_group(name: str, batches: list[tuple[str, Path]]) -> Path:
+    """Aggregate one group, across batches, into plots/paper-plots/data_<group>.json;
+    return its path."""
     runs = []
-    for run_dir, subject in group_run_dirs(group_dir):
-        built = build_run(run_dir, subject)
-        if built is not None:
-            runs.append(built)
+    for batch, group_dir in batches:
+        for run_dir, subject in group_run_dirs(group_dir):
+            built = build_run(run_dir, subject, batch)
+            if built is not None:
+                runs.append(built)
     PAPER_PLOTS_DIR.mkdir(parents=True, exist_ok=True)
-    data_path = PAPER_PLOTS_DIR / f"data_{group_dir.name}.json"
+    data_path = PAPER_PLOTS_DIR / f"data_{name}.json"
     data_path.write_text(json.dumps({"runs": runs}, indent=2) + "\n")
     variant_count = sum(len(run["variants"]) for run in runs)
     print(f"Wrote {data_path} with {len(runs)} runs and {variant_count} variant rows.")
@@ -400,13 +432,13 @@ def main():
     parser.add_argument(
         "groups",
         nargs="*",
-        help="group folder name(s) under outputs/paper_outputs/ to aggregate; "
+        help="group folder name(s) under outputs/paper_outputs/ (or a v<N>_runs batch) to aggregate; "
         "default: every group",
     )
     args = parser.parse_args()
 
-    for group_dir in resolve_groups(args.groups):
-        build_group(group_dir)
+    for name, batches in resolve_groups(args.groups).items():
+        build_group(name, batches)
 
 
 if __name__ == "__main__":

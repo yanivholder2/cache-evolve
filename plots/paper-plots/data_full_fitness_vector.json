@@ -3,6 +3,7 @@
     {
       "setup": {
         "run": "associative_cache_claude-haiku-4-5-20251001_2026-07-21_13-12-55-552",
+        "batch": "v1",
         "subject-name": "associative_cache",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -364,6 +365,7 @@
     {
       "setup": {
         "run": "associative_cache_claude-opus-4-8_2026-07-21_23-22-35-670",
+        "batch": "v1",
         "subject-name": "associative_cache",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -725,6 +727,7 @@
     {
       "setup": {
         "run": "associative_cache_claude-sonnet-4-6_2026-07-21_16-31-57-327",
+        "batch": "v1",
         "subject-name": "associative_cache",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -1086,6 +1089,7 @@
     {
       "setup": {
         "run": "dash_claude-haiku-4-5-20251001_2026-06-06_05-09-07-908",
+        "batch": "v1",
         "subject-name": "dash",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -1447,6 +1451,7 @@
     {
       "setup": {
         "run": "dash_claude-opus-4-8_2026-06-06_02-45-01-395",
+        "batch": "v1",
         "subject-name": "dash",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -1808,6 +1813,7 @@
     {
       "setup": {
         "run": "dash_claude-sonnet-4-6_2026-07-19_11-08-02-674",
+        "batch": "v1",
         "subject-name": "dash",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -2158,6 +2164,7 @@
     {
       "setup": {
         "run": "lru_cache_claude-haiku-4-5-20251001_2026-06-06_05-10-02-607",
+        "batch": "v1",
         "subject-name": "lru_cache",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -2519,6 +2526,7 @@
     {
       "setup": {
         "run": "lru_cache_claude-opus-4-8_2026-06-06_05-32-18-783",
+        "batch": "v1",
         "subject-name": "lru_cache",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -2858,6 +2866,7 @@
     {
       "setup": {
         "run": "lru_cache_claude-sonnet-4-6_2026-07-19_19-26-43-995",
+        "batch": "v1",
         "subject-name": "lru_cache",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -3219,6 +3228,7 @@
     {
       "setup": {
         "run": "s3_fifo_claude-haiku-4-5-20251001_2026-06-06_05-09-43-685",
+        "batch": "v1",
         "subject-name": "s3_fifo",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -3580,6 +3590,7 @@
     {
       "setup": {
         "run": "s3_fifo_claude-opus-4-8_2026-06-06_02-49-23-803",
+        "batch": "v1",
         "subject-name": "s3_fifo",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -3941,6 +3952,7 @@
     {
       "setup": {
         "run": "s3_fifo_claude-sonnet-4-6_2026-07-20_00-22-12-011",
+        "batch": "v1",
         "subject-name": "s3_fifo",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -4302,6 +4314,7 @@
     {
       "setup": {
         "run": "tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_05-10-08-572",
+        "batch": "v1",
         "subject-name": "tiny_lfu",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -4663,6 +4676,7 @@
     {
       "setup": {
         "run": "tiny_lfu_claude-opus-4-8_2026-06-06_02-49-34-396",
+        "batch": "v1",
         "subject-name": "tiny_lfu",
         "total-cycles": 10,
         "cohort-size": 3,
@@ -5024,6 +5038,7 @@
     {
       "setup": {
         "run": "tiny_lfu_claude-sonnet-4-6_2026-07-20_07-18-11-970",
+        "batch": "v1",
         "subject-name": "tiny_lfu",
         "total-cycles": 10,
         "cohort-size": 3,

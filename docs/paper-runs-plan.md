@@ -10,6 +10,11 @@ with the Claude 5.5 models (`claude-opus-5-5`, `claude-sonnet-5-5`,
 Sonnet 4.6, Haiku 4.5). 30 runs in total, tracked in the [status
 table](#status).
 
+**Where results go:** `outputs/paper_outputs/v2_runs/<mode>/<subject>/<run>/`
+(`promote-run` puts them there). The 4.x runs stay where they are, directly
+under `outputs/paper_outputs/<mode>/`; `plots/build_data.py` reads both batches
+into one dataset per mode.
+
 ## How a run works
 
 - **One run per cloud session.** A session has 4 cores; a run takes ~3–8h,

@@ -12,10 +12,14 @@ non-obvious — follow, don't rediscover.
 
 - `.gitignore` ignores `outputs/*` except `!outputs/paper_outputs/`: a raw run
   dir is untracked, a copy under `paper_outputs/` is trackable.
-- Layout is **per-mode, per-subject**:
-  `outputs/paper_outputs/<mode>/<subject>/<subject>_<model>_<timestamp>/`.
-  `plots/build_data.py` treats each `<mode>` folder as one dataset and takes the
-  subject from the parent folder name, so both levels must be exact.
+- Layout is **per-batch, per-mode, per-subject**:
+  `outputs/paper_outputs/[<batch>/]<mode>/<subject>/<subject>_<model>_<timestamp>/`.
+  The original (4.x) runs sit directly under `paper_outputs/<mode>/`; each later
+  batch gets its own `v<N>_runs/` folder. **New runs go in the current batch,
+  `v2_runs/`** (the 5.5 matrix in `docs/paper-runs-plan.md`) — never into the
+  original top-level mode folders. `plots/build_data.py` treats each `<mode>`
+  as one dataset across batches and takes the subject from the parent folder
+  name, so every level must be exact.
 - **`<mode>`** comes from the run's `config.toml` snapshot `[fitness].dimensions`:
   `["hit-rate", "metadata-size", "per-op-time"]` (weighted 0.6/0.2/0.2) →
   `full_fitness_vector`; `["hit-rate"]` (pareto) → `only_hit_rate`. Anything else
@@ -37,14 +41,14 @@ non-obvious — follow, don't rediscover.
    `ClaudeSdkAdapter(model=…)` log line) and the **mode** (snapshot
    `[fitness].dimensions`, see Gotchas) now — the destination path needs both.
 
-2. **Curate-copy** into `outputs/paper_outputs/<mode>/<subject>/<subject>_<model>_<timestamp>/`
+2. **Curate-copy** into `outputs/paper_outputs/v2_runs/<mode>/<subject>/<subject>_<model>_<timestamp>/`
    (raw name with the model spliced in before the timestamp), excluding the bloat
    above and any incomplete trailing cycle (a `cycles/NNNN/` with no
    `cycle-winners.json`). Keep everything else. The files inside keep their original
    runtime paths — they record where the run actually executed; do not rewrite them.
 
 3. **Verify** the copy: single-digit MB, no rust-logs or gradle logs remain,
-   git-trackable (not ignored), and the other mode/subject folders untouched.
+   git-trackable (not ignored), and the other batch/mode/subject folders untouched.
 
 4. **Delete the original.** Only after the copy verifies in step 3, remove the
    raw run dir (`outputs/<subject>_<timestamp>/`) so the run isn't left
@@ -61,8 +65,8 @@ non-obvious — follow, don't rediscover.
    then open a **draft** PR, or update its title if one exists. Report the
    global-best and PR link.
 
-   **Title:** `<subject> paper_outputs (<mode>) — <model>, <N> cycles, <M> variants`
-   (e.g. `dash paper_outputs (only_hit_rate) — claude-sonnet-4-6, 10 cycles, 3 variants`).
+   **Title:** `<subject> paper_outputs v2 (<mode>) — <model>, <N> cycles, <M> variants`
+   (e.g. `dash paper_outputs v2 (only_hit_rate) — claude-sonnet-5-5, 10 cycles, 3 variants`).
    - **mode** — the `<mode>` folder resolved in step 1.
    - **model** — the one resolved in step 1 (the model the run actually used,
      not the repo default); matches the `<model>` in the run-dir name.

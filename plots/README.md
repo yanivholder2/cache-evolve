@@ -6,7 +6,10 @@ Aggregate run outputs into figures.
 
 Paper runs live under `outputs/paper_outputs/<group>/<subject>/<run>/`, where
 `<group>` is the fitness configuration the runs share (`full_fitness_vector`,
-`only_hit_rate`). Each group is its own dataset.
+`only_hit_rate`). Later batches sit one level down, under
+`outputs/paper_outputs/v<N>_runs/<group>/<subject>/<run>/` (e.g. `v2_runs/` for
+the Claude 5.5 runs); the original runs are batch `v1`. Each group is its own
+dataset spanning every batch, and each run's setup records its `batch`.
 
 1. **`build_data.py`** — walks `outputs/paper_outputs/`, writes one
    `paper-plots/data_<group>.json` per group. Stdlib only, idempotent
@@ -62,7 +65,7 @@ the snapshot fall back to those artifacts, with the rest left as `"unknown"` / `
 ## Adding a run
 
 `build_data.py` picks up every complete run dir (one with `cycles-ledger.jsonl`)
-under `outputs/paper_outputs/<group>/<subject>/` automatically. New runs carry
+under `outputs/paper_outputs/[v<N>_runs/]<group>/<subject>/` automatically. New runs carry
 their own `config.toml` snapshot, so the setup block fills in with no manual
 step.
 

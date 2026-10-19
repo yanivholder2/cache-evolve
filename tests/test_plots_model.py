@@ -61,3 +61,29 @@ def test_run_setup_falls_back_to_snapshot_model(tmp_path):
     (run_dir / "config.toml").write_text('[framework]\nmodel = "claude-haiku-4-5"\n')
     setup = build_data.run_setup(run_dir, "dash", 1)
     assert setup["model"] == "claude-haiku-4-5"
+
+
+def test_groups_span_batches(tmp_path, monkeypatch):
+    # Original runs sit at paper_outputs/<group>/; later batches one level down
+    # at paper_outputs/v<N>_runs/<group>/. Same-named groups merge across batches.
+    for rel in (
+        "full_fitness_vector/dash/dash_claude-opus-4-8_2026-06-06_02-45-01-395",
+        "only_hit_rate/dash/dash_claude-opus-4-8_2026-06-05_18-13-17-700",
+        "v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-20_01-00-00-000",
+    ):
+        (tmp_path / rel).mkdir(parents=True)
+    monkeypatch.setattr(build_data, "PAPER_OUTPUTS_DIR", tmp_path)
+
+    groups = build_data.resolve_groups([])
+
+    assert sorted(groups) == ["full_fitness_vector", "only_hit_rate"]
+    assert [batch for batch, _ in groups["full_fitness_vector"]] == ["v1", "v2_runs"]
+    assert groups["full_fitness_vector"][1][1] == tmp_path / "v2_runs" / "full_fitness_vector"
+    assert [batch for batch, _ in groups["only_hit_rate"]] == ["v1"]
+
+
+def test_unknown_group_selector_exits(tmp_path, monkeypatch):
+    (tmp_path / "only_hit_rate").mkdir()
+    monkeypatch.setattr(build_data, "PAPER_OUTPUTS_DIR", tmp_path)
+    with pytest.raises(SystemExit, match="v2_runs"):
+        build_data.resolve_groups(["v2_runs"])
