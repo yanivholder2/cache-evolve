@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import re
+import shutil
+import subprocess
 from datetime import datetime, timezone
+from functools import cache
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -11,11 +17,17 @@ from evolve.llm.base_adapter import LLMAdapter, write_timeline
 from evolve.llm.token_usage import Usage
 
 
+log = logging.getLogger(__name__)
+
 # The claude-sdk model namespace is open: any `claude-*` id is passed through to
 # the Claude Code CLI, which is the authority on what it can drive. New model
-# releases then need no code change, only a CLI new enough to know them. A typo
-# or unsupported id fails on the run's first agent call with the CLI's own error.
+# releases then need no code change, only a CLI new enough to know them (see
+# `resolve_cli_path`). A typo or unsupported id fails on the run's first agent
+# call with the CLI's own error.
 MODEL_PREFIX = "claude-"
+
+# Env var naming an explicit Claude Code CLI binary; skips auto-selection.
+CLI_PATH_ENV = "EVOLVE_CLAUDE_CLI"
 
 
 READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
@@ -62,6 +74,48 @@ def _usage_from_result(message: Any) -> Usage | None:
     return usage or None
 
 
+
+
+def _cli_version(path: str) -> tuple[int, ...] | None:
+    try:
+        out = subprocess.run(
+            [path, "--version"], capture_output=True, text=True, timeout=30, check=True
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r"(\d+)\.(\d+)\.(\d+)", out)
+    return tuple(int(part) for part in match.groups()) if match else None
+
+
+def _bundled_cli() -> str | None:
+    import claude_agent_sdk
+
+    path = Path(claude_agent_sdk.__file__).parent / "_bundled" / "claude"
+    return str(path) if path.is_file() else None
+
+
+@cache
+def resolve_cli_path() -> str | None:
+    """Pick the Claude Code CLI the SDK spawns: `$EVOLVE_CLAUDE_CLI` if set,
+    else the newest of the SDK-bundled CLI and `claude` on PATH.
+
+    The SDK prefers its bundled CLI unconditionally, so a pinned SDK would cap
+    which models a run can use; a newer system CLI (kept current on the web)
+    lifts that cap without bumping the lock. `None` lets the SDK choose.
+    Cached: resolved (and logged) once per process."""
+    explicit = os.environ.get(CLI_PATH_ENV)
+    if explicit:
+        return explicit
+    if os.name == "nt":
+        # PATH `claude` on Windows is often an npm .cmd shim the SDK refuses.
+        return None
+    candidates = [path for path in (_bundled_cli(), shutil.which("claude")) if path]
+    versioned = [(version, path) for path in candidates if (version := _cli_version(path))]
+    if not versioned:
+        return None
+    version, path = max(versioned)
+    log.info("claude-sdk: using Claude Code CLI %s at %s", ".".join(map(str, version)), path)
+    return path
 
 
 class ClaudeSdkAdapter(LLMAdapter):
@@ -152,6 +206,7 @@ class ClaudeSdkAdapter(LLMAdapter):
         # from pre-approving tools and bypassing `gate`.
         options = ClaudeAgentOptions(
             model=self.model,
+            cli_path=resolve_cli_path(),
             system_prompt=system_prompt,
             cwd=str(workspace_root),
             can_use_tool=gate,
