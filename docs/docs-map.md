@@ -145,3 +145,15 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 * Branch protection
 
 **Read when** reviewing or creating a PR.
+
+### [docs/paper-runs-plan.md](paper-runs-plan.md)
+
+* Goal
+* How a run works
+* Commands
+* Session prompt
+* Updating this file
+* Status
+* Notes
+
+**Read when** launching or promoting a paper run (or given a plan row id like `F01`).

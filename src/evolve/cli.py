@@ -27,7 +27,7 @@ from evolve.llm import (
 )
 from evolve.aggregate.cross_cycle_winners import read_baseline, write_cross_cycle_winners
 from evolve.aggregate.cohort import compute_cycle_winners, write_cycle_winners_json
-from evolve.aggregate.selectors import Selector, build_selector
+from evolve.aggregate.selectors import SELECTOR_REGISTRY, Selector, build_selector
 from evolve.config import AuthoringScope, Configs, ConfigError, load_configs
 from evolve.cycle.leaderboard import regenerate as regenerate_leaderboard
 from evolve.cycle.ledger_append import append_row
@@ -39,7 +39,7 @@ from evolve.hypothesis.writer import write_hypotheses
 from evolve.identifiers import CYCLE_ID_WIDTH, CycleId, HypothesisId, VariantId
 from evolve._io import read_utf8
 from evolve.paths import CycleLayout, CycleVariant, CycleVariantDir, Layout
-from evolve.run_snapshot import flag_overrides, snapshot_run_inputs
+from evolve.run_snapshot import flag_overrides, override_flag_names, snapshot_run_inputs
 from evolve.subject import Subject, load_subject
 from evolve.variant.implementer import _latest_rejection_entry
 from evolve.variant.repair_loop import VariantStepFailed, implement_with_repair
@@ -595,7 +595,37 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         help="Worker threads for per-variant fan-out (0 = match cohort_size).")
     parser.add_argument("--authoring-scope", type=AuthoringScope, choices=list(AuthoringScope), default=None,
                         help="Write surface the variant-implementer agent may author.")
+    parser.add_argument("--digest-cycles", type=int, default=None,
+                        help="Prior Cycle insights inlined into the cycle-insight-writer prompt.")
+    parser.add_argument("--implementation-attempts", type=int, default=None,
+                        help="Variant-implementation attempts per variant (1 initial + repairs).")
+    parser.add_argument("--hypothesis-attempts", type=int, default=None,
+                        help="Hypothesis-writing attempts per cycle (1 initial + regenerations).")
+    parser.add_argument("--dimensions", nargs="+", metavar="DIM", default=None,
+                        help="Active fitness dimensions, e.g. `--dimensions hit-rate` or "
+                             "`--dimensions hit-rate metadata-size per-op-time`. Under the "
+                             "weighted method, pass matching --weights unless config.toml's "
+                             "weights already cover exactly these dimensions; or use "
+                             "--selection-method pareto.")
+    parser.add_argument("--selection-method", choices=sorted(SELECTOR_REGISTRY), default=None,
+                        help="How Winners are chosen. Switching to pareto drops config.toml's "
+                             "selection.weights.")
+    parser.add_argument("--winners-count", type=int, default=None,
+                        help="Winners kept per selection stage (ignored by pareto).")
+    parser.add_argument("--weights", nargs="+", metavar="DIM=W", type=_parse_weight, default=None,
+                        help="Per-dimension weights for the weighted method, replacing "
+                             "config.toml's table, e.g. `--weights hit-rate=0.6 per-op-time=0.4`.")
     return parser
+
+
+def _parse_weight(raw: str) -> tuple[str, float]:
+    dimension, sep, weight = raw.partition("=")
+    try:
+        if not sep or not dimension:
+            raise ValueError
+        return dimension, float(weight)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected DIM=WEIGHT (e.g. hit-rate=0.6), got: {raw!r}") from None
 
 
 def _reject_overrides_with_continue(args: argparse.Namespace) -> None:
@@ -609,15 +639,26 @@ def _reject_overrides_with_continue(args: argparse.Namespace) -> None:
     out of sync with the override surface."""
     overrides = flag_overrides(args)
     if overrides:
-        given = ", ".join(sorted(key for section in overrides.values() for key in section))
+        given = ", ".join(override_flag_names(overrides))
         die(
             "--continue resumes from the run's config snapshot verbatim and "
             f"accepts no other setting flags; given: {given}"
         )
 
 
+def _reject_duplicate_weights(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    if args.weights is None:
+        return
+    dimensions = [dimension for dimension, _ in args.weights]
+    repeated = sorted({dimension for dimension in dimensions if dimensions.count(dimension) > 1})
+    if repeated:
+        parser.error(f"--weights repeats a dimension: {', '.join(repeated)}")
+
+
 def main(argv: list[str] | None = None) -> None:
-    args = _build_arg_parser().parse_args(argv)
+    parser = _build_arg_parser()
+    args = parser.parse_args(argv)
+    _reject_duplicate_weights(parser, args)
 
     repo_root = Path(__file__).resolve().parents[2]
 
@@ -638,6 +679,13 @@ def main(argv: list[str] | None = None) -> None:
             max_workers=args.max_workers,
             authoring_scope=args.authoring_scope,
             subject=args.subject,
+            digest_cycles=args.digest_cycles,
+            implementation_attempts=args.implementation_attempts,
+            hypothesis_attempts=args.hypothesis_attempts,
+            dimensions=args.dimensions,
+            selection_method=args.selection_method,
+            winners_count=args.winners_count,
+            weights=dict(args.weights) if args.weights is not None else None,
         )
     except ConfigError as exception:
         die(str(exception))

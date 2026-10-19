@@ -83,6 +83,26 @@ else
   exit 1
 fi
 
+# 3. Remote containers only: route Gradle through a Maven Central mirror and
+#    warm its dependency cache. repo.maven.apache.org answers 429 to shared cloud
+#    egress IPs, and a cold cache then fails the first variant's fitness run.
+#    Gradle reads init scripts from $GRADLE_USER_HOME/init.d (default ~/.gradle).
+#    The warm-up runs detached so it does not hold up session start; it is
+#    best-effort (a later Gradle run waits on its locks and retries anything it
+#    missed) and logs to $warmup_log.
+if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
+  gradle_home="${GRADLE_USER_HOME:-$HOME/.gradle}"
+  mkdir -p "$gradle_home/init.d"
+  cp "$repo_root/scripts/gradle/maven-central-mirror.gradle" "$gradle_home/init.d/"
+  warmup_log="${TMPDIR:-/tmp}/caffeine-gradle-warmup.log"
+  log "caffeine: warming the Gradle dependency cache in the background (log: $warmup_log)"
+  # Redirect the whole background job, not just gradlew, so it does not hold the
+  # caller's captured stdout open.
+  (cd "$caffeine_dir" && JAVA_HOME="$jdk_home" nohup ./gradlew simulator:classes \
+     simulator:dependencies --configuration runtimeClasspath -q) \
+     </dev/null >"$warmup_log" 2>&1 &
+fi
+
 log "caffeine simulator ready — CAFFEINE_DIR=$caffeine_dir JAVA_HOME=$jdk_home"
 # Final stdout line: the JDK 25 home, for callers to capture into JAVA_HOME.
 printf '%s\n' "$jdk_home"

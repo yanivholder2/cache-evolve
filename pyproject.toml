@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "pytest>=7.0",
     "google-antigravity; sys_platform != 'win32'",
-    "claude-agent-sdk",
+    "claude-agent-sdk>=0.2.168",
     "ollama",
 ]
 

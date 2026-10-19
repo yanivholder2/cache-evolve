@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
+import os
+import re
+import shutil
+import subprocess
+import threading
 from datetime import datetime, timezone
-from enum import StrEnum
+from functools import cache
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -12,11 +19,21 @@ from evolve.llm.base_adapter import LLMAdapter, write_timeline
 from evolve.llm.token_usage import Usage
 
 
-class Model(StrEnum):
-    OPUS_4_8 = "claude-opus-4-8"
-    OPUS_4_7 = "claude-opus-4-7"
-    SONNET_4_6 = "claude-sonnet-4-6"
-    HAIKU_4_5 = "claude-haiku-4-5-20251001"
+log = logging.getLogger(__name__)
+
+# The claude-sdk model namespace is open: any well-formed Claude model id is
+# passed through to the Claude Code CLI, which is the authority on what it can
+# drive. New model releases then need no code change, only a CLI new enough to
+# know them (see `resolve_cli_path`). The shape check catches typos such as
+# `claude-opus-5.5` at config load; a well-formed but unknown id still fails on
+# the run's first agent call with the CLI's own error.
+MODEL_PREFIX = "claude-"
+# "claude-<family>-<major>[-<minor>][-<YYYYMMDD>]", e.g. claude-opus-5-5,
+# claude-haiku-4-5-20251001.
+MODEL_ID_RE = re.compile(r"^claude-[a-z]+(?:-\d+)+$")
+
+# Env var naming an explicit Claude Code CLI binary; skips auto-selection.
+CLI_PATH_ENV = "EVOLVE_CLAUDE_CLI"
 
 
 READ_ONLY_TOOLS = ["Read", "Glob", "Grep"]
@@ -65,8 +82,67 @@ def _usage_from_result(message: Any) -> Usage | None:
 
 
 
+def _cli_version(path: str) -> tuple[int, ...] | None:
+    try:
+        out = subprocess.run(
+            [path, "--version"], capture_output=True, text=True, timeout=30, check=True
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r"(\d+)\.(\d+)\.(\d+)", out)
+    return tuple(int(part) for part in match.groups()) if match else None
+
+
+def _bundled_cli() -> str | None:
+    import claude_agent_sdk
+
+    path = Path(claude_agent_sdk.__file__).parent / "_bundled" / "claude"
+    return str(path) if path.is_file() else None
+
+
+_cli_lock = threading.Lock()
+
+
+def resolve_cli_path() -> str | None:
+    """Pick the Claude Code CLI the SDK spawns: `$EVOLVE_CLAUDE_CLI` if set,
+    else the newest of the SDK-bundled CLI and `claude` on PATH.
+
+    The SDK prefers its bundled CLI unconditionally, so a pinned SDK would cap
+    which models a run can use; a newer system CLI (kept current on the web)
+    lifts that cap without bumping the lock. `None` lets the SDK choose.
+    Resolved (and logged) once per process: the lock makes concurrent first
+    calls from the per-variant worker threads wait for one probe instead of
+    each spawning its own `--version` subprocesses."""
+    with _cli_lock:
+        return _resolve_cli_path()
+
+
+@cache
+def _resolve_cli_path() -> str | None:
+    explicit = os.environ.get(CLI_PATH_ENV)
+    if explicit:
+        return explicit
+    if os.name == "nt":
+        # PATH `claude` on Windows is often an npm .cmd shim the SDK refuses.
+        return None
+    candidates = [path for path in (_bundled_cli(), shutil.which("claude")) if path]
+    versioned = [(version, path) for path in candidates if (version := _cli_version(path))]
+    if not versioned:
+        return None
+    version, path = max(versioned)
+    log.info("claude-sdk: using Claude Code CLI %s at %s", ".".join(map(str, version)), path)
+    return path
+
+
 class ClaudeSdkAdapter(LLMAdapter):
-    MODELS = Model
+    @classmethod
+    def validate_model(cls, model: str) -> None:
+        if not MODEL_ID_RE.match(model):
+            raise ValueError(
+                f"{cls.__name__} drives Claude models only; model ids look like "
+                f"{MODEL_PREFIX!r}<family>-<major>[-<minor>][-<date>] "
+                f"(e.g. 'claude-opus-5-5'), got: {model!r}"
+            )
 
     async def call_llm_and_log(
         self,
@@ -145,8 +221,12 @@ class ClaudeSdkAdapter(LLMAdapter):
 
         # `setting_sources=[]` prevents user/project `permissions.allow` rules
         # from pre-approving tools and bypassing `gate`.
+        # The first resolution runs `--version` subprocesses; keep them off the
+        # event loop.
+        cli_path = await asyncio.to_thread(resolve_cli_path)
         options = ClaudeAgentOptions(
             model=self.model,
+            cli_path=cli_path,
             system_prompt=system_prompt,
             cwd=str(workspace_root),
             can_use_tool=gate,

@@ -239,5 +239,163 @@ def test_weighted_non_positive_weight_raises(tmp_path: Path):
         tmp_path,
         selection_body='[selection]\nmethod = "weighted"\nwinners_count = 2\n[selection.weights]\nhit-rate = 0.0\n',
     )
-    with pytest.raises(ConfigError, match="must be a positive number"):
+    with pytest.raises(ConfigError, match="must be a positive finite number"):
+        load_configs(tmp_path)
+
+
+# --- CLI-flag overrides for framework attempts, fitness, and selection ---
+
+_THREE_DIMS = '[fitness]\ndimensions = ["hit-rate", "metadata-size", "per-op-time"]\n'
+_WEIGHTED_THREE = (
+    '[selection]\nmethod = "weighted"\nwinners_count = 3\n'
+    "[selection.weights]\nhit-rate = 0.6\nmetadata-size = 0.2\nper-op-time = 0.2\n"
+)
+
+
+@pytest.mark.parametrize(
+    "field", ["digest_cycles", "implementation_attempts", "hypothesis_attempts"]
+)
+def test_framework_int_flags_override_config(tmp_path: Path, field: str):
+    _write_config(tmp_path)
+    configs = load_configs(tmp_path, **{field: 7})
+    assert getattr(configs.framework, field) == 7
+
+
+@pytest.mark.parametrize(
+    ("field", "flag"),
+    [
+        ("digest_cycles", "--digest-cycles"),
+        ("implementation_attempts", "--implementation-attempts"),
+        ("hypothesis_attempts", "--hypothesis-attempts"),
+    ],
+)
+def test_framework_int_flags_reject_non_positive_naming_the_flag(tmp_path: Path, field: str, flag: str):
+    _write_config(tmp_path)
+    with pytest.raises(ConfigError, match=flag):
+        load_configs(tmp_path, **{field: 0})
+
+
+def test_bad_config_value_error_names_config_key_not_flag(tmp_path: Path):
+    _write_config(tmp_path, hypothesis_attempts=0)
+    with pytest.raises(ConfigError, match=r"framework\.hypothesis_attempts must be a positive"):
+        load_configs(tmp_path)
+
+
+def test_dimensions_flag_overrides_config(tmp_path: Path):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS)
+    configs = load_configs(tmp_path, dimensions=["hit-rate", "per-op-time"])
+    assert configs.fitness.dimensions == ("hit-rate", "per-op-time")
+
+
+def test_dimensions_flag_duplicate_raises(tmp_path: Path):
+    _write_config(tmp_path)
+    with pytest.raises(ConfigError):
+        load_configs(tmp_path, dimensions=["hit-rate", "hit-rate"])
+
+
+def test_winners_count_flag_overrides_config(tmp_path: Path):
+    _write_config(tmp_path)
+    configs = load_configs(tmp_path, winners_count=5)
+    assert configs.selection.winners_count == 5
+
+
+def test_winners_count_flag_non_positive_names_flag(tmp_path: Path):
+    _write_config(tmp_path)
+    with pytest.raises(ConfigError, match="--winners-count"):
+        load_configs(tmp_path, winners_count=0)
+
+
+def test_selection_method_flag_unknown_raises(tmp_path: Path):
+    _write_config(tmp_path)
+    with pytest.raises(ConfigError):
+        load_configs(tmp_path, selection_method="lexicographic")
+
+
+def test_pareto_flag_with_single_dimension_drops_config_weights(tmp_path: Path):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    configs = load_configs(tmp_path, dimensions=["hit-rate"], selection_method="pareto")
+    assert configs.fitness.dimensions == ("hit-rate",)
+    assert configs.selection.method == "pareto"
+    assert configs.selection.weights is None
+    assert configs.selection.winners_count == 3
+
+
+def test_pareto_flag_with_weights_flag_raises(tmp_path: Path):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    with pytest.raises(ConfigError, match="weights must be absent"):
+        load_configs(tmp_path, selection_method="pareto", weights={"hit-rate": 0.6, "metadata-size": 0.2, "per-op-time": 0.2})
+
+
+def test_weighted_dimensions_flag_without_weights_flag_raises(tmp_path: Path):
+    # Narrowing the dimensions leaves config.toml's 3-key weights table stale.
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    with pytest.raises(ConfigError, match=r"--dimensions hit-rate does not match.*--weights.*--selection-method pareto"):
+        load_configs(tmp_path, dimensions=["hit-rate"])
+
+
+def test_weights_flag_replaces_config_table(tmp_path: Path):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    configs = load_configs(tmp_path, dimensions=["hit-rate", "per-op-time"], weights={"hit-rate": 0.5, "per-op-time": 0.5})
+    assert configs.selection.method == "weighted"
+    assert configs.selection.weights == {"hit-rate": 0.5, "per-op-time": 0.5}
+
+
+def test_weights_flag_non_positive_raises(tmp_path: Path):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    with pytest.raises(ConfigError, match="must be a positive finite number"):
+        load_configs(tmp_path, weights={"hit-rate": 0.0, "metadata-size": 0.5, "per-op-time": 0.5})
+
+
+def test_weighted_flag_against_pareto_config_with_weights_flag(tmp_path: Path):
+    _write_config(tmp_path)  # pareto, hit-rate only, no weights
+    configs = load_configs(tmp_path, selection_method="weighted", weights={"hit-rate": 1.0})
+    assert configs.selection.method == "weighted"
+    assert configs.selection.weights == {"hit-rate": 1.0}
+
+
+def test_weighted_flag_against_pareto_config_without_weights_raises(tmp_path: Path):
+    _write_config(tmp_path)
+    with pytest.raises(ConfigError, match="weights is required"):
+        load_configs(tmp_path, selection_method="weighted")
+
+
+# --- model namespace (claude-sdk is open: any `claude-*` id) ---
+
+def test_claude_sdk_accepts_new_claude_model(tmp_path: Path):
+    _write_config(tmp_path, ai_agent_tool="claude-sdk", model="claude-opus-4-8")
+    configs = load_configs(tmp_path, model="claude-opus-5-5")
+    assert configs.framework.model == "claude-opus-5-5"
+
+
+def test_claude_sdk_rejects_gemini_model_with_reason(tmp_path: Path):
+    _write_config(tmp_path, ai_agent_tool="claude-sdk")
+    with pytest.raises(ConfigError, match=r"not valid for ai_agent_tool 'claude-sdk'.*claude-"):
+        load_configs(tmp_path, model="gemini-3-pro-preview")
+
+
+def test_enum_adapter_still_rejects_unknown_model(tmp_path: Path):
+    _write_config(tmp_path, ai_agent_tool="ollama-local", model="claude-opus-5-5")
+    with pytest.raises(ConfigError, match="not valid for ai_agent_tool 'ollama-local'"):
+        load_configs(tmp_path)
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_weights_flag_non_finite_raises(tmp_path: Path, bad: float):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    with pytest.raises(ConfigError, match="--weights hit-rate must be a positive finite number"):
+        load_configs(tmp_path, weights={"hit-rate": bad, "metadata-size": 0.5, "per-op-time": 0.5})
+
+
+def test_dimensions_flag_error_names_flag(tmp_path: Path):
+    _write_config(tmp_path, fitness_body=_THREE_DIMS, selection_body=_WEIGHTED_THREE)
+    with pytest.raises(ConfigError, match="^--dimensions must not repeat"):
+        load_configs(tmp_path, dimensions=["hit-rate", "hit-rate"])
+
+
+def test_config_weights_error_names_config_key(tmp_path: Path):
+    _write_config(
+        tmp_path,
+        selection_body='[selection]\nmethod = "weighted"\nwinners_count = 2\n[selection.weights]\nhit-rate = nan\n',
+    )
+    with pytest.raises(ConfigError, match="^selection.weights.hit-rate must be a positive finite number"):
         load_configs(tmp_path)

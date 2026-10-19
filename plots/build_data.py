@@ -3,15 +3,20 @@
 
 Runs are grouped under outputs/paper_outputs/<group>/<subject>/<run>/, where
 <group> is the fitness configuration the runs share (e.g. only_hit_rate,
-full_fitness_vector). Each group becomes its own plots/paper-plots/data_<group>.json
-so hit-rate-only and full-fitness-vector runs stay in separate datasets.
+full_fitness_vector). Later batches of runs live one level down, under
+outputs/paper_outputs/<batch>/<group>/<subject>/<run>/ with <batch> named
+`v<N>_runs` (e.g. v2_runs); the original runs are batch "v1". Each group becomes
+its own plots/paper-plots/data_<group>.json holding the runs of every batch, so
+hit-rate-only and full-fitness-vector runs stay in separate datasets while the
+models of different batches are compared side by side.
 
 Emits one row per variant per cycle, plus a baseline row when the run
 recorded one. Each canonical fitness dimension absent from a variant's
 vector is written as -1.
 
 Run-setup fields are read from the config.toml snapshot the runner copies
-into each run folder at start. Runs predating that snapshot fall back to
+into each run folder at start, except the model, which is parsed from the
+run dir name (see model_from_run_name). Runs predating that snapshot fall back to
 the authoritative cycle count and ledger cohort size, with the rest left
 as "unknown" / -1.
 
@@ -25,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import tomllib
 from pathlib import Path
 
@@ -36,10 +42,33 @@ PAPER_PLOTS_DIR = PLOTS_DIR / "paper-plots"
 
 UNKNOWN = "unknown"
 
+# Batch folders under paper_outputs/ (e.g. v2_runs); anything else at that level
+# is a group of the original batch.
+BATCH_DIR_RE = re.compile(r"^v\d+_runs$")
+ORIGINAL_BATCH = "v1"
+
 # Every fitness dimension the framework currently emits. A variant whose
 # vector omits one of these gets MISSING for that dimension.
 CANONICAL_DIMS = ("hit-rate", "metadata-size", "per-op-time")
 MISSING = -1
+
+
+# Run dir names are "<subject>_<model>_<YYYY-MM-DD>_<HH-MM-SS-mmm>"; the
+# subject prefix is stripped separately because subject names contain "_".
+RUN_NAME_MODEL_RE = re.compile(r"^(?P<model>.+)_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}$")
+
+
+def model_from_run_name(run_name: str, subject: str) -> str | None:
+    """Parse the model id out of a "<subject>_<model>_<date>_<time>" run dir name.
+
+    Returns None when the name does not have that shape (e.g. an older
+    "<subject>_<date>_<time>" run with no model segment).
+    """
+    prefix = f"{subject}_"
+    if not run_name.startswith(prefix):
+        return None
+    match = RUN_NAME_MODEL_RE.match(run_name[len(prefix):])
+    return match.group("model") if match else None
 
 
 def dim_summaries(vector: dict) -> dict:
@@ -151,19 +180,25 @@ def ledger_cohort_size(run_dir: Path) -> int:
     return MISSING
 
 
-def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
+def run_setup(run_dir: Path, subject: str, cycle_count: int, batch: str = ORIGINAL_BATCH) -> dict:
     """Build the run's setup block.
 
     Cycle count and ledger cohort size are authoritative run artifacts and
     always win. Everything else comes from the config.toml snapshot the runner
     copies into the run folder; runs predating that snapshot get sentinels.
+
+    The model comes from the run dir name, which is authoritative: some older
+    snapshots carry a wrong or missing [framework].model. The snapshot's value
+    is only a fallback for names that do not parse.
     """
     setup = {
         "run": run_dir.name,
+        "batch": batch,
         "subject-name": subject,
         "total-cycles": cycle_count,
         "cohort-size": ledger_cohort_size(run_dir),
         "ai-agent-tool": UNKNOWN,
+        "model": model_from_run_name(run_dir.name, subject) or UNKNOWN,
         "implementation-attempts": MISSING,
         "hypothesis-attempts": MISSING,
         "authoring-scope": UNKNOWN,
@@ -175,6 +210,8 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int) -> dict:
         framework = config.get("framework", {})
         fitness = config.get("fitness", {})
         setup["ai-agent-tool"] = framework.get("ai_agent_tool", UNKNOWN)
+        if setup["model"] == UNKNOWN:
+            setup["model"] = framework.get("model", UNKNOWN)
         setup["implementation-attempts"] = framework.get("implementation_attempts", MISSING)
         setup["hypothesis-attempts"] = framework.get("hypothesis_attempts", MISSING)
         setup["authoring-scope"] = framework.get("authoring_scope", UNKNOWN)
@@ -283,12 +320,13 @@ def baseline_row(run_dir: Path, subject: str, diff_rows: dict):
     )
 
 
-def build_run(run_dir: Path, subject: str):
+def build_run(run_dir: Path, subject: str, batch: str = ORIGINAL_BATCH):
     """Return the {setup, variants} block for one run, or None if incomplete.
 
-    Subject comes from the run's parent folder; the run dir name embeds the
-    agent (e.g. "lru_cache_claude-opus-4-8_<date>_<time>") and is not safely
-    parseable for subjects whose names contain underscores.
+    Subject comes from the run's parent folder: the run dir name (e.g.
+    "lru_cache_claude-opus-4-8_<date>_<time>") is not safely splittable for
+    subjects whose names contain underscores. Knowing the subject, the model
+    segment is then parsed from the name (see model_from_run_name).
     """
     if not (run_dir / "cycles-ledger.jsonl").exists():
         return None  # run never reached a sealed cycle
@@ -325,7 +363,7 @@ def build_run(run_dir: Path, subject: str):
             row["weighted-score"] = scores.get((cycle, variant_dir.name), MISSING)
             variants.append(row)
 
-    setup = run_setup(run_dir, subject, len(cycle_dirs))
+    setup = run_setup(run_dir, subject, len(cycle_dirs), batch)
     return {"setup": setup, "variants": variants}
 
 
@@ -338,29 +376,51 @@ def group_run_dirs(group_dir: Path) -> list[tuple[Path, str]]:
     return pairs
 
 
-def resolve_groups(selectors: list[str]) -> list[Path]:
-    """Map CLI selectors to group dirs under outputs/paper_outputs/. A selector
-    is a group folder name. Empty selectors means every group."""
+def batch_dirs() -> list[tuple[str, Path]]:
+    """(batch name, dir holding that batch's groups), original batch first."""
+    batches = [(ORIGINAL_BATCH, PAPER_OUTPUTS_DIR)]
+    batches += [
+        (p.name, p)
+        for p in sorted(PAPER_OUTPUTS_DIR.iterdir())
+        if p.is_dir() and BATCH_DIR_RE.match(p.name)
+    ]
+    return batches
+
+
+def group_dirs_by_name() -> dict[str, list[tuple[str, Path]]]:
+    """Map each group name to its (batch, group dir) pairs across all batches."""
+    groups: dict[str, list[tuple[str, Path]]] = {}
+    for batch, root in batch_dirs():
+        for group_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+            if root == PAPER_OUTPUTS_DIR and BATCH_DIR_RE.match(group_dir.name):
+                continue
+            groups.setdefault(group_dir.name, []).append((batch, group_dir))
+    return groups
+
+
+def resolve_groups(selectors: list[str]) -> dict[str, list[tuple[str, Path]]]:
+    """Map CLI selectors to groups. A selector is a group folder name; empty
+    selectors means every group."""
+    groups = group_dirs_by_name()
     if not selectors:
-        return sorted(p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir())
-    group_dirs = []
-    for selector in selectors:
-        group_dir = PAPER_OUTPUTS_DIR / selector
-        if not group_dir.is_dir():
-            raise SystemExit(f"group dir not found: {group_dir}")
-        group_dirs.append(group_dir)
-    return group_dirs
+        return groups
+    missing = [selector for selector in selectors if selector not in groups]
+    if missing:
+        raise SystemExit(f"group(s) not found under {PAPER_OUTPUTS_DIR}: {', '.join(missing)}")
+    return {selector: groups[selector] for selector in selectors}
 
 
-def build_group(group_dir: Path) -> Path:
-    """Aggregate one group into plots/paper-plots/data_<group>.json; return its path."""
+def build_group(name: str, batches: list[tuple[str, Path]]) -> Path:
+    """Aggregate one group, across batches, into plots/paper-plots/data_<group>.json;
+    return its path."""
     runs = []
-    for run_dir, subject in group_run_dirs(group_dir):
-        built = build_run(run_dir, subject)
-        if built is not None:
-            runs.append(built)
+    for batch, group_dir in batches:
+        for run_dir, subject in group_run_dirs(group_dir):
+            built = build_run(run_dir, subject, batch)
+            if built is not None:
+                runs.append(built)
     PAPER_PLOTS_DIR.mkdir(parents=True, exist_ok=True)
-    data_path = PAPER_PLOTS_DIR / f"data_{group_dir.name}.json"
+    data_path = PAPER_PLOTS_DIR / f"data_{name}.json"
     data_path.write_text(json.dumps({"runs": runs}, indent=2) + "\n")
     variant_count = sum(len(run["variants"]) for run in runs)
     print(f"Wrote {data_path} with {len(runs)} runs and {variant_count} variant rows.")
@@ -372,13 +432,13 @@ def main():
     parser.add_argument(
         "groups",
         nargs="*",
-        help="group folder name(s) under outputs/paper_outputs/ to aggregate; "
+        help="group folder name(s) under outputs/paper_outputs/ (or a v<N>_runs batch) to aggregate; "
         "default: every group",
     )
     args = parser.parse_args()
 
-    for group_dir in resolve_groups(args.groups):
-        build_group(group_dir)
+    for name, batches in resolve_groups(args.groups).items():
+        build_group(name, batches)
 
 
 if __name__ == "__main__":

@@ -2,11 +2,1038 @@
   "runs": [
     {
       "setup": {
+        "run": "associative_cache_claude-haiku-4-5-20251001_2026-06-10_20-19-38-547",
+        "batch": "v1",
+        "subject-name": "associative_cache",
+        "total-cycles": 10,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "model": "claude-haiku-4-5-20251001",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "associative_cache",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.661,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6698,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6611,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6635,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6699,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6817,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6739,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6817,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6835,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6829,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6762,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6817,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6835,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6635,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6904,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6611,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6934,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.685,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6611,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6936,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6862,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6817,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6936,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6986,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.6986,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6941,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "associative_cache_claude-opus-4-8_2026-06-10_20-07-06-786",
+        "batch": "v1",
+        "subject-name": "associative_cache",
+        "total-cycles": 10,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "model": "claude-opus-4-8",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "associative_cache",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.661,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6635,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7231,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7182,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7109,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6611,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7182,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7231,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7267,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7182,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7239,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6951,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6267,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7231,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7169,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7267,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.72,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6812,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7273,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7182,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7277,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7254,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.723,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7284,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7182,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        }
+      ]
+    },
+    {
+      "setup": {
+        "run": "associative_cache_claude-sonnet-4-6_2026-06-10_20-19-41-525",
+        "batch": "v1",
+        "subject-name": "associative_cache",
+        "total-cycles": 10,
+        "cohort-size": 3,
+        "ai-agent-tool": "claude-sdk",
+        "model": "claude-sonnet-4-6",
+        "implementation-attempts": 3,
+        "hypothesis-attempts": 3,
+        "authoring-scope": "full-autonomy",
+        "fitness-dimensions": [
+          "hit-rate"
+        ]
+      },
+      "variants": [
+        {
+          "subject-name": "associative_cache",
+          "cycle": 0,
+          "variant": "baseline",
+          "is-baseline": true,
+          "is-winner": false,
+          "hit-rate": 0.661,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.664,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6611,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 1,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6516,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6651,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7273,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 2,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.695,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 3,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7277,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 3,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7197,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 3,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7265,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7289,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7231,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 4,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7279,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7283,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7222,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 5,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7289,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7189,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7269,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 6,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7256,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7283,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7223,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 7,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7286,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7281,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6887,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 8,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7298,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7297,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.6927,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 9,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7278,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v001",
+          "is-baseline": false,
+          "is-winner": true,
+          "hit-rate": 0.7298,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v002",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7281,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        },
+        {
+          "subject-name": "associative_cache",
+          "cycle": 10,
+          "variant": "v003",
+          "is-baseline": false,
+          "is-winner": false,
+          "hit-rate": 0.7296,
+          "metadata-size": -1,
+          "per-op-time": -1,
+          "weighted-score": -1
+        }
+      ]
+    },
+    {
+      "setup": {
         "run": "dash_claude-haiku-4-5-20251001_2026-06-05_18-13-40-938",
+        "batch": "v1",
         "subject-name": "dash",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-haiku-4-5-20251001",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -361,10 +1388,12 @@
     {
       "setup": {
         "run": "dash_claude-opus-4-8_2026-06-05_18-13-17-700",
+        "batch": "v1",
         "subject-name": "dash",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-opus-4-8",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -719,10 +1748,12 @@
     {
       "setup": {
         "run": "dash_claude-sonnet-4-6_2026-06-05_11-49-56-558",
+        "batch": "v1",
         "subject-name": "dash",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-sonnet-4-6",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "extension-points",
@@ -1077,10 +2108,12 @@
     {
       "setup": {
         "run": "lru_cache_claude-haiku-4-5-20251001_2026-06-05_15-05-10-920",
+        "batch": "v1",
         "subject-name": "lru_cache",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-haiku-4-5-20251001",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -1424,10 +2457,12 @@
     {
       "setup": {
         "run": "lru_cache_claude-opus-4-8_2026-06-05_23-23-52-319",
+        "batch": "v1",
         "subject-name": "lru_cache",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-opus-4-8",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -1782,10 +2817,12 @@
     {
       "setup": {
         "run": "lru_cache_claude-sonnet-4-6_2026-06-04_23-57-58-353",
+        "batch": "v1",
         "subject-name": "lru_cache",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-sonnet-4-6",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -2129,10 +3166,12 @@
     {
       "setup": {
         "run": "s3_fifo_claude-haiku-4-5-20251001_2026-06-05_22-44-13-491",
+        "batch": "v1",
         "subject-name": "s3_fifo",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-haiku-4-5-20251001",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -2487,10 +3526,12 @@
     {
       "setup": {
         "run": "s3_fifo_claude-opus-4-8_2026-06-06_02-20-26-792",
+        "batch": "v1",
         "subject-name": "s3_fifo",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-opus-4-8",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -2845,10 +3886,12 @@
     {
       "setup": {
         "run": "s3_fifo_claude-sonnet-4-6_2026-06-05_22-53-09-763",
+        "batch": "v1",
         "subject-name": "s3_fifo",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-sonnet-4-6",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -3203,10 +4246,12 @@
     {
       "setup": {
         "run": "tiny_lfu_claude-haiku-4-5-20251001_2026-06-06_01-29-41-542",
+        "batch": "v1",
         "subject-name": "tiny_lfu",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-haiku-4-5-20251001",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -3561,10 +4606,12 @@
     {
       "setup": {
         "run": "tiny_lfu_claude-opus-4-8_2026-06-05_22-39-10-051",
+        "batch": "v1",
         "subject-name": "tiny_lfu",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-opus-4-8",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
@@ -3919,10 +4966,12 @@
     {
       "setup": {
         "run": "tiny_lfu_claude-sonnet-4-6_2026-06-05_22-38-25-817",
+        "batch": "v1",
         "subject-name": "tiny_lfu",
         "total-cycles": 10,
         "cohort-size": 3,
         "ai-agent-tool": "claude-sdk",
+        "model": "claude-sonnet-4-6",
         "implementation-attempts": 3,
         "hypothesis-attempts": 3,
         "authoring-scope": "full-autonomy",
