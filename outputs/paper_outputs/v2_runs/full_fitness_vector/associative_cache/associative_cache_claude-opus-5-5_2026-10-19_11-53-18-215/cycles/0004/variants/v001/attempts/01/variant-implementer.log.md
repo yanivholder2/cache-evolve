@@ -1,0 +1,337 @@
+# Agent log: variant-implementer
+
+- adapter: ClaudeSdkAdapter(model=claude-opus-5-5)
+- workspace: /home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/variants/v001/attempts/01
+- allow_edits: True
+- started: 2026-10-19T12:21:39+00:00
+
+## timeline
+
+### 12:21:43 tool: Bash
+
+```json
+{
+  "command": "cd /home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215; cat cycles/0004/hypotheses/H01.md; P=cycles/0003/variants/v001; find $P/attempts/01/overlay -type f; cat $P/insight.md $P/eval/fitness-vector.json; cat /home/user/cache-evolve/inputs/subjects/associative_cache/manifest.toml; find /home/user/cache-evolve/inputs/subjects/associative_cache/src -type f | xargs wc -l"
+}
+```
+
+### 12:21:45 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/hypotheses/H01.md"
+}
+```
+
+### 12:21:45 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/insight.md"
+}
+```
+
+### 12:21:46 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/inputs/subjects/associative_cache/manifest.toml"
+}
+```
+
+### 12:21:50 thinking
+
+
+
+### 12:21:51 tool: Glob
+
+```json
+{
+  "pattern": "**/*",
+  "path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay"
+}
+```
+
+### 12:21:51 tool: Glob
+
+```json
+{
+  "pattern": "**/*.rs",
+  "path": "/home/user/cache-evolve/inputs/subjects/associative_cache/src"
+}
+```
+
+### 12:21:53 chat
+
+Only Read/Write/Edit, then. I'll guess the paths.
+
+### 12:21:53 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/associative_cache/associative_cache_bucket.rs"
+}
+```
+
+### 12:21:54 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/item.rs"
+}
+```
+
+### 12:21:58 thinking
+
+
+
+### 12:21:59 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/associative_cache/associative_cache.rs"
+}
+```
+
+### 12:21:59 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/inputs/subjects/associative_cache/src/shared/traits/bucket.rs"
+}
+```
+
+### 12:22:02 thinking
+
+
+
+### 12:22:02 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/inputs/subjects/associative_cache/src/associative_cache/mod.rs"
+}
+```
+
+### 12:22:04 thinking
+
+
+
+### 12:22:04 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/associative_cache/mod.rs"
+}
+```
+
+### 12:22:07 thinking
+
+
+
+### 12:22:07 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/inputs/subjects/associative_cache/src/shared/utils.rs"
+}
+```
+
+### 12:22:08 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/utils.rs"
+}
+```
+
+### 12:22:11 thinking
+
+
+
+### 12:22:12 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/eviction_policy.rs"
+}
+```
+
+### 12:22:12 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/geometry.rs"
+}
+```
+
+### 12:22:13 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/associative_cache/associative_cache_settings.rs"
+}
+```
+
+### 12:22:16 thinking
+
+
+
+### 12:22:16 chat
+
+I'm collecting the parent variant's overlay files so I can copy them over, then I'll apply the H01 bucket edits.
+
+### 12:22:16 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/traits/eviction_policy.rs"
+}
+```
+
+### 12:22:17 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/inputs/subjects/associative_cache/src/shared/traits/eviction_policy.rs"
+}
+```
+
+### 12:22:19 thinking
+
+
+
+### 12:22:20 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/mod.rs"
+}
+```
+
+### 12:22:21 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/traits/mod.rs"
+}
+```
+
+### 12:22:22 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0003/variants/v001/attempts/01/overlay/src/shared/traits/bucket.rs"
+}
+```
+
+### 12:22:22 tool: Read
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/inputs/subjects/associative_cache/src/shared/item.rs",
+  "limit": 30
+}
+```
+
+### 12:22:38 thinking
+
+
+
+### 12:22:38 chat
+
+Writing the overlay now: I'm copying the parent's unchanged files and adding the new bucket.
+
+### 12:22:43 tool: Write
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/variants/v001/attempts/01/overlay/src/shared/traits/eviction_policy.rs",
+  "content": "//! Eviction policy: the per-bucket algorithm deciding how an item moves on\n//! access and which item is evicted or most protected. Dispatched as a trait\n//! object owned by the bucket, so a variant can plug a new policy without\n//! touching the bucket or its trait.\n\nuse crate::shared::item::Item;\nuse std::fmt::Debug;\nuse std::hash::Hash;\n\npub trait EvictionPolicy<K, V>: Debug\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\t/// Canonical CamelCase name of the policy.\n\tfn name(&self) -> &'static str;\n\n\t/// Applies the access side effect for the item at `position` and returns its\n\t/// resulting index. May reorder `items` or mutate item state (move to back,\n\t/// swap toward front, refresh timestamp, bump counter) per the policy.\n\tfn get_from_position(&self, items: &mut Vec<Item<K, V>>, position: usize) -> usize;\n\n\t/// Same as [`get_from_position`](Self::get_from_position) but on a slice, so a\n\t/// bucket can apply the policy to one segment of a bucket without\n\t/// allocating. Length is preserved. The default falls back to the `Vec`\n\t/// version through a temporary copy; in-crate policies override it.\n\tfn get_from_position_in_slice(&self, items: &mut [Item<K, V>], position: usize) -> usize {\n\t\tlet mut tmp = items.to_vec();\n\t\tlet idx = self.get_from_position(&mut tmp, position);\n\t\tdebug_assert_eq!(tmp.len(), items.len(), \"get_from_position must preserve length\");\n\t\titems.clone_from_slice(&tmp);\n\t\tidx\n\t}\n\n\t/// Index of the item that would be evicted. Precondition: `items` is non-empty.\n\tfn eviction_candidate_index(&self, items: &[Item<K, V>]) -> usize;\n\n\t/// Index of the hottest item, the one most protected from eviction. Symmetric\n\t/// inverse of `eviction_candidate_index`. Precondition: `items` is non-empty.\n\tfn promotion_candidate_index(&self, items: &[Item<K, V>]) -> usize;\n}\n"
+}
+```
+
+### 12:22:57 tool: Write
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/variants/v001/attempts/01/overlay/src/shared/item.rs",
+  "content": "//! This module defines a key-value data object stored in the associative cache.\n//!\n//! H01 (cycle 0003): 24-byte item. The wall-clock `Instant` (16 bytes) and the\n//! `usize` LFU counter are replaced by a `u32` logical tick drawn from a\n//! thread-local counter and a `u32` LFU counter. Field order\n//! `key, value, timestamp, lfu_counter` packs `Item<u64, u64>` into exactly\n//! 24 bytes with no padding. Tick comparisons go through the wrap-safe\n//! [`is_newer`] helper.\n//!\n//! # Examples\n//!\n//! ```ignore\n//! use associative_cache::shared::item::Item;\n//!\n//! let item = Item::new(1, 2);\n//! assert_eq!(item.key, 1);\n//! assert_eq!(item.value, 2);\n//! assert_eq!(item.lfu_counter, 0);\n//! ```\n\nuse std::{\n\tcell::Cell,\n\tfmt::{Display, Formatter},\n\thash::Hash,\n};\n\nthread_local! {\n\t/// Logical clock. Monotonically increasing (wrapping) per thread; no\n\t/// wall-clock reads.\n\tstatic CLOCK: Cell<u32> = const { Cell::new(0) };\n}\n\n/// Advances the logical clock and returns the new tick.\n#[inline]\npub fn tick() -> u32 {\n\tCLOCK.with(|c| {\n\t\tlet t = c.get().wrapping_add(1);\n\t\tc.set(t);\n\t\tt\n\t})\n}\n\n/// Current logical tick, without advancing.\n#[inline]\npub fn now() -> u32 {\n\tCLOCK.with(|c| c.get())\n}\n\n/// Wrap-safe \"a is strictly newer than b\" on logical ticks (serial-number\n/// arithmetic: valid while the two ticks are within 2^31 of each other).\n#[inline]\npub fn is_newer(a: u32, b: u32) -> bool {\n\t(a.wrapping_sub(b) as i32) > 0\n}\n\n#[derive(Debug, Clone)]\npub struct Item<K, V>\nwhere\n\tK: Hash + Eq + Clone,\n\tV: Eq + Clone,\n{\n\tpub key: K,\n\tpub value: V,\n\tpub timestamp: u32,\n\tpub lfu_counter: u32,\n}\n\nimpl<K, V> Item<K, V>\nwhere\n\tK: Hash + Eq + Clone,\n\tV: Eq + Clone,\n{\n\tpub fn new(key: K, value: V) -> Self {\n\t\tSelf {\n\t\t\tkey,\n\t\t\tvalue,\n\t\t\ttimestamp: tick(),\n\t\t\tlfu_counter: 0,\n\t\t}\n\t}\n}\n\nimpl<K, V> PartialEq for Item<K, V>\nwhere\n\tK: Hash + Eq + Clone,\n\tV: Eq + Clone,\n{\n\tfn eq(&self, other: &Item<K, V>) -> bool {\n\t\tself.key == other.key && self.value == other.value\n\t}\n}\n\nimpl<K, V> Eq for Item<K, V>\nwhere\n\tK: Hash + Eq + Clone,\n\tV: Eq + Clone,\n{\n}\n\nimpl<K, V> Display for Item<K, V>\nwhere\n\tK: Hash + Eq + Clone + Display,\n\tV: Eq + Clone + Display,\n{\n\tfn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {\n\t\twrite!(\n\t\t\tf,\n\t\t\t\"Bucket Item {{ key: {}, value: {}, lfu_counter: {}, timestamp: {} }}\",\n\t\t\tself.key, self.value, self.lfu_counter, self.timestamp\n\t\t)\n\t}\n}\n\n#[cfg(test)]\nmod tests {\n\tuse super::*;\n\n\t#[test]\n\tfn new_initializes_fields() {\n\t\tlet item = Item::new(42, \"hello\");\n\t\tassert_eq!(item.key, 42);\n\t\tassert_eq!(item.value, \"hello\");\n\t\tassert_eq!(item.lfu_counter, 0);\n\t}\n\n\t#[test]\n\tfn equality_compares_key_and_value() {\n\t\tlet a = Item::new(1, 10);\n\t\tlet b = Item::new(1, 10);\n\t\tlet c = Item::new(1, 20);\n\t\tlet d = Item::new(2, 10);\n\n\t\tassert_eq!(a, b);\n\t\tassert_ne!(a, c); // different value\n\t\tassert_ne!(a, d); // different key\n\t}\n\n\t#[test]\n\tfn equality_ignores_lfu_counter() {\n\t\tlet mut a = Item::new(1, 10);\n\t\tlet b = Item::new(1, 10);\n\t\ta.lfu_counter = 99;\n\t\tassert_eq!(a, b);\n\t}\n\n\t#[test]\n\tfn clone_produces_independent_copy() {\n\t\tlet mut a = Item::new(1, 10);\n\t\tlet b = a.clone();\n\t\ta.value = 20;\n\t\tassert_eq!(a.value, 20);\n\t\tassert_eq!(b.value, 10);\n\t}\n\n\t#[test]\n\tfn item_u64_u64_is_24_bytes() {\n\t\tassert_eq!(std::mem::size_of::<Item<u64, u64>>(), 24);\n\t}\n\n\t#[test]\n\tfn ticks_are_strictly_increasing() {\n\t\tlet a = Item::new(1, 1);\n\t\tlet b = Item::new(2, 2);\n\t\tassert!(is_newer(b.timestamp, a.timestamp));\n\t\tassert!(!is_newer(a.timestamp, b.timestamp));\n\t\tassert_eq!(now(), b.timestamp);\n\t}\n\n\t#[test]\n\tfn is_newer_is_wrap_safe() {\n\t\tassert!(is_newer(1, u32::MAX));\n\t\tassert!(!is_newer(u32::MAX, 1));\n\t\tassert!(!is_newer(5, 5));\n\t}\n}\n"
+}
+```
+
+### 12:23:37 tool: Write
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/variants/v001/attempts/01/overlay/src/shared/eviction_policy.rs",
+  "content": "//! In-crate eviction policy implementations and the selection enum.\n//!\n//! Behaviour lives in one zero-sized struct per policy, each implementing\n//! [`EvictionPolicy`]. `EvictionPolicyKind` is the lightweight `Copy` selector\n//! carried by settings (and crossed over JNI as an ordinal/name); `build`\n//! turns a kind into the boxed trait object a bucket owns.\n//!\n//! Every policy implements the slice-based access hook so a bucket can apply\n//! it to a segment in place. ClassicLRU does not refresh timestamps on access\n//! (the SLRU bucket orders purely by position).\n//!\n//! H01 (cycle 0003): timestamps are `u32` logical ticks (`tick()` instead of\n//! `Instant::now()`), compared with the wrap-safe `is_newer`; the LFU counter\n//! is `u32` with saturating increments.\n\nuse crate::shared::item::{is_newer, tick, Item};\nuse crate::shared::traits::eviction_policy::EvictionPolicy;\nuse std::fmt::Debug;\nuse std::hash::Hash;\n\n/// Every cache hit moves the item to the back of the bucket.\n#[derive(Debug)]\npub struct ClassicLRU;\n/// LRU by last-hit timestamp; items keep their position.\n#[derive(Debug)]\npub struct TimestampLRU;\n#[derive(Debug)]\npub struct Lifo;\n#[derive(Debug)]\npub struct Lfu;\n#[derive(Debug)]\npub struct Fifo;\n#[derive(Debug)]\npub struct Swap;\n\nimpl<K, V> EvictionPolicy<K, V> for ClassicLRU\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn name(&self) -> &'static str {\n\t\t\"ClassicLRU\"\n\t}\n\n\tfn get_from_position(&self, items: &mut Vec<Item<K, V>>, position: usize) -> usize {\n\t\tself.get_from_position_in_slice(items.as_mut_slice(), position)\n\t}\n\n\tfn get_from_position_in_slice(&self, items: &mut [Item<K, V>], position: usize) -> usize {\n\t\titems[position..].rotate_left(1);\n\t\titems.len() - 1\n\t}\n\n\tfn eviction_candidate_index(&self, _items: &[Item<K, V>]) -> usize {\n\t\t0\n\t}\n\n\tfn promotion_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\titems.len() - 1\n\t}\n}\n\nimpl<K, V> EvictionPolicy<K, V> for TimestampLRU\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn name(&self) -> &'static str {\n\t\t\"TimestampLRU\"\n\t}\n\n\tfn get_from_position(&self, items: &mut Vec<Item<K, V>>, position: usize) -> usize {\n\t\tself.get_from_position_in_slice(items.as_mut_slice(), position)\n\t}\n\n\tfn get_from_position_in_slice(&self, items: &mut [Item<K, V>], position: usize) -> usize {\n\t\titems[position].timestamp = tick();\n\t\tposition\n\t}\n\n\t/// Oldest tick; first one on ties (matches `min_by_key`).\n\tfn eviction_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\tassert!(!items.is_empty(), \"eviction_candidate_index precondition: non-empty\");\n\t\tlet mut best = 0;\n\t\tfor i in 1..items.len() {\n\t\t\tif is_newer(items[best].timestamp, items[i].timestamp) {\n\t\t\t\tbest = i;\n\t\t\t}\n\t\t}\n\t\tbest\n\t}\n\n\t/// Newest tick; last one on ties (matches `max_by_key`).\n\tfn promotion_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\tassert!(!items.is_empty(), \"promotion_candidate_index precondition: non-empty\");\n\t\tlet mut best = 0;\n\t\tfor i in 1..items.len() {\n\t\t\tif !is_newer(items[best].timestamp, items[i].timestamp) {\n\t\t\t\tbest = i;\n\t\t\t}\n\t\t}\n\t\tbest\n\t}\n}\n\nimpl<K, V> EvictionPolicy<K, V> for Lifo\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn name(&self) -> &'static str {\n\t\t\"Lifo\"\n\t}\n\n\tfn get_from_position(&self, _items: &mut Vec<Item<K, V>>, position: usize) -> usize {\n\t\tposition\n\t}\n\n\tfn get_from_position_in_slice(&self, _items: &mut [Item<K, V>], position: usize) -> usize {\n\t\tposition\n\t}\n\n\tfn eviction_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\titems.len() - 1\n\t}\n\n\tfn promotion_candidate_index(&self, _items: &[Item<K, V>]) -> usize {\n\t\t0\n\t}\n}\n\nimpl<K, V> EvictionPolicy<K, V> for Lfu\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn name(&self) -> &'static str {\n\t\t\"Lfu\"\n\t}\n\n\tfn get_from_position(&self, items: &mut Vec<Item<K, V>>, position: usize) -> usize {\n\t\tself.get_from_position_in_slice(items.as_mut_slice(), position)\n\t}\n\n\tfn get_from_position_in_slice(&self, items: &mut [Item<K, V>], position: usize) -> usize {\n\t\titems[position].lfu_counter = items[position].lfu_counter.saturating_add(1);\n\t\tposition\n\t}\n\n\tfn eviction_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\titems\n\t\t\t.iter()\n\t\t\t.enumerate()\n\t\t\t.min_by_key(|(_, item)| item.lfu_counter)\n\t\t\t.expect(\"eviction_candidate_index precondition: non-empty\")\n\t\t\t.0\n\t}\n\n\tfn promotion_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\titems\n\t\t\t.iter()\n\t\t\t.enumerate()\n\t\t\t.max_by_key(|(_, item)| item.lfu_counter)\n\t\t\t.expect(\"promotion_candidate_index precondition: non-empty\")\n\t\t\t.0\n\t}\n}\n\nimpl<K, V> EvictionPolicy<K, V> for Fifo\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn name(&self) -> &'static str {\n\t\t\"Fifo\"\n\t}\n\n\tfn get_from_position(&self, _items: &mut Vec<Item<K, V>>, position: usize) -> usize {\n\t\tposition\n\t}\n\n\tfn get_from_position_in_slice(&self, _items: &mut [Item<K, V>], position: usize) -> usize {\n\t\tposition\n\t}\n\n\tfn eviction_candidate_index(&self, _items: &[Item<K, V>]) -> usize {\n\t\t0\n\t}\n\n\tfn promotion_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\titems.len() - 1\n\t}\n}\n\nimpl<K, V> EvictionPolicy<K, V> for Swap\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn name(&self) -> &'static str {\n\t\t\"Swap\"\n\t}\n\n\tfn get_from_position(&self, items: &mut Vec<Item<K, V>>, position: usize) -> usize {\n\t\tself.get_from_position_in_slice(items.as_mut_slice(), position)\n\t}\n\n\tfn get_from_position_in_slice(&self, items: &mut [Item<K, V>], position: usize) -> usize {\n\t\tif position > 0 {\n\t\t\titems.swap(position, position - 1);\n\t\t\tposition - 1\n\t\t} else {\n\t\t\tposition\n\t\t}\n\t}\n\n\tfn eviction_candidate_index(&self, _items: &[Item<K, V>]) -> usize {\n\t\t0\n\t}\n\n\tfn promotion_candidate_index(&self, items: &[Item<K, V>]) -> usize {\n\t\titems.len() - 1\n\t}\n}\n\n/// Lightweight `Copy` selector for an eviction policy. Carried by settings and\n/// crossed over JNI; `build` materialises the boxed trait object.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum EvictionPolicyKind {\n\tClassicLRU,\n\tTimestampLRU,\n\tLifo,\n\tLfu,\n\tFifo,\n\tSwap,\n}\n\nimpl EvictionPolicyKind {\n\t/// Returns all variants. The exhaustive match ensures a compile error if a variant is added.\n\tpub fn all() -> [Self; 6] {\n\t\tuse EvictionPolicyKind::*;\n\t\tlet _exhaustive = |p: EvictionPolicyKind| match p {\n\t\t\tClassicLRU | TimestampLRU | Lifo | Lfu | Fifo | Swap => {}\n\t\t};\n\t\t[ClassicLRU, TimestampLRU, Lifo, Lfu, Fifo, Swap]\n\t}\n\n\t/// Canonical CamelCase name. Adding a variant forces a compile error here.\n\tpub fn name(&self) -> &'static str {\n\t\tmatch self {\n\t\t\tEvictionPolicyKind::ClassicLRU => \"ClassicLRU\",\n\t\t\tEvictionPolicyKind::TimestampLRU => \"TimestampLRU\",\n\t\t\tEvictionPolicyKind::Lifo => \"Lifo\",\n\t\t\tEvictionPolicyKind::Lfu => \"Lfu\",\n\t\t\tEvictionPolicyKind::Fifo => \"Fifo\",\n\t\t\tEvictionPolicyKind::Swap => \"Swap\",\n\t\t}\n\t}\n\n\t/// Stable integer index. Crossed over JNI as the policy ordinal; adding a\n\t/// variant forces a compile error here.\n\tpub fn index(&self) -> usize {\n\t\tmatch self {\n\t\t\tEvictionPolicyKind::ClassicLRU => 0,\n\t\t\tEvictionPolicyKind::TimestampLRU => 1,\n\t\t\tEvictionPolicyKind::Lifo => 2,\n\t\t\tEvictionPolicyKind::Lfu => 3,\n\t\t\tEvictionPolicyKind::Fifo => 4,\n\t\t\tEvictionPolicyKind::Swap => 5,\n\t\t}\n\t}\n\n\t/// CamelCase names, derived from `all()` + `name()`. Crossed over JNI so\n\t/// Java callers don't hard-code the list.\n\tpub fn all_names() -> [&'static str; 6] {\n\t\tSelf::all().map(|p| p.name())\n\t}\n\n\tpub fn from_usize(index: usize) -> Option<Self> {\n\t\tSelf::all().into_iter().find(|p| p.index() == index)\n\t}\n\n\tpub fn from_name(name: &str) -> Option<Self> {\n\t\tSelf::all().into_iter().find(|p| p.name() == name)\n\t}\n\n\t/// Materialises the boxed trait object a bucket owns.\n\tpub fn build<K, V>(self) -> Box<dyn EvictionPolicy<K, V>>\n\twhere\n\t\tK: Hash + Eq + Copy + Debug,\n\t\tV: Eq + Copy + Debug,\n\t{\n\t\tmatch self {\n\t\t\tEvictionPolicyKind::ClassicLRU => Box::new(ClassicLRU),\n\t\t\tEvictionPolicyKind::TimestampLRU => Box::new(TimestampLRU),\n\t\t\tEvictionPolicyKind::Lifo => Box::new(Lifo),\n\t\t\tEvictionPolicyKind::Lfu => Box::new(Lfu),\n\t\t\tEvictionPolicyKind::Fifo => Box::new(Fifo),\n\t\t\tEvictionPolicyKind::Swap => Box::new(Swap),\n\t\t}\n\t}\n}\n\n#[cfg(test)]\nmod tests {\n\tuse super::*;\n\n\t#[test]\n\tfn from_usize_valid_indices() {\n\t\tassert_eq!(EvictionPolicyKind::from_usize(0), Some(EvictionPolicyKind::ClassicLRU));\n\t\tassert_eq!(EvictionPolicyKind::from_usize(1), Some(EvictionPolicyKind::TimestampLRU));\n\t\tassert_eq!(EvictionPolicyKind::from_usize(2), Some(EvictionPolicyKind::Lifo));\n\t\tassert_eq!(EvictionPolicyKind::from_usize(3), Some(EvictionPolicyKind::Lfu));\n\t\tassert_eq!(EvictionPolicyKind::from_usize(4), Some(EvictionPolicyKind::Fifo));\n\t\tassert_eq!(EvictionPolicyKind::from_usize(5), Some(EvictionPolicyKind::Swap));\n\t}\n\n\t#[test]\n\tfn from_usize_out_of_range() {\n\t\tassert!(EvictionPolicyKind::from_usize(6).is_none());\n\t\tassert!(EvictionPolicyKind::from_usize(100).is_none());\n\t\tassert!(EvictionPolicyKind::from_usize(usize::MAX).is_none());\n\t}\n\n\t#[test]\n\tfn from_name_valid() {\n\t\tassert_eq!(EvictionPolicyKind::from_name(\"ClassicLRU\"), Some(EvictionPolicyKind::ClassicLRU));\n\t\tassert_eq!(EvictionPolicyKind::from_name(\"TimestampLRU\"), Some(EvictionPolicyKind::TimestampLRU));\n\t\tassert_eq!(EvictionPolicyKind::from_name(\"Lifo\"), Some(EvictionPolicyKind::Lifo));\n\t\tassert_eq!(EvictionPolicyKind::from_name(\"Lfu\"), Some(EvictionPolicyKind::Lfu));\n\t\tassert_eq!(EvictionPolicyKind::from_name(\"Fifo\"), Some(EvictionPolicyKind::Fifo));\n\t\tassert_eq!(EvictionPolicyKind::from_name(\"Swap\"), Some(EvictionPolicyKind::Swap));\n\t}\n\n\t#[test]\n\tfn from_name_unknown() {\n\t\tassert!(EvictionPolicyKind::from_name(\"classiclru\").is_none());\n\t\tassert!(EvictionPolicyKind::from_name(\"NotAPolicy\").is_none());\n\t\tassert!(EvictionPolicyKind::from_name(\"\").is_none());\n\t}\n\n\t#[test]\n\tfn name_round_trip_for_every_variant() {\n\t\tfor p in EvictionPolicyKind::all() {\n\t\t\tlet resolved = EvictionPolicyKind::from_name(p.name())\n\t\t\t\t.unwrap_or_else(|| panic!(\"from_name({}) returned None\", p.name()));\n\t\t\tassert_eq!(resolved, p, \"{}.name() resolved to wrong variant\", p.name());\n\t\t}\n\t}\n\n\t#[test]\n\tfn index_round_trip_for_every_variant() {\n\t\tfor p in EvictionPolicyKind::all() {\n\t\t\tlet resolved = EvictionPolicyKind::from_usize(p.index())\n\t\t\t\t.unwrap_or_else(|| panic!(\"from_usize({}) returned None\", p.index()));\n\t\t\tassert_eq!(resolved, p, \"index {} resolved to wrong variant\", p.index());\n\t\t}\n\t}\n\n\t#[test]\n\tfn indices_are_dense_and_unique() {\n\t\tlet indices: Vec<usize> = EvictionPolicyKind::all().iter().map(|p| p.index()).collect();\n\t\tlet mut sorted = indices.clone();\n\t\tsorted.sort();\n\t\tlet expected: Vec<usize> = (0..EvictionPolicyKind::all().len()).collect();\n\t\tassert_eq!(sorted, expected, \"indices must be 0..N with no gaps or duplicates\");\n\t}\n\n\t#[test]\n\tfn names_are_unique() {\n\t\tlet names = EvictionPolicyKind::all_names();\n\t\tlet mut seen = std::collections::HashSet::new();\n\t\tfor name in names {\n\t\t\tassert!(seen.insert(name), \"duplicate name: {name}\");\n\t\t}\n\t}\n\n\t#[test]\n\tfn all_names_matches_per_variant_name() {\n\t\tlet derived: Vec<&'static str> = EvictionPolicyKind::all().iter().map(|p| p.name()).collect();\n\t\tassert_eq!(derived, EvictionPolicyKind::all_names().to_vec());\n\t}\n\n\t#[test]\n\tfn build_name_matches_kind() {\n\t\tfor kind in EvictionPolicyKind::all() {\n\t\t\tlet policy: Box<dyn EvictionPolicy<i64, i64>> = kind.build();\n\t\t\tassert_eq!(policy.name(), kind.name());\n\t\t}\n\t}\n\n\t#[test]\n\tfn classic_lru_slice_touch_moves_to_back() {\n\t\tlet mut items = vec![Item::new(1i64, 10i64), Item::new(2, 20), Item::new(3, 30)];\n\t\tlet idx = EvictionPolicy::<i64, i64>::get_from_position_in_slice(&ClassicLRU, &mut items[..], 0);\n\t\tassert_eq!(idx, 2);\n\t\tassert_eq!(items.iter().map(|i| i.key).collect::<Vec<_>>(), vec![2, 3, 1]);\n\t}\n\n\t#[test]\n\tfn timestamp_lru_wrap_safe_ordering() {\n\t\tlet mut items = vec![Item::new(1i64, 10i64), Item::new(2, 20), Item::new(3, 30)];\n\t\titems[0].timestamp = u32::MAX - 1; // oldest\n\t\titems[1].timestamp = u32::MAX;\n\t\titems[2].timestamp = 2; // newest (after wrap)\n\t\tassert_eq!(EvictionPolicy::<i64, i64>::eviction_candidate_index(&TimestampLRU, &items), 0);\n\t\tassert_eq!(EvictionPolicy::<i64, i64>::promotion_candidate_index(&TimestampLRU, &items), 2);\n\t}\n\n\t#[test]\n\tfn lfu_counter_saturates() {\n\t\tlet mut items = vec![Item::new(1i64, 10i64)];\n\t\titems[0].lfu_counter = u32::MAX;\n\t\tEvictionPolicy::<i64, i64>::get_from_position_in_slice(&Lfu, &mut items[..], 0);\n\t\tassert_eq!(items[0].lfu_counter, u32::MAX);\n\t}\n}\n"
+}
+```
+
+### 12:23:39 chat
+
+Now mod.rs (unchanged copy) and the new bucket.
+
+### 12:24:02 tool: Write
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/variants/v001/attempts/01/overlay/src/associative_cache/mod.rs",
+  "content": "use crate::shared::item::Item;\nuse crate::shared::utils::hash;\nuse associative_cache_bucket::AssociativeCacheBucket;\nuse associative_cache_settings::AssociativeCacheSettings;\nuse log::{debug, info};\n\nuse std::fmt::{Debug, Display, Formatter};\nuse std::hash::Hash;\n\npub mod associative_cache_bucket;\npub mod associative_cache_jni;\npub mod associative_cache_settings;\n\n/// H02: merged-pair associative cache with a segmented-LRU bucket.\n///\n/// The `n` logical buckets of `bucket_size` slots are grouped into adjacent\n/// pairs. Each pair is stored as one physical bucket (`buckets[p]`,\n/// `2 * bucket_size` slots). A key hashes once to its physical bucket\n/// `p = hash % buckets.len()`. If `n` is odd, the last physical bucket holds\n/// `bucket_size` slots. Total capacity stays `n * bucket_size`.\n///\n/// Inside a physical bucket the items are split into probation and protected\n/// SLRU segments shared by all keys of that bucket (see\n/// `associative_cache_bucket`).\n#[derive(Debug)]\npub struct AssociativeCache<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tpub buckets: Vec<AssociativeCacheBucket<K, V>>,\n}\n\nimpl<K, V> AssociativeCache<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tpub fn try_new(settings: AssociativeCacheSettings) -> Option<Self> {\n\t\tif let Err(problems) = settings.validate() {\n\t\t\tlog::error!(\"AssociativeCache.try_new: validation failed: {}\", problems.join(\", \"));\n\t\t\treturn None;\n\t\t}\n\t\t// Geometry resolution (and its capacity-conservation check) lives in the\n\t\t// contract-protected `factory::make_cache`, which hands us already-resolved\n\t\t// settings. Here we group the `n` logical buckets into adjacent pairs.\n\t\tinfo!(\"AssociativeCache.try_new: settings={settings:?}\");\n\t\tlet n = settings.num_of_buckets;\n\t\tlet physical = (n + 1) / 2;\n\t\tlet mut buckets = Vec::with_capacity(physical);\n\t\tfor p in 0..physical {\n\t\t\tlet paired = 2 * p + 1 < n;\n\t\t\tbuckets.push(AssociativeCacheBucket::with_layout(&settings, paired));\n\t\t}\n\t\tSome(Self { buckets })\n\t}\n\n\tpub fn new(settings: AssociativeCacheSettings) -> Self {\n\t\tSelf::try_new(settings).expect(\"AssociativeCache::new: initialization failed\")\n\t}\n\n\t/// Insert a key-value pair into the cache (probation MRU of its bucket).\n\tpub fn put(&mut self, key: K, value: V) {\n\t\tlet p = hash(&key) % self.buckets.len();\n\t\tdebug!(\"AssociativeCache.put: key={key:?} bucket={p}\");\n\t\tself.buckets[p].pair_put(Item::new(key, value));\n\t}\n\n\t/// Returns the value of key if exists wrapper in Some ans None otherwise\n\t///\n\t/// As a side effect applies the SLRU hit rule (promote on second hit).\n\tpub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {\n\t\tlet p = hash(key) % self.buckets.len();\n\t\tlet data = self.buckets[p].pair_get(key);\n\t\tdebug!(\n\t\t\t\"AssociativeCache.get_and_update_item: key={key:?} bucket={p} hit={}\",\n\t\t\tdata.is_some()\n\t\t);\n\t\tSome(&data?.value)\n\t}\n}\n\nimpl<K, V> framework::Cache<K, V> for AssociativeCache<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn put(&mut self, key: K, value: V) {\n\t\tAssociativeCache::put(self, key, value);\n\t}\n\n\tfn get(&mut self, key: &K) -> Option<&V> {\n\t\tAssociativeCache::get_and_update_item(self, key)\n\t}\n}\n\nimpl<K, V> Display for AssociativeCache<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug + Display,\n\tV: Eq + Copy + Debug + Display,\n{\n\tfn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {\n\t\tfor bucket in &self.buckets {\n\t\t\twriteln!(f, \"{}\", bucket)?;\n\t\t}\n\t\tOk(())\n\t}\n}\n\n#[cfg(test)]\nmod tests {\n\tuse super::*;\n\tuse crate::shared::traits::bucket::Bucket;\n\tuse crate::shared::utils::get_index;\n\tuse crate::test_utils::find_keys_for_bucket;\n\n\tfn small_cache(policy: crate::shared::eviction_policy::EvictionPolicyKind) -> AssociativeCache<i64, i64> {\n\t\tAssociativeCache::new(AssociativeCacheSettings {\n\t\t\tnum_of_buckets: 4,\n\t\t\tbucket_size: 2,\n\t\t\teviction_policy: policy,\n\t\t})\n\t}\n\n\t#[test]\n\tfn get_miss_returns_none() {\n\t\tlet mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicyKind::Fifo);\n\t\tassert!(cache.get_and_update_item(&42).is_none());\n\t}\n\n\t#[test]\n\tfn put_then_get() {\n\t\tlet mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicyKind::Fifo);\n\t\tcache.put(1, 10);\n\t\tassert_eq!(*cache.get_and_update_item(&1).unwrap(), 10);\n\t}\n\n\t#[test]\n\tfn put_overwrites_existing_key() {\n\t\tlet mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicyKind::Fifo);\n\t\tcache.put(1, 10);\n\t\tcache.put(1, 20);\n\t\tassert_eq!(*cache.get_and_update_item(&1).unwrap(), 20);\n\t}\n\n\t#[test]\n\tfn multiple_keys_across_buckets() {\n\t\tlet mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicyKind::Fifo);\n\t\tfor i in 0..4 {\n\t\t\tcache.put(i, i * 10);\n\t\t}\n\t\tfor i in 0..4 {\n\t\t\tassert_eq!(*cache.get_and_update_item(&i).unwrap(), i * 10);\n\t\t}\n\t}\n\n\t#[test]\n\tfn eviction_when_bucket_full() {\n\t\t// Three keys in the same physical bucket (2 + 2 = 4 slots): all fit.\n\t\tlet mut cache = small_cache(crate::shared::eviction_policy::EvictionPolicyKind::Fifo);\n\t\tlet target_bucket_idx = 0;\n\t\tlet same_bucket_keys = find_keys_for_bucket(target_bucket_idx, cache.buckets.len(), 3);\n\n\t\tcache.put(same_bucket_keys[0], 10);\n\t\tcache.put(same_bucket_keys[1], 20);\n\t\tcache.put(same_bucket_keys[2], 30);\n\n\t\tassert_eq!(*cache.get_and_update_item(&same_bucket_keys[0]).unwrap(), 10);\n\t\tassert_eq!(*cache.get_and_update_item(&same_bucket_keys[1]).unwrap(), 20);\n\t\tassert_eq!(*cache.get_and_update_item(&same_bucket_keys[2]).unwrap(), 30);\n\t}\n\n\t#[test]\n\tfn pair_capacity_and_slot_legality_under_overfill() {\n\t\tfor n in [1usize, 2, 3, 4, 5, 8] {\n\t\t\tlet mut cache: AssociativeCache<i64, i64> = AssociativeCache::new(AssociativeCacheSettings {\n\t\t\t\tnum_of_buckets: n,\n\t\t\t\tbucket_size: 3,\n\t\t\t\teviction_policy: crate::shared::eviction_policy::EvictionPolicyKind::ClassicLRU,\n\t\t\t});\n\t\t\tlet total: usize = cache.buckets.iter().map(|b| b.get_max_size()).sum();\n\t\t\tassert_eq!(total, n * 3, \"capacity must be conserved\");\n\t\t\tfor k in 0..1000i64 {\n\t\t\t\tlet key = (k * 7919) % 97;\n\t\t\t\tif cache.get_and_update_item(&key).is_none() {\n\t\t\t\t\tcache.put(key, key);\n\t\t\t\t}\n\t\t\t\tlet mut seen = std::collections::HashSet::new();\n\t\t\t\tlet m = cache.buckets.len();\n\t\t\t\tfor (idx, b) in cache.buckets.iter().enumerate() {\n\t\t\t\t\tassert!(b.size() <= b.get_max_size());\n\t\t\t\t\tfor it in b.get_items() {\n\t\t\t\t\t\tassert_eq!(get_index(&it.key, m), idx);\n\t\t\t\t\t\tassert!(seen.insert(it.key), \"duplicate key {}\", it.key);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\n\t#[test]\n\tfn slru_second_hit_protects() {\n\t\t// One 4-slot physical bucket (protected cap 3, probation >= 1). A is\n\t\t// promoted to protected by a get; a stream of new keys then flows\n\t\t// through probation without evicting A.\n\t\tlet mut cache: AssociativeCache<i64, i64> = AssociativeCache::new(AssociativeCacheSettings {\n\t\t\tnum_of_buckets: 2,\n\t\t\tbucket_size: 2,\n\t\t\teviction_policy: crate::shared::eviction_policy::EvictionPolicyKind::ClassicLRU,\n\t\t});\n\t\tassert_eq!(cache.buckets.len(), 1);\n\t\tlet (a, b, c, d, e) = (100i64, 200, 300, 400, 500);\n\t\tcache.put(a, 1);\n\t\tassert_eq!(*cache.get_and_update_item(&a).unwrap(), 1);\n\t\tfor k in [b, c, d, e] {\n\t\t\tassert!(cache.get_and_update_item(&k).is_none());\n\t\t\tcache.put(k, k);\n\t\t}\n\t\tassert_eq!(cache.buckets[0].get_items().len(), 4);\n\t\tassert_eq!(*cache.get_and_update_item(&a).unwrap(), 1, \"protected item survives the scan\");\n\t\tassert!(cache.get_and_update_item(&b).is_none(), \"probation LRU was evicted\");\n\t}\n}\n"
+}
+```
+
+### 12:24:40 tool: Write
+
+```json
+{
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/variants/v001/attempts/01/overlay/src/associative_cache/associative_cache_bucket.rs",
+  "content": "//! Segmented-LRU (SLRU) bucket on the merged-pair layout, with 24-byte items.\n//!\n//! One physical bucket merges a pair of logical buckets\n//! (`2 * bucket_size` slots when paired, `bucket_size` for the trailing\n//! unpaired bucket), backed by one contiguous `Vec` split at `len0`. The two\n//! segments are SLRU segments shared by every key of the physical bucket:\n//!\n//! - `items[0..len0]` is **probation** (index 0 = LRU, `len0 - 1` = MRU).\n//! - `items[len0..]` is **protected** (index `len0` = LRU, last = MRU).\n//!\n//! - get, protected hit: rotate to protected MRU (no-op if already MRU).\n//! - get, probation hit: promote to protected MRU. If protected then exceeds\n//!   `protected_cap`, its LRU item is demoted to probation's MRU end by moving\n//!   the boundary (`len0 += 1`). A get never drops an item.\n//! - put (new key): if full, evict `items[0]` (probation LRU, or protected LRU\n//!   when probation is empty), then place the new item at probation MRU.\n//!\n//! H01 (cycle 0004) movement fixes:\n//! - Lookup scans MRU-first (`rposition`).\n//! - A protected hit already at MRU does not rotate.\n//! - A full-bucket miss with a non-empty probation overwrites `items[0]` and\n//!   rotates only the probation segment, leaving protected untouched.\n//! - `put_indexed` returns the final index, so `Bucket::put` need not re-scan.\n//!\n//! SLRU applies only when the configured policy is `ClassicLRU`. Any other\n//! policy uses a single-segment fallback through the boxed policy, with\n//! `len0 == items.len()`.\n\nuse super::associative_cache_settings::AssociativeCacheSettings;\nuse crate::shared::eviction_policy::EvictionPolicyKind;\nuse crate::shared::item::Item;\nuse crate::shared::traits::bucket::Bucket;\nuse crate::shared::traits::eviction_policy::EvictionPolicy;\n\nuse std::fmt::{Debug, Display, Formatter};\nuse std::hash::Hash;\nuse std::mem;\n\n#[derive(Debug)]\npub struct AssociativeCacheBucket<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\titems: Vec<Item<K, V>>,\n\t/// Number of items in probation (`items[0..len0]`). In the fallback\n\t/// (non-SLRU) mode this always equals `items.len()`.\n\tlen0: usize,\n\t/// Maximum number of items in the protected segment.\n\tprotected_cap: usize,\n\t/// Total slots in this physical bucket.\n\tmax_size: usize,\n\t/// Whether SLRU is active (policy is ClassicLRU).\n\tslru: bool,\n\teviction_policy: Box<dyn EvictionPolicy<K, V>>,\n}\n\nimpl<K, V> AssociativeCacheBucket<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\t/// A single (unpaired) bucket of `settings.bucket_size` slots.\n\tpub fn new(settings: &AssociativeCacheSettings) -> Self {\n\t\tSelf::with_layout(settings, false)\n\t}\n\n\t/// A paired (`2 * bucket_size` slots) or unpaired (`bucket_size`) bucket.\n\tpub fn with_layout(settings: &AssociativeCacheSettings, paired: bool) -> Self {\n\t\tlet max_size = if paired { 2 * settings.bucket_size } else { settings.bucket_size };\n\t\t// Protected gets 3/4 of the slots, keeping at least one probation slot.\n\t\tlet protected_cap = (max_size * 3 / 4).min(max_size.saturating_sub(1));\n\t\tSelf {\n\t\t\titems: Vec::with_capacity(max_size),\n\t\t\tlen0: 0,\n\t\t\tprotected_cap,\n\t\t\tmax_size,\n\t\t\tslru: settings.eviction_policy == EvictionPolicyKind::ClassicLRU,\n\t\t\teviction_policy: settings.eviction_policy.build(),\n\t\t}\n\t}\n\n\t/// MRU-first lookup: hot keys sit at the protected tail.\n\t#[inline]\n\tfn find(&self, key: &K) -> Option<usize> {\n\t\tself.items.iter().rposition(|d| d.key == *key)\n\t}\n\n\t/// Applies the hit rule to the item at `pos`. Returns its new index.\n\t#[inline]\n\tfn hit(&mut self, pos: usize) -> usize {\n\t\tif !self.slru {\n\t\t\tlet idx = self.eviction_policy.get_from_position(&mut self.items, pos);\n\t\t\tself.len0 = self.items.len();\n\t\t\treturn idx;\n\t\t}\n\t\tlet last = self.items.len() - 1;\n\t\tif pos >= self.len0 {\n\t\t\t// Protected hit: move to protected MRU (already there => no-op).\n\t\t\tif pos != last {\n\t\t\t\tself.items[pos..].rotate_left(1);\n\t\t\t}\n\t\t\treturn last;\n\t\t}\n\t\tif self.protected_cap == 0 {\n\t\t\t// No protected segment (1-slot bucket): plain LRU in probation.\n\t\t\tself.items[pos..self.len0].rotate_left(1);\n\t\t\treturn self.len0 - 1;\n\t\t}\n\t\t// Probation hit: promote to protected MRU in one rotate.\n\t\tself.items[pos..].rotate_left(1);\n\t\tself.len0 -= 1;\n\t\tif self.items.len() - self.len0 > self.protected_cap {\n\t\t\t// Demote protected LRU (now at index len0) to probation MRU.\n\t\t\tself.len0 += 1;\n\t\t}\n\t\tlast\n\t}\n\n\t/// Lookup. Scans the bucket once (MRU-first) and applies the hit rule.\n\tpub fn pair_get(&mut self, key: &K) -> Option<&Item<K, V>> {\n\t\tlet pos = self.find(key)?;\n\t\tlet j = self.hit(pos);\n\t\tSome(&self.items[j])\n\t}\n\n\t/// Insert. Updates in place (with the hit rule) if the key is resident.\n\t/// Returns the item dropped from the bucket, if any.\n\t#[inline]\n\tpub fn pair_put(&mut self, item: Item<K, V>) -> Option<Item<K, V>> {\n\t\tself.put_indexed(item).1\n\t}\n\n\t/// Body of `pair_put`. Returns `(final index of the key, dropped item)`.\n\t#[inline]\n\tfn put_indexed(&mut self, item: Item<K, V>) -> (usize, Option<Item<K, V>>) {\n\t\tif let Some(p) = self.find(&item.key) {\n\t\t\tself.items[p].value = item.value;\n\t\t\tlet idx = self.hit(p);\n\t\t\treturn (idx, None);\n\t\t}\n\n\t\tif !self.slru {\n\t\t\tlet evicted = if self.items.len() >= self.max_size && !self.items.is_empty() {\n\t\t\t\tlet c = self.eviction_policy.eviction_candidate_index(&self.items);\n\t\t\t\tSome(self.items.remove(c))\n\t\t\t} else {\n\t\t\t\tNone\n\t\t\t};\n\t\t\tself.items.push(item);\n\t\t\tself.len0 = self.items.len();\n\t\t\treturn (self.items.len() - 1, evicted);\n\t\t}\n\n\t\tif self.items.len() >= self.max_size && !self.items.is_empty() {\n\t\t\tif self.len0 > 0 {\n\t\t\t\t// Probation-only eviction: overwrite probation LRU and rotate the\n\t\t\t\t// new item to probation MRU. Protected is untouched; len0 unchanged.\n\t\t\t\tlet old = mem::replace(&mut self.items[0], item);\n\t\t\t\tself.items[0..self.len0].rotate_left(1);\n\t\t\t\treturn (self.len0 - 1, Some(old));\n\t\t\t}\n\t\t\t// All-protected fallback: evict protected LRU, insert at probation MRU.\n\t\t\tlet old = self.remove_at(0);\n\t\t\tlet idx = self.len0;\n\t\t\tself.items.insert(idx, item);\n\t\t\tself.len0 += 1;\n\t\t\treturn (idx, Some(old));\n\t\t}\n\n\t\tlet idx = self.len0;\n\t\tself.items.insert(idx, item);\n\t\tself.len0 += 1;\n\t\t(idx, None)\n\t}\n}\n\nimpl<K, V> Bucket<K, V> for AssociativeCacheBucket<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug,\n\tV: Eq + Copy + Debug,\n{\n\tfn get_items(&self) -> &Vec<Item<K, V>> {\n\t\t&self.items\n\t}\n\n\tfn get_items_mut(&mut self) -> &mut Vec<Item<K, V>> {\n\t\t&mut self.items\n\t}\n\n\tfn get_max_size(&self) -> usize {\n\t\tself.max_size\n\t}\n\n\tfn get_eviction_policy(&self) -> &dyn EvictionPolicy<K, V> {\n\t\t&*self.eviction_policy\n\t}\n\n\tfn put(&mut self, item: Item<K, V>) -> (&Item<K, V>, Option<Item<K, V>>) {\n\t\tlet (idx, dropped) = self.put_indexed(item);\n\t\t(&self.items[idx], dropped)\n\t}\n\n\tfn get(&mut self, key: &K) -> Option<&Item<K, V>> {\n\t\tself.pair_get(key)\n\t}\n\n\tfn get_position(&self, key: &K) -> Option<usize> {\n\t\tself.find(key)\n\t}\n\n\tfn get_from_position(&mut self, position: usize) -> &Item<K, V> {\n\t\tlet index = self.hit(position);\n\t\t&self.items[index]\n\t}\n\n\tfn remove_at(&mut self, index: usize) -> Item<K, V> {\n\t\tdebug_assert!(\n\t\t\tindex < self.items.len(),\n\t\t\t\"remove_at: index {index} out of bounds (len={})\",\n\t\t\tself.items.len()\n\t\t);\n\t\tif index < self.len0 {\n\t\t\tself.len0 -= 1;\n\t\t}\n\t\tself.items.remove(index)\n\t}\n}\n\nimpl<K, V> Display for AssociativeCacheBucket<K, V>\nwhere\n\tK: Hash + Eq + Copy + Debug + Display,\n\tV: Eq + Copy + Debug + Display,\n{\n\tfn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {\n\t\tfor (i, item) in self.items.iter().enumerate() {\n\t\t\tlet seg = if i < self.len0 { \"prob\" } else { \"prot\" };\n\t\t\twriteln!(f, \"    [{seg}] {}\", item)?;\n\t\t}\n\t\tOk(())\n\t}\n}\n\n#[cfg(test)]\nmod tests {\n\tuse super::*;\n\n\t/// One paired bucket: 4 slots, protected cap 3.\n\tfn bucket4(policy: EvictionPolicyKind) -> AssociativeCacheBucket<i64, i64> {\n\t\tAssociativeCacheBucket::with_layout(\n\t\t\t&AssociativeCacheSettings {\n\t\t\t\tnum_of_buckets: 2,\n\t\t\t\tbucket_size: 2,\n\t\t\t\teviction_policy: policy,\n\t\t\t},\n\t\t\ttrue,\n\t\t)\n\t}\n\n\tfn keys(b: &AssociativeCacheBucket<i64, i64>) -> Vec<i64> {\n\t\tb.items.iter().map(|i| i.key).collect()\n\t}\n\n\t#[test]\n\tfn full_miss_with_probation_evicts_items0_and_keeps_protected() {\n\t\tlet mut b = bucket4(EvictionPolicyKind::ClassicLRU);\n\t\tfor k in 1..=4 {\n\t\t\tassert!(b.pair_put(Item::new(k, k * 10)).is_none());\n\t\t}\n\t\tassert_eq!(b.len0, 4);\n\t\t// Promote 1: [2,3,4 | 1].\n\t\tassert_eq!(b.pair_get(&1).unwrap().key, 1);\n\t\tassert_eq!(keys(&b), vec![2, 3, 4, 1]);\n\t\tassert_eq!(b.len0, 3);\n\t\t// Full miss: probation LRU (2) goes; 5 lands at probation MRU.\n\t\tlet dropped = b.pair_put(Item::new(5, 50));\n\t\tassert_eq!(dropped.unwrap().key, 2);\n\t\tassert_eq!(keys(&b), vec![3, 4, 5, 1]);\n\t\tassert_eq!(b.len0, 3);\n\t\tassert_eq!(b.items.len(), 4);\n\t}\n\n\t#[test]\n\tfn full_miss_all_protected_evicts_protected_lru() {\n\t\tlet mut b = bucket4(EvictionPolicyKind::ClassicLRU);\n\t\t// Force an all-protected full bucket (not reachable via the public API\n\t\t// with a 3/4 protected cap, but the fallback must still be correct).\n\t\tb.items = (1..=4).map(|k| Item::new(k, k * 10)).collect();\n\t\tb.len0 = 0;\n\t\tlet dropped = b.pair_put(Item::new(9, 90));\n\t\tassert_eq!(dropped.unwrap().key, 1);\n\t\tassert_eq!(keys(&b), vec![9, 2, 3, 4]);\n\t\tassert_eq!(b.len0, 1);\n\t\tassert_eq!(b.items.len(), 4);\n\t}\n\n\t#[test]\n\tfn protected_mru_hit_is_stable() {\n\t\tlet mut b = bucket4(EvictionPolicyKind::ClassicLRU);\n\t\tb.pair_put(Item::new(1, 10));\n\t\tb.pair_put(Item::new(2, 20));\n\t\tb.pair_get(&1); // promote: [2 | 1]\n\t\tassert_eq!(keys(&b), vec![2, 1]);\n\t\tassert_eq!(b.len0, 1);\n\t\tfor _ in 0..3 {\n\t\t\tassert_eq!(b.pair_get(&1).unwrap().value, 10);\n\t\t\tassert_eq!(keys(&b), vec![2, 1]);\n\t\t\tassert_eq!(b.len0, 1);\n\t\t}\n\t\tassert_eq!(b.get_from_position(1).key, 1);\n\t\tassert_eq!(keys(&b), vec![2, 1]);\n\t}\n\n\t#[test]\n\tfn bucket_put_returns_inserted_key_for_every_branch() {\n\t\t// SLRU insert (not full).\n\t\tlet mut b = bucket4(EvictionPolicyKind::ClassicLRU);\n\t\tfor k in 1..=4 {\n\t\t\tlet (it, d) = b.put(Item::new(k, k * 10));\n\t\t\tassert_eq!((it.key, it.value), (k, k * 10));\n\t\t\tassert!(d.is_none());\n\t\t}\n\t\t// Resident key (probation hit -> promotion).\n\t\tlet (it, d) = b.put(Item::new(2, 21));\n\t\tassert_eq!((it.key, it.value), (2, 21));\n\t\tassert!(d.is_none());\n\t\t// Resident key (protected MRU hit).\n\t\tlet (it, _) = b.put(Item::new(2, 22));\n\t\tassert_eq!((it.key, it.value), (2, 22));\n\t\t// Probation-rotate eviction.\n\t\tlet (it, d) = b.put(Item::new(7, 70));\n\t\tassert_eq!((it.key, it.value), (7, 70));\n\t\tassert!(d.is_some());\n\n\t\t// All-protected fallback.\n\t\tlet mut b = bucket4(EvictionPolicyKind::ClassicLRU);\n\t\tb.items = (1..=4).map(|k| Item::new(k, k * 10)).collect();\n\t\tb.len0 = 0;\n\t\tlet (it, d) = b.put(Item::new(8, 80));\n\t\tassert_eq!((it.key, it.value), (8, 80));\n\t\tassert_eq!(d.unwrap().key, 1);\n\n\t\t// Non-SLRU push (with and without eviction) and resident update.\n\t\tlet mut b = bucket4(EvictionPolicyKind::Fifo);\n\t\tfor k in 1..=5 {\n\t\t\tlet (it, _) = b.put(Item::new(k, k * 10));\n\t\t\tassert_eq!((it.key, it.value), (k, k * 10));\n\t\t}\n\t\tassert_eq!(b.len0, b.items.len());\n\t\tlet (it, d) = b.put(Item::new(3, 33));\n\t\tassert_eq!((it.key, it.value), (3, 33));\n\t\tassert!(d.is_none());\n\t}\n\n\t#[test]\n\tfn invariants_hold_under_mixed_workload() {\n\t\tfor policy in [EvictionPolicyKind::ClassicLRU, EvictionPolicyKind::Lfu] {\n\t\t\tlet mut b = bucket4(policy);\n\t\t\tfor k in 0..2000i64 {\n\t\t\t\tlet key = (k * 7919) % 13;\n\t\t\t\tif b.pair_get(&key).is_none() {\n\t\t\t\t\tb.pair_put(Item::new(key, key));\n\t\t\t\t}\n\t\t\t\tassert!(b.items.len() <= b.max_size);\n\t\t\t\tassert!(b.len0 <= b.items.len());\n\t\t\t\tassert!(b.items.len() - b.len0 <= b.protected_cap.max(0) || !b.slru);\n\t\t\t\tlet mut seen = std::collections::HashSet::new();\n\t\t\t\tfor it in &b.items {\n\t\t\t\t\tassert!(seen.insert(it.key));\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}\n"
+}
+```
+
+### 12:24:45 thinking
+
+
+
+### 12:24:47 tool: Edit
+
+```json
+{
+  "replace_all": false,
+  "file_path": "/home/user/cache-evolve/outputs/associative_cache_2026-10-19_11-53-18-215/cycles/0004/variants/v001/attempts/01/overlay/src/associative_cache/associative_cache_bucket.rs",
+  "old_string": "\t\t\t\tassert!(b.items.len() - b.len0 <= b.protected_cap.max(0) || !b.slru);",
+  "new_string": "\t\t\t\tassert!(!b.slru || b.items.len() - b.len0 <= b.protected_cap);"
+}
+```
+
+### 12:24:55 thinking
+
+
+
+### 12:24:55 chat
+
+I've written the v001 overlay for H01, but I couldn't compile it or run any tests. This session only had read/write/edit tools, so all four gates (build, contract, universal invariant, invariant) are still unchecked until the harness runs them.
+
+**The change** is all in `overlay/src/associative_cache/associative_cache_bucket.rs`, with the SLRU rules kept as the parent had them:
+1. **MRU-first lookup:** `find()` now scans from the newest end (`rposition`). I also added a `get_position` override that calls `find`.
+2. **No pointless rotate:** a protected hit on the item that's already most-recent returns straight away without moving anything.
+3. **Probation-only eviction:** when the bucket is full and probation isn't empty, the new item overwrites slot 0 and only the probation segment rotates. Protected items don't move and the segment boundary stays put. The rare all-protected case still removes slot 0 and inserts as before.
+4. **No re-scan on put:** a new private `put_indexed` returns where the key ended up, so `Bucket::put` uses that index directly. `pair_put` now just calls `put_indexed`.
+
+**Tests added in the bucket file:** the three ported tests, one test that `Bucket::put` returns the inserted key on every branch, and one test that runs a mixed workload and checks the bucket rules after every step. The ported tests are written from the hypothesis's description; I didn't open cycle-0003 v002's code. The all-protected case can't happen through normal puts and gets (protected is capped at 3/4 of the slots), so its tests set the bucket's internal state by hand.
+
+**Copied unchanged from the parent:** `src/associative_cache/mod.rs`, `src/shared/item.rs` (the 24-byte item), `src/shared/eviction_policy.rs` and `src/shared/traits/eviction_policy.rs`. I couldn't list the parent's overlay folder, so I found these by opening likely paths. If the parent changed any file I didn't think to check, the build will fail with a missing-symbol error. That would point to an incomplete copy, not a fault in the hypothesis.
+
+
+---
+
+- finished: 2026-10-19T12:24:56+00:00
+- duration: 196.59s
+- status: ok
+- input_tokens: 30
+- output_tokens: 25215
+- cache_read_tokens: 620315
+- cache_write_tokens: 61980
+- cost_usd: 1.124323

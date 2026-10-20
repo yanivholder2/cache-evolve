@@ -124,7 +124,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | ID | Mode | Subject | Model | Status | Session | Run dir | Global best vs baseline | PR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F01 | full_fitness_vector | dash | claude-opus-5-5 | done | [session](https://claude.ai/code/session_01WAowihAggUXk2Qi38UYmw7) | `v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-19_11-52-26-211` | hit-rate 0.713 vs 0.663; per-op-time 67 vs 183; metadata-size 40 = 40 | [#234](https://github.com/yanivholder2/cache-evolve/pull/234) |
-| F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
+| F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | done | https://claude.ai/code/session_015Jo8GAf5i1jRV8GRQRojkK | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-opus-5-5_2026-10-19_11-53-18-215` | hit-rate 0.734 vs 0.661, metadata 16 vs 40, per-op 45 vs 69 (score 0.256) | https://github.com/yanivholder2/cache-evolve/pull/235 |
 | F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | todo | | | | |
 | F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | todo | | | | |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
@@ -134,10 +134,10 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F09 | full_fitness_vector | s3_fifo | claude-sonnet-5-5 | todo | | | | |
 | F10 | full_fitness_vector | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | F11 | full_fitness_vector | dash | claude-haiku-5-5 | todo | | | | |
-| F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | todo | | | | |
+| F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_016kRPvF7L8PHK3phJHi1jKZ) | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_11-17-39-256` | hit-rate 0.728 vs 0.661; per-op-time 51 vs 69; metadata-size 40 = 40 | [#240](https://github.com/yanivholder2/cache-evolve/pull/240) |
 | F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01UB8SgNBhVia7sv4HnZkAjN) | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_11-17-42-329` | hit-rate 0.724 vs 0.665; per-op-time 35 vs 41; metadata-size 16 vs 48 | [#241](https://github.com/yanivholder2/cache-evolve/pull/241) |
 | F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | todo | | | | |
-| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | todo | | | | |
+| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01EYsUrbsS22NguLbL53fDxv) | `v2_runs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_09-59-28-671` | hit-rate 0.742 vs 0.736; per-op-time 54 vs 132; metadata-size 32 vs 48 | [#237](https://github.com/yanivholder2/cache-evolve/pull/237) |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | H02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
 | H03 | only_hit_rate | lru_cache | claude-opus-5-5 | todo | | | | |
