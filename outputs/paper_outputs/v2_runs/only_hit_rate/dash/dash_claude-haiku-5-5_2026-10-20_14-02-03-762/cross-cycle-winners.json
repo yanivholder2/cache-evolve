@@ -1,0 +1,581 @@
+{
+  "winners": [
+    "cycle/0009/v003"
+  ],
+  "scores": {},
+  "fitness_vectors": [
+    {
+      "variant": "baseline",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6634
+            }
+          ],
+          "summary": 0.6634,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 183,
+              "p99_ns": 376
+            },
+            {
+              "op": "put",
+              "p50_ns": 142,
+              "p99_ns": 242
+            }
+          ],
+          "summary": 183,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6404000000000001
+            }
+          ],
+          "summary": 0.6404,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6787000000000001
+            }
+          ],
+          "summary": 0.6787,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6625
+            }
+          ],
+          "summary": 0.6625,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6787000000000001
+            }
+          ],
+          "summary": 0.6787,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6785
+            }
+          ],
+          "summary": 0.6785,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6633
+            }
+          ],
+          "summary": 0.6633,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6828
+            }
+          ],
+          "summary": 0.6828,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6731999999999999
+            }
+          ],
+          "summary": 0.6732,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6785
+            }
+          ],
+          "summary": 0.6785,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6829999999999999
+            }
+          ],
+          "summary": 0.683,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6828
+            }
+          ],
+          "summary": 0.6828,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6634
+            }
+          ],
+          "summary": 0.6634,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6820999999999999
+            }
+          ],
+          "summary": 0.6821,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6634
+            }
+          ],
+          "summary": 0.6634,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6634
+            }
+          ],
+          "summary": 0.6634,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6843
+            }
+          ],
+          "summary": 0.6843,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6829999999999999
+            }
+          ],
+          "summary": 0.683,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6634
+            }
+          ],
+          "summary": 0.6634,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6842
+            }
+          ],
+          "summary": 0.6842,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6844
+            }
+          ],
+          "summary": 0.6844,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6633
+            }
+          ],
+          "summary": 0.6633,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6843
+            }
+          ],
+          "summary": 0.6843,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6844
+            }
+          ],
+          "summary": 0.6844,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6474
+            }
+          ],
+          "summary": 0.6474,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6829999999999999
+            }
+          ],
+          "summary": 0.683,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6634
+            }
+          ],
+          "summary": 0.6634,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6906
+            }
+          ],
+          "summary": 0.6906,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6808
+            }
+          ],
+          "summary": 0.6808,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6634
+            }
+          ],
+          "summary": 0.6634,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6831
+            }
+          ],
+          "summary": 0.6831,
+          "higher_is_better": true
+        }
+      ]
+    }
+  ],
+  "best_per_dimension": {
+    "hit-rate": {
+      "variant": "cycle/0009/v003",
+      "summary": 0.6906
+    },
+    "metadata-size": {
+      "variant": "baseline",
+      "summary": 40
+    },
+    "per-op-time": {
+      "variant": "baseline",
+      "summary": 183
+    }
+  }
+}
