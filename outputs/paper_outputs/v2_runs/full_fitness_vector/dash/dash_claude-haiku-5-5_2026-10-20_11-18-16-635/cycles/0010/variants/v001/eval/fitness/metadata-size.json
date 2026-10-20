@@ -1,0 +1,15 @@
+{
+  "dim": "metadata-size",
+  "values": [
+    {
+      "type": "Item<u64,u64>",
+      "bytes": 32
+    },
+    {
+      "type": "Dash<u64,u64,DashSegment>",
+      "bytes": 24
+    }
+  ],
+  "summary": 32,
+  "higher_is_better": false
+}

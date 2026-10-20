@@ -133,7 +133,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F08 | full_fitness_vector | lru_cache | claude-sonnet-5-5 | todo | | | | |
 | F09 | full_fitness_vector | s3_fifo | claude-sonnet-5-5 | todo | | | | |
 | F10 | full_fitness_vector | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
-| F11 | full_fitness_vector | dash | claude-haiku-5-5 | running | [session](https://claude.ai/code/session_013hP3e4eiFKeHTZ1j2ZR38e) | | | |
+| F11 | full_fitness_vector | dash | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_013hP3e4eiFKeHTZ1j2ZR38e) | `v2_runs/full_fitness_vector/dash/dash_claude-haiku-5-5_2026-10-20_11-18-16-635` | hit-rate 0.691 vs 0.663; per-op-time 75 vs 183; metadata-size 32 vs 40 | [#238](https://github.com/yanivholder2/cache-evolve/pull/238) |
 | F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | todo | | | | |
 | F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | todo | | | | |
 | F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | todo | | | | |
@@ -162,3 +162,11 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   cycle with survivors. Cycle 9 v003 was rejected because its insight writer
   ended its turn "waiting for the agent's report" without writing `insight.md`.
   That is an agent-behaviour failure, not a limit.
+- **F11:** exited 1 twice (cycles 4 and 8), both before any variant ran. Each
+  time the hypotheses-writer started a background Explore agent, said it would
+  wait for the agent's report, and ended its turn without writing any
+  `H<NN>.md`. This is the same agent behaviour as F01 cycle 9, not a usage
+  limit. `--hypothesis-attempts` only retries scope violations, not a
+  wrong file count, so each one ended the run. Both were resumed with
+  `--continue` and the run finished all 10 cycles, 3/3 survivors in every
+  cycle.
