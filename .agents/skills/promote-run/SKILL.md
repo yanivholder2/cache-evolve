@@ -54,11 +54,10 @@ non-obvious — follow, don't rediscover.
    raw run dir (`outputs/<subject>_<timestamp>/`) so the run isn't left
    duplicated. Never delete before the copy is confirmed good.
 
-5. **Mark the plan row.** If `docs/paper-runs-plan.md` has a row for this run
-   (same mode, subject, model), set it to `done` (or `failed`, with a Notes
-   entry) and fill in the run dir and global-best vs baseline, in the same
-   commit as the copy. The PR link is only known after step 6 — add it in a
-   small follow-up commit on the same branch (never amend).
+5. **Don't edit the plan doc.** `docs/paper-runs-plan.md` is not updated per
+   run (concurrent PRs conflicted on it); the promoted dir on `main` is the
+   run's status. Put run incidents (usage-limit resumes, agent or infra
+   failures) in the PR description instead.
 
 6. **Commit + PR.** Commit (subject, cycles completed, cohort size, global-best
    hit-rate vs baseline — from `leaderboard.md` / `cycles-ledger.jsonl`). Push,
