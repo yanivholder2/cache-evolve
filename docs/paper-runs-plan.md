@@ -135,7 +135,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F10 | full_fitness_vector | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | F11 | full_fitness_vector | dash | claude-haiku-5-5 | todo | | | | |
 | F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | todo | | | | |
-| F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | running | [session](https://claude.ai/code/session_01UB8SgNBhVia7sv4HnZkAjN) | | | |
+| F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01UB8SgNBhVia7sv4HnZkAjN) | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_11-17-42-329` | hit-rate 0.724 vs 0.665; per-op-time 35 vs 41; metadata-size 16 vs 48 | |
 | F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | todo | | | | |
 | F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | todo | | | | |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
@@ -162,3 +162,10 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   cycle with survivors. Cycle 9 v003 was rejected because its insight writer
   ended its turn "waiting for the agent's report" without writing `insight.md`.
   That is an agent-behaviour failure, not a limit.
+- **F13:** the detached `setsid nohup` launch did not survive: the harness
+  killed the run with its launcher shell when that Bash call hit its timeout,
+  in cycle 7 with no `EXIT=` line. It was resumed with `--continue` as a
+  tracked background task (2h limit, enough for the ~5 min/cycle left) and
+  finished all 10 cycles, every cycle with survivors. Cycle 1 v003 was
+  rejected at fitness because Maven Central returned HTTP 429 while Gradle
+  fetched `caffeine-3.2.3.jar`, an infra failure rather than the variant's.
