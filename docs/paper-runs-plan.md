@@ -151,7 +151,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H11 | only_hit_rate | dash | claude-haiku-5-5 | todo | | | | |
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | todo | | | | |
 | H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | todo | | | | |
-| H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | running | [session](https://claude.ai/code/session_01MdVbig9j526V8JoEwAkmQk) | | | |
+| H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01MdVbig9j526V8JoEwAkmQk) | `v2_runs/only_hit_rate/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_14-00-19-782` | hit-rate 0.717 vs 0.716 | |
 | H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | todo | | | | |
 
 ## Notes
@@ -181,3 +181,13 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   finished all 10 cycles, every cycle with survivors. Cycle 1 v003 was
   rejected at fitness because Maven Central returned HTTP 429 while Gradle
   fetched `caffeine-3.2.3.jar`, an infra failure rather than the variant's.
+- **H14:** hit the account session limit in cycle 2: all three variant
+  implementers returned "You've hit your session limit · resets 2:10pm (UTC)"
+  and the run exited 1 with `no variants survived in cycle 0002`. It was
+  resumed with `--continue` after the reset and finished all 10 cycles, 3/3
+  survivors in every cycle (about 3.5 min per cycle). The first launch's
+  `setsid nohup … & disown; sleep 20; tail` Bash call hung and was moved into
+  a harness background task, as in F13. The run was already in its own
+  session, so killing only the stuck launcher shells left it running.
+  Launching with `setsid -f bash -c '…' > $L 2>&1 < /dev/null` (no `&`, no
+  sleep) returned immediately on the resume.
