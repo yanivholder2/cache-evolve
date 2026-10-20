@@ -1,0 +1,15 @@
+{
+  "dim": "metadata-size",
+  "values": [
+    {
+      "type": "Item<u64,u64>",
+      "bytes": 16
+    },
+    {
+      "type": "AssociativeCache<u64,u64>",
+      "bytes": 24
+    }
+  ],
+  "summary": 16,
+  "higher_is_better": false
+}
