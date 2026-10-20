@@ -87,7 +87,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F01 | full_fitness_vector | dash | claude-opus-5-5 | todo | | | | |
 | F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
-| F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | running | https://claude.ai/code/session_01JccMG2g1aPbYViN43Hg9hf | | | |
+| F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | https://claude.ai/code/session_01JccMG2g1aPbYViN43Hg9hf | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-19_11-55-52-682` | hit-rate 0.731 vs 0.665; metadata 8 vs 48; per-op-time 26 vs 41 | |
 | F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | todo | | | | |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | F06 | full_fitness_vector | dash | claude-sonnet-5-5 | todo | | | | |
