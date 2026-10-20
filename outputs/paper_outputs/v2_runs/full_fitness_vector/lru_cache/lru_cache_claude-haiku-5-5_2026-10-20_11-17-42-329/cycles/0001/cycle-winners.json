@@ -1,0 +1,108 @@
+{
+  "cycle": "0001",
+  "winners": [],
+  "scores": {
+    "v001": -0.004596698101677392,
+    "v002": -0.04364528792612041
+  },
+  "fitness_vectors": [
+    {
+      "variant": "v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7241
+            }
+          ],
+          "summary": 0.7241,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Node<u64,u64>",
+              "bytes": 56
+            },
+            {
+              "type": "LruCache<u64,u64>",
+              "bytes": 152
+            }
+          ],
+          "summary": 56,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 46,
+              "p99_ns": 94
+            },
+            {
+              "op": "put",
+              "p50_ns": 84,
+              "p99_ns": 164
+            }
+          ],
+          "summary": 46,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6754000000000001
+            }
+          ],
+          "summary": 0.6754,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Node<u64,u64>",
+              "bytes": 56
+            },
+            {
+              "type": "LruCache<u64,u64>",
+              "bytes": 112
+            }
+          ],
+          "summary": 56,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 45,
+              "p99_ns": 80
+            },
+            {
+              "op": "put",
+              "p50_ns": 68,
+              "p99_ns": 171
+            }
+          ],
+          "summary": 45,
+          "higher_is_better": false
+        }
+      ]
+    }
+  ]
+}

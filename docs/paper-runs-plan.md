@@ -112,6 +112,8 @@ Paste into a fresh cloud session, replacing `<ID>`:
   on the session's branch.
 - **Finish:** in the `promote-run` PR, set `done` (or `failed`) and fill in the
   run dir, global-best vs baseline, and PR link.
+- **Merge:** a `promote-run` PR only adds run outputs and edits this file (no
+  code), so merge it without waiting for CI.
 - Touch only your own row — rows are independent lines, so merge conflicts stay
   trivial.
 - A `failed` run records its root cause under [Notes](#notes) (row ID, one
@@ -124,8 +126,8 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | ID | Mode | Subject | Model | Status | Session | Run dir | Global best vs baseline | PR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F01 | full_fitness_vector | dash | claude-opus-5-5 | done | [session](https://claude.ai/code/session_01WAowihAggUXk2Qi38UYmw7) | `v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-19_11-52-26-211` | hit-rate 0.713 vs 0.663; per-op-time 67 vs 183; metadata-size 40 = 40 | [#234](https://github.com/yanivholder2/cache-evolve/pull/234) |
-| F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
-| F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | todo | | | | |
+| F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | done | https://claude.ai/code/session_015Jo8GAf5i1jRV8GRQRojkK | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-opus-5-5_2026-10-19_11-53-18-215` | hit-rate 0.734 vs 0.661, metadata 16 vs 40, per-op 45 vs 69 (score 0.256) | https://github.com/yanivholder2/cache-evolve/pull/235 |
+| F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | https://claude.ai/code/session_01JccMG2g1aPbYViN43Hg9hf | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-19_11-55-52-682` | hit-rate 0.731 vs 0.665; metadata 8 vs 48; per-op-time 26 vs 41 | [#236](https://github.com/yanivholder2/cache-evolve/pull/236) |
 | F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | done | [session](https://claude.ai/code/session_011TQ2JdPeyTHk15EvP95FpY) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-opus-5-5_2026-10-20_12-08-19-021` | hit-rate 0.733 vs 0.716; per-op-time 22 vs 248; metadata-size 8 vs 24 | [#246](https://github.com/yanivholder2/cache-evolve/pull/246) |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | F06 | full_fitness_vector | dash | claude-sonnet-5-5 | todo | | | | |
@@ -133,11 +135,11 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F08 | full_fitness_vector | lru_cache | claude-sonnet-5-5 | todo | | | | |
 | F09 | full_fitness_vector | s3_fifo | claude-sonnet-5-5 | todo | | | | |
 | F10 | full_fitness_vector | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
-| F11 | full_fitness_vector | dash | claude-haiku-5-5 | todo | | | | |
-| F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | todo | | | | |
-| F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | todo | | | | |
-| F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | todo | | | | |
-| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | todo | | | | |
+| F11 | full_fitness_vector | dash | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_013hP3e4eiFKeHTZ1j2ZR38e) | `v2_runs/full_fitness_vector/dash/dash_claude-haiku-5-5_2026-10-20_11-18-16-635` | hit-rate 0.691 vs 0.663; per-op-time 75 vs 183; metadata-size 32 vs 40 | [#238](https://github.com/yanivholder2/cache-evolve/pull/238) |
+| F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_016kRPvF7L8PHK3phJHi1jKZ) | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_11-17-39-256` | hit-rate 0.728 vs 0.661; per-op-time 51 vs 69; metadata-size 40 = 40 | [#240](https://github.com/yanivholder2/cache-evolve/pull/240) |
+| F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01UB8SgNBhVia7sv4HnZkAjN) | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_11-17-42-329` | hit-rate 0.724 vs 0.665; per-op-time 35 vs 41; metadata-size 16 vs 48 | [#241](https://github.com/yanivholder2/cache-evolve/pull/241) |
+| F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_017536x5FADQvAAG92zzSgmx) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_11-17-18-755` | hit-rate 0.722 vs 0.716; per-op-time 41 vs 248; metadata-size 16 vs 24 | [#239](https://github.com/yanivholder2/cache-evolve/pull/239) |
+| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01EYsUrbsS22NguLbL53fDxv) | `v2_runs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_09-59-28-671` | hit-rate 0.742 vs 0.736; per-op-time 54 vs 132; metadata-size 32 vs 48 | [#237](https://github.com/yanivholder2/cache-evolve/pull/237) |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | H02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
 | H03 | only_hit_rate | lru_cache | claude-opus-5-5 | todo | | | | |
@@ -152,7 +154,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | todo | | | | |
 | H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | todo | | | | |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | todo | | | | |
-| H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | todo | | | | |
+| H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Bmw4udWzXC5MBfeYBkWGfV) | `v2_runs/only_hit_rate/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_13-08-10-178` | hit-rate 0.743 vs 0.736 | [#242](https://github.com/yanivholder2/cache-evolve/pull/242) |
 
 ## Notes
 
@@ -162,8 +164,29 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   cycle with survivors. Cycle 9 v003 was rejected because its insight writer
   ended its turn "waiting for the agent's report" without writing `insight.md`.
   That is an agent-behaviour failure, not a limit.
-- **F04:** the container restarted mid-cycle 5, killing the detached run and
-  its waiter. It was resumed with `--continue` and finished all 10 cycles. In
-  cycle 1, v001 and v002 were rejected at fitness because Gradle's cold
-  dependency fetch got HTTP 429 from Maven Central. That is an environment
-  failure, not a variant failure. Every later cycle had 3/3 survivors.
+- **F03:** hit the account session limit twice, in cycle 6 (insight writer,
+  `ZeroTokenUsageError`) and at the start of cycle 8 (hypotheses writer wrote no
+  `H<NN>.md` files). Both times it was resumed with `--continue` after the reset
+  and finished all 10 cycles, all 30 variants surviving.
+- **F04:** the detached `setsid nohup` launch did not survive. When the
+  launcher's Bash call hit its background time limit (~30 min), the harness
+  killed the run with it, mid-cycle 5 with no `EXIT=` line (same as F13). It
+  was resumed with `--continue` and finished all 10 cycles. In cycle 1, v001
+  and v002 were rejected at fitness because Gradle's cold dependency fetch got
+  HTTP 429 from Maven Central. That is an environment failure, not a variant
+  failure. Every later cycle had 3/3 survivors.
+- **F11:** exited 1 twice (cycles 4 and 8), both before any variant ran. Each
+  time the hypotheses-writer started a background Explore agent, said it would
+  wait for the agent's report, and ended its turn without writing any
+  `H<NN>.md`. This is the same agent behaviour as F01 cycle 9, not a usage
+  limit. `--hypothesis-attempts` only retries scope violations, not a
+  wrong file count, so each one ended the run. Both were resumed with
+  `--continue` and the run finished all 10 cycles, 3/3 survivors in every
+  cycle.
+- **F13:** the detached `setsid nohup` launch did not survive: the harness
+  killed the run with its launcher shell when that Bash call hit its timeout,
+  in cycle 7 with no `EXIT=` line. It was resumed with `--continue` as a
+  tracked background task (2h limit, enough for the ~5 min/cycle left) and
+  finished all 10 cycles, every cycle with survivors. Cycle 1 v003 was
+  rejected at fitness because Maven Central returned HTTP 429 while Gradle
+  fetched `caffeine-3.2.3.jar`, an infra failure rather than the variant's.
