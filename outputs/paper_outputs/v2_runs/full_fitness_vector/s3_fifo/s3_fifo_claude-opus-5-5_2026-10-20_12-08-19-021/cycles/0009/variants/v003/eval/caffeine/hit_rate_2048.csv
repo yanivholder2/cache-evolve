@@ -1,0 +1,2 @@
+Policy,Hit Rate,Miss Rate,Hits,Misses,Requests,Evictions,Time
+s3fifo.S3FifoRust,59.28,40.72,296399,203601,500000,0,69

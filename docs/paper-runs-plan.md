@@ -126,7 +126,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F01 | full_fitness_vector | dash | claude-opus-5-5 | done | [session](https://claude.ai/code/session_01WAowihAggUXk2Qi38UYmw7) | `v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-19_11-52-26-211` | hit-rate 0.713 vs 0.663; per-op-time 67 vs 183; metadata-size 40 = 40 | [#234](https://github.com/yanivholder2/cache-evolve/pull/234) |
 | F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
 | F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | todo | | | | |
-| F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | running | [session](https://claude.ai/code/session_011TQ2JdPeyTHk15EvP95FpY) | | | |
+| F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | done | [session](https://claude.ai/code/session_011TQ2JdPeyTHk15EvP95FpY) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-opus-5-5_2026-10-20_12-08-19-021` | hit-rate 0.733 vs 0.716; per-op-time 22 vs 248; metadata-size 8 vs 24 | |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | F06 | full_fitness_vector | dash | claude-sonnet-5-5 | todo | | | | |
 | F07 | full_fitness_vector | associative_cache | claude-sonnet-5-5 | todo | | | | |
@@ -162,3 +162,8 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   cycle with survivors. Cycle 9 v003 was rejected because its insight writer
   ended its turn "waiting for the agent's report" without writing `insight.md`.
   That is an agent-behaviour failure, not a limit.
+- **F04:** the container restarted mid-cycle 5, killing the detached run and
+  its waiter. It was resumed with `--continue` and finished all 10 cycles. In
+  cycle 1, v001 and v002 were rejected at fitness because Gradle's cold
+  dependency fetch got HTTP 429 from Maven Central. That is an environment
+  failure, not a variant failure. Every later cycle had 3/3 survivors.
