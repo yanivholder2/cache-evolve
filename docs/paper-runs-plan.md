@@ -125,7 +125,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F01 | full_fitness_vector | dash | claude-opus-5-5 | done | [session](https://claude.ai/code/session_01WAowihAggUXk2Qi38UYmw7) | `v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-19_11-52-26-211` | hit-rate 0.713 vs 0.663; per-op-time 67 vs 183; metadata-size 40 = 40 | [#234](https://github.com/yanivholder2/cache-evolve/pull/234) |
 | F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | done | https://claude.ai/code/session_015Jo8GAf5i1jRV8GRQRojkK | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-opus-5-5_2026-10-19_11-53-18-215` | hit-rate 0.734 vs 0.661, metadata 16 vs 40, per-op 45 vs 69 (score 0.256) | https://github.com/yanivholder2/cache-evolve/pull/235 |
-| F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | todo | | | | |
+| F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | https://claude.ai/code/session_01JccMG2g1aPbYViN43Hg9hf | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-19_11-55-52-682` | hit-rate 0.731 vs 0.665; metadata 8 vs 48; per-op-time 26 vs 41 | [#236](https://github.com/yanivholder2/cache-evolve/pull/236) |
 | F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | todo | | | | |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | F06 | full_fitness_vector | dash | claude-sonnet-5-5 | todo | | | | |
@@ -136,7 +136,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F11 | full_fitness_vector | dash | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_013hP3e4eiFKeHTZ1j2ZR38e) | `v2_runs/full_fitness_vector/dash/dash_claude-haiku-5-5_2026-10-20_11-18-16-635` | hit-rate 0.691 vs 0.663; per-op-time 75 vs 183; metadata-size 32 vs 40 | [#238](https://github.com/yanivholder2/cache-evolve/pull/238) |
 | F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_016kRPvF7L8PHK3phJHi1jKZ) | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_11-17-39-256` | hit-rate 0.728 vs 0.661; per-op-time 51 vs 69; metadata-size 40 = 40 | [#240](https://github.com/yanivholder2/cache-evolve/pull/240) |
 | F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | todo | | | | |
-| F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | todo | | | | |
+| F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_017536x5FADQvAAG92zzSgmx) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_11-17-18-755` | hit-rate 0.722 vs 0.716; per-op-time 41 vs 248; metadata-size 16 vs 24 | [#239](https://github.com/yanivholder2/cache-evolve/pull/239) |
 | F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01EYsUrbsS22NguLbL53fDxv) | `v2_runs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_09-59-28-671` | hit-rate 0.742 vs 0.736; per-op-time 54 vs 132; metadata-size 32 vs 48 | [#237](https://github.com/yanivholder2/cache-evolve/pull/237) |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | H02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
@@ -162,6 +162,10 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   cycle with survivors. Cycle 9 v003 was rejected because its insight writer
   ended its turn "waiting for the agent's report" without writing `insight.md`.
   That is an agent-behaviour failure, not a limit.
+- **F03:** hit the account session limit twice, in cycle 6 (insight writer,
+  `ZeroTokenUsageError`) and at the start of cycle 8 (hypotheses writer wrote no
+  `H<NN>.md` files). Both times it was resumed with `--continue` after the reset
+  and finished all 10 cycles, all 30 variants surviving.
 - **F11:** exited 1 twice (cycles 4 and 8), both before any variant ran. Each
   time the hypotheses-writer started a background Explore agent, said it would
   wait for the agent's report, and ended its turn without writing any
