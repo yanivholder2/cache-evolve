@@ -150,7 +150,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H10 | only_hit_rate | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | H11 | only_hit_rate | dash | claude-haiku-5-5 | todo | | | | |
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | todo | | | | |
-| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | `v2_runs/only_hit_rate/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_14-00-21-467` | hit-rate 0.737 vs 0.665 | |
+| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | `v2_runs/only_hit_rate/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_14-00-21-467` | hit-rate 0.737 vs 0.665 | [#245](https://github.com/yanivholder2/cache-evolve/pull/245) |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | todo | | | | |
 | H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | todo | | | | |
 
