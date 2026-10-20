@@ -1,0 +1,1575 @@
+{
+  "winners": [
+    "cycle/0002/v003",
+    "cycle/0004/v001",
+    "cycle/0007/v002"
+  ],
+  "scores": {
+    "baseline": 0.0,
+    "cycle/0001/v001": -0.017657878064446818,
+    "cycle/0001/v002": -0.014957942296436127,
+    "cycle/0001/v003": -0.008695652173913044,
+    "cycle/0002/v001": 0.002824892197676643,
+    "cycle/0002/v002": 0.0011912512961488658,
+    "cycle/0002/v003": 0.07528339899026437,
+    "cycle/0003/v001": 0.03913942287667234,
+    "cycle/0003/v002": -0.05754002442130922,
+    "cycle/0003/v003": 0.004940821073353745,
+    "cycle/0004/v001": 0.07074550759713169,
+    "cycle/0004/v002": 0.044936524325947705,
+    "cycle/0004/v003": -0.008695652173913044,
+    "cycle/0005/v001": 0.010238973691190964,
+    "cycle/0005/v002": 0.020709884053586564,
+    "cycle/0005/v003": -0.005797101449275362,
+    "cycle/0006/v001": 0.0015433215172779222,
+    "cycle/0006/v002": 0.05047275182556954,
+    "cycle/0006/v003": 0.02061912622572392,
+    "cycle/0007/v001": 0.03178233905283023,
+    "cycle/0007/v002": 0.07074550759713169,
+    "cycle/0007/v003": 0.04755710180003025,
+    "cycle/0008/v001": 0.028333541594049397,
+    "cycle/0008/v002": 0.02148724457919273,
+    "cycle/0008/v003": 0.01707387117211323,
+    "cycle/0009/v001": 0.04792013311148082,
+    "cycle/0009/v002": 0.04756850133396466,
+    "cycle/0009/v003": -0.04309286893385863,
+    "cycle/0010/v001": -0.004015705050212821,
+    "cycle/0010/v002": 0.03921878117060058,
+    "cycle/0010/v003": 0.05183411924350939
+  },
+  "fitness_vectors": [
+    {
+      "variant": "baseline",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6611
+            }
+          ],
+          "summary": 0.6611,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 69,
+              "p99_ns": 101
+            },
+            {
+              "op": "put",
+              "p50_ns": 143,
+              "p99_ns": 204
+            }
+          ],
+          "summary": 69,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.664
+            }
+          ],
+          "summary": 0.664,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 117
+            },
+            {
+              "op": "put",
+              "p50_ns": 121,
+              "p99_ns": 160
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6542
+            }
+          ],
+          "summary": 0.6542,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 106
+            },
+            {
+              "op": "put",
+              "p50_ns": 127,
+              "p99_ns": 147
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6611
+            }
+          ],
+          "summary": 0.6611,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 97
+            },
+            {
+              "op": "put",
+              "p50_ns": 139,
+              "p99_ns": 212
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6706
+            }
+          ],
+          "summary": 0.6706,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 82
+            },
+            {
+              "op": "put",
+              "p50_ns": 111,
+              "p99_ns": 158
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6688
+            }
+          ],
+          "summary": 0.6688,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 103
+            },
+            {
+              "op": "put",
+              "p50_ns": 149,
+              "p99_ns": 205
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7184999999999999
+            }
+          ],
+          "summary": 0.7185,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 61,
+              "p99_ns": 82
+            },
+            {
+              "op": "put",
+              "p50_ns": 97,
+              "p99_ns": 131
+            }
+          ],
+          "summary": 61,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7170000000000001
+            }
+          ],
+          "summary": 0.717,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 73,
+              "p99_ns": 100
+            },
+            {
+              "op": "put",
+              "p50_ns": 148,
+              "p99_ns": 176
+            }
+          ],
+          "summary": 73,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6487999999999999
+            }
+          ],
+          "summary": 0.6488,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 85,
+              "p99_ns": 117
+            },
+            {
+              "op": "put",
+              "p50_ns": 193,
+              "p99_ns": 273
+            }
+          ],
+          "summary": 85,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6889
+            }
+          ],
+          "summary": 0.6889,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 121
+            },
+            {
+              "op": "put",
+              "p50_ns": 120,
+              "p99_ns": 135
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7134999999999999
+            }
+          ],
+          "summary": 0.7135,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 61,
+              "p99_ns": 97
+            },
+            {
+              "op": "put",
+              "p50_ns": 103,
+              "p99_ns": 124
+            }
+          ],
+          "summary": 61,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7170000000000001
+            }
+          ],
+          "summary": 0.717,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 98
+            },
+            {
+              "op": "put",
+              "p50_ns": 130,
+              "p99_ns": 161
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6611
+            }
+          ],
+          "summary": 0.6611,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 123
+            },
+            {
+              "op": "put",
+              "p50_ns": 128,
+              "p99_ns": 184
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7139
+            }
+          ],
+          "summary": 0.7139,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 82,
+              "p99_ns": 175
+            },
+            {
+              "op": "put",
+              "p50_ns": 210,
+              "p99_ns": 312
+            }
+          ],
+          "summary": 82,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6934999999999999
+            }
+          ],
+          "summary": 0.6935,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 98
+            },
+            {
+              "op": "put",
+              "p50_ns": 116,
+              "p99_ns": 138
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6611
+            }
+          ],
+          "summary": 0.6611,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 102
+            },
+            {
+              "op": "put",
+              "p50_ns": 128,
+              "p99_ns": 149
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7139
+            }
+          ],
+          "summary": 0.7139,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 85,
+              "p99_ns": 132
+            },
+            {
+              "op": "put",
+              "p50_ns": 219,
+              "p99_ns": 291
+            }
+          ],
+          "summary": 85,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7231000000000001
+            }
+          ],
+          "summary": 0.7231,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 100
+            },
+            {
+              "op": "put",
+              "p50_ns": 163,
+              "p99_ns": 251
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6934
+            }
+          ],
+          "summary": 0.6934,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 86
+            },
+            {
+              "op": "put",
+              "p50_ns": 138,
+              "p99_ns": 302
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7056999999999999
+            }
+          ],
+          "summary": 0.7057,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 89
+            },
+            {
+              "op": "put",
+              "p50_ns": 151,
+              "p99_ns": 179
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7134999999999999
+            }
+          ],
+          "summary": 0.7135,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 61,
+              "p99_ns": 83
+            },
+            {
+              "op": "put",
+              "p50_ns": 103,
+              "p99_ns": 152
+            }
+          ],
+          "summary": 61,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7134999999999999
+            }
+          ],
+          "summary": 0.7135,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 69,
+              "p99_ns": 95
+            },
+            {
+              "op": "put",
+              "p50_ns": 150,
+              "p99_ns": 196
+            }
+          ],
+          "summary": 69,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7019
+            }
+          ],
+          "summary": 0.7019,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 102
+            },
+            {
+              "op": "put",
+              "p50_ns": 146,
+              "p99_ns": 192
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7231000000000001
+            }
+          ],
+          "summary": 0.7231,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 81,
+              "p99_ns": 116
+            },
+            {
+              "op": "put",
+              "p50_ns": 153,
+              "p99_ns": 212
+            }
+          ],
+          "summary": 81,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6862999999999999
+            }
+          ],
+          "summary": 0.6863,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 87
+            },
+            {
+              "op": "put",
+              "p50_ns": 120,
+              "p99_ns": 143
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7139
+            }
+          ],
+          "summary": 0.7139,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 69,
+              "p99_ns": 93
+            },
+            {
+              "op": "put",
+              "p50_ns": 143,
+              "p99_ns": 203
+            }
+          ],
+          "summary": 69,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7199
+            }
+          ],
+          "summary": 0.7199,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 118
+            },
+            {
+              "op": "put",
+              "p50_ns": 155,
+              "p99_ns": 240
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.6232
+            }
+          ],
+          "summary": 0.6232,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 72,
+              "p99_ns": 97
+            },
+            {
+              "op": "put",
+              "p50_ns": 126,
+              "p99_ns": 142
+            }
+          ],
+          "summary": 72,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.695
+            }
+          ],
+          "summary": 0.695,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 81,
+              "p99_ns": 130
+            },
+            {
+              "op": "put",
+              "p50_ns": 166,
+              "p99_ns": 235
+            }
+          ],
+          "summary": 81,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7106999999999999
+            }
+          ],
+          "summary": 0.7107,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 97
+            },
+            {
+              "op": "put",
+              "p50_ns": 123,
+              "p99_ns": 145
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7245999999999999
+            }
+          ],
+          "summary": 0.7246,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "AssociativeCache<u64,u64>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 71,
+              "p99_ns": 98
+            },
+            {
+              "op": "put",
+              "p50_ns": 121,
+              "p99_ns": 178
+            }
+          ],
+          "summary": 71,
+          "higher_is_better": false
+        }
+      ]
+    }
+  ],
+  "best_per_dimension": {
+    "hit-rate": {
+      "variant": "cycle/0010/v003",
+      "summary": 0.7246
+    },
+    "metadata-size": {
+      "variant": "baseline",
+      "summary": 40
+    },
+    "per-op-time": {
+      "variant": "cycle/0002/v003",
+      "summary": 61
+    }
+  }
+}
