@@ -112,6 +112,8 @@ Paste into a fresh cloud session, replacing `<ID>`:
   on the session's branch.
 - **Finish:** in the `promote-run` PR, set `done` (or `failed`) and fill in the
   run dir, global-best vs baseline, and PR link.
+- **Merge:** a `promote-run` PR only adds run outputs and edits this file (no
+  code), so merge it without waiting for CI.
 - Touch only your own row — rows are independent lines, so merge conflicts stay
   trivial.
 - A `failed` run records its root cause under [Notes](#notes) (row ID, one
@@ -152,7 +154,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | todo | | | | |
 | H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | todo | | | | |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01MdVbig9j526V8JoEwAkmQk) | `v2_runs/only_hit_rate/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_14-00-19-782` | hit-rate 0.717 vs 0.716 | [#244](https://github.com/yanivholder2/cache-evolve/pull/244) |
-| H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | todo | | | | |
+| H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Bmw4udWzXC5MBfeYBkWGfV) | `v2_runs/only_hit_rate/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_13-08-10-178` | hit-rate 0.743 vs 0.736 | [#242](https://github.com/yanivholder2/cache-evolve/pull/242) |
 
 ## Notes
 
