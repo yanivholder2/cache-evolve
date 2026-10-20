@@ -1,0 +1,49 @@
+{
+  "variant": "v002",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "trace": "lirs:inputs/traces/workload-a.trace.gz",
+          "size": 2048,
+          "hit_rate": 0.7306
+        }
+      ],
+      "summary": 0.7306,
+      "higher_is_better": true
+    },
+    {
+      "dim": "metadata-size",
+      "values": [
+        {
+          "type": "Node<u64,u64>",
+          "bytes": 16
+        },
+        {
+          "type": "LruCache<u64,u64>",
+          "bytes": 160
+        }
+      ],
+      "summary": 16,
+      "higher_is_better": false
+    },
+    {
+      "dim": "per-op-time",
+      "values": [
+        {
+          "op": "get",
+          "p50_ns": 29,
+          "p99_ns": 51
+        },
+        {
+          "op": "put",
+          "p50_ns": 41,
+          "p99_ns": 88
+        }
+      ],
+      "summary": 29,
+      "higher_is_better": false
+    }
+  ]
+}

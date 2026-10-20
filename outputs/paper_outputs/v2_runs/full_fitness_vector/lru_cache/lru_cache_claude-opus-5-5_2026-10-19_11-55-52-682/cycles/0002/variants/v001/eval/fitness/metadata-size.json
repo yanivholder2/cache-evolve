@@ -1,0 +1,15 @@
+{
+  "dim": "metadata-size",
+  "values": [
+    {
+      "type": "Node<u64,u64>",
+      "bytes": 32
+    },
+    {
+      "type": "LruCache<u64,u64>",
+      "bytes": 120
+    }
+  ],
+  "summary": 32,
+  "higher_is_better": false
+}
