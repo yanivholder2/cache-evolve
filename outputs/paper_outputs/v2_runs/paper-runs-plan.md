@@ -4,15 +4,15 @@ Shared plan for the Claude 5.5 paper runs. Every run session reads this first.
 
 ## Goal
 
-Reproduce the existing `outputs/paper_outputs/` matrix — 2 modes × 5 subjects —
+Reproduce the v1 matrix in `outputs/paper_outputs/v1_runs/` — 2 modes × 5 subjects —
 with the Claude 5.5 models (`claude-opus-5-5`, `claude-sonnet-5-5`,
 `claude-haiku-5-5`), for comparison with the 4.x runs already there (Opus 4.8,
 Sonnet 4.6, Haiku 4.5). 30 runs in total, listed in the [run
 matrix](#run-matrix).
 
 **Where results go:** `outputs/paper_outputs/v2_runs/<mode>/<subject>/<run>/`
-(`promote-run` puts them there). The 4.x runs stay where they are, directly
-under `outputs/paper_outputs/<mode>/`; `plots/build_data.py` reads both batches
+(`promote-run` puts them there). The 4.x runs are the v1 batch, under
+`outputs/paper_outputs/v1_runs/<mode>/`; `plots/build_data.py` reads both batches
 into one dataset per mode.
 
 ## How a run works
@@ -68,7 +68,7 @@ Read this before launching so you don't have to discover it yourself:
 ## Commands
 
 Substitute `<S>` (subject) and `<M>` (model) from the row. Both templates
-reproduce the config snapshots of the 4.x runs in `outputs/paper_outputs/`.
+reproduce the config snapshots of the 4.x runs in `outputs/paper_outputs/v1_runs/`.
 
 **full_fitness_vector** (`F` rows):
 
@@ -100,10 +100,10 @@ record `subject = "lru_cache"` — trust the folder names there.
 
 Paste into a fresh cloud session, replacing `<ID>`:
 
-> Read docs/paper-runs-plan.md and run row `<ID>`: launch the row's exact
+> Read outputs/paper_outputs/v2_runs/paper-runs-plan.md and run row `<ID>`: launch the row's exact
 > command via /evolve-run (detached, per "Running it in a cloud session"; give
 > me the full log path), resume with `--continue` after any usage-limit stop,
-> then /promote-run. Don't edit docs/paper-runs-plan.md.
+> then /promote-run. Don't edit the plan doc.
 
 ## Checking run status
 

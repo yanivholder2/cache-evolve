@@ -64,26 +64,28 @@ def test_run_setup_falls_back_to_snapshot_model(tmp_path):
 
 
 def test_groups_span_batches(tmp_path, monkeypatch):
-    # Original runs sit at paper_outputs/<group>/; later batches one level down
-    # at paper_outputs/v<N>_runs/<group>/. Same-named groups merge across batches.
+    # Every batch sits at paper_outputs/v<N>_runs/<group>/, ordered by N; a
+    # batch's plan doc is ignored. Same-named groups merge across batches.
     for rel in (
-        "full_fitness_vector/dash/dash_claude-opus-4-8_2026-06-06_02-45-01-395",
-        "only_hit_rate/dash/dash_claude-opus-4-8_2026-06-05_18-13-17-700",
+        "v1_runs/full_fitness_vector/dash/dash_claude-opus-4-8_2026-06-06_02-45-01-395",
+        "v1_runs/only_hit_rate/dash/dash_claude-opus-4-8_2026-06-05_18-13-17-700",
         "v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-20_01-00-00-000",
+        "v10_runs/full_fitness_vector/dash/dash_claude-opus-9-9_2027-01-01_01-00-00-000",
     ):
         (tmp_path / rel).mkdir(parents=True)
+    (tmp_path / "v2_runs" / "paper-runs-plan.md").write_text("# plan\n")
     monkeypatch.setattr(build_data, "PAPER_OUTPUTS_DIR", tmp_path)
 
     groups = build_data.resolve_groups([])
 
     assert sorted(groups) == ["full_fitness_vector", "only_hit_rate"]
-    assert [batch for batch, _ in groups["full_fitness_vector"]] == ["v1", "v2_runs"]
+    assert [batch for batch, _ in groups["full_fitness_vector"]] == ["v1_runs", "v2_runs", "v10_runs"]
     assert groups["full_fitness_vector"][1][1] == tmp_path / "v2_runs" / "full_fitness_vector"
-    assert [batch for batch, _ in groups["only_hit_rate"]] == ["v1"]
+    assert [batch for batch, _ in groups["only_hit_rate"]] == ["v1_runs"]
 
 
 def test_unknown_group_selector_exits(tmp_path, monkeypatch):
-    (tmp_path / "only_hit_rate").mkdir()
+    (tmp_path / "v1_runs" / "only_hit_rate").mkdir(parents=True)
     monkeypatch.setattr(build_data, "PAPER_OUTPUTS_DIR", tmp_path)
     with pytest.raises(SystemExit, match="v2_runs"):
         build_data.resolve_groups(["v2_runs"])

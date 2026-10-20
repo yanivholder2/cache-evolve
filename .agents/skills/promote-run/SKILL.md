@@ -13,11 +13,11 @@ non-obvious — follow, don't rediscover.
 - `.gitignore` ignores `outputs/*` except `!outputs/paper_outputs/`: a raw run
   dir is untracked, a copy under `paper_outputs/` is trackable.
 - Layout is **per-batch, per-mode, per-subject**:
-  `outputs/paper_outputs/[<batch>/]<mode>/<subject>/<subject>_<model>_<timestamp>/`.
-  The original (4.x) runs sit directly under `paper_outputs/<mode>/`; each later
-  batch gets its own `v<N>_runs/` folder. **New runs go in the current batch,
-  `v2_runs/`** (the 5.5 matrix in `docs/paper-runs-plan.md`) — never into the
-  original top-level mode folders. `plots/build_data.py` treats each `<mode>`
+  `outputs/paper_outputs/<batch>/<mode>/<subject>/<subject>_<model>_<timestamp>/`.
+  Each batch is a `v<N>_runs/` folder: the original (4.x) runs are in
+  `v1_runs/`. **New runs go in the current batch,
+  `v2_runs/`** (the 5.5 matrix in `outputs/paper_outputs/v2_runs/paper-runs-plan.md`)
+  — never into `v1_runs/`. `plots/build_data.py` treats each `<mode>`
   as one dataset across batches and takes the subject from the parent folder
   name, so every level must be exact.
 - **`<mode>`** comes from the run's `config.toml` snapshot `[fitness].dimensions`:
@@ -54,7 +54,7 @@ non-obvious — follow, don't rediscover.
    raw run dir (`outputs/<subject>_<timestamp>/`) so the run isn't left
    duplicated. Never delete before the copy is confirmed good.
 
-5. **Don't edit the plan doc.** `docs/paper-runs-plan.md` is not updated per
+5. **Don't edit the plan doc.** `outputs/paper_outputs/v2_runs/paper-runs-plan.md` is not updated per
    run (concurrent PRs conflicted on it); the promoted dir on `main` is the
    run's status. Put run incidents (usage-limit resumes, agent or infra
    failures) in the PR description instead.
