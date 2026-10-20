@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 """Aggregate real run outputs under outputs/paper_outputs/ into per-group JSON.
 
-Runs are grouped under outputs/paper_outputs/<group>/<subject>/<run>/, where
-<group> is the fitness configuration the runs share (e.g. only_hit_rate,
-full_fitness_vector). Later batches of runs live one level down, under
-outputs/paper_outputs/<batch>/<group>/<subject>/<run>/ with <batch> named
-`v<N>_runs` (e.g. v2_runs); the original runs are batch "v1". Each group becomes
+Runs are grouped under outputs/paper_outputs/<batch>/<group>/<subject>/<run>/,
+where <batch> is a `v<N>_runs` folder (v1_runs for the original runs, v2_runs
+for the Claude 5.5 runs) and <group> is the fitness configuration the runs
+share (e.g. only_hit_rate, full_fitness_vector). Each group becomes
 its own plots/paper-plots/data_<group>.json holding the runs of every batch, so
 hit-rate-only and full-fitness-vector runs stay in separate datasets while the
 models of different batches are compared side by side.
@@ -42,10 +41,10 @@ PAPER_PLOTS_DIR = PLOTS_DIR / "paper-plots"
 
 UNKNOWN = "unknown"
 
-# Batch folders under paper_outputs/ (e.g. v2_runs); anything else at that level
-# is a group of the original batch.
-BATCH_DIR_RE = re.compile(r"^v\d+_runs$")
-ORIGINAL_BATCH = "v1"
+# Batch folders under paper_outputs/ (v1_runs, v2_runs, ...); anything else at
+# that level (e.g. a batch's plan doc) is ignored.
+BATCH_DIR_RE = re.compile(r"^v(?P<n>\d+)_runs$")
+ORIGINAL_BATCH = "v1_runs"
 
 # Every fitness dimension the framework currently emits. A variant whose
 # vector omits one of these gets MISSING for that dimension.
@@ -377,14 +376,9 @@ def group_run_dirs(group_dir: Path) -> list[tuple[Path, str]]:
 
 
 def batch_dirs() -> list[tuple[str, Path]]:
-    """(batch name, dir holding that batch's groups), original batch first."""
-    batches = [(ORIGINAL_BATCH, PAPER_OUTPUTS_DIR)]
-    batches += [
-        (p.name, p)
-        for p in sorted(PAPER_OUTPUTS_DIR.iterdir())
-        if p.is_dir() and BATCH_DIR_RE.match(p.name)
-    ]
-    return batches
+    """(batch name, dir holding that batch's groups), in batch order."""
+    batches = [p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir() and BATCH_DIR_RE.match(p.name)]
+    return [(p.name, p) for p in sorted(batches, key=lambda p: int(BATCH_DIR_RE.match(p.name)["n"]))]
 
 
 def group_dirs_by_name() -> dict[str, list[tuple[str, Path]]]:
@@ -392,8 +386,6 @@ def group_dirs_by_name() -> dict[str, list[tuple[str, Path]]]:
     groups: dict[str, list[tuple[str, Path]]] = {}
     for batch, root in batch_dirs():
         for group_dir in sorted(p for p in root.iterdir() if p.is_dir()):
-            if root == PAPER_OUTPUTS_DIR and BATCH_DIR_RE.match(group_dir.name):
-                continue
             groups.setdefault(group_dir.name, []).append((batch, group_dir))
     return groups
 
@@ -432,7 +424,7 @@ def main():
     parser.add_argument(
         "groups",
         nargs="*",
-        help="group folder name(s) under outputs/paper_outputs/ (or a v<N>_runs batch) to aggregate; "
+        help="group folder name(s) under outputs/paper_outputs/v<N>_runs/ to aggregate; "
         "default: every group",
     )
     args = parser.parse_args()

@@ -4,11 +4,10 @@ Aggregate run outputs into figures.
 
 ## Pipeline
 
-Paper runs live under `outputs/paper_outputs/<group>/<subject>/<run>/`, where
-`<group>` is the fitness configuration the runs share (`full_fitness_vector`,
-`only_hit_rate`). Later batches sit one level down, under
-`outputs/paper_outputs/v<N>_runs/<group>/<subject>/<run>/` (e.g. `v2_runs/` for
-the Claude 5.5 runs); the original runs are batch `v1`. Each group is its own
+Paper runs live under `outputs/paper_outputs/v<N>_runs/<group>/<subject>/<run>/`,
+where `v<N>_runs` is the batch (`v1_runs/` for the original runs, `v2_runs/` for
+the Claude 5.5 runs) and `<group>` is the fitness configuration the runs share
+(`full_fitness_vector`, `only_hit_rate`). Each group is its own
 dataset spanning every batch, and each run's setup records its `batch`.
 
 1. **`build_data.py`** — walks `outputs/paper_outputs/`, writes one
@@ -56,7 +55,7 @@ the snapshot fall back to those artifacts, with the rest left as `"unknown"` / `
 
 | File                                   | Role                                                                       |
 | -------------------------------------- | -------------------------------------------------------------------------- |
-| `build_data.py`                        | Aggregator: `outputs/paper_outputs/<group>/` into `paper-plots/data_<group>.json`. |
+| `build_data.py`                        | Aggregator: `outputs/paper_outputs/v<N>_runs/<group>/` into `paper-plots/data_<group>.json`. |
 | `paper-plots/data_<group>.json`        | Generated. Real per-variant fitness data; `-1` = dimension not calculated. |
 | `plot.py`                              | Renders evolution lines (cycle winners + baseline) and final-cycle bars.   |
 | `paper-plots/<group>/*.png`            | Generated figures (gitignored).                                            |
@@ -65,7 +64,7 @@ the snapshot fall back to those artifacts, with the rest left as `"unknown"` / `
 ## Adding a run
 
 `build_data.py` picks up every complete run dir (one with `cycles-ledger.jsonl`)
-under `outputs/paper_outputs/[v<N>_runs/]<group>/<subject>/` automatically. New runs carry
+under `outputs/paper_outputs/v<N>_runs/<group>/<subject>/` automatically. New runs carry
 their own `config.toml` snapshot, so the setup block fills in with no manual
 step.
 

@@ -146,7 +146,7 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** reviewing or creating a PR.
 
-### [docs/paper-runs-plan.md](paper-runs-plan.md)
+### [outputs/paper_outputs/v2_runs/paper-runs-plan.md](../outputs/paper_outputs/v2_runs/paper-runs-plan.md)
 
 * Goal
 * How a run works

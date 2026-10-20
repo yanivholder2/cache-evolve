@@ -4,15 +4,15 @@ Shared plan for the Claude 5.5 paper runs. Every run session reads this first.
 
 ## Goal
 
-Reproduce the existing `outputs/paper_outputs/` matrix — 2 modes × 5 subjects —
+Reproduce the v1 matrix in `outputs/paper_outputs/v1_runs/` — 2 modes × 5 subjects —
 with the Claude 5.5 models (`claude-opus-5-5`, `claude-sonnet-5-5`,
 `claude-haiku-5-5`), for comparison with the 4.x runs already there (Opus 4.8,
-Sonnet 4.6, Haiku 4.5). 30 runs in total, tracked in the [status
-table](#status).
+Sonnet 4.6, Haiku 4.5). 30 runs in total, listed in the [run
+matrix](#run-matrix).
 
 **Where results go:** `outputs/paper_outputs/v2_runs/<mode>/<subject>/<run>/`
-(`promote-run` puts them there). The 4.x runs stay where they are, directly
-under `outputs/paper_outputs/<mode>/`; `plots/build_data.py` reads both batches
+(`promote-run` puts them there). The 4.x runs are the v1 batch, under
+`outputs/paper_outputs/v1_runs/<mode>/`; `plots/build_data.py` reads both batches
 into one dataset per mode.
 
 ## How a run works
@@ -68,7 +68,7 @@ Read this before launching so you don't have to discover it yourself:
 ## Commands
 
 Substitute `<S>` (subject) and `<M>` (model) from the row. Both templates
-reproduce the config snapshots of the 4.x runs in `outputs/paper_outputs/`.
+reproduce the config snapshots of the 4.x runs in `outputs/paper_outputs/v1_runs/`.
 
 **full_fitness_vector** (`F` rows):
 
@@ -100,28 +100,41 @@ record `subject = "lru_cache"` — trust the folder names there.
 
 Paste into a fresh cloud session, replacing `<ID>`:
 
-> Read docs/paper-runs-plan.md and run row `<ID>`: mark the row `running` with
-> this session's link and commit it on your branch, launch the row's exact
+> Read outputs/paper_outputs/v2_runs/paper-runs-plan.md and run row `<ID>`: launch the row's exact
 > command via /evolve-run (detached, per "Running it in a cloud session"; give
 > me the full log path), resume with `--continue` after any usage-limit stop,
-> then /promote-run and mark the row `done` (or `failed` with a Notes entry).
+> then /promote-run. Don't edit the plan doc.
 
-## Updating this file
+## Checking run status
 
-- **Start:** flip your row to `running` and fill in the session link; commit it
-  on the session's branch.
-- **Finish:** in the `promote-run` PR, set `done` (or `failed`) and fill in the
-  run dir, global-best vs baseline, and PR link.
-- **Merge:** a `promote-run` PR only adds run outputs and edits this file (no
-  code), so merge it without waiting for CI.
-- Touch only your own row — rows are independent lines, so merge conflicts stay
-  trivial.
-- A `failed` run records its root cause under [Notes](#notes) (row ID, one
-  paragraph); a rerun reuses the row.
+**Don't edit this file from a run session.** Run PRs used to update a shared
+status table here, and every pair of concurrent PRs conflicted on it. The
+[run matrix](#run-matrix) below only defines the rows; its status columns are a
+frozen snapshot, not maintained.
 
-## Status
+The repo is the source of truth. A row is **done** when its promoted run dir
+exists on `main`:
 
-Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
+```
+git fetch origin main
+git ls-tree -d --name-only origin/main \
+  outputs/paper_outputs/v2_runs/<mode>/<subject>/ | grep "_<model>_"
+```
+
+- A match means the row is done (the dir name carries the run timestamp).
+- No match but an open PR titled `<subject> paper_outputs v2 (<mode>) — <model>, …`
+  means it is promoted and awaiting merge.
+- Neither means `todo` (or a run still in progress in some session).
+
+A `promote-run` PR only adds run outputs (no code), so merge it without
+waiting for CI. Record run incidents (usage-limit resumes, agent failures,
+infra errors) and the root cause of a failed run in the `promote-run` PR
+description, not in this file; a rerun just promotes a new run dir.
+
+## Run matrix
+
+Status columns below are a frozen snapshot — see [Checking run
+status](#checking-run-status) for the live state.
 
 | ID | Mode | Subject | Model | Status | Session | Run dir | Global best vs baseline | PR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -153,10 +166,12 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H11 | only_hit_rate | dash | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01QHMEtgPhnyZUhD2GetHjbd) | `v2_runs/only_hit_rate/dash/dash_claude-haiku-5-5_2026-10-20_14-02-03-762` | hit-rate 0.691 vs 0.663 (cycle 9 v003) | [#247](https://github.com/yanivholder2/cache-evolve/pull/247) |
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_018dhG2LdphVcdxguz3MMQqT) | `v2_runs/only_hit_rate/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_14-11-42-199` | hit-rate 0.743 vs 0.661 | [#243](https://github.com/yanivholder2/cache-evolve/pull/243) |
 | H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | `v2_runs/only_hit_rate/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_14-00-21-467` | hit-rate 0.737 vs 0.665 | [#245](https://github.com/yanivholder2/cache-evolve/pull/245) |
-| H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | todo | | | | |
+| H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01MdVbig9j526V8JoEwAkmQk) | `v2_runs/only_hit_rate/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_14-00-19-782` | hit-rate 0.717 vs 0.716 | [#244](https://github.com/yanivholder2/cache-evolve/pull/244) |
 | H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Bmw4udWzXC5MBfeYBkWGfV) | `v2_runs/only_hit_rate/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_13-08-10-178` | hit-rate 0.743 vs 0.736 | [#242](https://github.com/yanivholder2/cache-evolve/pull/242) |
 
 ## Notes
+
+Frozen like the run matrix: new incidents go in the run's `promote-run` PR.
 
 - **F01:** hit the account usage limit twice (cycles 5 and 9), with
   `ZeroTokenUsageError` and "You've hit your session limit". Both times it was
@@ -208,3 +223,13 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   turn without writing `insight.md`. Cycle 2 v003 was rejected because its
   hypothesis (pre-size the index) was already true of the baseline, so the
   implementer refused to write an empty change three times.
+- **H14:** hit the account session limit in cycle 2: all three variant
+  implementers returned "You've hit your session limit · resets 2:10pm (UTC)"
+  and the run exited 1 with `no variants survived in cycle 0002`. It was
+  resumed with `--continue` after the reset and finished all 10 cycles, 3/3
+  survivors in every cycle (about 3.5 min per cycle). The first launch's
+  `setsid nohup … & disown; sleep 20; tail` Bash call hung and was moved into
+  a harness background task, as in F13. The run was already in its own
+  session, so killing only the stuck launcher shells left it running.
+  Launching with `setsid -f bash -c '…' > $L 2>&1 < /dev/null` (no `&`, no
+  sleep) returned immediately on the resume.

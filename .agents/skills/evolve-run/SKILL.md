@@ -39,9 +39,9 @@ Under `claude-sdk`, `--model` takes any `claude-<family>-<version>` id (e.g. `cl
 from a list.
 
 **Paper runs.** If the request references the paper run plan or a plan row id
-(e.g. `F01`), read `docs/paper-runs-plan.md` first and launch that row's exact
-command — every setting pinned, no natural-language translation — and update
-the row as that doc's rules say.
+(e.g. `F01`), read `outputs/paper_outputs/v2_runs/paper-runs-plan.md` first and launch that row's exact
+command — every setting pinned, no natural-language translation. Don't edit
+the plan doc; its "Checking run status" section says how to see which rows are done.
 
 Confirm the assembled command line back to the user in one line before
 launching. Flags are non-persistent overrides — never edit `config.toml` or any
