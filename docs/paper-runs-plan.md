@@ -150,7 +150,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H10 | only_hit_rate | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | H11 | only_hit_rate | dash | claude-haiku-5-5 | todo | | | | |
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | todo | | | | |
-| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | todo | | | | |
+| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | running | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | | | |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | todo | | | | |
 | H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | todo | | | | |
 
