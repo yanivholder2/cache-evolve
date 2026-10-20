@@ -137,7 +137,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | todo | | | | |
 | F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | todo | | | | |
 | F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | todo | | | | |
-| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01EYsUrbsS22NguLbL53fDxv) | `v2_runs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_09-59-28-671` | hit-rate 0.742 vs 0.736; per-op-time 54 vs 132; metadata-size 32 vs 48 | |
+| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01EYsUrbsS22NguLbL53fDxv) | `v2_runs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_09-59-28-671` | hit-rate 0.742 vs 0.736; per-op-time 54 vs 132; metadata-size 32 vs 48 | [#237](https://github.com/yanivholder2/cache-evolve/pull/237) |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | H02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
 | H03 | only_hit_rate | lru_cache | claude-opus-5-5 | todo | | | | |
