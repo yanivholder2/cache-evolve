@@ -1,0 +1,19 @@
+{
+  "dim": "metadata-size",
+  "values": [
+    {
+      "type": "Node<u64,u64>",
+      "bytes": 32
+    },
+    {
+      "type": "CountMinSketch (heap, cap=1024)",
+      "bytes": 32768
+    },
+    {
+      "type": "TinyLfuCache<u64,u64>",
+      "bytes": 176
+    }
+  ],
+  "summary": 32,
+  "higher_is_better": false
+}
