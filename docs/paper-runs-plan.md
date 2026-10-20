@@ -112,6 +112,8 @@ Paste into a fresh cloud session, replacing `<ID>`:
   on the session's branch.
 - **Finish:** in the `promote-run` PR, set `done` (or `failed`) and fill in the
   run dir, global-best vs baseline, and PR link.
+- **Merge:** a `promote-run` PR only adds run outputs and edits this file (no
+  code), so merge it without waiting for CI.
 - Touch only your own row — rows are independent lines, so merge conflicts stay
   trivial.
 - A `failed` run records its root cause under [Notes](#notes) (row ID, one
