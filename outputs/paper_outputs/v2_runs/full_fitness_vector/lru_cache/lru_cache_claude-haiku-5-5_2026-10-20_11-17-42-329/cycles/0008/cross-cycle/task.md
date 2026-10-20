@@ -1,0 +1,246 @@
+# Task: cross-cycle-insight-writer
+
+## Ledger (all cycles, cumulative)
+
+### Cycle 0001
+
+# Cycle 0001 Insight
+
+## Cohort outcome
+
+Both evaluated variants changed the eviction policy rather than the data layout: one split the recency list into probationary and protected segments, the other swapped move-to-MRU on hit for a referenced bit. No Winners landed. Each variant gained on hit-rate but paid for it in per-operation cost, and the third variant was rejected for a build failure unrelated to its design.
+
+## Patterns
+
+- Both policy changes improved hit-rate on the LIRS workload-a trace, so reuse-aware eviction looks like the right direction for this workload.
+- Both changes added per-node or per-cache metadata, and that overhead showed up in the metadata-size dimension for each.
+- The cost of each policy moved into the operations themselves: segment promotion and demotion on get and put in one case, and a variable-length eviction scan on misses in the other.
+- The referenced-bit variant also made the put-existing path cheaper, suggesting that avoiding list surgery on overwrite is a worthwhile lever independent of the eviction scheme.
+- The rejected variant (v003) failed at dependency fetch (HTTP 429 from the Maven repository), so the cycle yields no evidence about its strategy.
+
+## Open questions
+
+- Would the hit-rate gains hold on workloads without one-hit scans, where segmentation should have less to protect?
+- Is the get p50 regression in the referenced-bit variant real or measurement noise?
+- Can the second-chance eviction scan be bounded so the put tail stops worsening?
+- Can the protected-segment variant keep its hit-rate while removing the extra per-operation pointer work?
+
+## Continuation
+
+Next cycle, keep pursuing reuse-aware eviction, and prefer variants that avoid list surgery on the hit and overwrite paths. Drop further increases in per-node fields unless they buy a clear hit-rate gain. Re-attempt the v003 strategy once the dependency fetch is reachable, since it was never actually evaluated.
+
+
+### Cycle 0002
+
+# Cycle 0002 Insight
+
+## Cohort outcome
+
+The cohort moved away from pure policy changes toward layout and bookkeeping: a deferred referenced-bit scheme with one bounded rescue, a capped second-chance scan, and narrower arena indices. All three Winners kept hit-rate roughly intact or gave up only a small amount, and each won on smaller nodes or cheaper operations rather than on hit-rate.
+
+## Patterns
+
+- Node-size reductions were the most reliable lever. Packing a flag into spare index bits and narrowing arena links both shrank the node, and neither cost hit-rate.
+- Deferring recency work to eviction time helped the put path more than the get path. Removing relinks on hit did not measurably improve get, so the hit-path relink is not the dominant cost.
+- Bounding the second-chance scan traded a small hit-rate loss for a predictable miss-path cost, and that tail was the clearest per-operation gain in the cohort.
+- Narrowing indices saved memory but made get slower, which points at the width conversions on every arena access rather than at the policy. Memory wins and speed wins came apart here.
+- Several attributions are inferred rather than verified. One variant's node-size result was larger than its hypothesis predicted, and one get-path change was not directly targeted, so those gains should not be credited to the mechanism named in the hypothesis until checked against the source.
+
+## Open questions
+
+- Is the get regression from narrowed indices caused by the casts at hot call sites, and can they be removed while keeping the smaller links?
+- Does the referenced-bit scheme's hit-rate loss on re-referenced keys shrink if the single rescue is replaced with a different recency approximation?
+- Were the get-path and node-size gains in the bounded-scan variant caused by layout effects or by measurement noise?
+
+## Continuation
+
+Next cycle, combine the cheap node-size reductions with the bounded eviction scan, and pursue ways to remove the index-conversion cost on get without giving back the smaller links. Keep avoiding list surgery on the hit path, since get did not respond to it. Drop further hit-path relink removal as a goal on its own, and avoid trading more hit-rate for put-tail gains unless the trade is clearly measured.
+
+
+### Cycle 0003
+
+# Cycle 0003 Insight
+
+## Cohort outcome
+
+The cohort split into two families: a bounded second chance on the protected side of the segmented policy (v001), and a representation change that replaces optional arena links with a sentinel index (v002). Both Winners kept hit-rate intact or recovered some of it; v002 won on node size alone, while v001 bought hit-rate back at a visible per-operation cost. A third variant (v003) added a frequency-sketch admission filter, which produced the cohort's clearest hit-rate gain but paid for it on every access.
+
+## Patterns
+
+- Representation changes are the cheap, policy-neutral lever. Dropping the per-link discriminant shrank the node and left hit-rate unchanged, but it did not recover speed, so the `Option` match is not the hot-path cost.
+- Arena indexing looks like the real per-operation cost. Both the sentinel change and the admission filter left `get` slower, which points at repeated index access and bounds-checked lookups rather than at link encoding or policy logic.
+- Hit-rate gains are coming from what enters or is retained in the cache, not from list order. The admission filter gained hit-rate by rejecting one-hit keys at capacity, and the protected-side rescue recovered part of a prior loss by delaying demotion.
+- Anything that runs on every access is expensive in this workload. The admission filter's per-access hashing added cost to both `get` and `put`, and the protected-side rescue's extra pointer work showed up in `get` as well as `put`, even though the hit path was meant to be untouched.
+- Attributions are still partly inferred. Both v001 and v003 saw `get` movement the hypothesis did not predict, so the source of that movement is unconfirmed.
+
+## Open questions
+
+- Does the admission filter's hit-rate gain hold beyond workload-a and beyond a single capacity, or is it specific to the scan pattern?
+- Can the admission check's hashing be made cheap enough to keep its hit-rate, for example by reusing a hash already computed for the map lookup?
+- Is the `get` regression in v001 and v003 real, or is it a layout or noise effect that a re-measure would clear?
+- Can the per-access arena lookups be reduced without changing link width?
+
+## Continuation
+
+Next cycle, combine the sentinel-link node reduction with the protected-side rescue only if the rescue's extra pointer work can be moved off the hit path, and re-measure `get` before crediting either change. Pursue admission gating as a hit-rate lever, but drop any design that hashes on every access unless the hashing cost is removed. Stop pursuing further link-encoding changes; the next gains are more likely in arena access patterns.
+
+
+### Cycle 0004
+
+# Cycle 0004 Insight
+
+## Cohort outcome
+
+The cohort tried three changes: a flag-only retry in the protected-side demotion branch (v001), hoisted arena index accessors (v002), and a single shared hash for the admission sketch (v003). Only v001 landed as a Winner, and it won on per-operation cost, giving up a small part of its hit-rate in exchange.
+
+## Patterns
+
+- The list surgery in the protected-side demotion path was a per-operation cost, separate from the second-chance idea itself. Keeping the rescued head in place removed that cost, which is consistent with earlier cycles finding that extra pointer work on shared paths is expensive.
+- The hit-rate given back by v001 is small and plausibly comes from losing the MRU rotation that protected the rescued head. This makes the protection and the cost the same mechanism, so further gains here will likely trade against it.
+- Hoisting index conversions into accessors (v002) did not speed up `get` or `put`, and both got slower. The access-count explanation from cycle 0002 does not hold on its own; codegen or layout effects are the more likely cause.
+- Replacing SipHash with a cheaper shared hash (v003) reduced the admission gate's per-access cost on both paths without changing hit-rate on the one trace tested. This confirms that hashing cost, not the gate's decision logic, was the expense flagged in cycle 0003.
+- Attributions are still partly inferred. v001's reading rests on the hypothesis text and fitness vectors rather than on the diff, and v002's cause is untested.
+
+## Open questions
+
+- Does the flag-only retry keep its per-operation gain without losing hit-rate if the rescued head is given a different recency approximation?
+- Does the cheap admission hash keep its hit-rate on other workloads and capacities, since only one trace at one capacity was checked?
+- Is the `get` and `put` slowdown from the hoisted accessors caused by inlining or codegen, and does comparing the parent's inline casts against the helper form in isolation settle it?
+
+## Continuation
+
+Next cycle, build on v001's flag-only demotion and try to recover the lost protection with a cheap recency signal that does not reintroduce list surgery. Keep the cheap admission hash and test it on another workload and capacity before stacking more on it. Drop further arena access rewrites until a codegen-only comparison explains the v002 slowdown.
+
+
+### Cycle 0005
+
+# Cycle 0005 Insight
+
+## Cohort outcome
+
+The cohort tried a bounded credit for rescued protected heads (v001), narrowed arena links and list pointers to `u32` with a sentinel (v002), and feeding the admission sketch only from writes (v003). The two Winners are the representation change (v002) and the credit-based rescue (v001); v003 was not a Winner because its read-path saving came with a hit-rate loss.
+
+## Patterns
+
+- Narrowing the arena links to `u32` with a sentinel is a clean, policy-neutral win on node and struct size. It did not move `get` and may have helped `put` slightly, which is consistent with the cycle 0003 finding that link encoding is not the hot-path cost.
+- A two-bit credit in the existing flags byte recovers only a small share of the protection the parent lost when it dropped the list rotation. Protection seems to depend on the head actually being moved, not only on a retained flag.
+- Removing the sketch hash from `get` is the first change that cleanly lowers read cost on the admission path. The price is that read-only popularity no longer counts toward admission, and the only measured effect is a small hit-rate loss on one trace.
+- Tail-latency movement in both Winners is small and comes from single runs. Credit to the mechanism should wait for a re-measure, especially where the diff does not touch the moved path (v003's `put` change).
+- v002 argues that the earlier index-access slowdowns came from accessor structure rather than the casts. That is an inference from one measurement and is not yet isolated.
+
+## Open questions
+
+- Does the credit scheme's protection gap close with a different recency signal, or is list position the only thing that keeps the head safe?
+- Does the read-path saving in the sketch change survive on read-heavy workloads, where reads carry most of the frequency signal?
+- Is the `put` tail movement in v001 and v003 real, or run-to-run noise?
+- Does the `u32` capacity cap in v002 (rejecting very large capacities at construction) matter for any workload the cache is expected to serve?
+
+## Continuation
+
+Next cycle, keep the `u32` sentinel links as the base layout and build on v001's credit only if it can add protection without list surgery on the shared path. Test the read-path sketch change on a read-heavy workload before stacking more on it, and re-measure `put` tails before crediting any mechanism. Drop further link-width experiments and any attempt to recover the lost rotation by moving the head on the hit path.
+
+
+### Cycle 0006
+
+# Cycle 0006 Insight
+
+## Cohort outcome
+
+The cohort tried three different levers: a smaller protected segment (v001), a cheaper hasher for the key map (v002), and a bounded ghost ring of recently evicted keys that promotes returning keys straight to protected (v003). The clearest Winner is the hasher swap (v002), which cut per-operation cost with no policy change. v001 and v003 are listed as Winners, but both insights record a hit-rate or cost trade-off that the Winner label does not capture.
+
+## Patterns
+
+- Hashing on the key map is a real hot-path cost, and it is separate from the admission sketch. Swapping to a zero-state hasher lowered `get` and `put` cost without touching policy, and it also shrank the map struct. This is the same kind of cost that cycle 0004 found in the sketch hash.
+- Shrinking the protected segment hurt hit-rate on the scan-heavy trace. The 4/5 share appears to be doing real work, so further reductions in protected share are unlikely to pay off.
+- The ghost ring gained scan resistance, but the gain came with added work on the miss path. Its per-miss scan over the ring and its extra hashing both land in `put`, and its heap storage is not counted by the struct-size metric.
+- The v001 per-operation movement is not explained by its diff, which leaves the code paths unchanged. Treat the latency delta as unconfirmed until it is re-measured.
+- The v003 insight was written from the hypothesis and fitness vectors because its source could not be read. Its code-level claims are inferred and should be checked against the diff before they are credited.
+- A fast hasher with a raw finish leaves the low bucket-index bits least mixed. The v002 gain may depend on the key distribution, and it has been shown only on integer keys.
+
+## Open questions
+
+- Does the zero-state hasher keep its speedup and its bucket spread on non-sequential integer keys and on string keys, where the byte path is different?
+- Does the protected-share sensitivity seen in v001 hold at other capacities and traces, or is it specific to workload-a at 2048 entries?
+- Can the ghost ring's lookup be made cheap enough to keep its scan-resistance gain, for example with a hash-indexed set in place of a linear scan?
+- Are the `put` tail movements in v001 and v003 real, or run-to-run noise?
+
+## Continuation
+
+Next cycle, keep the zero-state map hasher as the base and test its distribution on string and non-sequential integer keys before stacking more on it. Pursue the ghost-ring idea only if its lookup is bounded, and report its heap size alongside struct size. Drop further protected-share reductions, since v001 shows the current ratio is not oversized, and re-measure v001's per-operation deltas before crediting them.
+
+
+### Cycle 0007
+
+# Cycle 0007 Insight
+
+## Cohort outcome
+
+The cohort tried three levers: extra mixing in the hasher's finish step (v001), promoting returning ghost keys straight into the protected segment (v002), and packing the flags into the top bits of the link field (v003). None of them improved per-operation cost while keeping policy intact. v003 bought a real node-size reduction at a latency cost, and the insights record no clear helped dimension for v001. The Winner labels for v001 and v003 are not supported by their insights' Helped sections, so the fitness vectors should be checked before crediting them.
+
+## Patterns
+
+- Extra finish-step mixing gave no spread benefit on integer keys and added per-lookup cost on both `get` and `put`. Together with the cycle 0006 hasher win, the gain on the key-map path comes from cheaper hashing, not from more mixing.
+- Ghost-driven admission into protected lost hit-rate on the workload tested. Recency of re-reference did not pick out keys worth protecting, and the miss path picked up extra cost. The ghost idea has weakened since cycle 0006.
+- Masking flag bits out of the link field removed the padding on the node and was policy-neutral, but every index read and write paid the mask. The saving is a size-for-latency trade, not a free change.
+- Across the three variants, node or struct growth and per-operation slowdowns appeared without matching hit-rate gains. Changes that touch the shared index helpers have been the most reliable source of per-operation regressions.
+- The v002 node growth is not explained by its hypothesis text and has not been checked against the diff. Its per-operation attribution is also inferred.
+
+## Open questions
+
+- Is the v002 node growth a side effect of the diff rather than the hypothesis, and does moving the ghost set out of the node path remove it?
+- Can the flag-bit mask be kept off the `get` path, for example by folding it into a single index helper or keeping flags in a parallel array, so that the node-size gain survives?
+- Does the ghost's re-reference signal carry value on workloads other than workload-a at 2048?
+- Do the fitness vectors actually show a Winner-level gain for v001 and v003, or were they labelled Winners on size alone?
+
+## Continuation
+
+Next cycle, keep the zero-state map hasher as the base and do not add further finish-step mixing. Drop ghost-to-protected promotion; if the ghost idea is pursued again, keep ghost hits probationary and measure the ghost's hit rate before changing admission. Pursue the flag packing only if the mask is removed from the read path, otherwise prefer the byte-sized flags. Re-measure per-operation deltas before crediting any of these changes.
+
+
+### Cycle 0008
+
+# Cycle 0008 Insight
+
+## Cohort outcome
+
+The cohort tried three levers: confining the packed-flag mask to one inlined index helper with a raw-OR REFERENCED set on hits (v001), collapsing the `put` miss path onto a single key-map lookup (v002), and admitting ghost-ring hits at probation instead of protected (v003). v001 is the only variant whose insight records an improved dimension, so it is the credible Winner. v002 carries a Winner label but its insight records no improvement and a worse `put` tail, so the label is not supported. v003 lost hit rate and is not a Winner.
+
+## Patterns
+
+- Consolidating the masked index reads (v001) recovered per-operation cost on the packed layout without changing policy or metadata size. The mask still runs on every read, so this addresses the call-site cost from cycle 0007 but not the mask itself.
+- The single-lookup rewrite of the `put` miss path (v002) did not reduce `put` cost. The forced remove-then-insert ordering appears to absorb the saved hash, so the second key hash is not the dominant `put` cost.
+- Ghost-ring admission has now lost hit rate in both directions: to protected in cycle 0007 and to probation here, on workload-a at 2048. The ghost idea has no working admission target on that trace.
+- `put` tail movement appears again across variants (v002 and v003 here, and several earlier cycles), while `get` tails moved without a `get` change in v002. This pattern points to measurement noise or a shared layout effect more than to any single diff.
+- Two of the three insights rest on hypothesis text and fitness vectors because the source diffs could not be inspected. Their code-level claims are inferred.
+
+## Open questions
+
+- Is v001's gain carried by the raw-OR REFERENCED set on hits, by the helper consolidation, or by both?
+- Is v002's `put` tail regression real, given that its `get` tail also moved without a `get` change?
+- Does the ghost-ring hit-rate loss hold on workloads other than workload-a at 2048?
+- Are the recurring `put` tail movements a run-to-run artifact of the measurement setup?
+
+## Continuation
+
+Next cycle, build on v001's single-helper index access as the packed-flags base, and test whether the raw-OR REFERENCED set on hits is what drives its gain. Drop the ghost ring as an admission lever on workload-a, since neither promotion target held hit rate. Do not pursue the single-lookup `put` rewrite, and re-measure `put` tails before crediting or blaming any further `put`-path change.
+
+
+## Write
+
+Exactly one file: `cross-cycle-insights.md` in the output dir. Use the following four fixed sections — preserve names and order:
+
+## Recurring wins
+
+- <pattern that has held up across multiple cycles>
+
+## Recurring failures
+
+- <approach that keeps not paying off, and why>
+
+## Open questions
+
+- <thread worth probing in upcoming cycles>
+
+## Per-policy notes
+
+- <observations grouped by eviction policy>
