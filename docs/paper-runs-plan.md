@@ -151,7 +151,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H09 | only_hit_rate | s3_fifo | claude-sonnet-5-5 | todo | | | | |
 | H10 | only_hit_rate | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | H11 | only_hit_rate | dash | claude-haiku-5-5 | todo | | | | |
-| H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | running | [session](https://claude.ai/code/session_018dhG2LdphVcdxguz3MMQqT) | | | |
+| H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_018dhG2LdphVcdxguz3MMQqT) | `v2_runs/only_hit_rate/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_14-11-42-199` | hit-rate 0.743 vs 0.661 | |
 | H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | todo | | | | |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | todo | | | | |
 | H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Bmw4udWzXC5MBfeYBkWGfV) | `v2_runs/only_hit_rate/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_13-08-10-178` | hit-rate 0.743 vs 0.736 | [#242](https://github.com/yanivholder2/cache-evolve/pull/242) |
@@ -183,3 +183,11 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   finished all 10 cycles, every cycle with survivors. Cycle 1 v003 was
   rejected at fitness because Maven Central returned HTTP 429 while Gradle
   fetched `caffeine-3.2.3.jar`, an infra failure rather than the variant's.
+- **H12:** the first launch was stopped and restarted from scratch in
+  cycle 2. In cycle 1 the variants ran Caffeine's first Gradle build in
+  parallel in the shared checkout, and v001 read a half-written generated
+  `FDW.java` (`reached end of file while parsing` in
+  `:caffeine:generateNodes`), so it was rejected at fitness. Once
+  generated, the sources are not rebuilt, so the restarted run did not
+  hit the race and finished all 10 cycles with 3/3 survivors in every
+  cycle. Any fresh session can hit this race on its first cycle.
