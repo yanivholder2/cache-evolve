@@ -1,0 +1,49 @@
+{
+  "variant": "v001",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "trace": "lirs:inputs/traces/workload-a.trace.gz",
+          "size": 2048,
+          "hit_rate": 0.7086
+        }
+      ],
+      "summary": 0.7086,
+      "higher_is_better": true
+    },
+    {
+      "dim": "metadata-size",
+      "values": [
+        {
+          "type": "Entry<u64,u64>",
+          "bytes": 16
+        },
+        {
+          "type": "S3Fifo<u64,u64>",
+          "bytes": 280
+        }
+      ],
+      "summary": 16,
+      "higher_is_better": false
+    },
+    {
+      "dim": "per-op-time",
+      "values": [
+        {
+          "op": "get",
+          "p50_ns": 45,
+          "p99_ns": 69
+        },
+        {
+          "op": "put",
+          "p50_ns": 120,
+          "p99_ns": 213
+        }
+      ],
+      "summary": 45,
+      "higher_is_better": false
+    }
+  ]
+}
