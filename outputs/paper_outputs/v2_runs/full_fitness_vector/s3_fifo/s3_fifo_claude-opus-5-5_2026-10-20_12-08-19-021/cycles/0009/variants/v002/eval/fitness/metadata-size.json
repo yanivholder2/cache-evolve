@@ -1,0 +1,15 @@
+{
+  "dim": "metadata-size",
+  "values": [
+    {
+      "type": "Entry<u64,u64>",
+      "bytes": 8
+    },
+    {
+      "type": "S3Fifo<u64,u64>",
+      "bytes": 288
+    }
+  ],
+  "summary": 8,
+  "higher_is_better": false
+}

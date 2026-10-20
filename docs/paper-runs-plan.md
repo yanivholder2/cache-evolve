@@ -141,7 +141,7 @@ status](#checking-run-status) for the live state.
 | F01 | full_fitness_vector | dash | claude-opus-5-5 | done | [session](https://claude.ai/code/session_01WAowihAggUXk2Qi38UYmw7) | `v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-19_11-52-26-211` | hit-rate 0.713 vs 0.663; per-op-time 67 vs 183; metadata-size 40 = 40 | [#234](https://github.com/yanivholder2/cache-evolve/pull/234) |
 | F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | done | https://claude.ai/code/session_015Jo8GAf5i1jRV8GRQRojkK | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-opus-5-5_2026-10-19_11-53-18-215` | hit-rate 0.734 vs 0.661, metadata 16 vs 40, per-op 45 vs 69 (score 0.256) | https://github.com/yanivholder2/cache-evolve/pull/235 |
 | F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | https://claude.ai/code/session_01JccMG2g1aPbYViN43Hg9hf | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-19_11-55-52-682` | hit-rate 0.731 vs 0.665; metadata 8 vs 48; per-op-time 26 vs 41 | [#236](https://github.com/yanivholder2/cache-evolve/pull/236) |
-| F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | todo | | | | |
+| F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | done | [session](https://claude.ai/code/session_011TQ2JdPeyTHk15EvP95FpY) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-opus-5-5_2026-10-20_12-08-19-021` | hit-rate 0.733 vs 0.716; per-op-time 22 vs 248; metadata-size 8 vs 24 | [#246](https://github.com/yanivholder2/cache-evolve/pull/246) |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | F06 | full_fitness_vector | dash | claude-sonnet-5-5 | todo | | | | |
 | F07 | full_fitness_vector | associative_cache | claude-sonnet-5-5 | todo | | | | |
@@ -164,8 +164,8 @@ status](#checking-run-status) for the live state.
 | H09 | only_hit_rate | s3_fifo | claude-sonnet-5-5 | todo | | | | |
 | H10 | only_hit_rate | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | H11 | only_hit_rate | dash | claude-haiku-5-5 | todo | | | | |
-| H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | todo | | | | |
-| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | todo | | | | |
+| H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_018dhG2LdphVcdxguz3MMQqT) | `v2_runs/only_hit_rate/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_14-11-42-199` | hit-rate 0.743 vs 0.661 | [#243](https://github.com/yanivholder2/cache-evolve/pull/243) |
+| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | `v2_runs/only_hit_rate/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_14-00-21-467` | hit-rate 0.737 vs 0.665 | [#245](https://github.com/yanivholder2/cache-evolve/pull/245) |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01MdVbig9j526V8JoEwAkmQk) | `v2_runs/only_hit_rate/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_14-00-19-782` | hit-rate 0.717 vs 0.716 | [#244](https://github.com/yanivholder2/cache-evolve/pull/244) |
 | H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Bmw4udWzXC5MBfeYBkWGfV) | `v2_runs/only_hit_rate/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_13-08-10-178` | hit-rate 0.743 vs 0.736 | [#242](https://github.com/yanivholder2/cache-evolve/pull/242) |
 
@@ -183,6 +183,13 @@ Frozen like the run matrix: new incidents go in the run's `promote-run` PR.
   `ZeroTokenUsageError`) and at the start of cycle 8 (hypotheses writer wrote no
   `H<NN>.md` files). Both times it was resumed with `--continue` after the reset
   and finished all 10 cycles, all 30 variants surviving.
+- **F04:** the detached `setsid nohup` launch did not survive. When the
+  launcher's Bash call hit its background time limit (~30 min), the harness
+  killed the run with it, mid-cycle 5 with no `EXIT=` line (same as F13). It
+  was resumed with `--continue` and finished all 10 cycles. In cycle 1, v001
+  and v002 were rejected at fitness because Gradle's cold dependency fetch got
+  HTTP 429 from Maven Central. That is an environment failure, not a variant
+  failure. Every later cycle had 3/3 survivors.
 - **F11:** exited 1 twice (cycles 4 and 8), both before any variant ran. Each
   time the hypotheses-writer started a background Explore agent, said it would
   wait for the agent's report, and ended its turn without writing any
@@ -198,6 +205,24 @@ Frozen like the run matrix: new incidents go in the run's `promote-run` PR.
   finished all 10 cycles, every cycle with survivors. Cycle 1 v003 was
   rejected at fitness because Maven Central returned HTTP 429 while Gradle
   fetched `caffeine-3.2.3.jar`, an infra failure rather than the variant's.
+- **H12:** the first launch was stopped and restarted from scratch in
+  cycle 2. In cycle 1 the variants ran Caffeine's first Gradle build in
+  parallel in the shared checkout, and v001 read a half-written generated
+  `FDW.java` (`reached end of file while parsing` in
+  `:caffeine:generateNodes`), so it was rejected at fitness. Once
+  generated, the sources are not rebuilt, so the restarted run did not
+  hit the race and finished all 10 cycles with 3/3 survivors in every
+  cycle. Any fresh session can hit this race on its first cycle.
+- **H13:** hit the account session limit within 10 minutes of launch, while
+  cycle 1 was still running. Cycle 1 lost v001 and v002 at the insight stage
+  (`ZeroTokenUsageError`), so only v003 survived, at baseline hit-rate. Cycle 2
+  then failed outright (0/3, exit 1). After the 14:10 UTC reset the run was
+  resumed with `--continue` and finished all 10 cycles, every cycle with at
+  least one survivor. Two later insight rejections (cycle 2 v002, cycle 4 v002)
+  are the F11 behaviour: the writer started a background agent and ended its
+  turn without writing `insight.md`. Cycle 2 v003 was rejected because its
+  hypothesis (pre-size the index) was already true of the baseline, so the
+  implementer refused to write an empty change three times.
 - **H14:** hit the account session limit in cycle 2: all three variant
   implementers returned "You've hit your session limit · resets 2:10pm (UTC)"
   and the run exited 1 with `no variants survived in cycle 0002`. It was
