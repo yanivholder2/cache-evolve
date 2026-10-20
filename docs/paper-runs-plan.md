@@ -28,6 +28,43 @@ into one dataset per mode.
 - **Never edit `config.toml` for a run.** Every setting is pinned by flag
   below, so the matrix is reproducible regardless of `config.toml` drift.
 
+### Running it in a cloud session (lessons learned)
+
+Read this before launching so you don't have to discover it yourself:
+
+- **Background tasks are cut off at 2h**, which is shorter than a run. Don't
+  launch `evolve` as a harness background task. Detach it so it survives that
+  limit (and worker restarts), and log to the scratchpad:
+  ```
+  L=<scratchpad>/<ID>.log
+  setsid nohup bash -c '.venv/bin/evolve <flags>; echo "EXIT=$?"' > $L 2>&1 < /dev/null & disown
+  ```
+  Then start a separate background *waiter* that wakes you when the run exits:
+  `until grep -q '^EXIT=' $L; do sleep 60; done; tail -3 $L`. Start a new
+  waiter if it hits the 2h limit or the worker restarts. The detached run keeps
+  going either way. Each resume writes to a new log (`<ID>-resume1.log`, …).
+- **Give the user the log path.** Once the run starts, tell the user the run
+  dir and the full absolute log path (e.g.
+  `/tmp/claude-0/.../scratchpad/F01.log`) so they can follow along. Do the same
+  after each resume.
+- **Usage/session limits kill the run, but it can be resumed.** When the
+  account hits its limit, every agent call returns at once with
+  `ZeroTokenUsageError` (0 tokens). All variants fail and the run exits 1 with
+  `no variants survived in cycle NNNN`. To confirm, grep that cycle's
+  `*.log.md` for `You've hit your session limit · resets <time>`. This is not
+  a run failure: once the limit resets, resume with `--continue` (it erases the
+  half-done cycle) and add a Notes line. Mark the row `failed` only when the
+  failure is real.
+- **Stopping a run:** use `pgrep -f "bin/evolve --subject"` and kill those PIDs.
+  `pkill -f` on the same pattern also matches your own shell and kills it
+  (exit 144).
+- **Real timing:** F01 (dash, Opus 5.5) took about 7–12 min per cycle, about
+  1.5h of compute for 10 cycles. Most of the 3–8h estimate is usage-limit
+  waits.
+- **Promote:** the container has no `rsync`. Copy with
+  `tar --exclude='*/eval/caffeine/rust-logs' --exclude='*gradle*.log'`
+  (the raw run is ~6–7 GB; the curated copy is ~7 MB).
+
 ## Commands
 
 Substitute `<S>` (subject) and `<M>` (model) from the row. Both templates
@@ -65,8 +102,9 @@ Paste into a fresh cloud session, replacing `<ID>`:
 
 > Read docs/paper-runs-plan.md and run row `<ID>`: mark the row `running` with
 > this session's link and commit it on your branch, launch the row's exact
-> command via /evolve-run, then /promote-run and mark the row `done` (or
-> `failed` with a Notes entry).
+> command via /evolve-run (detached, per "Running it in a cloud session"; give
+> me the full log path), resume with `--continue` after any usage-limit stop,
+> then /promote-run and mark the row `done` (or `failed` with a Notes entry).
 
 ## Updating this file
 
@@ -85,8 +123,8 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 
 | ID | Mode | Subject | Model | Status | Session | Run dir | Global best vs baseline | PR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| F01 | full_fitness_vector | dash | claude-opus-5-5 | todo | | | | |
-| F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
+| F01 | full_fitness_vector | dash | claude-opus-5-5 | done | [session](https://claude.ai/code/session_01WAowihAggUXk2Qi38UYmw7) | `v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-19_11-52-26-211` | hit-rate 0.713 vs 0.663; per-op-time 67 vs 183; metadata-size 40 = 40 | [#234](https://github.com/yanivholder2/cache-evolve/pull/234) |
+| F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | done | https://claude.ai/code/session_015Jo8GAf5i1jRV8GRQRojkK | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-opus-5-5_2026-10-19_11-53-18-215` | hit-rate 0.734 vs 0.661, metadata 16 vs 40, per-op 45 vs 69 (score 0.256) | https://github.com/yanivholder2/cache-evolve/pull/235 |
 | F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | https://claude.ai/code/session_01JccMG2g1aPbYViN43Hg9hf | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-19_11-55-52-682` | hit-rate 0.731 vs 0.665; metadata 8 vs 48; per-op-time 26 vs 41 | [#236](https://github.com/yanivholder2/cache-evolve/pull/236) |
 | F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | todo | | | | |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
@@ -96,10 +134,10 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F09 | full_fitness_vector | s3_fifo | claude-sonnet-5-5 | todo | | | | |
 | F10 | full_fitness_vector | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | F11 | full_fitness_vector | dash | claude-haiku-5-5 | todo | | | | |
-| F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | todo | | | | |
+| F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_016kRPvF7L8PHK3phJHi1jKZ) | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_11-17-39-256` | hit-rate 0.728 vs 0.661; per-op-time 51 vs 69; metadata-size 40 = 40 | [#240](https://github.com/yanivholder2/cache-evolve/pull/240) |
 | F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | todo | | | | |
 | F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | todo | | | | |
-| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | todo | | | | |
+| F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01EYsUrbsS22NguLbL53fDxv) | `v2_runs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_09-59-28-671` | hit-rate 0.742 vs 0.736; per-op-time 54 vs 132; metadata-size 32 vs 48 | [#237](https://github.com/yanivholder2/cache-evolve/pull/237) |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | H02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
 | H03 | only_hit_rate | lru_cache | claude-opus-5-5 | todo | | | | |
@@ -118,4 +156,14 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 
 ## Notes
 
-_None yet._
+- **F01:** hit the account usage limit twice (cycles 5 and 9), with
+  `ZeroTokenUsageError` and "You've hit your session limit". Both times it was
+  resumed with `--continue` after the reset and finished all 10 cycles, every
+  cycle with survivors. Cycle 9 v003 was rejected because its insight writer
+  ended its turn "waiting for the agent's report" without writing `insight.md`.
+  That is an agent-behaviour failure, not a limit.
+
+- **F03:** hit the account session limit twice, in cycle 6 (insight writer,
+  `ZeroTokenUsageError`) and at the start of cycle 8 (hypotheses writer wrote no
+  `H<NN>.md` files). Both times it was resumed with `--continue` after the reset
+  and finished all 10 cycles, all 30 variants surviving.

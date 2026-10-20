@@ -1,0 +1,56 @@
+[subject]
+name = "associative_cache"
+crate-path = "."
+cdylib-name = "associative_cache"
+
+[[extension-points]]
+name = "eviction-policy"
+contract = "associative_cache::shared::eviction_policy::EvictionPolicy"
+impl-files = ["src/shared/eviction_policy.rs"]
+description = "Algorithm choosing which item to evict from a bucket"
+
+[[extension-points]]
+name = "bucket"
+contract = "associative_cache::shared::traits::Bucket"
+impl-files = ["src/associative_cache/associative_cache_bucket.rs"]
+description = "Container for items within the cache"
+
+[[extension-points]]
+name = "geometry"
+contract = "associative_cache::shared::traits::BucketGeometry"
+impl-files = ["src/shared/geometry.rs"]
+description = "Factors the fixed total capacity into bucket count and bucket size"
+
+[[gates]]
+name = "invariant gate"
+test = "invariant_gate"
+marker = "invariant gate violated: P[1-4] [a-z_]+"
+
+[contract]
+protected-files = ["src/associative_cache/associative_cache_jni.rs", "src/factory.rs"]
+
+[caffeine]
+config-prefix = "caffeine.simulator.associativeCache"
+policy-spec-name = "associative.AssociativeCacheRust"
+policy-key = "policy"
+supports-log-path = false
+
+# numOfBuckets is read Java-side via getDoubleList, so it must be a list even
+# though we sweep a single value. See AssociativeCacheRustPolicy.numOfBuckets().
+[caffeine.geometry]
+numOfBuckets = [128]
+
+[metadata]
+binary-name = "associative_cache-evolve-metadata-size"
+
+[bench]
+binary-name = "associative_cache-evolve-per-op-time"
+
+[docs]
+context = "CONTEXT.md"
+insight = "baseline/insight.md"
+
+[evaluation]
+fitness-vector = "baseline/eval/fitness-vector.json"
+traces = ["lirs:inputs/traces/workload-a.trace.gz"]
+sizes = [2048]
