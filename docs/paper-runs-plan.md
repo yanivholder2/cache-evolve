@@ -135,7 +135,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F10 | full_fitness_vector | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | F11 | full_fitness_vector | dash | claude-haiku-5-5 | todo | | | | |
 | F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_016kRPvF7L8PHK3phJHi1jKZ) | `v2_runs/full_fitness_vector/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_11-17-39-256` | hit-rate 0.728 vs 0.661; per-op-time 51 vs 69; metadata-size 40 = 40 | [#240](https://github.com/yanivholder2/cache-evolve/pull/240) |
-| F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | todo | | | | |
+| F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01UB8SgNBhVia7sv4HnZkAjN) | `v2_runs/full_fitness_vector/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_11-17-42-329` | hit-rate 0.724 vs 0.665; per-op-time 35 vs 41; metadata-size 16 vs 48 | [#241](https://github.com/yanivholder2/cache-evolve/pull/241) |
 | F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_017536x5FADQvAAG92zzSgmx) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_11-17-18-755` | hit-rate 0.722 vs 0.716; per-op-time 41 vs 248; metadata-size 16 vs 24 | [#239](https://github.com/yanivholder2/cache-evolve/pull/239) |
 | F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01EYsUrbsS22NguLbL53fDxv) | `v2_runs/full_fitness_vector/tiny_lfu/tiny_lfu_claude-haiku-5-5_2026-10-20_09-59-28-671` | hit-rate 0.742 vs 0.736; per-op-time 54 vs 132; metadata-size 32 vs 48 | [#237](https://github.com/yanivholder2/cache-evolve/pull/237) |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
@@ -162,8 +162,14 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   cycle with survivors. Cycle 9 v003 was rejected because its insight writer
   ended its turn "waiting for the agent's report" without writing `insight.md`.
   That is an agent-behaviour failure, not a limit.
-
 - **F03:** hit the account session limit twice, in cycle 6 (insight writer,
   `ZeroTokenUsageError`) and at the start of cycle 8 (hypotheses writer wrote no
   `H<NN>.md` files). Both times it was resumed with `--continue` after the reset
   and finished all 10 cycles, all 30 variants surviving.
+- **F13:** the detached `setsid nohup` launch did not survive: the harness
+  killed the run with its launcher shell when that Bash call hit its timeout,
+  in cycle 7 with no `EXIT=` line. It was resumed with `--continue` as a
+  tracked background task (2h limit, enough for the ~5 min/cycle left) and
+  finished all 10 cycles, every cycle with survivors. Cycle 1 v003 was
+  rejected at fitness because Maven Central returned HTTP 429 while Gradle
+  fetched `caffeine-3.2.3.jar`, an infra failure rather than the variant's.
