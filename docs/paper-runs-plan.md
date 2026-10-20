@@ -136,7 +136,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F11 | full_fitness_vector | dash | claude-haiku-5-5 | todo | | | | |
 | F12 | full_fitness_vector | associative_cache | claude-haiku-5-5 | todo | | | | |
 | F13 | full_fitness_vector | lru_cache | claude-haiku-5-5 | todo | | | | |
-| F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | running | [session](https://claude.ai/code/session_017536x5FADQvAAG92zzSgmx) | | | |
+| F14 | full_fitness_vector | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_017536x5FADQvAAG92zzSgmx) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_11-17-18-755` | hit-rate 0.722 vs 0.716; per-op-time 41 vs 248; metadata-size 16 vs 24 | |
 | F15 | full_fitness_vector | tiny_lfu | claude-haiku-5-5 | todo | | | | |
 | H01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | H02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
