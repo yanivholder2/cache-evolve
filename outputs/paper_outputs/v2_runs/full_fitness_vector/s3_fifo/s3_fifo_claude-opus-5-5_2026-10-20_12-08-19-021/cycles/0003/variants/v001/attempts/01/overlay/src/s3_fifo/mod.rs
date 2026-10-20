@@ -1,0 +1,577 @@
+use std::collections::{HashMap, VecDeque};
+use std::fmt::Debug;
+use std::hash::{BuildHasher, Hash, Hasher};
+
+pub mod s3_fifo_jni;
+
+// Simple S3-FIFO implementation derived from "FIFO Queues are ALL You Need for
+// Cache Eviction" by Juncheng Yang et al. The policy uses a small FIFO admission
+// queue, a main FIFO resident queue, and a ghost queue for recently evicted
+// items. Reaccesses to ghosted keys promote them into the main queue, and main
+// eviction uses a second-chance-style frequency decrement.
+//
+// Variant cycle/0002/v003 (H03): entries live in a slab (`slots`) addressed by
+// `u32` indices; `small` / `main` are FIFOs of slot indices; `index` maps
+// resident keys to their slot, so `get` and the residency check in `put` are
+// O(1). Ghosts keep a FIFO for order plus a hashed membership map with lazy
+// deletion (no `iter().any` / `retain` on the hot path).
+//
+// Variant cycle/0003/v001 (H01): ARC-correct two-ghost split adaptation.
+// - `ghost` holds small-queue victims; a hit there means small was too small,
+//   so small grows by one slot (up to capacity / 2).
+// - `mghost` holds main-queue victims; a hit there means main was too small,
+//   so main grows by one slot (small shrinks, down to capacity / 16).
+// - The graduation-while-main-full trigger has been removed.
+// `small_size + main_size` always equals `capacity`. A key is in at most one
+// ghost, and resident keys are in neither.
+const MAX_FREQ: u8 = 3;
+
+// ---------------------------------------------------------------------------
+// Inline FxHash (rustc-hash) — Cargo.toml cannot change, so no external crate.
+// ---------------------------------------------------------------------------
+
+const FX_SEED: u64 = 0x51_7c_c1_b7_27_22_0a_95;
+
+#[derive(Debug, Default, Clone, Copy)]
+pub struct FxHasher {
+	hash: u64,
+}
+
+impl FxHasher {
+	#[inline]
+	fn add_to_hash(&mut self, word: u64) {
+		self.hash = (self.hash.rotate_left(5) ^ word).wrapping_mul(FX_SEED);
+	}
+}
+
+impl Hasher for FxHasher {
+	#[inline]
+	fn write(&mut self, bytes: &[u8]) {
+		let mut chunks = bytes.chunks_exact(8);
+		for chunk in &mut chunks {
+			let mut buf = [0u8; 8];
+			buf.copy_from_slice(chunk);
+			self.add_to_hash(u64::from_le_bytes(buf));
+		}
+		for &b in chunks.remainder() {
+			self.add_to_hash(b as u64);
+		}
+	}
+
+	#[inline]
+	fn write_u8(&mut self, i: u8) {
+		self.add_to_hash(i as u64);
+	}
+
+	#[inline]
+	fn write_u16(&mut self, i: u16) {
+		self.add_to_hash(i as u64);
+	}
+
+	#[inline]
+	fn write_u32(&mut self, i: u32) {
+		self.add_to_hash(i as u64);
+	}
+
+	#[inline]
+	fn write_u64(&mut self, i: u64) {
+		self.add_to_hash(i);
+	}
+
+	#[inline]
+	fn write_usize(&mut self, i: usize) {
+		self.add_to_hash(i as u64);
+	}
+
+	#[inline]
+	fn finish(&self) -> u64 {
+		self.hash
+	}
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub struct FxBuildHasher;
+
+impl BuildHasher for FxBuildHasher {
+	type Hasher = FxHasher;
+
+	#[inline]
+	fn build_hasher(&self) -> FxHasher {
+		FxHasher::default()
+	}
+}
+
+type FxHashMap<K, V> = HashMap<K, V, FxBuildHasher>;
+
+// ---------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct Entry<K, V> {
+	key: K,
+	value: V,
+	freq: u8,
+}
+
+impl<K, V> Entry<K, V> {
+	fn new(key: K, value: V) -> Self {
+		Self { key, value, freq: 0 }
+	}
+}
+
+#[derive(Debug)]
+pub struct S3Fifo<K: PartialEq + Clone, V> {
+	/// Slab of entries; `None` marks a free slot (listed in `free`).
+	slots: Vec<Option<Entry<K, V>>>,
+	free: Vec<u32>,
+	/// Resident key -> slot index.
+	index: FxHashMap<K, u32>,
+	small: VecDeque<u32>,
+	main: VecDeque<u32>,
+	/// Small-victim ghost FIFO order: (key, stamp). An element is live iff
+	/// `ghost_set[key] == stamp`; otherwise it is a stale lazily-deleted record.
+	ghost: VecDeque<(K, u64)>,
+	/// Ghosted key -> stamp of its live record in `ghost`.
+	ghost_set: FxHashMap<K, u64>,
+	ghost_live: usize,
+	/// Stamp counter shared by both ghosts.
+	ghost_stamp: u64,
+	/// Main-victim ghost FIFO order (same stamped lazy-deletion scheme).
+	mghost: VecDeque<(K, u64)>,
+	mghost_set: FxHashMap<K, u64>,
+	mghost_live: usize,
+	mghost_cap: usize,
+	small_size: usize,
+	main_size: usize,
+	capacity: usize,
+	ghost_cap: usize,
+}
+
+impl<K: PartialEq + Eq + Hash + Clone, V> S3Fifo<K, V> {
+	pub fn try_new(capacity: usize) -> Option<Self> {
+		if capacity == 0 {
+			log::error!("S3Fifo.try_new: capacity must be > 0");
+			return None;
+		}
+		if capacity > u32::MAX as usize {
+			log::error!("S3Fifo.try_new: capacity must fit in u32");
+			return None;
+		}
+		let small_size = if capacity == 1 {
+			1
+		} else {
+			(capacity / 4).max(1).min(capacity - 1)
+		};
+		let main_size = capacity - small_size;
+		let mghost_cap = (capacity / 2).max(1);
+		let index = FxHashMap::with_capacity_and_hasher(capacity, FxBuildHasher);
+		Some(Self {
+			slots: Vec::with_capacity(capacity),
+			free: Vec::with_capacity(capacity),
+			index,
+			small: VecDeque::with_capacity(capacity),
+			main: VecDeque::with_capacity(capacity),
+			ghost: VecDeque::with_capacity(Self::ghost_phys_bound(main_size) + 1),
+			ghost_set: FxHashMap::with_capacity_and_hasher(main_size + 1, FxBuildHasher),
+			ghost_live: 0,
+			ghost_stamp: 0,
+			mghost: VecDeque::with_capacity(Self::ghost_phys_bound(mghost_cap) + 1),
+			mghost_set: FxHashMap::with_capacity_and_hasher(mghost_cap + 1, FxBuildHasher),
+			mghost_live: 0,
+			mghost_cap,
+			small_size,
+			main_size,
+			capacity,
+			ghost_cap: main_size,
+		})
+	}
+
+	pub fn new(capacity: usize) -> Self {
+		Self::try_new(capacity).expect("S3Fifo::new: initialization failed")
+	}
+
+	#[inline]
+	fn adaptive(&self) -> bool {
+		self.capacity >= 4
+	}
+
+	#[inline]
+	fn ghost_phys_bound(ghost_cap: usize) -> usize {
+		2 * ghost_cap.max(1)
+	}
+
+	// ---- slab helpers -----------------------------------------------------
+
+	#[inline]
+	fn slot(&self, i: u32) -> &Entry<K, V> {
+		self.slots[i as usize].as_ref().expect("S3Fifo: queue references a free slot")
+	}
+
+	#[inline]
+	fn slot_mut(&mut self, i: u32) -> &mut Entry<K, V> {
+		self.slots[i as usize].as_mut().expect("S3Fifo: queue references a free slot")
+	}
+
+	/// Store a new resident entry and register it in `index`.
+	#[inline]
+	fn alloc(&mut self, entry: Entry<K, V>) -> u32 {
+		let key = entry.key.clone();
+		let i = match self.free.pop() {
+			Some(i) => {
+				self.slots[i as usize] = Some(entry);
+				i
+			}
+			None => {
+				let i = self.slots.len() as u32;
+				self.slots.push(Some(entry));
+				i
+			}
+		};
+		self.index.insert(key, i);
+		i
+	}
+
+	/// Remove a resident entry from the slab and `index`; return it.
+	#[inline]
+	fn release(&mut self, i: u32) -> Entry<K, V> {
+		let entry = self.slots[i as usize].take().expect("S3Fifo: double release of slot");
+		self.index.remove(&entry.key);
+		self.free.push(i);
+		entry
+	}
+
+	// ---- small-victim ghost helpers ---------------------------------------
+
+	/// O(1) ghost membership test + removal (lazy: the FIFO record stays and
+	/// becomes stale).
+	#[inline]
+	fn ghost_take(&mut self, key: &K) -> bool {
+		if self.ghost_set.remove(key).is_some() {
+			self.ghost_live -= 1;
+			true
+		} else {
+			false
+		}
+	}
+
+	/// Drop the oldest *live* ghost record, discarding stale records on the way.
+	fn ghost_pop_oldest_live(&mut self) {
+		while let Some((k, stamp)) = self.ghost.pop_back() {
+			if self.ghost_set.get(&k) == Some(&stamp) {
+				self.ghost_set.remove(&k);
+				self.ghost_live -= 1;
+				return;
+			}
+		}
+	}
+
+	fn ghost_push(&mut self, key: K) {
+		// A key lives in at most one ghost.
+		self.mghost_take(&key);
+		if self.ghost_live >= self.ghost_cap {
+			self.ghost_pop_oldest_live();
+		}
+		self.ghost_stamp = self.ghost_stamp.wrapping_add(1);
+		let stamp = self.ghost_stamp;
+		self.ghost_set.insert(key.clone(), stamp);
+		self.ghost.push_front((key, stamp));
+		self.ghost_live += 1;
+		if self.ghost.len() > Self::ghost_phys_bound(self.ghost_cap) {
+			let set = &self.ghost_set;
+			self.ghost.retain(|(k, s)| set.get(k) == Some(s));
+		}
+	}
+
+	// ---- main-victim ghost helpers ----------------------------------------
+
+	#[inline]
+	fn mghost_take(&mut self, key: &K) -> bool {
+		if self.mghost_set.remove(key).is_some() {
+			self.mghost_live -= 1;
+			true
+		} else {
+			false
+		}
+	}
+
+	fn mghost_pop_oldest_live(&mut self) {
+		while let Some((k, stamp)) = self.mghost.pop_back() {
+			if self.mghost_set.get(&k) == Some(&stamp) {
+				self.mghost_set.remove(&k);
+				self.mghost_live -= 1;
+				return;
+			}
+		}
+	}
+
+	fn mghost_push(&mut self, key: K) {
+		// A key lives in at most one ghost.
+		self.ghost_take(&key);
+		if self.mghost_live >= self.mghost_cap {
+			self.mghost_pop_oldest_live();
+		}
+		self.ghost_stamp = self.ghost_stamp.wrapping_add(1);
+		let stamp = self.ghost_stamp;
+		self.mghost_set.insert(key.clone(), stamp);
+		self.mghost.push_front((key, stamp));
+		self.mghost_live += 1;
+		if self.mghost.len() > Self::ghost_phys_bound(self.mghost_cap) {
+			let set = &self.mghost_set;
+			self.mghost.retain(|(k, s)| set.get(k) == Some(s));
+		}
+	}
+
+	// ---- public API -------------------------------------------------------
+
+	pub fn get(&mut self, key: &K) -> Option<&V> {
+		let &i = self.index.get(key)?;
+		let entry = self.slots[i as usize].as_mut()?;
+		entry.freq = (entry.freq.saturating_add(1)).min(MAX_FREQ);
+		Some(&entry.value)
+	}
+
+	pub fn put(&mut self, key: K, value: V) {
+		if let Some(&i) = self.index.get(&key) {
+			self.slot_mut(i).value = value;
+			return;
+		}
+
+		if self.mghost_take(&key) {
+			// Main-ghost hit -> main was too small: grow main (shrink small).
+			if self.adaptive() && self.small_size > (self.capacity / 16).max(1) {
+				self.small_size -= 1;
+				self.main_size += 1;
+				if self.small.len() > self.small_size {
+					self.evict_small_inner();
+				}
+			}
+			if self.main.len() >= self.main_size {
+				self.evict_main();
+			}
+			let i = self.alloc(Entry::new(key, value));
+			self.main.push_front(i);
+			return;
+		}
+
+		if self.ghost_take(&key) {
+			// Small-ghost hit -> small was too small: grow small (shrink main).
+			if self.adaptive() && self.small_size < self.capacity / 2 {
+				self.small_size += 1;
+				self.main_size -= 1;
+				if self.main.len() > self.main_size {
+					self.evict_main();
+				}
+			}
+			if self.main.len() >= self.main_size {
+				self.evict_main();
+			}
+			let i = self.alloc(Entry::new(key, value));
+			self.main.push_front(i);
+			return;
+		}
+
+		if self.small.len() >= self.small_size {
+			self.evict_small();
+		}
+		let i = self.alloc(Entry::new(key, value));
+		self.small.push_front(i);
+	}
+
+	fn evict_main(&mut self) {
+		while let Some(i) = self.main.pop_back() {
+			let entry = self.slot_mut(i);
+			if entry.freq > 0 {
+				entry.freq -= 1;
+				self.main.push_front(i);
+			} else {
+				let entry = self.release(i);
+				self.mghost_push(entry.key);
+				break;
+			}
+		}
+	}
+
+	fn evict_small(&mut self) {
+		self.evict_small_inner();
+	}
+
+	fn evict_small_inner(&mut self) {
+		if let Some(i) = self.small.pop_back() {
+			if self.slot(i).freq > 1 {
+				if self.main.len() >= self.main_size {
+					self.evict_main();
+				}
+				self.main.push_front(i);
+			} else {
+				let entry = self.release(i);
+				self.ghost_push(entry.key);
+			}
+		}
+	}
+
+	// ---- test helpers -----------------------------------------------------
+
+	#[cfg(test)]
+	fn in_main(&self, key: &K) -> bool {
+		self.main.iter().any(|&i| &self.slot(i).key == key)
+	}
+
+	#[cfg(test)]
+	fn push_main_back_for_test(&mut self, entry: Entry<K, V>) {
+		let i = self.alloc(entry);
+		self.main.push_back(i);
+	}
+
+	#[cfg(test)]
+	fn push_small_front_for_test(&mut self, entry: Entry<K, V>) {
+		let i = self.alloc(entry);
+		self.small.push_front(i);
+	}
+}
+
+impl<K: PartialEq + Eq + std::hash::Hash + Clone + Debug, V: Debug> framework::Cache<K, V> for S3Fifo<K, V> {
+	fn put(&mut self, key: K, value: V) {
+		S3Fifo::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		S3Fifo::get(self, key)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn get_miss_returns_none() {
+		let mut cache = S3Fifo::<i64, i64>::new(4);
+		assert!(cache.get(&42).is_none());
+	}
+
+	#[test]
+	fn put_then_get_finds_value() {
+		let mut cache = S3Fifo::new(4);
+		cache.put(1, 10);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn put_existing_updates_value() {
+		let mut cache = S3Fifo::new(4);
+		cache.put(1, 10);
+		cache.put(1, 20);
+		assert_eq!(*cache.get(&1).unwrap(), 20);
+	}
+
+	#[test]
+	fn small_eviction_promotes_to_main_after_multiple_hits() {
+		let mut cache = S3Fifo::new(4);
+		cache.put(1, 10);
+		cache.get(&1);
+		cache.get(&1);
+		cache.put(2, 20);
+		assert!(cache.in_main(&1));
+	}
+
+	#[test]
+	fn ghost_hit_promotes_back_to_main() {
+		let mut cache = S3Fifo::new(4);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(3, 30);
+		cache.put(4, 40);
+		cache.put(1, 10);
+		assert!(cache.in_main(&1));
+	}
+
+	#[test]
+	fn main_eviction_uses_frequency_second_chance() {
+		let mut cache = S3Fifo::new(5);
+		cache.push_main_back_for_test(Entry { freq: 0, ..Entry::new(1, 10) });
+		cache.push_main_back_for_test(Entry { freq: 2, ..Entry::new(2, 20) });
+		cache.push_main_back_for_test(Entry { freq: 0, ..Entry::new(3, 30) });
+		cache.push_main_back_for_test(Entry { freq: 1, ..Entry::new(4, 40) });
+		cache.push_small_front_for_test(Entry { freq: 2, ..Entry::new(5, 50) });
+		cache.evict_small();
+		assert!(cache.in_main(&4));
+		assert!(!cache.in_main(&3));
+		assert!(cache.get(&3).is_none());
+	}
+
+	#[test]
+	fn main_victim_goes_to_main_ghost() {
+		let mut cache = S3Fifo::new(5);
+		cache.push_main_back_for_test(Entry { freq: 0, ..Entry::new(1, 10) });
+		cache.evict_main();
+		assert!(cache.mghost_set.contains_key(&1));
+		assert!(!cache.ghost_set.contains_key(&1));
+	}
+
+	#[test]
+	fn capacity_bound_never_exceeded() {
+		let mut cache = S3Fifo::new(4);
+		for key in 0..20 {
+			cache.put(key, key);
+		}
+		assert!(cache.small.len() + cache.main.len() <= 4);
+		assert_eq!(cache.index.len(), cache.small.len() + cache.main.len());
+	}
+
+	#[test]
+	fn adaptive_split_keeps_bounds() {
+		let cap = 64;
+		let mut cache = S3Fifo::new(cap);
+		for round in 0..50i64 {
+			for key in 0..200i64 {
+				let k = (key * 7 + round) % 150;
+				if cache.get(&k).is_none() {
+					cache.put(k, k);
+				}
+				assert!(cache.small.len() + cache.main.len() <= cap);
+				assert_eq!(cache.small_size + cache.main_size, cap);
+				assert!(cache.small_size >= 1 && cache.main_size >= 1);
+				assert!(cache.small_size >= (cap / 16).max(1));
+				assert!(cache.small_size <= cap / 2);
+				assert!(cache.ghost_live <= cache.ghost_cap);
+				assert_eq!(cache.ghost_live, cache.ghost_set.len());
+				assert!(cache.ghost.len() <= S3Fifo::<i64, i64>::ghost_phys_bound(cache.ghost_cap));
+				assert!(cache.mghost_live <= cache.mghost_cap);
+				assert_eq!(cache.mghost_live, cache.mghost_set.len());
+				assert!(cache.mghost.len() <= S3Fifo::<i64, i64>::ghost_phys_bound(cache.mghost_cap));
+				for k in cache.mghost_set.keys() {
+					assert!(!cache.ghost_set.contains_key(k));
+				}
+			}
+		}
+	}
+
+	#[test]
+	fn index_tracks_residency() {
+		let cap = 64;
+		let mut cache = S3Fifo::new(cap);
+		for round in 0..50i64 {
+			for key in 0..200i64 {
+				let k = (key * 7 + round) % 150;
+				if cache.get(&k).is_none() {
+					cache.put(k, k);
+				}
+				assert_eq!(cache.index.len(), cache.small.len() + cache.main.len());
+				for &i in cache.small.iter().chain(cache.main.iter()) {
+					let e = cache.slot(i);
+					assert_eq!(cache.index.get(&e.key), Some(&i));
+					assert!(!cache.ghost_set.contains_key(&e.key));
+					assert!(!cache.mghost_set.contains_key(&e.key));
+				}
+			}
+		}
+	}
+
+	#[test]
+	fn repeated_get_clamps_frequency() {
+		let mut cache = S3Fifo::new(4);
+		cache.put(1, 10);
+		for _ in 0..10 {
+			assert_eq!(*cache.get(&1).unwrap(), 10);
+		}
+	}
+}
