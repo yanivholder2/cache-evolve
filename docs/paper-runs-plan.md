@@ -126,7 +126,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | F01 | full_fitness_vector | dash | claude-opus-5-5 | done | [session](https://claude.ai/code/session_01WAowihAggUXk2Qi38UYmw7) | `v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-19_11-52-26-211` | hit-rate 0.713 vs 0.663; per-op-time 67 vs 183; metadata-size 40 = 40 | [#234](https://github.com/yanivholder2/cache-evolve/pull/234) |
 | F02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
 | F03 | full_fitness_vector | lru_cache | claude-opus-5-5 | todo | | | | |
-| F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | done | [session](https://claude.ai/code/session_011TQ2JdPeyTHk15EvP95FpY) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-opus-5-5_2026-10-20_12-08-19-021` | hit-rate 0.733 vs 0.716; per-op-time 22 vs 248; metadata-size 8 vs 24 | |
+| F04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | done | [session](https://claude.ai/code/session_011TQ2JdPeyTHk15EvP95FpY) | `v2_runs/full_fitness_vector/s3_fifo/s3_fifo_claude-opus-5-5_2026-10-20_12-08-19-021` | hit-rate 0.733 vs 0.716; per-op-time 22 vs 248; metadata-size 8 vs 24 | [#246](https://github.com/yanivholder2/cache-evolve/pull/246) |
 | F05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | F06 | full_fitness_vector | dash | claude-sonnet-5-5 | todo | | | | |
 | F07 | full_fitness_vector | associative_cache | claude-sonnet-5-5 | todo | | | | |
