@@ -150,7 +150,7 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
 | H10 | only_hit_rate | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
 | H11 | only_hit_rate | dash | claude-haiku-5-5 | todo | | | | |
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | todo | | | | |
-| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | running | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | | | |
+| H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | `v2_runs/only_hit_rate/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_14-00-21-467` | hit-rate 0.737 vs 0.665 | |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | todo | | | | |
 | H15 | only_hit_rate | tiny_lfu | claude-haiku-5-5 | todo | | | | |
 
@@ -181,3 +181,13 @@ Status is `todo` / `running` / `done` / `failed`. First batch: F01–F05.
   finished all 10 cycles, every cycle with survivors. Cycle 1 v003 was
   rejected at fitness because Maven Central returned HTTP 429 while Gradle
   fetched `caffeine-3.2.3.jar`, an infra failure rather than the variant's.
+- **H13:** hit the account session limit within 10 minutes of launch, while
+  cycle 1 was still running. Cycle 1 lost v001 and v002 at the insight stage
+  (`ZeroTokenUsageError`), so only v003 survived, at baseline hit-rate. Cycle 2
+  then failed outright (0/3, exit 1). After the 14:10 UTC reset the run was
+  resumed with `--continue` and finished all 10 cycles, every cycle with at
+  least one survivor. Two later insight rejections (cycle 2 v002, cycle 4 v002)
+  are the F11 behaviour: the writer started a background agent and ended its
+  turn without writing `insight.md`. Cycle 2 v003 was rejected because its
+  hypothesis (pre-size the index) was already true of the baseline, so the
+  implementer refused to write an empty change three times.
