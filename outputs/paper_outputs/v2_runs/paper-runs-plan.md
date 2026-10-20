@@ -163,7 +163,7 @@ status](#checking-run-status) for the live state.
 | H08 | only_hit_rate | lru_cache | claude-sonnet-5-5 | todo | | | | |
 | H09 | only_hit_rate | s3_fifo | claude-sonnet-5-5 | todo | | | | |
 | H10 | only_hit_rate | tiny_lfu | claude-sonnet-5-5 | todo | | | | |
-| H11 | only_hit_rate | dash | claude-haiku-5-5 | todo | | | | |
+| H11 | only_hit_rate | dash | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01QHMEtgPhnyZUhD2GetHjbd) | `v2_runs/only_hit_rate/dash/dash_claude-haiku-5-5_2026-10-20_14-02-03-762` | hit-rate 0.691 vs 0.663 (cycle 9 v003) | [#247](https://github.com/yanivholder2/cache-evolve/pull/247) |
 | H12 | only_hit_rate | associative_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_018dhG2LdphVcdxguz3MMQqT) | `v2_runs/only_hit_rate/associative_cache/associative_cache_claude-haiku-5-5_2026-10-20_14-11-42-199` | hit-rate 0.743 vs 0.661 | [#243](https://github.com/yanivholder2/cache-evolve/pull/243) |
 | H13 | only_hit_rate | lru_cache | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01Lor6rbEG64XV6jKWZWh6hg) | `v2_runs/only_hit_rate/lru_cache/lru_cache_claude-haiku-5-5_2026-10-20_14-00-21-467` | hit-rate 0.737 vs 0.665 | [#245](https://github.com/yanivholder2/cache-evolve/pull/245) |
 | H14 | only_hit_rate | s3_fifo | claude-haiku-5-5 | done | [session](https://claude.ai/code/session_01MdVbig9j526V8JoEwAkmQk) | `v2_runs/only_hit_rate/s3_fifo/s3_fifo_claude-haiku-5-5_2026-10-20_14-00-19-782` | hit-rate 0.717 vs 0.716 | [#244](https://github.com/yanivholder2/cache-evolve/pull/244) |
