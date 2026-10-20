@@ -1,0 +1,17 @@
+{
+  "dim": "per-op-time",
+  "values": [
+    {
+      "op": "get",
+      "p50_ns": 55,
+      "p99_ns": 100
+    },
+    {
+      "op": "put",
+      "p50_ns": 78,
+      "p99_ns": 134
+    }
+  ],
+  "summary": 55,
+  "higher_is_better": false
+}
