@@ -1,0 +1,179 @@
+04:17:19 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0002 allocated at /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002 ===
+04:17:19 INFO     [MainThread : evolve.cli : run_cycle] cohort_size=3 adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5)
+04:17:19 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses ---
+04:17:19 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] generating 3 hypotheses for cycle 0002 into /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses
+04:17:19 DEBUG    [MainThread : evolve.hypothesis.writer : write_hypotheses] wrote task spec: /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/task.md
+04:17:19 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses allow_edits=True
+04:17:19 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache')]
+04:17:47 INFO     [MainThread : evolve.llm.base_adapter : run] agent hypotheses-writer finished status=ok usage=input_tokens=16, output_tokens=3241, cache_read_tokens=177907, cache_write_tokens=13030, cost_usd=0.102727 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/hypotheses-writer.log.md
+04:17:47 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent hypotheses-writer produced 3 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses: ['H01.md', 'H02.md', 'H03.md']
+04:17:47 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] adapter produced 3 hypothesis files in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: 'Adding a bounded ghost list of recently evicted probation keys that lets re-referenced keys re-enter directly into protected will raise hit-rate over v003 on scan-heavy traces.'
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: cycle/0001/v003
+04:17:47 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim='Adding a bounded ghost list of recently evicted probation keys that lets re-referenced keys re-enter directly into protected will raise hit-rate over v003 on scan-heavy traces.' parent=cycle/0001/v003 changes=664 chars
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: 'Lowering the protected segment share from 80% to 50% of capacity in the segmented LRU will raise hit-rate by giving probation more room to catch second hits.'
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: cycle/0001/v003
+04:17:47 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim='Lowering the protected segment share from 80% to 50% of capacity in the segmented LRU will raise hit-rate by giving probation more room to catch second hits.' parent=cycle/0001/v003 changes=345 chars
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: ['', 'Changes', 'Parent']
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: 'Replacing strict LRU in the baseline with a CLOCK second-chance eviction scheme will raise hit-rate on scan-heavy traces while cutting per-hit work.'
+04:17:47 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: baseline
+04:17:47 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Replacing strict LRU in the baseline with a CLOCK second-chance eviction scheme will raise hit-rate on scan-heavy traces while cutting per-hit work.' parent=baseline changes=688 chars
+04:17:47 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses done (27.4s) ---
+04:17:47 INFO     [MainThread : evolve.cli : _phase] --- per-variant ---
+04:17:47 DEBUG    [v001 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md
+04:17:47 DEBUG    [v001 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+04:17:47 DEBUG    [v002 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md
+04:17:47 DEBUG    [v001 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: 'Adding a bounded ghost list of recently evicted probation keys that lets re-referenced keys re-enter directly into protected will raise hit-rate over v003 on scan-heavy traces.'
+04:17:47 DEBUG    [v003 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md
+04:17:47 DEBUG    [v001 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: cycle/0001/v003
+04:17:47 DEBUG    [v002 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+04:17:47 INFO     [v001 : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim='Adding a bounded ghost list of recently evicted probation keys that lets re-referenced keys re-enter directly into protected will raise hit-rate over v003 on scan-heavy traces.' parent=cycle/0001/v003 changes=664 chars
+04:17:47 DEBUG    [v002 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: 'Lowering the protected segment share from 80% to 50% of capacity in the segmented LRU will raise hit-rate by giving probation more room to catch second hits.'
+04:17:47 DEBUG    [v003 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: ['', 'Changes', 'Parent']
+04:17:47 DEBUG    [v002 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: cycle/0001/v003
+04:17:47 DEBUG    [v003 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: 'Replacing strict LRU in the baseline with a CLOCK second-chance eviction scheme will raise hit-rate on scan-heavy traces while cutting per-hit work.'
+04:17:47 INFO     [v002 : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim='Lowering the protected segment share from 80% to 50% of capacity in the segmented LRU will raise hit-rate by giving probation more room to catch second hits.' parent=cycle/0001/v003 changes=345 chars
+04:17:47 DEBUG    [v003 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: baseline
+04:17:47 INFO     [v003 : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Replacing strict LRU in the baseline with a CLOCK second-chance eviction scheme will raise hit-rate on scan-heavy traces while cutting per-hit work.' parent=baseline changes=688 chars
+04:17:47 DEBUG    [v001 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001/attempts/01/task.md
+04:17:47 DEBUG    [v003 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003/attempts/01/task.md
+04:17:47 DEBUG    [v002 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002/attempts/01/task.md
+04:17:47 INFO     [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001/attempts/01 allow_edits=True
+04:17:47 DEBUG    [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0001/variants/v003'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache')]
+04:17:47 INFO     [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003/attempts/01 allow_edits=True
+04:17:47 DEBUG    [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache/baseline'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache')]
+04:17:47 INFO     [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002/attempts/01 allow_edits=True
+04:17:47 DEBUG    [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0001/variants/v003'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache')]
+04:18:11 INFO     [v002 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=10, output_tokens=3606, cache_read_tokens=108306, cache_write_tokens=11620, cost_usd=0.093587 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002/attempts/01/variant-implementer.log.md
+04:18:11 INFO     [v002 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002/attempts/01: []
+04:18:11 INFO     [v002 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002/attempts/01/overlay
+04:18:11 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-6s_mp83g subject=/home/user/cache-evolve/inputs/subjects/lru_cache repo_root=/home/user/cache-evolve
+04:18:11 INFO     [v002 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0002/v002 ...
+04:18:19 INFO     [v001 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=10, output_tokens=4801, cache_read_tokens=108586, cache_write_tokens=12747, cost_usd=0.110073 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001/attempts/01/variant-implementer.log.md
+04:18:19 INFO     [v001 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001/attempts/01: []
+04:18:19 INFO     [v001 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001/attempts/01/overlay
+04:18:19 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-nlr7a2sd subject=/home/user/cache-evolve/inputs/subjects/lru_cache repo_root=/home/user/cache-evolve
+04:18:19 INFO     [v001 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0002/v001 ...
+04:18:38 INFO     [v002 : evolve.variant.build : compile_for_gates] build gate: passed
+04:18:38 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0002/v002
+04:18:38 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0002/v002
+04:18:39 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0002/v002
+04:18:40 INFO     [v002 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0002/v002
+04:18:40 INFO     [v002 : evolve.variant.repair_loop : implement_with_repair] [v002] gates passed on attempt 1/3
+04:18:40 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] implement-and-gate done
+04:18:40 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0002/v002] caffeine simulate (build cdylib + run)
+04:18:40 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-3kk8e99o subject=/home/user/cache-evolve/inputs/subjects/lru_cache repo_root=/home/user/cache-evolve
+04:18:40 INFO     [v002 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0002/v002 ...
+04:18:44 INFO     [v003 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=14, output_tokens=3370, cache_read_tokens=169018, cache_write_tokens=14732, cost_usd=0.109743 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003/attempts/01/variant-implementer.log.md
+04:18:44 INFO     [v003 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003/attempts/01: []
+04:18:44 INFO     [v003 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003/attempts/01/overlay
+04:18:44 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-_kc0mld5 subject=/home/user/cache-evolve/inputs/subjects/lru_cache repo_root=/home/user/cache-evolve
+04:18:44 INFO     [v003 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0002/v003 ...
+04:18:55 INFO     [v001 : evolve.variant.build : compile_for_gates] build gate: passed
+04:18:55 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0002/v001
+04:18:56 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0002/v001
+04:18:57 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0002/v001
+04:18:57 INFO     [v001 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0002/v001
+04:18:57 INFO     [v001 : evolve.variant.repair_loop : implement_with_repair] [v001] gates passed on attempt 1/3
+04:18:57 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] implement-and-gate done
+04:18:57 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0002/v001] caffeine simulate (build cdylib + run)
+04:18:57 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-jz6nomm7 subject=/home/user/cache-evolve/inputs/subjects/lru_cache repo_root=/home/user/cache-evolve
+04:18:57 INFO     [v001 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0002/v001 ...
+04:19:15 INFO     [v002 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-target-3zsi1ver/release/liblru_cache.so
+04:19:15 INFO     [v002 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0002/v002] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=lrurust.LruRust
+04:19:23 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0002/v002] plugin hit-rate
+04:19:23 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0002/v002] aggregate fitness-vector
+04:19:23 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] fitness done
+04:19:23 DEBUG    [v002 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md
+04:19:23 DEBUG    [v002 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+04:19:23 DEBUG    [v002 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: 'Lowering the protected segment share from 80% to 50% of capacity in the segmented LRU will raise hit-rate by giving probation more room to catch second hits.'
+04:19:23 DEBUG    [v002 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md: cycle/0001/v003
+04:19:23 INFO     [v002 : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim='Lowering the protected segment share from 80% to 50% of capacity in the segmented LRU will raise hit-rate by giving probation more room to catch second hits.' parent=cycle/0001/v003 changes=345 chars
+04:19:23 DEBUG    [v002 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v002
+04:19:23 INFO     [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002 allow_edits=True
+04:19:23 DEBUG    [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0001/variants/v003'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md')]
+04:19:25 INFO     [v003 : evolve.variant.build : compile_for_gates] build gate: passed
+04:19:25 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0002/v003
+04:19:25 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0002/v003
+04:19:25 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0002/v003
+04:19:26 INFO     [v003 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0002/v003
+04:19:26 INFO     [v003 : evolve.variant.repair_loop : implement_with_repair] [v003] gates passed on attempt 1/3
+04:19:26 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] implement-and-gate done
+04:19:26 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0002/v003] caffeine simulate (build cdylib + run)
+04:19:26 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-bg0cb8u9 subject=/home/user/cache-evolve/inputs/subjects/lru_cache repo_root=/home/user/cache-evolve
+04:19:26 INFO     [v003 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0002/v003 ...
+04:19:27 INFO     [v001 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-target-7hu3hnqo/release/liblru_cache.so
+04:19:27 INFO     [v001 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0002/v001] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=lrurust.LruRust
+04:19:33 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0002/v001] plugin hit-rate
+04:19:33 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0002/v001] aggregate fitness-vector
+04:19:33 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] fitness done
+04:19:33 DEBUG    [v001 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md
+04:19:33 DEBUG    [v001 : evolve.hypothesis.parser : parse] found 4 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: ['', 'Changes', 'Parent', 'Rationale (optional)']
+04:19:33 DEBUG    [v001 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: 'Adding a bounded ghost list of recently evicted probation keys that lets re-referenced keys re-enter directly into protected will raise hit-rate over v003 on scan-heavy traces.'
+04:19:33 DEBUG    [v001 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md: cycle/0001/v003
+04:19:33 INFO     [v001 : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim='Adding a bounded ghost list of recently evicted probation keys that lets re-referenced keys re-enter directly into protected will raise hit-rate over v003 on scan-heavy traces.' parent=cycle/0001/v003 changes=664 chars
+04:19:33 DEBUG    [v001 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v001
+04:19:33 INFO     [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001 allow_edits=True
+04:19:33 DEBUG    [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0001/variants/v003'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md')]
+04:19:44 INFO     [v003 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-target-z7nb4hvg/release/liblru_cache.so
+04:19:44 INFO     [v003 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0002/v003] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=lrurust.LruRust
+04:19:48 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0002/v003] plugin hit-rate
+04:19:48 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0002/v003] aggregate fitness-vector
+04:19:48 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] fitness done
+04:19:48 DEBUG    [v003 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md
+04:19:48 DEBUG    [v003 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: ['', 'Changes', 'Parent']
+04:19:48 DEBUG    [v003 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: 'Replacing strict LRU in the baseline with a CLOCK second-chance eviction scheme will raise hit-rate on scan-heavy traces while cutting per-hit work.'
+04:19:48 DEBUG    [v003 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md: baseline
+04:19:48 INFO     [v003 : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Replacing strict LRU in the baseline with a CLOCK second-chance eviction scheme will raise hit-rate on scan-heavy traces while cutting per-hit work.' parent=baseline changes=688 chars
+04:19:48 DEBUG    [v003 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v003
+04:19:48 INFO     [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003 allow_edits=True
+04:19:48 DEBUG    [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003'), PosixPath('/home/user/cache-evolve/inputs/subjects/lru_cache/baseline'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md')]
+04:19:55 INFO     [v001 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=10, output_tokens=2002, cache_read_tokens=101878, cache_write_tokens=11688, cost_usd=0.077191 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001/variant-insight-writer.log.md
+04:19:55 INFO     [v001 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001: ['insight.md']
+04:19:55 INFO     [v001 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v001
+04:19:55 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] insight done
+04:20:35 INFO     [v003 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=10, output_tokens=1833, cache_read_tokens=99617, cache_write_tokens=9528, cost_usd=0.066621 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003/variant-insight-writer.log.md
+04:20:35 INFO     [v003 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003: ['insight.md']
+04:20:35 INFO     [v003 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v003
+04:20:35 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] insight done
+04:20:39 INFO     [v002 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=8, output_tokens=1411, cache_read_tokens=75924, cache_write_tokens=7168, cost_usd=0.050598 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002/variant-insight-writer.log.md
+04:20:39 INFO     [v002 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002: ['insight.md']
+04:20:39 INFO     [v002 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v002
+04:20:39 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] insight done
+04:20:39 INFO     [MainThread : evolve.cli : _log_survival_summary] cycle 0002 survivors=3/3 rejected={}
+04:20:39 INFO     [MainThread : evolve.cli : _phase] --- per-variant done (172.6s) ---
+04:20:39 INFO     [MainThread : evolve.cli : _phase] --- cycle-level ---
+04:20:39 INFO     [MainThread : evolve.aggregate.cohort : compute_cycle_winners] cycle winners: ['v001']
+04:20:39 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-winners.json done
+04:20:39 INFO     [cycle_insight : evolve.cycle.ledger_digest : digest_prior_cycles] digest_prior_cycles: ledger=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles-ledger.jsonl total_rows=1 window=3 selected_cycles=['0001'] body_chars=1839
+04:20:39 DEBUG    [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] wrote cycle-insight-writer task.md for cycle 0002
+04:20:39 INFO     [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002 allow_edits=True
+04:20:39 DEBUG    [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v001/insight.md'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v002/insight.md'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/variants/v003/insight.md'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H01.md'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H02.md'), PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/hypotheses/H03.md')]
+04:20:56 INFO     [cycle_insight : evolve.llm.base_adapter : run] agent cycle-insight-writer finished status=ok usage=input_tokens=8, output_tokens=1960, cache_read_tokens=78169, cache_write_tokens=9510, cost_usd=0.065712 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/cycle-insight-writer.log.md
+04:20:56 INFO     [cycle_insight : evolve.llm.base_adapter : _log_produced_artifacts] agent cycle-insight-writer produced 2 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002: ['cycle-insight.md', 'cycle-winners.json']
+04:20:56 INFO     [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] cycle insight written for cycle 0002
+04:20:56 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-insight-writer done
+04:20:56 INFO     [MainThread : evolve.cli : run_cycle] cycle 0002 winners: ['v001']
+04:20:56 INFO     [MainThread : evolve.aggregate.cross_cycle_winners : write_cross_cycle_winners] global cross_cycle_winners: 7 variants, winners=['cycle/0001/v003']
+04:20:56 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] cross-cycle-winners.json done
+04:20:56 DEBUG    [MainThread : evolve.cli : _run_post_cycle_insight] ledger row keys: ['cohort_size', 'cycle', 'cycle_dir', 'cycle_insight', 'winners']
+04:20:56 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] ledger-append done
+04:20:56 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] leaderboard-regen done
+04:20:56 INFO     [MainThread : evolve.cli : _phase] --- cycle-level done (16.4s) ---
+04:20:56 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights ---
+04:20:56 INFO     [MainThread : evolve.cycle.ledger_digest : digest_all_cycles] digest_all_cycles: ledger=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles-ledger.jsonl total_rows=2 cycles=['0001', '0002'] body_chars=3946
+04:20:56 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/cross-cycle allow_edits=True
+04:20:56 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles-ledger.jsonl')]
+04:21:07 INFO     [MainThread : evolve.llm.base_adapter : run] agent cross-cycle-insight-writer finished status=ok usage=input_tokens=4, output_tokens=1308, cache_read_tokens=35144, cache_write_tokens=6572, cost_usd=0.043176 log=/home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/cross-cycle/cross-cycle-insight-writer.log.md
+04:21:07 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent cross-cycle-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cycles/0002/cross-cycle: ['cross-cycle-insights.md']
+04:21:07 INFO     [MainThread : evolve.cycle.cross_cycle_insight_writer : write_cross_cycle_insight] cross-cycle insights written to /home/user/cache-evolve/outputs/lru_cache_2026-10-21_04-13-54-277/cross-cycle-insights.md
+04:21:07 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights done (11.3s) ---
+04:21:07 INFO     [MainThread : evolve.cli : run_cycle] cycle 0002 timings: total=227.7s write hypotheses=27.4s per-variant=172.6s cycle-level=16.4s cross-cycle-insights=11.3s
+04:21:07 INFO     [MainThread : evolve.cli : run_cycle] cycle 0002 cumulative tokens: cache_read_tokens=1924135 cache_write_tokens=201693 input_tokens=180 output_tokens=47105
+04:21:07 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0002 complete (cohort=3) ===
+04:21:07 INFO     [MainThread : evolve.cli : main] --- evolve loop: cycle 3/10 ---
