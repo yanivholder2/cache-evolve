@@ -1,0 +1,179 @@
+04:20:27 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0004 allocated at /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004 ===
+04:20:27 INFO     [MainThread : evolve.cli : run_cycle] cohort_size=3 adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5)
+04:20:27 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses ---
+04:20:27 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] generating 3 hypotheses for cycle 0004 into /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses
+04:20:27 DEBUG    [MainThread : evolve.hypothesis.writer : write_hypotheses] wrote task spec: /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/task.md
+04:20:27 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses allow_edits=True
+04:20:27 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=hypotheses-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash')]
+04:20:54 INFO     [MainThread : evolve.llm.base_adapter : run] agent hypotheses-writer finished status=ok usage=input_tokens=14, output_tokens=2827, cache_read_tokens=149950, cache_write_tokens=10485, cost_usd=0.085477 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/hypotheses-writer.log.md
+04:20:54 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent hypotheses-writer produced 3 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses: ['H01.md', 'H02.md', 'H03.md']
+04:20:54 INFO     [MainThread : evolve.hypothesis.writer : write_hypotheses] adapter produced 3 hypothesis files in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: ['', 'Changes', 'Parent']
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: "Replace v002's binary second-sighting admission filter with a two-bit saturating frequency counter per fingerprint slot, admitting only at count >= 2, to raise hit-rate by filtering one-hit-wonders more precisely."
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: cycle/0003/v002
+04:20:54 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim="Replace v002's binary second-sighting admission filter with a two-bit saturating frequency counter per fingerprint slot, admitting only at count >= 2, to raise hit-rate by filtering one-hit-wonders more precisely." parent=cycle/0003/v002 changes=980 chars
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: ['', 'Changes', 'Parent']
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: "Apply v002's admission filter only when the victim is a recently hit entry, so one-hit-wonders are admitted over cold victims, to raise hit-rate by avoiding needless rejection of useful new keys."
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: cycle/0003/v002
+04:20:54 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim="Apply v002's admission filter only when the victim is a recently hit entry, so one-hit-wonders are admitted over cold victims, to raise hit-rate by avoiding needless rejection of useful new keys." parent=cycle/0003/v002 changes=797 chars
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: ['', 'Changes', 'Parent']
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: 'Add a segment-level doorkeeper Bloom-style bit array on the baseline insert path, reset periodically, to raise hit-rate by admitting only keys seen twice within a window.'
+04:20:54 DEBUG    [MainThread : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: baseline
+04:20:54 INFO     [MainThread : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Add a segment-level doorkeeper Bloom-style bit array on the baseline insert path, reset periodically, to raise hit-rate by admitting only keys seen twice within a window.' parent=baseline changes=663 chars
+04:20:54 INFO     [MainThread : evolve.cli : _phase] --- write hypotheses done (27.3s) ---
+04:20:54 INFO     [MainThread : evolve.cli : _phase] --- per-variant ---
+04:20:54 DEBUG    [v001 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md
+04:20:54 DEBUG    [v002 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md
+04:20:54 DEBUG    [v001 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: ['', 'Changes', 'Parent']
+04:20:54 DEBUG    [v001 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: "Replace v002's binary second-sighting admission filter with a two-bit saturating frequency counter per fingerprint slot, admitting only at count >= 2, to raise hit-rate by filtering one-hit-wonders more precisely."
+04:20:54 DEBUG    [v001 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: cycle/0003/v002
+04:20:54 INFO     [v001 : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim="Replace v002's binary second-sighting admission filter with a two-bit saturating frequency counter per fingerprint slot, admitting only at count >= 2, to raise hit-rate by filtering one-hit-wonders more precisely." parent=cycle/0003/v002 changes=980 chars
+04:20:54 DEBUG    [v003 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md
+04:20:54 DEBUG    [v003 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: ['', 'Changes', 'Parent']
+04:20:54 DEBUG    [v003 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: 'Add a segment-level doorkeeper Bloom-style bit array on the baseline insert path, reset periodically, to raise hit-rate by admitting only keys seen twice within a window.'
+04:20:54 DEBUG    [v003 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: baseline
+04:20:54 INFO     [v003 : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Add a segment-level doorkeeper Bloom-style bit array on the baseline insert path, reset periodically, to raise hit-rate by admitting only keys seen twice within a window.' parent=baseline changes=663 chars
+04:20:54 DEBUG    [v002 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: ['', 'Changes', 'Parent']
+04:20:54 DEBUG    [v002 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: "Apply v002's admission filter only when the victim is a recently hit entry, so one-hit-wonders are admitted over cold victims, to raise hit-rate by avoiding needless rejection of useful new keys."
+04:20:54 DEBUG    [v002 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: cycle/0003/v002
+04:20:54 INFO     [v002 : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim="Apply v002's admission filter only when the victim is a recently hit entry, so one-hit-wonders are admitted over cold victims, to raise hit-rate by avoiding needless rejection of useful new keys." parent=cycle/0003/v002 changes=797 chars
+04:20:54 DEBUG    [v003 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003/attempts/01/task.md
+04:20:54 DEBUG    [v001 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001/attempts/01/task.md
+04:20:54 DEBUG    [v002 : evolve.variant.implementer : implement_variant] wrote implementer task.md at /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002/attempts/01/task.md
+04:20:54 INFO     [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001/attempts/01 allow_edits=True
+04:20:54 DEBUG    [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0003/variants/v002'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash')]
+04:20:54 INFO     [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003/attempts/01 allow_edits=True
+04:20:54 DEBUG    [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash/baseline'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash')]
+04:20:54 INFO     [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002/attempts/01 allow_edits=True
+04:20:54 DEBUG    [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-implementer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0003/variants/v002'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash/src'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash')]
+04:21:29 INFO     [v001 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=12, output_tokens=5271, cache_read_tokens=135607, cache_write_tokens=15125, cost_usd=0.12699 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001/attempts/01/variant-implementer.log.md
+04:21:29 INFO     [v001 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001/attempts/01: []
+04:21:29 INFO     [v001 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001/attempts/01/overlay
+04:21:29 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-sj4gp8_8 subject=/home/user/cache-evolve/inputs/subjects/dash repo_root=/home/user/cache-evolve
+04:21:29 INFO     [v001 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0004/v001 ...
+04:21:35 INFO     [v003 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=16, output_tokens=5735, cache_read_tokens=242799, cache_write_tokens=29971, cost_usd=0.20173 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003/attempts/01/variant-implementer.log.md
+04:21:35 INFO     [v003 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003/attempts/01: []
+04:21:35 INFO     [v003 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003/attempts/01/overlay
+04:21:35 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-8i3sajj2 subject=/home/user/cache-evolve/inputs/subjects/dash repo_root=/home/user/cache-evolve
+04:21:35 INFO     [v003 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0004/v003 ...
+04:21:42 INFO     [v002 : evolve.llm.base_adapter : run] agent variant-implementer finished status=ok usage=input_tokens=18, output_tokens=7040, cache_read_tokens=275132, cache_write_tokens=38950, cost_usd=0.253945 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002/attempts/01/variant-implementer.log.md
+04:21:42 INFO     [v002 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-implementer produced 0 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002/attempts/01: []
+04:21:42 INFO     [v002 : evolve.variant.implementer : implement_variant] variant materialized at /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002/attempts/01/overlay
+04:21:42 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-1mw8fyk2 subject=/home/user/cache-evolve/inputs/subjects/dash repo_root=/home/user/cache-evolve
+04:21:42 INFO     [v002 : evolve.variant.build : compile_for_gates] build gate: compiling variant cycle/0004/v002 ...
+04:21:49 INFO     [v001 : evolve.variant.build : compile_for_gates] build gate: passed
+04:21:50 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0004/v001
+04:21:50 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0004/v001
+04:21:51 INFO     [v001 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0004/v001
+04:21:52 INFO     [v001 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0004/v001
+04:21:52 INFO     [v001 : evolve.variant.repair_loop : implement_with_repair] [v001] gates passed on attempt 1/3
+04:21:52 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] implement-and-gate done
+04:21:52 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0004/v001] caffeine simulate (build cdylib + run)
+04:21:52 DEBUG    [v001 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-brv8hf2c subject=/home/user/cache-evolve/inputs/subjects/dash repo_root=/home/user/cache-evolve
+04:21:52 INFO     [v001 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0004/v001 ...
+04:22:06 INFO     [v003 : evolve.variant.build : compile_for_gates] build gate: passed
+04:22:06 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0004/v003
+04:22:06 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0004/v003
+04:22:07 INFO     [v003 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0004/v003
+04:22:07 INFO     [v003 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0004/v003
+04:22:07 INFO     [v003 : evolve.variant.repair_loop : implement_with_repair] [v003] gates passed on attempt 1/3
+04:22:07 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] implement-and-gate done
+04:22:07 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0004/v003] caffeine simulate (build cdylib + run)
+04:22:07 DEBUG    [v003 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-3eopjluo subject=/home/user/cache-evolve/inputs/subjects/dash repo_root=/home/user/cache-evolve
+04:22:07 INFO     [v003 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0004/v003 ...
+04:22:15 INFO     [v002 : evolve.variant.build : compile_for_gates] build gate: passed
+04:22:15 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] contract gate: passed for cycle/0004/v002
+04:22:15 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] universal invariant gate: passed for cycle/0004/v002
+04:22:16 INFO     [v002 : evolve.variant.gates.cargo_test_gate : check] invariant gate: passed for cycle/0004/v002
+04:22:16 INFO     [v002 : evolve.variant.gates : run_gates] gate-check: all gates passed for cycle/0004/v002
+04:22:16 INFO     [v002 : evolve.variant.repair_loop : implement_with_repair] [v002] gates passed on attempt 1/3
+04:22:16 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] implement-and-gate done
+04:22:16 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0004/v002] caffeine simulate (build cdylib + run)
+04:22:16 DEBUG    [v002 : evolve.variant.build : prepare_variant_workspace] workspace=/tmp/variant-workspace-ae5ot2go subject=/home/user/cache-evolve/inputs/subjects/dash repo_root=/home/user/cache-evolve
+04:22:16 INFO     [v002 : evolve.variant.build : compile_cdylib] building cdylib for variant cycle/0004/v002 ...
+04:22:17 INFO     [v001 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-target-3bdg7qv3/release/libdash.so
+04:22:17 INFO     [v001 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0004/v001] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=dash.DashRust
+04:22:30 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0004/v001] plugin hit-rate
+04:22:30 DEBUG    [v001 : evolve.fitness.runner : compute_fitness] [cycle/0004/v001] aggregate fitness-vector
+04:22:30 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] fitness done
+04:22:30 DEBUG    [v001 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md
+04:22:30 DEBUG    [v001 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: ['', 'Changes', 'Parent']
+04:22:30 DEBUG    [v001 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: "Replace v002's binary second-sighting admission filter with a two-bit saturating frequency counter per fingerprint slot, admitting only at count >= 2, to raise hit-rate by filtering one-hit-wonders more precisely."
+04:22:30 DEBUG    [v001 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md: cycle/0003/v002
+04:22:30 INFO     [v001 : evolve.hypothesis.parser : parse] parsed hypothesis H01.md claim="Replace v002's binary second-sighting admission filter with a two-bit saturating frequency counter per fingerprint slot, admitting only at count >= 2, to raise hit-rate by filtering one-hit-wonders more precisely." parent=cycle/0003/v002 changes=980 chars
+04:22:30 DEBUG    [v001 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v001
+04:22:30 INFO     [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001 allow_edits=True
+04:22:30 DEBUG    [v001 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0003/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md')]
+04:22:32 INFO     [v003 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-target-n9pm3hje/release/libdash.so
+04:22:32 INFO     [v003 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0004/v003] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=dash.DashRust
+04:22:35 INFO     [v002 : evolve.variant.build : compile_cdylib] cdylib built at /tmp/variant-target-z6gtd2d_/release/libdash.so
+04:22:35 INFO     [v002 : evolve.fitness.caffeine_simulator : simulate_variant] [cycle/0004/v002] caffeine simulate trace=lirs:inputs/traces/workload-a.trace.gz sizes=[2048] policy=dash.DashRust
+04:22:41 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0004/v003] plugin hit-rate
+04:22:41 DEBUG    [v003 : evolve.fitness.runner : compute_fitness] [cycle/0004/v003] aggregate fitness-vector
+04:22:41 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] fitness done
+04:22:41 DEBUG    [v003 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md
+04:22:41 DEBUG    [v003 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: ['', 'Changes', 'Parent']
+04:22:41 DEBUG    [v003 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: 'Add a segment-level doorkeeper Bloom-style bit array on the baseline insert path, reset periodically, to raise hit-rate by admitting only keys seen twice within a window.'
+04:22:41 DEBUG    [v003 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md: baseline
+04:22:41 INFO     [v003 : evolve.hypothesis.parser : parse] parsed hypothesis H03.md claim='Add a segment-level doorkeeper Bloom-style bit array on the baseline insert path, reset periodically, to raise hit-rate by admitting only keys seen twice within a window.' parent=baseline changes=663 chars
+04:22:41 DEBUG    [v003 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v003
+04:22:41 INFO     [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003 allow_edits=True
+04:22:41 DEBUG    [v003 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003'), PosixPath('/home/user/cache-evolve/inputs/subjects/dash/baseline'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md')]
+04:22:46 INFO     [v001 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=10, output_tokens=1716, cache_read_tokens=98021, cache_write_tokens=7864, cost_usd=0.058642 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001/variant-insight-writer.log.md
+04:22:46 INFO     [v001 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001: ['insight.md']
+04:22:46 INFO     [v001 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v001
+04:22:46 INFO     [v001 : evolve.cli : _variant_pipeline_step] [v001] insight done
+04:22:52 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0004/v002] plugin hit-rate
+04:22:52 DEBUG    [v002 : evolve.fitness.runner : compute_fitness] [cycle/0004/v002] aggregate fitness-vector
+04:22:52 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] fitness done
+04:22:52 DEBUG    [v002 : evolve.hypothesis.parser : parse] parsing hypothesis file /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md
+04:22:52 DEBUG    [v002 : evolve.hypothesis.parser : parse] found 3 sections in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: ['', 'Changes', 'Parent']
+04:22:52 DEBUG    [v002 : evolve.hypothesis.parser : parse] claim for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: "Apply v002's admission filter only when the victim is a recently hit entry, so one-hit-wonders are admitted over cold victims, to raise hit-rate by avoiding needless rejection of useful new keys."
+04:22:52 DEBUG    [v002 : evolve.hypothesis.parser : parse] parent variant for /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md: cycle/0003/v002
+04:22:52 INFO     [v002 : evolve.hypothesis.parser : parse] parsed hypothesis H02.md claim="Apply v002's admission filter only when the victim is a recently hit entry, so one-hit-wonders are admitted over cold victims, to raise hit-rate by avoiding needless rejection of useful new keys." parent=cycle/0003/v002 changes=797 chars
+04:22:52 DEBUG    [v002 : evolve.variant.variant_insight_writer : write_insight] wrote insight-writer task.md for variant v002
+04:22:52 INFO     [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002 allow_edits=True
+04:22:52 DEBUG    [v002 : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=variant-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0003/variants/v002'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md')]
+04:22:57 INFO     [v003 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=8, output_tokens=1727, cache_read_tokens=75848, cache_write_tokens=7494, cost_usd=0.05504 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003/variant-insight-writer.log.md
+04:22:57 INFO     [v003 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003: ['insight.md']
+04:22:57 INFO     [v003 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v003
+04:22:57 INFO     [v003 : evolve.cli : _variant_pipeline_step] [v003] insight done
+04:23:09 INFO     [v002 : evolve.llm.base_adapter : run] agent variant-insight-writer finished status=ok usage=input_tokens=10, output_tokens=1931, cache_read_tokens=98157, cache_write_tokens=8174, cost_usd=0.062046 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002/variant-insight-writer.log.md
+04:23:09 INFO     [v002 : evolve.llm.base_adapter : _log_produced_artifacts] agent variant-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002: ['insight.md']
+04:23:09 INFO     [v002 : evolve.variant.variant_insight_writer : write_insight] variant insight written for v002
+04:23:09 INFO     [v002 : evolve.cli : _variant_pipeline_step] [v002] insight done
+04:23:09 INFO     [MainThread : evolve.cli : _log_survival_summary] cycle 0004 survivors=3/3 rejected={}
+04:23:09 INFO     [MainThread : evolve.cli : _phase] --- per-variant done (134.7s) ---
+04:23:09 INFO     [MainThread : evolve.cli : _phase] --- cycle-level ---
+04:23:09 INFO     [MainThread : evolve.aggregate.cohort : compute_cycle_winners] cycle winners: ['v002']
+04:23:09 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-winners.json done
+04:23:09 INFO     [cycle_insight : evolve.cycle.ledger_digest : digest_prior_cycles] digest_prior_cycles: ledger=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles-ledger.jsonl total_rows=3 window=3 selected_cycles=['0001', '0002', '0003'] body_chars=5660
+04:23:09 DEBUG    [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] wrote cycle-insight-writer task.md for cycle 0004
+04:23:09 INFO     [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004 allow_edits=True
+04:23:09 DEBUG    [cycle_insight : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v001/insight.md'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v002/insight.md'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/variants/v003/insight.md'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H01.md'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H02.md'), PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/hypotheses/H03.md')]
+04:23:24 INFO     [cycle_insight : evolve.llm.base_adapter : run] agent cycle-insight-writer finished status=ok usage=input_tokens=8, output_tokens=1616, cache_read_tokens=80570, cache_write_tokens=9407, cost_usd=0.062228 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/cycle-insight-writer.log.md
+04:23:24 INFO     [cycle_insight : evolve.llm.base_adapter : _log_produced_artifacts] agent cycle-insight-writer produced 2 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004: ['cycle-insight.md', 'cycle-winners.json']
+04:23:24 INFO     [cycle_insight : evolve.cycle.cycle_insight_writer : write_cycle_insight] cycle insight written for cycle 0004
+04:23:24 INFO     [MainThread : evolve.cli : _run_cycle_level] cycle-insight-writer done
+04:23:24 INFO     [MainThread : evolve.cli : run_cycle] cycle 0004 winners: ['v002']
+04:23:24 INFO     [MainThread : evolve.aggregate.cross_cycle_winners : write_cross_cycle_winners] global cross_cycle_winners: 13 variants, winners=['cycle/0003/v002']
+04:23:24 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] cross-cycle-winners.json done
+04:23:24 DEBUG    [MainThread : evolve.cli : _run_post_cycle_insight] ledger row keys: ['cohort_size', 'cycle', 'cycle_dir', 'cycle_insight', 'winners']
+04:23:24 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] ledger-append done
+04:23:24 INFO     [MainThread : evolve.cli : _run_post_cycle_insight] leaderboard-regen done
+04:23:24 INFO     [MainThread : evolve.cli : _phase] --- cycle-level done (15.4s) ---
+04:23:24 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights ---
+04:23:24 INFO     [MainThread : evolve.cycle.ledger_digest : digest_all_cycles] digest_all_cycles: ledger=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles-ledger.jsonl total_rows=4 cycles=['0001', '0002', '0003', '0004'] body_chars=7855
+04:23:24 INFO     [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer adapter=ClaudeSdkAdapter(model=claude-sonnet-5-5) workspace=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/cross-cycle allow_edits=True
+04:23:24 DEBUG    [MainThread : evolve.llm.base_adapter : _prepare_invocation] dispatch agent=cross-cycle-insight-writer readable_roots=[PosixPath('/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles-ledger.jsonl')]
+04:23:38 INFO     [MainThread : evolve.llm.base_adapter : run] agent cross-cycle-insight-writer finished status=ok usage=input_tokens=4, output_tokens=1485, cache_read_tokens=36455, cache_write_tokens=8033, cost_usd=0.051052 log=/home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/cross-cycle/cross-cycle-insight-writer.log.md
+04:23:38 INFO     [MainThread : evolve.llm.base_adapter : _log_produced_artifacts] agent cross-cycle-insight-writer produced 1 file(s) in /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cycles/0004/cross-cycle: ['cross-cycle-insights.md']
+04:23:38 INFO     [MainThread : evolve.cycle.cross_cycle_insight_writer : write_cross_cycle_insight] cross-cycle insights written to /home/user/cache-evolve/outputs/dash_2026-10-21_04-06-00-707/cross-cycle-insights.md
+04:23:38 INFO     [MainThread : evolve.cli : _phase] --- cross-cycle-insights done (13.7s) ---
+04:23:38 INFO     [MainThread : evolve.cli : run_cycle] cycle 0004 timings: total=191.1s write hypotheses=27.3s per-variant=134.7s cycle-level=15.4s cross-cycle-insights=13.7s
+04:23:38 INFO     [MainThread : evolve.cli : run_cycle] cycle 0004 cumulative tokens: cache_read_tokens=4562676 cache_write_tokens=588390 input_tokens=386 output_tokens=118135
+04:23:38 INFO     [MainThread : evolve.cli : run_cycle] === cycle 0004 complete (cohort=3) ===
+04:23:38 INFO     [MainThread : evolve.cli : main] --- evolve loop: cycle 5/10 ---
