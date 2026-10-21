@@ -1,0 +1,424 @@
+// S3-FIFO cache (small probation FIFO + main FIFO with lazy reinsertion + ghost ring).
+// Nodes live in a Vec arena indexed by u32; evicted slots are reused in place.
+// The ghost stores 64-bit key fingerprints in a fixed-size ring (H02, cycle 5) instead
+// of cloned keys in a VecDeque + HashMap.
+// Public surface (LruCache, Node, try_new, new, get, put, framework::Cache impl) is
+// unchanged so the JNI layer and bins keep working. No unsafe, no external crates.
+
+use std::collections::hash_map::DefaultHasher;
+use std::collections::{HashMap, VecDeque};
+use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
+
+pub mod lru_cache_jni;
+
+const MAX_FREQ: u8 = 3;
+
+#[derive(Debug)]
+pub struct Node<K, V> {
+	key: K,
+	value: V,
+	freq: u8,
+	#[allow(dead_code)] // read by tests / Debug; queue membership is authoritative
+	in_main: bool,
+}
+
+#[derive(Debug)]
+pub struct LruCache<K, V> {
+	map: HashMap<K, u32>,   // key -> arena index
+	nodes: Vec<Node<K, V>>, // arena
+	small: VecDeque<u32>,   // probation FIFO (front = oldest)
+	main: VecDeque<u32>,    // main FIFO (front = oldest)
+	ghost_ring: Vec<u64>,   // fingerprints of evicted-from-small keys, FIFO ring; 0 = empty
+	ghost_head: usize,      // next write position in ghost_ring
+	ghost_map: HashMap<u64, u32>, // fingerprint -> ring slot currently holding it
+	small_target: usize,
+	ghost_cap: usize,
+	capacity: usize,
+}
+
+impl<K, V> LruCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	pub fn try_new(capacity: usize) -> Option<Self> {
+		if capacity == 0 {
+			log::error!("LruCache.try_new: capacity must be > 0");
+			return None;
+		}
+		let small_target = std::cmp::max(1, capacity / 10);
+		// H01 (cycle 4): capacity / 4 ghost window (was capacity / 2).
+		let ghost_cap = std::cmp::max(1, capacity / 4);
+		log::info!("LruCache.try_new: capacity={capacity} small_target={small_target} ghost_cap={ghost_cap}");
+		Some(Self {
+			map: HashMap::with_capacity(capacity),
+			nodes: Vec::with_capacity(capacity),
+			small: VecDeque::with_capacity(capacity),
+			main: VecDeque::with_capacity(capacity),
+			ghost_ring: vec![0u64; ghost_cap],
+			ghost_head: 0,
+			ghost_map: HashMap::with_capacity(ghost_cap),
+			small_target,
+			ghost_cap,
+			capacity,
+		})
+	}
+
+	pub fn new(capacity: usize) -> Self {
+		Self::try_new(capacity).expect("LruCache::new: initialization failed")
+	}
+
+	/// 64-bit fingerprint of `key`; never 0 (0 marks an empty ring slot).
+	fn fingerprint(key: &K) -> u64 {
+		let mut h = DefaultHasher::new();
+		key.hash(&mut h);
+		h.finish() | 1
+	}
+
+	/// Returns the value for `key` if present, bumping its (saturating) access frequency.
+	pub fn get(&mut self, key: &K) -> Option<&V> {
+		let idx = *self.map.get(key)? as usize;
+		let node = &mut self.nodes[idx];
+		if node.freq < MAX_FREQ {
+			node.freq += 1;
+		}
+		Some(&node.value)
+	}
+
+	/// Inserts or updates `key`. New keys enter `small`, or `main` on a ghost hit.
+	pub fn put(&mut self, key: K, value: V) {
+		if let Some(&idx) = self.map.get(&key) {
+			let node = &mut self.nodes[idx as usize];
+			node.value = value;
+			if node.freq < MAX_FREQ {
+				node.freq += 1;
+			}
+			return;
+		}
+
+		let fp = Self::fingerprint(&key);
+		let ghost_hit = match self.ghost_map.remove(&fp) {
+			Some(slot) => {
+				self.ghost_ring[slot as usize] = 0;
+				true
+			}
+			None => false,
+		};
+
+		let idx = if self.map.len() >= self.capacity {
+			let slot = self.evict_one();
+			let node = &mut self.nodes[slot as usize];
+			node.key = key.clone();
+			node.value = value;
+			node.freq = 0;
+			node.in_main = ghost_hit;
+			slot
+		} else {
+			let slot = self.nodes.len() as u32;
+			self.nodes.push(Node {
+				key: key.clone(),
+				value,
+				freq: 0,
+				in_main: ghost_hit,
+			});
+			slot
+		};
+
+		if ghost_hit {
+			self.main.push_back(idx);
+		} else {
+			self.small.push_back(idx);
+		}
+		self.map.insert(key, idx);
+		debug_assert!(self.map.len() <= self.capacity);
+	}
+
+	/// Evicts exactly one resident entry and returns its (now free) arena slot.
+	/// Terminates: every iteration either lowers some node's freq or frees a slot.
+	fn evict_one(&mut self) -> u32 {
+		loop {
+			if self.small.len() >= self.small_target || self.main.is_empty() {
+				let idx = self.small.pop_front().expect("small must be non-empty when main is empty and cache is full");
+				let node = &mut self.nodes[idx as usize];
+				if node.freq > 0 {
+					node.freq = 0;
+					node.in_main = true;
+					self.main.push_back(idx);
+					continue;
+				}
+				let fp = Self::fingerprint(&self.nodes[idx as usize].key);
+				self.map.remove(&self.nodes[idx as usize].key);
+				self.push_ghost(fp);
+				return idx;
+			} else {
+				let idx = self.main.pop_front().expect("main checked non-empty");
+				let node = &mut self.nodes[idx as usize];
+				if node.freq > 0 {
+					node.freq -= 1;
+					self.main.push_back(idx);
+					continue;
+				}
+				self.map.remove(&self.nodes[idx as usize].key);
+				return idx;
+			}
+		}
+	}
+
+	fn push_ghost(&mut self, fp: u64) {
+		let head = self.ghost_head;
+		let old = self.ghost_ring[head];
+		if old != 0 {
+			// Stale-entry fix: only erase if the map still points at this slot.
+			if self.ghost_map.get(&old) == Some(&(head as u32)) {
+				self.ghost_map.remove(&old);
+			}
+		}
+		self.ghost_ring[head] = fp;
+		self.ghost_map.insert(fp, head as u32);
+		self.ghost_head = (head + 1) % self.ghost_cap;
+		debug_assert!(self.ghost_map.len() <= self.ghost_cap);
+	}
+
+	#[cfg(test)]
+	fn ghost_contains(&self, k: &K) -> bool {
+		let fp = Self::fingerprint(k);
+		match self.ghost_map.get(&fp) {
+			Some(&slot) => self.ghost_ring[slot as usize] == fp,
+			None => false,
+		}
+	}
+}
+
+impl<K, V> framework::Cache<K, V> for LruCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	fn put(&mut self, key: K, value: V) {
+		LruCache::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		LruCache::get(self, key)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn in_main(cache: &LruCache<i64, i64>, key: i64) -> bool {
+		let idx = cache.map[&key] as usize;
+		cache.nodes[idx].in_main
+	}
+
+	fn ghost_consistent(cache: &LruCache<i64, i64>) -> bool {
+		cache.ghost_map.len() <= cache.ghost_cap
+			&& cache
+				.ghost_map
+				.iter()
+				.all(|(&fp, &slot)| cache.ghost_ring[slot as usize] == fp)
+	}
+
+	#[test]
+	fn get_miss_returns_none() {
+		let mut cache = LruCache::<i64, i64>::new(4);
+		assert!(cache.get(&42).is_none());
+	}
+
+	#[test]
+	fn put_then_get() {
+		let mut cache = LruCache::new(4);
+		cache.put(1, 10);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn put_overwrites_existing_key() {
+		let mut cache = LruCache::new(4);
+		cache.put(1, 10);
+		cache.put(1, 20);
+		assert_eq!(*cache.get(&1).unwrap(), 20);
+	}
+
+	#[test]
+	fn overwrite_does_not_grow_order() {
+		let mut cache = LruCache::new(2);
+		cache.put(1, 10);
+		cache.put(1, 20);
+		cache.put(1, 30);
+		cache.put(2, 40);
+		assert_eq!(*cache.get(&1).unwrap(), 30);
+		assert_eq!(*cache.get(&2).unwrap(), 40);
+	}
+
+	#[test]
+	fn eviction_chain() {
+		let mut cache = LruCache::new(3);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(3, 30);
+		cache.put(4, 40); // evicts 1 (one-hit wonder from small)
+		cache.put(5, 50); // evicts 2
+		cache.put(6, 60); // evicts 3
+
+		assert!(cache.get(&1).is_none());
+		assert!(cache.get(&2).is_none());
+		assert!(cache.get(&3).is_none());
+		assert_eq!(*cache.get(&4).unwrap(), 40);
+		assert_eq!(*cache.get(&5).unwrap(), 50);
+		assert_eq!(*cache.get(&6).unwrap(), 60);
+	}
+
+	#[test]
+	fn capacity_one() {
+		let mut cache = LruCache::new(1);
+		cache.put(1, 10);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		cache.put(2, 20); // evicts 1
+		assert!(cache.get(&1).is_none());
+		assert_eq!(*cache.get(&2).unwrap(), 20);
+		assert_eq!(cache.map.len(), 1);
+	}
+
+	#[test]
+	fn overwrite_at_full_capacity_does_not_evict() {
+		let mut cache = LruCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(1, 11);
+		assert_eq!(*cache.get(&1).unwrap(), 11);
+		assert_eq!(*cache.get(&2).unwrap(), 20);
+	}
+
+	#[test]
+	fn get_only_element() {
+		let mut cache = LruCache::new(3);
+		cache.put(1, 10);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		cache.put(2, 20);
+		cache.put(3, 30);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn one_hit_wonders_evicted_from_small_first() {
+		let mut cache = LruCache::new(10); // small_target = 1
+		for k in 1..=10 {
+			cache.put(k, k * 10);
+		}
+		cache.get(&1); // key 1 is reused; keys 2..=10 are one-hit wonders
+		cache.put(11, 110); // 1 promoted to main, 2 evicted
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		assert!(cache.get(&2).is_none());
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+	}
+
+	#[test]
+	fn accessed_small_entry_promoted_to_main() {
+		let mut cache = LruCache::new(10);
+		for k in 1..=10 {
+			cache.put(k, k);
+		}
+		cache.get(&2);
+		assert!(!in_main(&cache, 2));
+		cache.put(11, 11); // evicts 1 (freq 0)
+		assert!(!in_main(&cache, 2));
+		cache.put(12, 12); // 2 has freq > 0 -> promoted to main; 3 evicted
+		assert!(in_main(&cache, 2));
+		assert!(cache.get(&3).is_none());
+		assert_eq!(*cache.get(&2).unwrap(), 2);
+	}
+
+	#[test]
+	fn ghost_hit_admitted_into_main() {
+		let mut cache = LruCache::new(10);
+		assert_eq!(cache.ghost_cap, 2);
+		for k in 1..=10 {
+			cache.put(k, k);
+		}
+		cache.put(11, 11); // evicts 1 into ghost
+		assert!(cache.get(&1).is_none());
+		assert!(cache.ghost_contains(&1));
+		cache.put(1, 100); // ghost hit -> straight into main
+		assert!(in_main(&cache, 1));
+		assert!(!cache.ghost_contains(&1));
+		assert_eq!(*cache.get(&1).unwrap(), 100);
+		assert!(cache.map.len() <= 10);
+		assert!(ghost_consistent(&cache));
+	}
+
+	#[test]
+	fn ghost_window_expires_after_ghost_cap_plus_one_evictions() {
+		let mut cache = LruCache::new(10); // small_target = 1, ghost_cap = 2
+		let ghost_cap = cache.ghost_cap as i64;
+		assert_eq!(ghost_cap, 2);
+		for k in 1..=10 {
+			cache.put(k, k);
+		}
+		// ghost_cap + 1 small-queue evictions: keys 1..=ghost_cap+1.
+		for k in 11..=(11 + ghost_cap) {
+			cache.put(k, k);
+			assert!(cache.ghost_map.len() <= cache.ghost_cap);
+		}
+		assert!(cache.get(&1).is_none());
+		assert!(!cache.ghost_contains(&1));
+		assert!(cache.ghost_contains(&2));
+		cache.put(1, 100); // no longer a ghost -> lands in small
+		assert!(!in_main(&cache, 1));
+		assert_eq!(*cache.get(&1).unwrap(), 100);
+		assert!(cache.map.len() <= 10);
+		assert_eq!(cache.small.len() + cache.main.len(), cache.map.len());
+		assert!(ghost_consistent(&cache));
+	}
+
+	#[test]
+	fn main_evictions_not_ghosted() {
+		let mut cache = LruCache::new(1);
+		cache.put(1, 1);
+		cache.put(2, 2); // 1 -> ghost
+		cache.put(1, 1); // ghost hit -> main; 2 evicted from small -> ghost
+		assert!(in_main(&cache, 1));
+		cache.put(3, 3); // small empty, main non-empty: evict 1 from main
+		assert!(cache.get(&1).is_none());
+		assert!(!cache.ghost_contains(&1));
+		assert_eq!(*cache.get(&3).unwrap(), 3);
+	}
+
+	#[test]
+	fn stale_slot_does_not_erase_newer_fingerprint() {
+		let mut cache = LruCache::<i64, i64>::new(8); // ghost_cap = 2
+		let fp = 0xABCDu64 | 1;
+		cache.push_ghost(fp); // slot 0
+		cache.push_ghost(fp); // slot 1 (same fp re-inserted; map -> 1)
+		cache.push_ghost(3); // overwrites slot 0 holding stale fp; must not erase map[fp]
+		assert_eq!(cache.ghost_map.get(&fp), Some(&1));
+		assert!(ghost_consistent(&cache));
+	}
+
+	#[test]
+	fn capacity_bound_under_churn() {
+		let mut cache = LruCache::new(8);
+		for i in 0..10_000i64 {
+			let k = (i * 7919) % 37;
+			if cache.get(&k).is_none() {
+				cache.put(k, k * 10);
+			}
+			assert!(cache.map.len() <= 8);
+			assert_eq!(cache.small.len() + cache.main.len(), cache.map.len());
+			assert!(ghost_consistent(&cache));
+		}
+		for k in 0..37 {
+			if let Some(&v) = cache.get(&k) {
+				assert_eq!(v, k * 10);
+			}
+		}
+	}
+
+	#[test]
+	#[should_panic(expected = "initialization failed")]
+	fn capacity_zero_panics() {
+		LruCache::<i64, i64>::new(0);
+	}
+}
