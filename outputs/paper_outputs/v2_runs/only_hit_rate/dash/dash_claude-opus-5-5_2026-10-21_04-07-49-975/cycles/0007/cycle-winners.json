@@ -1,0 +1,60 @@
+{
+  "cycle": "0007",
+  "winners": [
+    "v002"
+  ],
+  "scores": {},
+  "fitness_vectors": [
+    {
+      "variant": "v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7242000000000001
+            }
+          ],
+          "summary": 0.7242,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7273999999999999
+            }
+          ],
+          "summary": 0.7274,
+          "higher_is_better": true
+        }
+      ]
+    },
+    {
+      "variant": "v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/workload-a.trace.gz",
+              "size": 2048,
+              "hit_rate": 0.7223999999999999
+            }
+          ],
+          "summary": 0.7224,
+          "higher_is_better": true
+        }
+      ]
+    }
+  ]
+}
