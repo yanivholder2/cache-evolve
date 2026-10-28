@@ -155,6 +155,68 @@ def test_list_geometry_must_be_non_empty_integers(tmp_path: Path):
         load_subject(root)
 
 
+def test_dash_declares_size_derived_segment_count():
+    # numOfSegments scales with the cache size; its divisor is the per-segment
+    # capacity implied by the fixed geometry.
+    caffeine = load_subject(DASH_SUBJECT).caffeine
+    geometry = caffeine.geometry
+    per_segment = (geometry["numOfNormalBuckets"] + geometry["numOfStashBuckets"]) * geometry["bucketSize"]
+    assert caffeine.size_divisors == {"numOfSegments": per_segment}
+    assert caffeine.as_runner_kwargs()["size_divisors"] == {"numOfSegments": per_segment}
+
+
+def test_size_divisors_parsed(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + '\n[caffeine.size-divisors]\nnumOfSegments = 256\n')
+    assert load_subject(root).caffeine.size_divisors == {"numOfSegments": 256}
+
+
+def test_size_divisors_default_empty(tmp_path: Path):
+    assert load_subject(_write_valid_subject(tmp_path)).caffeine.size_divisors == {}
+
+
+@pytest.mark.parametrize("value", ["0", "-2", "true", '"256"', "[256]"])
+def test_size_divisors_must_be_positive_integers(tmp_path: Path, value: str):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + f'\n[caffeine.size-divisors]\nnumOfSegments = {value}\n')
+    with pytest.raises(SubjectManifestError, match="size-divisors.numOfSegments: must be a positive integer"):
+        load_subject(root)
+
+
+def test_size_divisors_reject_sizes_not_multiple(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + '\n[caffeine.size-divisors]\nnumOfSegments = 200\n')
+    with pytest.raises(SubjectManifestError, match=r"evaluation.sizes: sizes \[512\] are not multiples"):
+        load_subject(root)
+
+
+def test_size_divisors_check_profile_sizes(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text
+        + '\n[evaluation.profiles.big]\nsizes = [1024, 1000]\n'
+        + '\n[caffeine.size-divisors]\nnumOfSegments = 256\n',
+    )
+    with pytest.raises(SubjectManifestError, match=r"evaluation.profiles.big.sizes: sizes \[1000\]"):
+        load_subject(root)
+
+
+def test_size_divisor_key_cannot_also_be_fixed_geometry(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text + '\n[caffeine.geometry]\nnumOfSegments = 1\n\n[caffeine.size-divisors]\nnumOfSegments = 256\n',
+    )
+    with pytest.raises(SubjectManifestError, match="already fixed in caffeine.geometry"):
+        load_subject(root)
+
+
 def test_extension_points_carry_contract_and_impl_files():
     subject = load_subject(DASH_SUBJECT)
     by_name = {ep.name: ep for ep in subject.extension_points}

@@ -44,3 +44,49 @@ def test_parse_csv_empty_policy_rejected(tmp_path):
     csv_path = _write(tmp_path, ",42.0,58.0,420,580,1000,10")
     with pytest.raises(CaffeineSimulatorError, match="missing required fields.*policy"):
         _parse_csv(csv_path, trace="lirs:multi1.trace.gz", size=512)
+
+
+def test_simulate_variant_surfaces_missing_csv_as_error(tmp_path, monkeypatch):
+    """A Caffeine call that exits 0 but writes no CSV (a thrown policy
+    constructor) must fail the evaluation, not yield an empty result."""
+
+    import subprocess
+    from types import SimpleNamespace
+
+    from evolve.config import (
+        Configs, FitnessConfig, FrameworkConfig, SelectionConfig, SimulatorConfig,
+    )
+    from evolve.fitness import caffeine_simulator
+    from evolve.identifiers import CycleId, VariantId
+    from evolve.paths import CycleVariant, Layout
+
+    repo_root = Path(__file__).resolve().parents[2]
+    layout = Layout(repo_root=repo_root, outputs_root=tmp_path / "out", subject="dash")
+    variant = CycleVariant(CycleId(1), VariantId(1))
+    variant.resolve(layout).overlay_dir.mkdir(parents=True)
+    cfg = Configs(
+        framework=FrameworkConfig(
+            cycles=1, cohort_size=1, ai_agent_tool="claude-sdk", model="claude-opus-4-8",
+            outputs_root=tmp_path, log_level="WARNING", digest_cycles=3,
+            max_workers=0, implementation_attempts=3, hypothesis_attempts=3,
+            authoring_scope="extension-points", subject="dash",
+        ),
+        simulator=SimulatorConfig(timeout_s=5),
+        fitness=FitnessConfig(dimensions=("hit-rate",)),
+        selection=SelectionConfig(method="pareto", winners_count=3, weights=None),
+    )
+    workspace = SimpleNamespace(root=tmp_path / "ws")
+    workspace.root.mkdir()
+    monkeypatch.setattr(
+        caffeine_simulator, "compile_cdylib",
+        lambda *_a, **_kw: (workspace, tmp_path / "lib" / "libdash.so"),
+    )
+    stderr = "java.lang.IllegalArgumentException: Dash topology must fill maximumSize exactly\n"
+    monkeypatch.setattr(
+        caffeine_simulator.caffeine_runner.subprocess, "run",
+        lambda cmd, **_kw: subprocess.CompletedProcess(cmd, 0, stdout="", stderr=stderr),
+    )
+    with pytest.raises(CaffeineSimulatorError, match=r"no hit_rate CSV for sizes \[2048\].*\ncause: java.lang.IllegalArgumentException"):
+        caffeine_simulator.simulate_variant(variant, layout=layout, repo_root=repo_root, cfg=cfg)
+    gradle_stderr = variant.resolve(layout).caffeine_dir.gradle_stderr_log
+    assert "IllegalArgumentException" in gradle_stderr.read_text(encoding="utf-8")

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -65,7 +66,33 @@ DEFAULT_TIMEOUT_S = 600
 
 
 class CaffeineError(RuntimeError):
-    """Raised when a Caffeine invocation fails (non-zero exit or timeout)."""
+    """Raised when a Caffeine invocation fails: non-zero exit, timeout, or a
+    zero exit that left an expected per-size CSV unwritten (Caffeine/picocli
+    can print a policy-constructor exception and still exit 0)."""
+
+
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+# A Java throwable header line, e.g. `java.lang.IllegalArgumentException: msg`
+# or `Caused by: java.lang.RuntimeException: msg` (stack-frame `at ...` lines excluded).
+_THROWABLE_LINE = re.compile(r"^(Caused by: )?[\w$.]+(Exception|Error)(: .*)?$")
+
+
+def _root_cause(stderr: str) -> str | None:
+    """The Java throwable line(s) in Caffeine's stderr, ANSI-stripped, or None.
+
+    Returns the first throwable header plus its last `Caused by:` (the deepest
+    cause), so the error names the real failure rather than a stack-frame tail.
+    """
+
+    lines = [_ANSI_ESCAPE.sub("", line).strip() for line in stderr.splitlines()]
+    throwables = [line for line in lines if _THROWABLE_LINE.match(line)]
+    if not throwables:
+        return None
+    picked = [throwables[0]]
+    caused = [line for line in throwables if line.startswith("Caused by: ")]
+    if caused and caused[-1] != throwables[0]:
+        picked.append(caused[-1])
+    return "\n".join(picked)
 
 
 @dataclass(frozen=True)
@@ -88,7 +115,10 @@ class Invocation:
     solely by `--maximumSize`. A scalar value is emitted as `key=value`; a list
     value is emitted in indexed `key.0=…` form, matching a Java `get*List` read.
     `policy_key` is the config key holding the eviction-policy list, or None
-    when the subject declares no policy list.
+    when the subject declares no policy list. `size_divisors` maps a config-key
+    suffix to a divisor; each emits `key=size // divisor` (e.g. dash's
+    `numOfSegments = size / per-segment capacity`), so an invocation carrying
+    any must hold exactly one size (`simulate()` splits per size).
     """
 
     library_path: Path
@@ -106,8 +136,14 @@ class Invocation:
     title: str | None = None
     caffeine_dir: Path = field(default_factory=lambda: DEFAULT_CAFFEINE_DIR)
     extra_jvm_args: tuple[str, ...] = ()
+    size_divisors: dict[str, int] = field(default_factory=dict)
 
     def gradle_cmd(self) -> list[str]:
+        if self.size_divisors and len(self.sizes) != 1:
+            raise CaffeineError(
+                f"{self.policy_spec_name}: size-derived keys {sorted(self.size_divisors)} "
+                f"need one size per invocation, got {self.sizes}"
+            )
         gradlew = "gradlew.bat" if os.name == "nt" else "gradlew"
         sizes_str = ",".join(f"{s:,}".replace(",", "_") for s in self.sizes)
         title = self.title or _trace_display_name(self.trace)
@@ -136,6 +172,9 @@ class Invocation:
                     cmd.append(f"-D{prefix}.{config_key}.{i}={item}")
             else:
                 cmd.append(f"-D{prefix}.{config_key}={value}")
+        for config_key, divisor in self.size_divisors.items():
+            derived = _derive(self.sizes[0], divisor, config_key, self.policy_spec_name)
+            cmd.append(f"-D{prefix}.{config_key}={derived}")
         cmd.append(f"-D{prefix}.debugMode={self.debug_mode}")
         if self.policy_key is not None:
             for i, policy in enumerate(self.policies):
@@ -143,6 +182,17 @@ class Invocation:
         if self.supports_log_path and self.log_path is not None:
             cmd.append(f"-D{prefix}.logPath={self.log_path}")
         return cmd
+
+
+def _derive(size: int, divisor: int, config_key: str, policy_spec_name: str) -> int:
+    """`size // divisor`, refusing a size that is not an exact positive multiple."""
+
+    if divisor <= 0 or size <= 0 or size % divisor:
+        raise CaffeineError(
+            f"{policy_spec_name}: size {size} is not a positive multiple of the "
+            f"{config_key} divisor {divisor} (size-divisors in the manifest [caffeine] table)"
+        )
+    return size // divisor
 
 
 def _trace_display_name(trace: str) -> str:
@@ -155,6 +205,14 @@ def _trace_display_name(trace: str) -> str:
 
 def _invoke(invocation: Invocation, *, timeout_s: int) -> RunResult:
     cmd = invocation.gradle_cmd()
+    what = (
+        f"policy={invocation.policy_spec_name}, trace={invocation.trace}, "
+        f"sizes={invocation.sizes}"
+    )
+    # Drop stale per-size reports first, so a failed call can't pass the
+    # missing-CSV check below on a previous run's file.
+    for size in invocation.sizes:
+        (invocation.output_dir / f"hit_rate_{size}.csv").unlink(missing_ok=True)
     try:
         proc = subprocess.run(
             cmd,
@@ -164,14 +222,28 @@ def _invoke(invocation: Invocation, *, timeout_s: int) -> RunResult:
         )
     except subprocess.TimeoutExpired as e:
         raise CaffeineError(
-            f"caffeine simulator timed out after {e.timeout}s (trace={invocation.trace}, "
-            f"sizes={invocation.sizes}, policies={invocation.policies})"
+            f"caffeine simulator timed out after {e.timeout}s ({what}, "
+            f"policies={invocation.policies})"
         ) from e
+    cause = _root_cause(proc.stderr)
+    cause_text = f"\ncause: {cause}" if cause else "\ncause: unknown (no Java exception in stderr)"
     if proc.returncode != 0:
         stderr_tail = "\n".join(proc.stderr.splitlines()[-STDERR_TAIL_LINES:])
         raise CaffeineError(
-            f"caffeine simulator failed (exit {proc.returncode}, trace={invocation.trace}):\n"
+            f"caffeine simulator failed (exit {proc.returncode}, {what}){cause_text}\n"
             f"{stderr_tail}"
+        )
+    # Caffeine can print a policy exception and still exit 0; a missing
+    # per-size report is the reliable failure signal.
+    missing = [
+        size for size in invocation.sizes
+        if not (invocation.output_dir / f"hit_rate_{size}.csv").is_file()
+    ]
+    if missing:
+        raise CaffeineError(
+            f"caffeine simulator exited 0 but wrote no hit_rate CSV for sizes {missing} "
+            f"({what}, output_dir={invocation.output_dir})"
+            f"{cause_text}"
         )
     return RunResult(
         output_dir=invocation.output_dir,
@@ -196,6 +268,7 @@ def run(
     debug_mode: int = 0,
     log_path: Path | None = None,
     caffeine_dir: Path = DEFAULT_CAFFEINE_DIR,
+    size_divisors: dict[str, int] | None = None,
 ) -> RunResult:
     """Single trace × single size."""
 
@@ -214,6 +287,7 @@ def run(
         log_path=log_path,
         output_dir=output_dir,
         caffeine_dir=caffeine_dir,
+        size_divisors=size_divisors,
     )
 
 
@@ -233,29 +307,48 @@ def simulate(
     debug_mode: int = 0,
     log_path: Path | None = None,
     caffeine_dir: Path = DEFAULT_CAFFEINE_DIR,
+    size_divisors: dict[str, int] | None = None,
 ) -> RunResult:
-    """Single trace × multiple sizes."""
+    """Single trace × multiple sizes.
+
+    One Caffeine call sweeps every size, unless the subject declares
+    `size_divisors`: their derived keys vary with the size, so each size gets
+    its own call (all writing `hit_rate_<size>.csv` into `output_dir`).
+    """
 
     if not sizes:
         raise CaffeineError("simulate(): sizes must be non-empty")
     if not policies:
         raise CaffeineError("simulate(): policies must be non-empty")
-    invocation = Invocation(
-        library_path=library_path,
-        trace=trace,
-        sizes=list(sizes),
-        policies=list(policies),
-        config_prefix=config_prefix,
-        policy_spec_name=policy_spec_name,
-        geometry=dict(geometry),
-        policy_key=policy_key,
-        supports_log_path=supports_log_path,
-        debug_mode=debug_mode,
-        log_path=log_path,
-        output_dir=output_dir,
-        caffeine_dir=caffeine_dir,
-    )
-    return _invoke(invocation, timeout_s=timeout_s)
+    size_divisors = dict(size_divisors or {})
+    # Validate every size up front so a bad grid fails before any Caffeine call.
+    for size in sizes:
+        for config_key, divisor in size_divisors.items():
+            _derive(size, divisor, config_key, policy_spec_name)
+    batches = [[size] for size in sizes] if size_divisors else [list(sizes)]
+    stdout: list[str] = []
+    stderr: list[str] = []
+    for batch in batches:
+        invocation = Invocation(
+            library_path=library_path,
+            trace=trace,
+            sizes=batch,
+            policies=list(policies),
+            config_prefix=config_prefix,
+            policy_spec_name=policy_spec_name,
+            geometry=dict(geometry),
+            policy_key=policy_key,
+            supports_log_path=supports_log_path,
+            debug_mode=debug_mode,
+            log_path=log_path,
+            output_dir=output_dir,
+            caffeine_dir=caffeine_dir,
+            size_divisors=size_divisors,
+        )
+        result = _invoke(invocation, timeout_s=timeout_s)
+        stdout.append(result.stdout)
+        stderr.append(result.stderr)
+    return RunResult(output_dir=output_dir, stdout="\n".join(stdout), stderr="\n".join(stderr))
 
 
 # ---------------------------------------------------------------------------
@@ -326,7 +419,7 @@ def _main(argv: list[str] | None = None) -> int:
             sizes = [int(s) for s in args.sizes.split(",")]
             result = simulate(sizes=sizes, **common_kwargs)
     except CaffeineError as exception:
-        print(f"error: {exception}", file=sys.stderr)
+        print(f"error: subject {args.subject_dir.name}: {exception}", file=sys.stderr)
         return 1
     print(f"output_dir={result.output_dir}")
     return 0

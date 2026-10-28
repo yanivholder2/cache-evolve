@@ -17,8 +17,9 @@ reads and writes both count as accesses.
 | hm_0 | 8.99M | 610k | `inputs/traces/msr/hm_0.trace.gz` |
 
 Model: `claude-opus-5-5` only, the same `--model` value as the v2 Opus rows.
-Subjects: the five v2 subjects. The primary matrix is 5 runs, with an optional
-5-run extension. The cross-workload rows are blocked on a missing tool. See the
+Subjects: four of the five v2 subjects (dash, associative_cache, lru_cache,
+tiny_lfu); s3_fifo is skipped (see the [run matrix](#run-matrix)). The primary
+matrix is 4 runs, with an optional 4-run extension. The cross-workload rows are blocked on a missing tool. See the
 [run matrix](#run-matrix).
 
 **Where results go:** `outputs/paper_outputs/snia_runs/<mode>/<subject>/<run>/`,
@@ -36,8 +37,8 @@ plots need a follow-up (see [Notes](#notes)).
 - **Extension = full_fitness_vector (`SF` rows).** This answers whether the
   0.6/0.2/0.2 trade-off still wins when real-trace hit-rate gains are harder
   to get. Run it only after SH rows show MSR hit-rate is movable.
-- **One `msr` profile with both traces, averaged.** This halves the runs and
-  penalises variants that overfit one volume. The hit-rate plugin's summary is
+- **One `msr` profile with both traces and shared sizes, averaged (decided).**
+  This halves the runs and penalises variants that overfit one volume. The hit-rate plugin's summary is
   the unweighted mean over the (trace, size) grid, and `eval/fitness/hit-rate.json`
   keeps every point, so per-trace results come free at analysis time.
 - **Opus only, 10 cycles × 3 variants, same flags as v2.** Every difference from
@@ -94,26 +95,33 @@ them from here.
 
 | Placeholder | Where it goes | Value |
 | --- | --- | --- |
-| `<MSR_SIZES>` | `sizes` in each subject's `[evaluation.profiles.msr]` (the same list for all five, so subjects are comparable) | `<MSR_SIZES>` |
-| `<TIMEOUT_S>` | `--simulator-timeout-s` in both command templates | `<TIMEOUT_S>` |
+| `<MSR_SIZES>` | `sizes` in each subject's `[evaluation.profiles.msr]` (the same list for all four, so subjects are comparable) | `[16384, 131072]` |
+| `<TIMEOUT_S>` | `--simulator-timeout-s` in both command templates | `1700` |
 
-`<TIMEOUT_S>` must cover one variant's whole Caffeine grid (2 traces × the size
-count) with headroom. The slowest baseline (`measure_baseline.py --evaluation-profile msr`)
-× ~1.5 is a reasonable floor. A variant that times out is rejected at fitness,
-so a tight value turns slow-but-good variants into losses. It doesn't cover
+`--simulator-timeout-s` bounds each Caffeine call, not the whole grid: one call
+per trace sweeps both sizes, except dash, which makes one call per size because
+its `numOfSegments` is derived from the size (`[caffeine.size-divisors]`).
+`<TIMEOUT_S>` is the slowest baseline call in `measure_baseline.py
+--evaluation-profile msr` × ~3, rounded up, with a floor of 600 (config's
+default). The slowest call was associative_cache on web_0 (both sizes) at
+544 s, so 544 × 3 ≈ 1633 → 1700. Baselines were measured at `log_level =
+"DEBUG"`, the level the run templates pass. Under DEBUG, dash writes ~5.5 GB of
+Rust logs per call (440–520 s per call), so watch disk space. A variant that
+times out is rejected at fitness, so a tight value turns slow-but-good variants
+into losses. It doesn't cover
 per-op-time, which has its own fixed 120 s limit and doesn't depend on the trace.
 
 **Prerequisites (one-off, not per row):** commit the traces and SNIA NOTICE
 under `inputs/traces/msr/`, add `[evaluation.profiles.msr]` with
 `traces = ["lirs:inputs/traces/msr/web_0.trace.gz", "lirs:inputs/traces/msr/hm_0.trace.gz"]`
-and `sizes = <MSR_SIZES>` to all five manifests, then for each subject run
+and `sizes = [16384, 131072]` to the four manifests, then for each subject run
 `.venv/bin/python scripts/measure_baseline.py <S> --evaluation-profile msr` and
 commit the anchor.
 
 ## Commands
 
-Substitute `<S>` (subject) from the row and `<TIMEOUT_S>` from
-[Parameters](#parameters). The model is always `claude-opus-5-5`. Apart from the
+Substitute `<S>` (subject) from the row; `<TIMEOUT_S>` from
+[Parameters](#parameters) is already filled in (1700). The model is always `claude-opus-5-5`. Apart from the
 profile and timeout, these are the v2 templates.
 
 **only_hit_rate** (`SH` rows, primary):
@@ -121,7 +129,7 @@ profile and timeout, these are the v2 templates.
 ```
 .venv/bin/evolve --subject <S> --model claude-opus-5-5 --ai-agent-tool claude-sdk \
   --cycles 10 --cohort-size 3 --authoring-scope full-autonomy --log-level DEBUG \
-  --max-workers 0 --simulator-timeout-s <TIMEOUT_S> --digest-cycles 3 \
+  --max-workers 0 --simulator-timeout-s 1700 --digest-cycles 3 \
   --implementation-attempts 3 --hypothesis-attempts 3 --winners-count 3 \
   --evaluation-profile msr \
   --dimensions hit-rate --selection-method pareto
@@ -132,7 +140,7 @@ profile and timeout, these are the v2 templates.
 ```
 .venv/bin/evolve --subject <S> --model claude-opus-5-5 --ai-agent-tool claude-sdk \
   --cycles 10 --cohort-size 3 --authoring-scope full-autonomy --log-level DEBUG \
-  --max-workers 0 --simulator-timeout-s <TIMEOUT_S> --digest-cycles 3 \
+  --max-workers 0 --simulator-timeout-s 1700 --digest-cycles 3 \
   --implementation-attempts 3 --hypothesis-attempts 3 --winners-count 3 \
   --evaluation-profile msr \
   --dimensions hit-rate metadata-size per-op-time \
@@ -191,17 +199,19 @@ status](#checking-run-status) for the live state. The v2 Zipf counterpart of eac
 | SH01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | SH02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
 | SH03 | only_hit_rate | lru_cache | claude-opus-5-5 | todo | | | | |
-| SH04 | only_hit_rate | s3_fifo | claude-opus-5-5 | todo | | | | |
 | SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | SF01 | full_fitness_vector | dash | claude-opus-5-5 | optional | | | | |
 | SF02 | full_fitness_vector | associative_cache | claude-opus-5-5 | optional | | | | |
 | SF03 | full_fitness_vector | lru_cache | claude-opus-5-5 | optional | | | | |
-| SF04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | optional | | | | |
 | SF05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | optional | | | | |
-| SX01 | rescore Zipf→MSR | all five (v2 H01–H05 winners) | claude-opus-5-5 | blocked | | | | |
-| SX02 | rescore MSR→Zipf | all five (SH01–SH05 winners) | claude-opus-5-5 | blocked | | | | |
+| SX01 | rescore Zipf→MSR | the four (v2 H01–H03, H05 winners) | claude-opus-5-5 | blocked | | | | |
+| SX02 | rescore MSR→Zipf | the four (SH01–SH03, SH05 winners) | claude-opus-5-5 | blocked | | | | |
 
-Run order: SH01–SH05 first (any order, in parallel sessions). Start SF rows only
+SH04/SF04 (s3_fifo) are dropped: its linear-scan eviction takes ~1 h per variant
+on MSR, so it has no `msr` profile. IDs are not renumbered, so each row still
+pairs with the v2 row of the same number.
+
+Run order: SH01–SH03 and SH05 first (any order, in parallel sessions). Start SF rows only
 once at least three SH rows beat their MSR baseline. SX rows need no LLM time,
 only simulator time, once the tool below exists.
 
@@ -223,13 +233,13 @@ only simulator time, once the tool below exists.
 - **Plots.** `plots/build_data.py` ignores `snia_runs/` (batch regex
   `^v\d+_runs$`). Comparing MSR to Zipf needs it to treat the evaluation
   profile as a dataset key, not a batch.
-- **Open choices.** (1) Per-trace profiles (`msr_web0`, `msr_hm0`) instead of
-  the averaged `msr`. These need only extra manifest tables and anchors, no
-  code, and would double the matrix. Worth it if SH results show one volume
-  dominating the mean. (2) Whether SF rows run at all, which depends on cost
-  after SH. (3) `<MSR_SIZES>` should probably span each trace's working set
-  (e.g. a small and a large fraction of 610k / 1.92M distinct blocks), since
-  one size can't do that for both volumes.
+- **Resolved: one averaged profile with shared sizes.** Per-trace profiles
+  (`msr_web0`, `msr_hm0`) were rejected: they would double the matrix, and
+  `hit-rate.json` already keeps every (trace, size) point for per-volume
+  analysis. Sizes `[16384, 131072]` are shared by both traces (≈0.9% / 6.8% of
+  web_0's 1.92M distinct blocks, 2.7% / 21% of hm_0's 610k) and are multiples
+  of dash's 2048-entry segment.
+- **Open choice.** Whether SF rows run at all, which depends on cost after SH.
 - **Known issue carried from v2: missing writer output.** A hypotheses or
   insight writer sometimes starts a background agent, says it will wait for
   its report, and ends its turn without writing `H<NN>.md` / `insight.md`
