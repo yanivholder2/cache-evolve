@@ -226,5 +226,5 @@ __pycache__/
 # else stay ignored.
 !outputs/paper_outputs/**/*.log
 # Downloaded workload traces (large, licensed; fetched locally)
-traces/
+/traces/
 comparison_runs/
