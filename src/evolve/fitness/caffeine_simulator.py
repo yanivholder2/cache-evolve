@@ -188,8 +188,9 @@ def simulate_variant(
     policy_name = DEFAULT_EVICTION_POLICY
     subject = load_subject(layout.sources.subject_dir)
     caffeine = subject.caffeine
-    traces = subject.evaluation.traces
-    sizes = subject.evaluation.sizes
+    evaluation = subject.evaluation_for(layout.evaluation_profile)
+    traces = evaluation.traces
+    sizes = evaluation.sizes
     debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
 
     caffeine_out = variant_dir.caffeine_dir

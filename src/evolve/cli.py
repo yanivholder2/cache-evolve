@@ -40,7 +40,7 @@ from evolve.identifiers import CYCLE_ID_WIDTH, CycleId, HypothesisId, VariantId
 from evolve._io import read_utf8
 from evolve.paths import CycleLayout, CycleVariant, CycleVariantDir, Layout
 from evolve.run_snapshot import flag_overrides, override_flag_names, snapshot_run_inputs
-from evolve.subject import Subject, load_subject
+from evolve.subject import Subject, SubjectManifestError, load_subject
 from evolve.variant.implementer import _latest_rejection_entry
 from evolve.variant.repair_loop import VariantStepFailed, implement_with_repair
 from evolve.variant.variant_insight_writer import write_insight
@@ -607,6 +607,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                              "weighted method, pass matching --weights unless config.toml's "
                              "weights already cover exactly these dimensions; or use "
                              "--selection-method pareto.")
+    parser.add_argument("--evaluation-profile", type=str, default=None, metavar="NAME",
+                        help="Score on the subject manifest's [evaluation.profiles.NAME] grid "
+                             "(and its baseline/eval/profiles/NAME/ anchor) instead of the "
+                             "default [evaluation] grid.")
     parser.add_argument("--selection-method", choices=sorted(SELECTOR_REGISTRY), default=None,
                         help="How Winners are chosen. Switching to pareto drops config.toml's "
                              "selection.weights.")
@@ -683,6 +687,7 @@ def main(argv: list[str] | None = None) -> None:
             implementation_attempts=args.implementation_attempts,
             hypothesis_attempts=args.hypothesis_attempts,
             dimensions=args.dimensions,
+            evaluation_profile=args.evaluation_profile,
             selection_method=args.selection_method,
             winners_count=args.winners_count,
             weights=dict(args.weights) if args.weights is not None else None,
@@ -691,8 +696,18 @@ def main(argv: list[str] | None = None) -> None:
         die(str(exception))
 
     adapter = ADAPTER_REGISTRY[cfg.framework.ai_agent_tool](model=cfg.framework.model)
-    layout = Layout(repo_root=repo_root, outputs_root=cfg.framework.outputs_root, subject=cfg.framework.subject)
-    _validate_active_dimensions(cfg, load_subject(layout.sources.subject_dir), layout)
+    layout = Layout(
+        repo_root=repo_root,
+        outputs_root=cfg.framework.outputs_root,
+        subject=cfg.framework.subject,
+        evaluation_profile=cfg.fitness.evaluation_profile,
+    )
+    subject = load_subject(layout.sources.subject_dir)
+    try:
+        subject.validate_profile_baseline(cfg.fitness.evaluation_profile)
+    except SubjectManifestError as exception:
+        die(str(exception))
+    _validate_active_dimensions(cfg, subject, layout)
 
     snapshot_run_inputs(layout, flag_overrides(args))
 
@@ -703,6 +718,7 @@ def main(argv: list[str] | None = None) -> None:
         type(adapter).__name__, cfg.framework.outputs_root, cfg.framework.log_level,
     )
     log.info("cycles=%d cohort_size=%d", cfg.framework.cycles, cfg.framework.cohort_size)
+    log.info("evaluation_profile=%s", cfg.fitness.evaluation_profile or "default")
 
     already_done = _prepare_resume(layout, cfg) if continue_from is not None else 0
 

@@ -103,6 +103,27 @@ class VariantDir:
 
 
 @dataclass(frozen=True)
+class BaselineDir(VariantDir):
+    """The subject's baseline directory (`<subject>/baseline`).
+
+    Under the default evaluation grid its `eval/` is the plain variant layout
+    (`baseline/eval/fitness-vector.json`). Under a named evaluation profile the
+    baseline is measured on a different (trace, size) grid, so its eval
+    artefacts live in their own subtree, `baseline/eval/profiles/<profile>/`,
+    leaving the default anchor untouched. `insight.md` and `overlay/` are
+    shared: the baseline implementation is the same across profiles."""
+
+    evaluation_profile: str | None = None
+
+    @property
+    def eval_dir(self) -> Path:
+        eval_dir = self.root / "eval"
+        if self.evaluation_profile is None:
+            return eval_dir
+        return eval_dir / "profiles" / self.evaluation_profile
+
+
+@dataclass(frozen=True)
 class CargoWorkspace:
     """A subject-copy cargo workspace prepared for one variant build.
 
@@ -258,6 +279,7 @@ class SourcesLayout:
 
     root: Path
     subject: str | None = None
+    evaluation_profile: str | None = None
 
     @property
     def config_toml(self) -> Path:
@@ -277,11 +299,15 @@ class SourcesLayout:
         return self.agents_dir / f"{agent_name}.md"
 
     @property
-    def baseline(self) -> VariantDir:
+    def baseline(self) -> BaselineDir:
         # Mirrors the variant layout so the baseline reads with the same file
-        # conventions as any cycle variant. Returns `VariantDir` (not
-        # `CycleVariantDir`) because `"baseline"` isn't a valid `VariantId`.
-        return VariantDir(root=self.subject_dir / "baseline")
+        # conventions as any cycle variant. Not a `CycleVariantDir` because
+        # `"baseline"` isn't a valid `VariantId`. The active evaluation profile
+        # (None = the manifest's default `[evaluation]` grid) picks which
+        # baseline anchor the run reads and measure_baseline writes.
+        return BaselineDir(
+            root=self.subject_dir / "baseline", evaluation_profile=self.evaluation_profile
+        )
 
     @property
     def subject_src(self) -> Path:
@@ -362,10 +388,15 @@ class Layout:
     repo_root: Path
     outputs_root: Path
     subject: str | None = None
+    # Named `[evaluation.profiles.<name>]` grid this run scores on; None is the
+    # manifest's default `[evaluation]` grid.
+    evaluation_profile: str | None = None
 
     @property
     def sources(self) -> SourcesLayout:
-        return SourcesLayout(root=self.repo_root, subject=self.subject)
+        return SourcesLayout(
+            root=self.repo_root, subject=self.subject, evaluation_profile=self.evaluation_profile
+        )
 
     @property
     def outputs(self) -> OutputsLayout:
@@ -396,7 +427,7 @@ class Layout:
 class Baseline:
     """The permanent research baseline."""
 
-    def resolve(self, layout: Layout) -> VariantDir:
+    def resolve(self, layout: Layout) -> BaselineDir:
         return layout.sources.baseline
 
     @property

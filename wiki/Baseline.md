@@ -27,6 +27,14 @@ The script builds the subject with an empty overlay, runs the correctness [gates
 
 To measure a baseline for a specific subject, select it the usual way (via `--subject` / `config.toml`); the script measures whichever subject the configuration resolves to.
 
+## Evaluation profiles
+
+A manifest may declare named alternative grids, e.g. `[evaluation.profiles.msr]` with `traces` and/or `sizes` overriding `[evaluation]`. A run opts in with `--evaluation-profile msr` (or `fitness.evaluation_profile` in `config.toml`); without it the default grid and anchor are used. Each profile has its own anchor at `baseline/eval/profiles/<name>/fitness-vector.json`, created with:
+
+```bash
+.venv/bin/python scripts/measure_baseline.py <subject> --evaluation-profile <name>
+```
+
 ## Going deeper
 
 - [`scripts/measure_baseline.py`](https://github.com/yanivholder2/cache-evolve/blob/main/scripts/measure_baseline.py) — the measurement script.
