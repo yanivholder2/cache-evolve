@@ -38,9 +38,13 @@ Under `claude-sdk`, `--model` takes any `claude-<family>-<version>` id (e.g. `cl
 `claude-sonnet-5-5`, `claude-haiku-5-5`) — don't reject an id for being absent
 from a list.
 
-**Paper runs.** If the request references the paper run plan or a plan row id
-(e.g. `F01`), read `outputs/paper_outputs/v2_runs/paper-runs-plan.md` first and launch that row's exact
-command — every setting pinned, no natural-language translation. Don't edit
+**Paper runs.** If the request references a paper run plan or a plan row id,
+it should name the plan path, e.g. `SH01 from
+outputs/paper_outputs/<batch>/paper-runs-plan.md`. Read that plan first and
+launch that row's exact command — every setting pinned, no natural-language
+translation. **Fallback** when no plan is named: if exactly one
+`outputs/paper_outputs/*/paper-runs-plan.md` exists, use it; if none or several
+exist, stop and ask. If the row id isn't in the plan, stop and ask. Don't edit
 the plan doc; its "Checking run status" section says how to see which rows are done.
 
 Confirm the assembled command line back to the user in one line before

@@ -48,12 +48,28 @@ plots need a follow-up (see [Notes](#notes)).
 
 ## How a run works
 
-Everything in the v2 plan's "How a run works" and "Running it in a cloud
-session (lessons learned)" applies unchanged: one run per cloud session,
-SessionStart hook environment, `evolve-run` to launch, `promote-run` to
-promote, the detached `setsid -f` launch plus a waiter, resuming with
-`--continue` after a usage limit, stopping with `pgrep -f "bin/evolve --subject"`,
-and copying with `tar` for promotion. Read that section first. Differences:
+- **One run per cloud session** (4 cores). The SessionStart hook
+  (`.claude/hooks/session-start.sh`) provisions the venv, Caffeine checkout and
+  JDK. Launch with `evolve-run`, promote with `promote-run`, passing the plan
+  path and batch explicitly (see [Session prompt](#session-prompt)).
+- **Detach the run.** Harness background tasks are cut off at 2h, shorter than
+  a run. Launch with
+  `setsid -f bash -c '.venv/bin/evolve <flags>; echo "EXIT=$?"' > $L 2>&1 < /dev/null`
+  (`L=<scratchpad>/<ID>.log`; no `&`, no `sleep`), then start a background
+  waiter `until grep -q '^EXIT=' $L; do sleep 60; done; tail -3 $L`, and
+  restart the waiter if it is cut off. Give the user the run dir and full log
+  path; each resume logs to a new file (`<ID>-resume1.log`, …).
+- **Usage limits.** When the account hits its limit every agent call returns
+  `ZeroTokenUsageError` and the run exits 1 with `no variants survived in cycle
+  NNNN` (the cycle's `*.log.md` says `You've hit your session limit · resets
+  <time>`). Not a run failure: after the reset, resume with
+  `.venv/bin/evolve --continue outputs/<subject>_<timestamp>`.
+- **Stopping a run:** `pgrep -f "bin/evolve --subject"` and kill those PIDs.
+  `pkill -f` on the same pattern also kills your own shell.
+- **Promote:** the container has no `rsync`; copy with
+  `tar --exclude='*/eval/caffeine/rust-logs' --exclude='*gradle*.log'`.
+
+Differences from the v2 Zipf runs:
 
 - **Slower variants.** Caffeine on MSR takes about 18× longer per variant than
   on Zipf (two traces of ~9M events each, against one small trace). Expect
@@ -123,22 +139,23 @@ profile and timeout, these are the v2 templates.
   --selection-method weighted --weights hit-rate=0.6 metadata-size=0.2 per-op-time=0.2
 ```
 
-`promote-run` picks the mode from the snapshot's `[fitness].dimensions` exactly
-as in v2, so both templates map to the usual `only_hit_rate` /
-`full_fitness_vector` folders.
+Launch a row with `/evolve-run <ID> from outputs/paper_outputs/snia_runs/paper-runs-plan.md`
+and promote it with `/promote-run snia_runs`, which copies into
+`outputs/paper_outputs/snia_runs/<mode>/<subject>/` and titles the PR
+`<subject> paper_outputs snia (<mode>) — …`. It picks the mode from the
+snapshot's `[fitness].dimensions`, so both templates map to the usual
+`only_hit_rate` / `full_fitness_vector` folders.
 
 ## Session prompt
 
 Paste into a fresh cloud session, replacing `<ID>`:
 
-> Read outputs/paper_outputs/snia_runs/paper-runs-plan.md (and the "Running it
-> in a cloud session" section of outputs/paper_outputs/v2_runs/paper-runs-plan.md)
-> and run row `<ID>`: run the extra MSR pre-flight checks, launch the row's exact
-> command via /evolve-run (detached; give me the full log path), resume with
-> `--continue` after any usage-limit stop, then /promote-run, overriding its v2
-> defaults: copy into `outputs/paper_outputs/snia_runs/<mode>/<subject>/`, and
-> title the PR `<subject> paper_outputs snia (<mode>) — claude-opus-5-5, …`.
-> Don't edit either plan doc.
+> Read outputs/paper_outputs/snia_runs/paper-runs-plan.md, then run
+> `/evolve-run <ID> from outputs/paper_outputs/snia_runs/paper-runs-plan.md`:
+> run the extra MSR pre-flight checks, launch the row's exact command detached
+> (per "How a run works"; give me the full log path), resume with `--continue`
+> after any usage-limit stop, then `/promote-run snia_runs`. Don't edit the
+> plan doc.
 
 ## Checking run status
 
@@ -203,10 +220,6 @@ only simulator time, once the tool below exists.
   `VariantDir`, runs the gates, and writes `eval/fitness-vector.json` outside
   the run dir, plus a `cross_workload/` output folder under `snia_runs/`. Until
   that lands, don't invent commands for these rows.
-- **Skills assume v2.** `evolve-run` points plan row ids at the v2 plan, and
-  `promote-run` hard-codes `v2_runs/` and the `v2` PR title. The session prompt
-  overrides both. A small skill update to take the batch from the plan would
-  remove the override.
 - **Plots.** `plots/build_data.py` ignores `snia_runs/` (batch regex
   `^v\d+_runs$`). Comparing MSR to Zipf needs it to treat the evaluation
   profile as a dataset key, not a batch.
@@ -217,6 +230,17 @@ only simulator time, once the tool below exists.
   after SH. (3) `<MSR_SIZES>` should probably span each trace's working set
   (e.g. a small and a large fraction of 610k / 1.92M distinct blocks), since
   one size can't do that for both volumes.
-- **Inherited hazards:** the first-cycle Gradle race in a fresh session (v2 H12)
-  and the Maven Central HTTP 429 (v2 F04/F13) still apply. Treat both as infra
-  failures, not variant failures.
+- **Known issue carried from v2: missing writer output.** A hypotheses or
+  insight writer sometimes starts a background agent, says it will wait for
+  its report, and ends its turn without writing `H<NN>.md` / `insight.md`
+  (v2 F01, F11, H13). That is an agent-behaviour failure, not a usage limit.
+  `--hypothesis-attempts` only retries scope violations, so a missing
+  `H<NN>.md` ends the run; resume with `--continue`.
+- **Known issue carried from v2: Gradle/Maven infra failures.** On a fresh
+  checkout the cycle-1 variants run Caffeine's first Gradle build in parallel
+  and one can read a half-written generated `FDW.java` (`reached end of file
+  while parsing` in `:caffeine:generateNodes`) and be rejected at fitness (v2
+  H12). Generated sources aren't rebuilt, so stopping and restarting the run
+  from scratch avoids it. Gradle's cold dependency fetch has also hit HTTP 429
+  from Maven Central (v2 F04, F13). Treat both as infra failures, not variant
+  failures.
