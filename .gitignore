@@ -225,3 +225,5 @@ __pycache__/
 # logs), which the global *.log rule above would otherwise drop. Logs anywhere
 # else stay ignored.
 !outputs/paper_outputs/**/*.log
+# Downloaded workload traces (large, licensed; fetched locally)
+traces/
