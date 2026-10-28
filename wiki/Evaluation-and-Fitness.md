@@ -80,6 +80,8 @@ flowchart TD
 - On the Java side, a small policy class (`<Subject>RustPolicy.java`) loads that library and forwards every cache operation to it.
 - The bridge is **pointer-based JNI**: the Rust side returns an opaque pointer when the cache is created, and Java passes that pointer back on every call, finally releasing it when the trace finishes.
 - The subject's manifest `[caffeine]` table tells the runner everything it needs — the policy spec name, the config prefix the Java side reads, the cache geometry, and so on — so the runner itself stays subject-agnostic.
+- A setting that scales with the cache size goes under `[caffeine.size-divisors]` as `key = divisor`; the runner passes `key = size / divisor` for each size (one Caffeine call per size) and every evaluated size must be an exact multiple. Dash uses it for `numOfSegments = size / 2048`.
+- If Caffeine throws (e.g. a size its policy rejects) the runner fails loudly, naming the policy, size and Java exception, even when the JVM exits 0 without writing `hit_rate_<size>.csv`; the variant's evaluation fails.
 
 **Setting it up (user flow):**
 

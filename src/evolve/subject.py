@@ -85,7 +85,11 @@ class CaffeineConfig:
     `get*List`, e.g. associative_cache's `numOfBuckets`); the command builder
     emits scalars as `key=value` and lists in indexed `key.0=…` form.
     `policy_key` is the config key holding the eviction-policy list, or None
-    when the subject has none.
+    when the subject has none. `size_divisors` (manifest
+    `[caffeine.size-divisors]`) maps a config-key suffix to a divisor whose
+    value is derived per cache size as `size // divisor` (dash:
+    `numOfSegments = size / per-segment capacity`); every evaluated size must
+    be an exact multiple, and the runner makes one Caffeine call per size.
     """
 
     config_prefix: str
@@ -93,15 +97,18 @@ class CaffeineConfig:
     geometry: dict[str, int | list[int]]
     policy_key: str | None
     supports_log_path: bool
+    size_divisors: dict[str, int] = field(default_factory=dict)
 
     def as_runner_kwargs(self) -> dict:
-        """The caffeine-runner wiring kwargs (config_prefix, policy_spec_name, geometry, policy_key, supports_log_path)."""
+        """The caffeine-runner wiring kwargs (config_prefix, policy_spec_name, geometry,
+        policy_key, supports_log_path, size_divisors)."""
         return {
             "config_prefix": self.config_prefix,
             "policy_spec_name": self.policy_spec_name,
             "geometry": self.geometry,
             "policy_key": self.policy_key,
             "supports_log_path": self.supports_log_path,
+            "size_divisors": dict(self.size_divisors),
         }
 
 
@@ -225,7 +232,9 @@ _ALLOWED_SUBJECT = {"name", "crate-path", "cdylib-name"}
 _ALLOWED_EP = {"name", "contract", "impl-files", "description"}
 _ALLOWED_GATES = {"name", "test", "marker"}
 _ALLOWED_CONTRACT = {"protected-files"}
-_ALLOWED_CAFFEINE = {"config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry"}
+_ALLOWED_CAFFEINE = {
+    "config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry", "size-divisors",
+}
 _ALLOWED_DOCS = {"context", "insight"}
 _ALLOWED_EVAL = {"fitness-vector", "traces", "sizes", "profiles"}
 _ALLOWED_EVAL_PROFILE = {"traces", "sizes"}
@@ -365,6 +374,7 @@ def load_subject(subject_dir: Path) -> Subject:
     caffeine = _load_caffeine(caffeine_table)
 
     evaluation = _load_evaluation(eval_table, subject_dir)
+    _check_size_divisors(caffeine, evaluation)
 
     bench = _load_bench(bench_table)
     metadata = _load_metadata(metadata_table)
@@ -413,13 +423,45 @@ def _load_caffeine(table: dict) -> CaffeineConfig:
             geometry[key] = value
         else:
             raise SubjectManifestError(f"caffeine.geometry.{key}: must be an integer or a list of integers")
+    divisors_raw = table.get("size-divisors", {})
+    if not isinstance(divisors_raw, dict):
+        raise SubjectManifestError(
+            f"caffeine.size-divisors: must be a table, got {type(divisors_raw).__name__}"
+        )
+    size_divisors: dict[str, int] = {}
+    for key, value in divisors_raw.items():
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise SubjectManifestError(f"caffeine.size-divisors.{key}: must be a positive integer")
+        if key in geometry:
+            raise SubjectManifestError(
+                f"caffeine.size-divisors.{key}: already fixed in caffeine.geometry"
+            )
+        size_divisors[key] = value
     return CaffeineConfig(
         config_prefix=config_prefix,
         policy_spec_name=policy_spec_name,
         geometry=geometry,
         policy_key=policy_key,
         supports_log_path=supports_log_path,
+        size_divisors=size_divisors,
     )
+
+
+def _check_size_divisors(caffeine: CaffeineConfig, evaluation: Evaluation) -> None:
+    """Every evaluated size (default grid and each profile) must be an exact
+    multiple of every `caffeine.size-divisors` divisor, so a mis-sized grid
+    fails at load rather than inside a Caffeine call."""
+    grids = [("evaluation.sizes", evaluation.sizes)] + [
+        (f"evaluation.profiles.{name}.sizes", profile.sizes)
+        for name, profile in evaluation.profiles.items()
+    ]
+    for where, sizes in grids:
+        for key, divisor in caffeine.size_divisors.items():
+            bad = [size for size in sizes if size % divisor]
+            if bad:
+                raise SubjectManifestError(
+                    f"{where}: sizes {bad} are not multiples of caffeine.size-divisors.{key} = {divisor}"
+                )
 
 
 def _load_evaluation(table: dict, subject_dir: Path) -> Evaluation:

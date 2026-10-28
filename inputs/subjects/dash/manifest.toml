@@ -58,6 +58,13 @@ numOfNormalBuckets = 8
 numOfStashBuckets = 24
 bucketSize = 64
 
+# Keys derived per cache size as `size / divisor`. numOfSegments scales with the
+# size: divisor = per-segment capacity = (numOfNormalBuckets + numOfStashBuckets)
+# * bucketSize = (8 + 24) * 64 = 2048, so every evaluated size must be a
+# multiple of 2048. Keep in step with [caffeine.geometry].
+[caffeine.size-divisors]
+numOfSegments = 2048
+
 [docs]
 context = "CONTEXT.md"
 insight = "baseline/insight.md"
@@ -66,3 +73,9 @@ insight = "baseline/insight.md"
 fitness-vector = "baseline/eval/fitness-vector.json"
 traces = ["lirs:inputs/traces/workload-a.trace.gz"]
 sizes = [2048]
+
+# MSR Cambridge block-I/O grid (--evaluation-profile msr): both traces crossed
+# with both sizes, averaged like the default grid.
+[evaluation.profiles.msr]
+traces = ["lirs:inputs/traces/msr/web_0.trace.gz", "lirs:inputs/traces/msr/hm_0.trace.gz"]
+sizes = [16384, 131072]
