@@ -794,3 +794,107 @@ def test_axis_descriptions_map_name_to_description():
             "budget constant."
         ),
     }
+
+
+# --- evaluation profiles ---
+
+
+def _add_profile(root: Path, body: str) -> None:
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(root, text + "\n[evaluation.profiles.msr]\n" + body)
+
+
+def _write_profile_baseline(root: Path, grid: list[tuple[str, int]]) -> Path:
+    """Write the msr profile's baseline anchor at its conventional path."""
+    path = root / "baseline" / "eval" / "profiles" / "msr" / "fitness-vector.json"
+    path.parent.mkdir(parents=True)
+    _write_baseline(root, grid)
+    (root / "eval" / "fitness.json").rename(path)
+    _write_baseline(root, [("lirs:multi1.trace.gz", 512)])  # restore the default anchor
+    return path
+
+
+def test_no_profiles_keeps_default_evaluation(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.profiles == {}
+    assert subject.evaluation_for(None) is subject.evaluation
+    subject.validate_profile_baseline(None)
+
+
+def test_profile_overrides_traces_and_inherits_sizes(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, 'traces = ["lirs:web_0.trace.gz", "lirs:hm_0.trace.gz"]\n')
+    subject = load_subject(tmp_path)
+    # Default grid untouched by the profile.
+    assert subject.evaluation.traces == ("lirs:multi1.trace.gz",)
+    assert subject.evaluation.fitness_vector == Path("eval/fitness.json")
+    profile = subject.evaluation_for("msr")
+    assert profile.traces == ("lirs:web_0.trace.gz", "lirs:hm_0.trace.gz")
+    assert profile.sizes == (512,)
+    assert profile.fitness_vector == Path("baseline/eval/profiles/msr/fitness-vector.json")
+
+
+def test_profile_overrides_sizes(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [65536, 131072]\n")
+    profile = load_subject(tmp_path).evaluation_for("msr")
+    assert profile.traces == ("lirs:multi1.trace.gz",)
+    assert profile.sizes == (65536, 131072)
+
+
+def test_unknown_profile_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024]\n")
+    subject = load_subject(tmp_path)
+    with pytest.raises(SubjectManifestError, match=r"profile 'nope'.*declared profiles: \['msr'\]"):
+        subject.evaluation_for("nope")
+    with pytest.raises(SubjectManifestError, match=r"profile 'nope'"):
+        subject.validate_profile_baseline("nope")
+
+
+@pytest.mark.parametrize(
+    ("body", "pattern"),
+    [
+        ("", r"evaluation.profiles.msr.*non-empty table"),
+        ("timeout = 5\n", r"evaluation.profiles.msr.*unknown field 'timeout'"),
+        ("sizes = [0]\n", r"evaluation.profiles.msr.sizes.*positive"),
+        ('traces = ["web_0"]\n', r"evaluation.profiles.msr.traces.*format.*path"),
+    ],
+)
+def test_malformed_profile_is_rejected(tmp_path: Path, body: str, pattern: str):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, body)
+    with pytest.raises(SubjectManifestError, match=pattern):
+        load_subject(tmp_path)
+
+
+def test_profile_baseline_missing_points_at_measure_baseline(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024]\n")
+    # Loading succeeds without the profile anchor, so measure_baseline can create it.
+    subject = load_subject(tmp_path)
+    with pytest.raises(
+        SubjectManifestError,
+        match=r"evaluation.profiles.msr: baseline fitness vector not found.*"
+              r"measure_baseline.py stub --evaluation-profile msr",
+    ):
+        subject.validate_profile_baseline("msr")
+
+
+def test_profile_baseline_grid_matching_passes(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024, 2048]\n")
+    _write_profile_baseline(
+        tmp_path, [("lirs:multi1.trace.gz", 1024), ("lirs:multi1.trace.gz", 2048)]
+    )
+    load_subject(tmp_path).validate_profile_baseline("msr")
+
+
+def test_profile_baseline_grid_mismatch_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024, 2048]\n")
+    # Anchor measured on the default grid, not the profile's.
+    _write_profile_baseline(tmp_path, [("lirs:multi1.trace.gz", 512)])
+    with pytest.raises(SubjectManifestError, match=r"evaluation.profiles.msr: baseline 'hit-rate' grid"):
+        load_subject(tmp_path).validate_profile_baseline("msr")

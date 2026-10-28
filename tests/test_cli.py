@@ -260,3 +260,39 @@ def test_main_rejects_duplicate_weights(capsys):
     with pytest.raises(SystemExit):
         main(["--weights", "hit-rate=0.6", "hit-rate=0.9"])
     assert "--weights repeats a dimension: hit-rate" in capsys.readouterr().err
+
+
+# --- evaluation profiles: baseline anchor resolution ---
+
+
+def test_default_layout_baseline_path_unchanged(tmp_path):
+    layout = Layout(repo_root=tmp_path, outputs_root=tmp_path / "out", subject="lru_cache")
+    baseline = layout.sources.baseline
+    assert baseline.fitness_vector_json == (
+        tmp_path / "inputs/subjects/lru_cache/baseline/eval/fitness-vector.json"
+    )
+    assert baseline.fitness_dir == tmp_path / "inputs/subjects/lru_cache/baseline/eval/fitness"
+
+
+def test_profile_layout_baseline_path_is_profile_scoped(tmp_path):
+    layout = Layout(
+        repo_root=tmp_path, outputs_root=tmp_path / "out", subject="lru_cache",
+        evaluation_profile="msr",
+    )
+    baseline = layout.sources.baseline
+    profile_eval = tmp_path / "inputs/subjects/lru_cache/baseline/eval/profiles/msr"
+    assert baseline.fitness_vector_json == profile_eval / "fitness-vector.json"
+    assert baseline.caffeine_dir.root == profile_eval / "caffeine"
+    # insight.md and the (empty) overlay are shared across profiles.
+    assert baseline.insight_md == tmp_path / "inputs/subjects/lru_cache/baseline/insight.md"
+
+
+def test_evaluation_profile_flag_parses():
+    assert _build_arg_parser().parse_args(["--evaluation-profile", "msr"]).evaluation_profile == "msr"
+    assert _build_arg_parser().parse_args([]).evaluation_profile is None
+
+
+def test_continue_rejects_evaluation_profile_flag():
+    args = _build_arg_parser().parse_args(["--continue", "x", "--evaluation-profile", "msr"])
+    with pytest.raises(SystemExit):
+        _reject_overrides_with_continue(args)

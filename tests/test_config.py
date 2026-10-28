@@ -399,3 +399,27 @@ def test_config_weights_error_names_config_key(tmp_path: Path):
     )
     with pytest.raises(ConfigError, match="^selection.weights.hit-rate must be a positive finite number"):
         load_configs(tmp_path)
+
+
+def test_evaluation_profile_defaults_to_none(tmp_path: Path):
+    cfg = load_configs(_write_config(tmp_path))
+    assert cfg.fitness.evaluation_profile is None
+
+
+def test_evaluation_profile_resolves_from_config(tmp_path: Path):
+    root = _write_config(
+        tmp_path, fitness_body='[fitness]\ndimensions = ["hit-rate"]\nevaluation_profile = "msr"\n'
+    )
+    assert load_configs(root).fitness.evaluation_profile == "msr"
+
+
+def test_evaluation_profile_flag_overrides_config(tmp_path: Path):
+    root = _write_config(
+        tmp_path, fitness_body='[fitness]\ndimensions = ["hit-rate"]\nevaluation_profile = "msr"\n'
+    )
+    assert load_configs(root, evaluation_profile="other").fitness.evaluation_profile == "other"
+
+
+def test_evaluation_profile_empty_raises(tmp_path: Path):
+    with pytest.raises(ConfigError, match=r"--evaluation-profile.*non-empty"):
+        load_configs(_write_config(tmp_path), evaluation_profile="")
