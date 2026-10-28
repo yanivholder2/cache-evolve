@@ -19,7 +19,7 @@ reads and writes both count as accesses.
 Model: `claude-opus-5-5` only, the same `--model` value as the v2 Opus rows.
 Subjects: four of the five v2 subjects (dash, associative_cache, lru_cache,
 tiny_lfu); s3_fifo is skipped (see the [run matrix](#run-matrix)). The primary
-matrix is 4 runs, with an optional 4-run extension. The cross-workload rows are blocked on a missing tool. See the
+matrix is 4 SH runs plus 4 SF runs. The cross-workload rows are blocked on a missing tool. See the
 [run matrix](#run-matrix).
 
 **Where results go:** `outputs/paper_outputs/snia_runs/<mode>/<subject>/<run>/`,
@@ -204,11 +204,11 @@ status](#checking-run-status) for the live state. The v2 Zipf counterpart of eac
 | SH01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | SH02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
 | SH03 | only_hit_rate | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_11-39-56-149` | 0.562 vs 0.528 (c10/v003) | |
-| SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | todo | | | | |
-| SF01 | full_fitness_vector | dash | claude-opus-5-5 | optional | | | | |
-| SF02 | full_fitness_vector | associative_cache | claude-opus-5-5 | optional | | | | |
-| SF03 | full_fitness_vector | lru_cache | claude-opus-5-5 | optional | | | | |
-| SF05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | optional | | | | |
+| SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/tiny_lfu/tiny_lfu_claude-opus-5-5_2026-10-28_12-54-17-355` | 0.562 vs 0.504 (c09/v001) | |
+| SF01 | full_fitness_vector | dash | claude-opus-5-5 | todo | | | | |
+| SF02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
+| SF03 | full_fitness_vector | lru_cache | claude-opus-5-5 | todo | | | | |
+| SF05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | SX01 | rescore Zipf→MSR | the four (v2 H01–H03, H05 winners) | claude-opus-5-5 | blocked | | | | |
 | SX02 | rescore MSR→Zipf | the four (SH01–SH03, SH05 winners) | claude-opus-5-5 | blocked | | | | |
 
@@ -216,8 +216,8 @@ SH04/SF04 (s3_fifo) are dropped: its linear-scan eviction takes ~1 h per variant
 on MSR, so it has no `msr` profile. IDs are not renumbered, so each row still
 pairs with the v2 row of the same number.
 
-Run order: SH01–SH03 and SH05 first (any order, in parallel sessions). Start SF rows only
-once at least three SH rows beat their MSR baseline. SX rows need no LLM time,
+Run order: SH01–SH03 and SH05 first (any order, in parallel sessions), then the SF rows
+(scheduled unconditionally). SX rows need no LLM time,
 only simulator time, once the tool below exists.
 
 ## Notes
