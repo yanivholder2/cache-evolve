@@ -1,0 +1,32 @@
+{
+  "variant": "v002",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.4138
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.5624
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.4446
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.733
+        }
+      ],
+      "summary": 0.53845,
+      "higher_is_better": true
+    }
+  ]
+}
