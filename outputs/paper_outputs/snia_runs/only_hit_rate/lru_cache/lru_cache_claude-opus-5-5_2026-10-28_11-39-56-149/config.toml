@@ -1,0 +1,93 @@
+# evolve framework configuration — defaults for the `evolve` CLI.
+# Flags on the `evolve` CLI override these values.
+
+[framework]
+# Subject under evolution (--subject). Names a dir under inputs/subjects/.
+subject = "lru_cache"
+
+# Number of cycles to run sequentially (--cycles).
+cycles = 10
+
+# Variants proposed and evaluated per cycle (--cohort-size).
+cohort_size = 3
+
+# AI agent backend to drive subagents (--ai-agent-tool). One of the keys in
+# src/evolve/llm/ADAPTER_REGISTRY.
+ai_agent_tool = "claude-sdk"
+
+# Model the chosen adapter drives (--model). Must be valid for the selected
+# ai_agent_tool adapter, else config load fails:
+#   claude-sdk:      open namespace — any `claude-<family>-<version>` id is passed to the Claude
+#                    Code CLI, e.g. claude-opus-5-5, claude-sonnet-5-5,
+#                    claude-haiku-5-5, claude-opus-4-8, claude-opus-4-7,
+#                    claude-sonnet-4-6, claude-haiku-4-5-20251001. The newest of
+#                    the SDK-bundled CLI and `claude` on PATH is used (override
+#                    with $EVOLVE_CLAUDE_CLI).
+#   antigravity-sdk: gemini-3-pro-preview, gemini-3-flash-preview,
+#                    gemini-3.1-pro-preview, gemini-3.1-flash-lite,
+#                    gemini-3.5-flash, antigravity-preview-05-2026
+#   ollama-local:    gemma4:e2b, gemma4:e4b, gemma4:26b, gemma4:31b
+model = "claude-opus-5-5"
+
+# Log level for stderr + per-cycle log file (--log-level). One of:
+# DEBUG, INFO, WARNING, ERROR, CRITICAL.
+log_level = "DEBUG"
+
+# Number of prior Cycle insights inlined into the cycle-insight-writer prompt.
+digest_cycles = 3
+
+# Worker threads for the per-variant fan-out (--max-workers).
+# 0 means: match cohort_size.
+max_workers = 0
+
+# Total variant-implementation attempts per variant: the initial attempt plus
+# self-repair retries on a gate failure (so 3 = 1 initial + up to 2 repairs).
+# Each attempt is preserved under the variant's attempts/NN/ directory.
+implementation_attempts = 3
+
+# Total hypothesis-writing attempts per cycle: the initial generation plus
+# regenerations when, under the extension-points scope, a proposal's `## Changes`
+# names a file outside the writable surface (so 3 = 1 initial + up to 2 regens).
+hypothesis_attempts = 3
+
+# Write surface the variant-implementer agent may author (--authoring-scope).
+# "extension-points": only impl files listed in the subject manifest's
+# [[extension-points]] tables. "full-autonomy": any overlay file, still bound by
+# the Cache<K,V> contract and the subject invariant suite.
+
+authoring_scope = "full-autonomy"
+# authoring_scope = "extension-points"
+
+[simulator]
+# Per-variant simulator invocation timeout (seconds). Surfaces as
+# FitnessError when exceeded — does not crash the cycle.
+timeout_s = 1700
+
+[fitness]
+# Active Fitness dimensions for this run — activation only, not capability.
+# Must be a subset of the dimensions the subject can measure: "hit-rate" is
+# always available; "per-op-time" needs the subject manifest [bench] table;
+# "metadata-size" needs its [metadata] table. The runner measures only these.
+dimensions = ["hit-rate"]
+
+# Optional evaluation profile (--evaluation-profile): score on the subject
+# manifest's [evaluation.profiles.<name>] grid and its own baseline anchor
+# (baseline/eval/profiles/<name>/fitness-vector.json). Unset = the default
+# [evaluation] grid.
+# evaluation_profile = "msr"
+evaluation_profile = "msr"
+
+[selection]
+# How Winners are chosen from the fitness vectors. One of the keys in
+# src/evolve/aggregate/selectors/SELECTOR_REGISTRY:
+#   "pareto":   the Pareto front (scale-invariant, computes no scalar score).
+#   "weighted": top-N by weighted percentage improvement over the baseline
+#               anchor; only variants that net-beat the baseline can win
+#               (requires the [selection.weights] table below).
+method = "pareto"
+
+# How many Winners each selection stage keeps (cohort-local and cross-cycle),
+# clamped to the population. The "pareto" method ignores it (the front sets the
+# count); "weighted" keeps this many top-scoring variants that beat the baseline.
+winners_count = 3
+

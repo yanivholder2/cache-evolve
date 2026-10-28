@@ -203,7 +203,7 @@ status](#checking-run-status) for the live state. The v2 Zipf counterpart of eac
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | SH01 | only_hit_rate | dash | claude-opus-5-5 | todo | | | | |
 | SH02 | only_hit_rate | associative_cache | claude-opus-5-5 | todo | | | | |
-| SH03 | only_hit_rate | lru_cache | claude-opus-5-5 | todo | | | | |
+| SH03 | only_hit_rate | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_11-39-56-149` | 0.562 vs 0.528 (c10/v003) | |
 | SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | SF01 | full_fitness_vector | dash | claude-opus-5-5 | optional | | | | |
 | SF02 | full_fitness_vector | associative_cache | claude-opus-5-5 | optional | | | | |
