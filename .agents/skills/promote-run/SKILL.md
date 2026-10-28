@@ -11,12 +11,11 @@ non-obvious — follow, don't rediscover.
 ## Input
 
 `/promote-run <batch>` — `<batch>` is the destination batch folder under
-`outputs/paper_outputs/` (e.g. `/promote-run <name>_runs`), normally the folder
-holding the plan the run came from. It sets the copy destination and the PR
-title; if that folder doesn't exist yet, confirm before creating it. **Fallback** when no batch is given: if exactly
-one `outputs/paper_outputs/*/paper-runs-plan.md` exists, use the folder that
-holds it; if none or several exist, stop and ask. Never guess a batch from
-folder names or recency.
+`outputs/paper_outputs/` (e.g. `/promote-run <name>_runs`). It sets the copy
+destination and the PR title; if that folder doesn't exist yet, confirm before
+creating it. When no batch is given, stop and ask — never infer it from a plan
+file, folder names, or recency. A plan file is optional: touch one only if the
+user names it.
 
 ## Gotchas
 
@@ -62,9 +61,9 @@ folder names or recency.
    raw run dir (`outputs/<subject>_<timestamp>/`) so the run isn't left
    duplicated. Never delete before the copy is confirmed good.
 
-5. **Don't edit the plan doc.** `outputs/paper_outputs/<batch>/paper-runs-plan.md` is not updated per
-   run (concurrent PRs conflicted on it); the promoted dir on `main` is the
-   run's status. Put run incidents (usage-limit resumes, agent or infra
+5. **Don't edit a plan doc** unless the user names one and asks for it (e.g. a
+   status row); by default none is updated per run (concurrent PRs conflicted
+   on it) and the promoted dir on `main` is the run's status. Put run incidents (usage-limit resumes, agent or infra
    failures) in the PR description instead.
 
 6. **Commit + PR.** Commit (subject, cycles completed, cohort size, global-best
