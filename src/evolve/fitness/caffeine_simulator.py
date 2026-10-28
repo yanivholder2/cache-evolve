@@ -111,6 +111,16 @@ _LOG_LEVEL_TO_DEBUG_MODE = {
 }
 
 
+def simulator_debug_mode(log_level: str, cap: str | None) -> int:
+    """Rust `debug_mode` for a Caffeine call: evolve's `log_level`, lowered to
+    the evaluation grid's `simulator-log-level` cap when one is declared."""
+
+    debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(log_level, 0)
+    if cap is None:
+        return debug_mode
+    return min(debug_mode, _LOG_LEVEL_TO_DEBUG_MODE[cap])
+
+
 def _per_size_csv(caffeine_out: CaffeineOutputDir, size: int) -> Path:
     candidate = caffeine_out.hit_rate_csv(size)
     if not candidate.is_file():
@@ -191,7 +201,7 @@ def simulate_variant(
     evaluation = subject.evaluation_for(layout.evaluation_profile)
     traces = evaluation.traces
     sizes = evaluation.sizes
-    debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
+    debug_mode = simulator_debug_mode(cfg.framework.log_level, evaluation.simulator_log_level)
 
     caffeine_out = variant_dir.caffeine_dir
     caffeine_out.root.mkdir(parents=True, exist_ok=True)

@@ -64,12 +64,19 @@ class Evaluation:
     `Evaluation` (the profile's `traces`/`sizes` override the default's; its
     baseline anchor is `baseline/eval/profiles/<name>/fitness-vector.json`).
     A run opts in with `--evaluation-profile`; see `Subject.evaluation_for`.
+
+    `simulator_log_level`, when set, caps the log level handed to the
+    subject's Rust cdylib during Caffeine calls on this grid, independently of
+    evolve's `--log-level` (e.g. `"INFO"` stops per-operation DEBUG lines from
+    writing GBs on a multi-million-event trace). None = follow `--log-level`.
+    A profile inherits the default grid's cap unless it declares its own.
     """
 
     fitness_vector: Path
     traces: tuple[str, ...]
     sizes: tuple[int, ...]
     profiles: dict[str, Evaluation] = field(default_factory=dict)
+    simulator_log_level: str | None = None
 
 
 @dataclass(frozen=True)
@@ -236,8 +243,9 @@ _ALLOWED_CAFFEINE = {
     "config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry", "size-divisors",
 }
 _ALLOWED_DOCS = {"context", "insight"}
-_ALLOWED_EVAL = {"fitness-vector", "traces", "sizes", "profiles"}
-_ALLOWED_EVAL_PROFILE = {"traces", "sizes"}
+_ALLOWED_EVAL = {"fitness-vector", "traces", "sizes", "profiles", "simulator-log-level"}
+_ALLOWED_EVAL_PROFILE = {"traces", "sizes", "simulator-log-level"}
+_SIMULATOR_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 _PROFILE_NAME = re.compile(r"[a-z0-9][a-z0-9_-]*")
 _ALLOWED_BENCH = {"binary-name"}
 _ALLOWED_METADATA = {"binary-name"}
@@ -474,12 +482,30 @@ def _load_evaluation(table: dict, subject_dir: Path) -> Evaluation:
     sizes = _parse_sizes(_require(table, "sizes", "evaluation"), "evaluation.sizes")
 
     _validate_baseline_grid(subject_dir, fv, traces, sizes)
-    profiles = _load_evaluation_profiles(table.get("profiles", {}), traces, sizes)
-    return Evaluation(fitness_vector=fv, traces=tuple(traces), sizes=tuple(sizes), profiles=profiles)
+    log_level = _parse_simulator_log_level(table, "evaluation", None)
+    profiles = _load_evaluation_profiles(table.get("profiles", {}), traces, sizes, log_level)
+    return Evaluation(
+        fitness_vector=fv, traces=tuple(traces), sizes=tuple(sizes), profiles=profiles,
+        simulator_log_level=log_level,
+    )
+
+
+def _parse_simulator_log_level(table: dict, where: str, default: str | None) -> str | None:
+    if "simulator-log-level" not in table:
+        return default
+    value = table["simulator-log-level"]
+    if not isinstance(value, str) or value.upper() not in _SIMULATOR_LOG_LEVELS:
+        raise SubjectManifestError(
+            f"{where}.simulator-log-level: must be one of {list(_SIMULATOR_LOG_LEVELS)}, got {value!r}"
+        )
+    return value.upper()
 
 
 def _load_evaluation_profiles(
-    table: object, default_traces: list[str], default_sizes: list[int]
+    table: object,
+    default_traces: list[str],
+    default_sizes: list[int],
+    default_log_level: str | None = None,
 ) -> dict[str, Evaluation]:
     """Parse `[evaluation.profiles.<name>]` tables. Each overrides the default
     grid's `traces` and/or `sizes`; its baseline anchor path is fixed by
@@ -500,7 +526,11 @@ def _load_evaluation_profiles(
         traces = _parse_traces(profile["traces"], f"{where}.traces") if "traces" in profile else default_traces
         sizes = _parse_sizes(profile["sizes"], f"{where}.sizes") if "sizes" in profile else default_sizes
         fitness_vector = BaselineDir(root=Path("baseline"), evaluation_profile=name).fitness_vector_json
-        profiles[name] = Evaluation(fitness_vector=fitness_vector, traces=tuple(traces), sizes=tuple(sizes))
+        log_level = _parse_simulator_log_level(profile, where, default_log_level)
+        profiles[name] = Evaluation(
+            fitness_vector=fitness_vector, traces=tuple(traces), sizes=tuple(sizes),
+            simulator_log_level=log_level,
+        )
     return profiles
 
 

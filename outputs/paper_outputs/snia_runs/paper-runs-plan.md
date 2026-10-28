@@ -105,8 +105,13 @@ its `numOfSegments` is derived from the size (`[caffeine.size-divisors]`).
 --evaluation-profile msr` × ~3, rounded up, with a floor of 600 (config's
 default). The slowest call was associative_cache on web_0 (both sizes) at
 544 s, so 544 × 3 ≈ 1633 → 1700. Baselines were measured at `log_level =
-"DEBUG"`, the level the run templates pass. Under DEBUG, dash writes ~5.5 GB of
-Rust logs per call (440–520 s per call), so watch disk space. A variant that
+"DEBUG"`, the level the run templates pass. Under DEBUG, dash and
+associative_cache log every get/put, writing ~5.5–6 GB of Rust logs per call
+(440–520 s per call). Their `[evaluation.profiles.msr]` now sets
+`simulator-log-level = "INFO"`, which caps the cdylib's log level for MSR calls
+regardless of `--log-level`: one dash hm_0 @ 16384 call drops from 447 s / 6.0 GB
+to 7 s / 3 KB with an identical hit-rate CSV. The commands keep `--log-level
+DEBUG`, and the timeout stays as a generous bound. A variant that
 times out is rejected at fitness, so a tight value turns slow-but-good variants
 into losses. It doesn't cover
 per-op-time, which has its own fixed 120 s limit and doesn't depend on the trace.
