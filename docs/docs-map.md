@@ -157,3 +157,15 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 * Notes
 
 **Read when** launching or promoting a paper run (or given a plan row id like `F01`).
+
+### [outputs/paper_outputs/snia_runs/paper-runs-plan.md](../outputs/paper_outputs/snia_runs/paper-runs-plan.md)
+
+* Goal
+* How a run works
+* Commands
+* Session prompt
+* Checking run status
+* Run matrix
+* Notes
+
+**Read when** launching or promoting an MSR/SNIA real-trace paper run (or given a plan row id like `SH01`).
