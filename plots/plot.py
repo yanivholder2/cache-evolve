@@ -1,6 +1,9 @@
+import argparse
 import json
 import os
 import re
+
+from build_data import DEFAULT_PROFILE, PAPER_PLOTS_DIR, profile_directory, setup_profile
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,13 +51,22 @@ def model_label(model):
     return f"{family.capitalize()} {major}.{minor}"
 
 
-def generate_plots(data_file, out_dir):
+def generate_plots(data_file, out_dir, evaluation_profile=DEFAULT_PROFILE):
     # Create the figures directory if it doesn't exist
     os.makedirs(out_dir, exist_ok=True)
 
     # 1. Load the data
     with open(data_file, 'r') as f:
         data = json.load(f)
+
+    # Guard against stale pre-profile JSON as well as manually combined files.
+    # Filter before either chart aggregation; batch/model alone is not a grid.
+    data['runs'] = [run for run in data['runs']
+                    if setup_profile(run['setup']) == evaluation_profile]
+    if not data['runs']:
+        print(f"No runs for evaluation profile {evaluation_profile!r} in {data_file}; skipping.")
+        return
+    profile_label = f" [profile: {evaluation_profile}]" if evaluation_profile else ""
 
     # ==========================================
     # PART 1: LINE CHARTS (Evolution over Cycles)
@@ -77,6 +89,8 @@ def generate_plots(data_file, out_dir):
             })
 
     df = pd.DataFrame(rows)
+    if df.empty:
+        return
 
     # Treat the -1 sentinel as missing so it is excluded from means and plots.
     for col in ('hit_rate', 'metadata_size', 'per_op_time', 'weighted_score'):
@@ -109,7 +123,7 @@ def generate_plots(data_file, out_dir):
                      color=style_map[subj]['color'], marker=style_map[subj]['marker'], linewidth=2)
         plt.xlabel('Cycles', fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        plt.title(title, fontsize=14)
+        plt.title(title + profile_label, fontsize=14)
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, filename), dpi=300)
@@ -175,6 +189,8 @@ def generate_plots(data_file, out_dir):
         })
 
     df_final = pd.DataFrame(final_variants)
+    if df_final.empty:
+        return
 
     # One bar series per model (per model + agent tool when the tool varies,
     # with the tool appended to the legend label).
@@ -219,7 +235,7 @@ def generate_plots(data_file, out_dir):
 
         plt.xlabel('Cache Architecture (Subject)', fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        plt.title(title, fontsize=14)
+        plt.title(title + profile_label, fontsize=14)
         plt.xticks(x, subjects_final, rotation=15)
         plt.legend(title='Model', fontsize=9, title_fontsize=10,
                    loc='upper left', bbox_to_anchor=(1.01, 1), frameon=False)
@@ -238,6 +254,17 @@ def generate_plots(data_file, out_dir):
 
     print(f"Successfully generated 4 grouped bar charts in the '{out_dir}/' directory.")
 
-# Run plot generation on both files, dispatching output into their respective folders.
-generate_plots('plots/paper-plots/data_full_fitness_vector.json', 'plots/paper-plots/full_fitness_vector')
-generate_plots('plots/paper-plots/data_only_hit_rate.json', 'plots/paper-plots/only_hit_rate')
+def main():
+    parser = argparse.ArgumentParser(description="Plot one evaluation profile at a time.")
+    parser.add_argument('--evaluation-profile', default=DEFAULT_PROFILE)
+    args = parser.parse_args()
+    root = profile_directory(PAPER_PLOTS_DIR, args.evaluation_profile)
+    for group in ('full_fitness_vector', 'only_hit_rate'):
+        data_file = root / f'data_{group}.json'
+        if data_file.exists():
+            generate_plots(data_file, root / group, args.evaluation_profile)
+
+
+if __name__ == '__main__':
+    main()
+
