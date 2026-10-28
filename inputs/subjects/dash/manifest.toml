@@ -79,3 +79,7 @@ sizes = [2048]
 [evaluation.profiles.msr]
 traces = ["lirs:inputs/traces/msr/web_0.trace.gz", "lirs:inputs/traces/msr/hm_0.trace.gz"]
 sizes = [16384, 131072]
+# This subject logs every get/put at DEBUG: on ~9M-event MSR traces that is
+# ~5 GB of rust-logs and minutes of formatting per Caffeine call. Cap the
+# cdylib's log level for this grid regardless of evolve's --log-level.
+simulator-log-level = "INFO"

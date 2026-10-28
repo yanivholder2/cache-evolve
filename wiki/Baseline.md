@@ -35,6 +35,8 @@ A manifest may declare named alternative grids, e.g. `[evaluation.profiles.msr]`
 .venv/bin/python scripts/measure_baseline.py <subject> --evaluation-profile <name>
 ```
 
+`[evaluation]` and each profile may also set `simulator-log-level` (`"DEBUG"`, `"INFO"`, `"WARNING"`, …), a ceiling on the log level the subject's Rust cdylib gets during Caffeine calls on that grid, whatever `--log-level` is. A profile inherits the default grid's ceiling unless it sets its own. dash and associative_cache set `"INFO"` on `msr`, because they log every get/put at DEBUG, which would write about 5 GB of `rust-logs` per call on the large MSR traces.
+
 ## Going deeper
 
 - [`scripts/measure_baseline.py`](https://github.com/yanivholder2/cache-evolve/blob/main/scripts/measure_baseline.py) — the measurement script.

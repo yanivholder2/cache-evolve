@@ -931,6 +931,53 @@ def test_malformed_profile_is_rejected(tmp_path: Path, body: str, pattern: str):
         load_subject(tmp_path)
 
 
+def test_simulator_log_level_defaults_to_none(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024]\n")
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.simulator_log_level is None
+    assert subject.evaluation_for("msr").simulator_log_level is None
+
+
+def test_profile_simulator_log_level_caps_only_that_profile(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, 'sizes = [1024]\nsimulator-log-level = "info"\n')
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.simulator_log_level is None
+    assert subject.evaluation_for("msr").simulator_log_level == "INFO"
+
+
+def test_profile_inherits_default_simulator_log_level(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text(encoding="utf-8")
+    text = text.replace("[evaluation]\n", '[evaluation]\nsimulator-log-level = "WARNING"\n', 1)
+    _rewrite_manifest(tmp_path, text + '\n[evaluation.profiles.msr]\nsizes = [1024]\n'
+                      '\n[evaluation.profiles.big]\nsizes = [2048]\nsimulator-log-level = "INFO"\n')
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.simulator_log_level == "WARNING"
+    assert subject.evaluation_for("msr").simulator_log_level == "WARNING"
+    assert subject.evaluation_for("big").simulator_log_level == "INFO"
+
+
+@pytest.mark.parametrize("value", ['"VERBOSE"', "1"])
+def test_bad_simulator_log_level_is_rejected(tmp_path: Path, value: str):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, f"sizes = [1024]\nsimulator-log-level = {value}\n")
+    with pytest.raises(SubjectManifestError, match=r"evaluation.profiles.msr.simulator-log-level: must be one of"):
+        load_subject(tmp_path)
+
+
+@pytest.mark.parametrize("subject_name", ["dash", "associative_cache"])
+def test_msr_profile_caps_simulator_log_level_for_per_op_debug_subjects(subject_name: str):
+    """dash and associative_cache log every operation at DEBUG; on the ~9M-event
+    MSR traces that is GBs per Caffeine call, so their msr profile caps it. The
+    default (Zipf) grid stays uncapped."""
+    repo_root = Path(__file__).resolve().parents[1]
+    subject = load_subject(repo_root / "inputs" / "subjects" / subject_name)
+    assert subject.evaluation.simulator_log_level is None
+    assert subject.evaluation_for("msr").simulator_log_level == "INFO"
+
+
 def test_profile_baseline_missing_points_at_measure_baseline(tmp_path: Path):
     _write_valid_subject(tmp_path)
     _add_profile(tmp_path, "sizes = [1024]\n")
