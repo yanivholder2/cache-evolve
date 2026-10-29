@@ -207,7 +207,7 @@ status](#checking-run-status) for the live state. The v2 Zipf counterpart of eac
 | SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/tiny_lfu/tiny_lfu_claude-opus-5-5_2026-10-28_12-54-17-355` | 0.562 vs 0.504 (c09/v001) | |
 | SF01 | full_fitness_vector | dash | claude-opus-5-5 | todo | | | | |
 | SF02 | full_fitness_vector | associative_cache | claude-opus-5-5 | todo | | | | |
-| SF03 | full_fitness_vector | lru_cache | claude-opus-5-5 | todo | | | | |
+| SF03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_19-54-39-536` | score 0.139 (c10/v003): hit-rate 0.538 vs 0.528, metadata 16 vs 48 B, per-op 35 vs 34 ns | |
 | SF05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | todo | | | | |
 | SX01 | rescore Zipf→MSR | the four (v2 H01–H03, H05 winners) | claude-opus-5-5 | blocked | | | | |
 | SX02 | rescore MSR→Zipf | the four (SH01–SH03, SH05 winners) | claude-opus-5-5 | blocked | | | | |
