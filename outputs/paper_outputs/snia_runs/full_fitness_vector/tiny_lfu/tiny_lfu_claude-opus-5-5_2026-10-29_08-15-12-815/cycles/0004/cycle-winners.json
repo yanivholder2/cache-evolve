@@ -1,0 +1,219 @@
+{
+  "cycle": "0004",
+  "winners": [
+    "v002",
+    "v001",
+    "v003"
+  ],
+  "scores": {
+    "v001": 0.2223511900418813,
+    "v002": 0.24941516968980598,
+    "v003": 0.20640098063537002
+  },
+  "fitness_vectors": [
+    {
+      "variant": "v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.4201
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.5903
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.47659999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.7419
+            }
+          ],
+          "summary": 0.557225,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Node<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "CountMinSketch (heap, cap=1024)",
+              "bytes": 8192
+            },
+            {
+              "type": "TinyLfuCache<u64,u64>",
+              "bytes": 192
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 38,
+              "p99_ns": 77
+            },
+            {
+              "op": "put",
+              "p50_ns": 65,
+              "p99_ns": 109
+            }
+          ],
+          "summary": 38,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.41869999999999996
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.5849
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.47950000000000004
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.7445
+            }
+          ],
+          "summary": 0.5569,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Node<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "CountMinSketch (heap, cap=1024)",
+              "bytes": 8192
+            },
+            {
+              "type": "TinyLfuCache<u64,u64>",
+              "bytes": 192
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 58,
+              "p99_ns": 110
+            },
+            {
+              "op": "put",
+              "p50_ns": 92,
+              "p99_ns": 157
+            }
+          ],
+          "summary": 58,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.4227
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.5869
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.483
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.742
+            }
+          ],
+          "summary": 0.55865,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Node<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "CountMinSketch (heap, cap=1024)",
+              "bytes": 8192
+            },
+            {
+              "type": "TinyLfuCache<u64,u64>",
+              "bytes": 192
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 47,
+              "p99_ns": 97
+            },
+            {
+              "op": "put",
+              "p50_ns": 80,
+              "p99_ns": 196
+            }
+          ],
+          "summary": 47,
+          "higher_is_better": false
+        }
+      ]
+    }
+  ]
+}
