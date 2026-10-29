@@ -13,8 +13,11 @@ over stdin, the system prompt through a file, and both streams are UTF-8."""
 from __future__ import annotations
 
 import asyncio
+import datetime
 import glob
+import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -22,12 +25,51 @@ from pathlib import Path
 
 from openevolve.llm.claude_code import ClaudeCodeLLM
 
+logger = logging.getLogger(__name__)
+
 _SCRATCH = tempfile.mkdtemp(prefix="openevolve-claude-cwd-")
 
 # Per-call spend cap passed to `claude --max-budget-usd`. OpenEvolve's model config
 # carries max_budget_usd=None, which the CLI rejects; a 16k-token Opus reply costs
 # about $1.2, so the cap only guards against a runaway call.
 MAX_BUDGET_USD = 5.0
+
+
+class UsageLimitReached(RuntimeError):
+    """The subscription's session/usage limit is exhausted; retrying now cannot work."""
+
+
+# `claude -p` prints e.g. "You've hit your session limit · resets 3pm" as its reply, not as an
+# error, so a short reply matching this is a limit notice and not model output.
+_LIMIT = re.compile(r"(hit|reached|exceeded)\s+(your|the)\s+[\w\s-]*limit|usage limit|limit\s+reached", re.I)
+_RESET = re.compile(r"resets?\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*([ap]m)?", re.I)
+_NOTICE_MAX_CHARS = 400
+POLL_S = 1800  # re-probe at least this often while limited
+MIN_WAIT_S = 120
+
+
+def detect_usage_limit(text: str) -> bool:
+    return len(text) <= _NOTICE_MAX_CHARS and bool(_LIMIT.search(text))
+
+
+def seconds_until_reset(text: str, now: datetime.datetime | None = None) -> float:
+    """Seconds to sleep before probing again: until the reset time the notice names (local
+    time, +1 min), capped at POLL_S so a misread time or timezone only costs one extra probe."""
+    now = now or datetime.datetime.now()
+    match = _RESET.search(text)
+    if not match:
+        return POLL_S
+    hour, minute, meridiem = int(match[1]), int(match[2] or 0), (match[3] or "").lower()
+    if meridiem == "pm" and hour < 12:
+        hour += 12
+    elif meridiem == "am" and hour == 12:
+        hour = 0
+    if hour > 23 or minute > 59:
+        return POLL_S
+    reset = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if reset <= now:
+        reset += datetime.timedelta(days=1)
+    return min(max((reset - now).total_seconds() + 60, MIN_WAIT_S), POLL_S)
 
 
 def claude_executable() -> str:
@@ -60,6 +102,18 @@ class IsolatedClaudeCodeLLM(ClaudeCodeLLM):
         if not self.max_budget_usd:
             self.max_budget_usd = MAX_BUDGET_USD
 
+    async def generate_with_context(self, system_message, messages, **kwargs):
+        """Like the parent, but a spent subscription limit is waited out instead of failing
+        the iteration: the call is retried until the limit resets (cost: nothing, the
+        probe is rejected). The caller's per-iteration timeout must allow for the wait."""
+        while True:
+            try:
+                return await super().generate_with_context(system_message, messages, **kwargs)
+            except UsageLimitReached as limit:
+                wait = seconds_until_reset(str(limit))
+                logger.warning("Claude usage limit reached (%s); waiting %.0f min", limit, wait / 60)
+                await asyncio.sleep(wait)
+
     def _run_cli(self, cmd: list, timeout: int) -> str:
         # The parent builds [claude, -p, ..., --system-prompt, <sys>, ..., <prompt>].
         cmd = list(cmd)
@@ -85,6 +139,9 @@ class IsolatedClaudeCodeLLM(ClaudeCodeLLM):
         if result.returncode != 0 and result.stderr.strip():
             self._warn(result.stderr.strip()[:500])
         output = result.stdout.strip()
+        for text in (output, result.stderr.strip()):
+            if detect_usage_limit(text):
+                raise UsageLimitReached(text)
         if not output:
             raise RuntimeError(f"Empty response from Claude CLI. stderr: {result.stderr[:500]}")
         return output

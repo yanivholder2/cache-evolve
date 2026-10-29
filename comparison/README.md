@@ -30,6 +30,10 @@ simulator call also builds Caffeine (~6 min).
   into a user folder and point `JAVA_HOME` at it.
 - A logged-in `claude` CLI. OpenEvolve's backend finds it via `$CLAUDE_CLI`, then `PATH`,
   then the newest VS Code Claude Code extension's bundled binary.
+- The default OpenEvolve provider (`claude_code`) bills the logged-in subscription, not an API
+  key. When the subscription's session/usage limit is hit, the call waits for the reset (probing at
+  least every 30 min) instead of failing the iteration; `--limit-wait-hours` (default 12) widens
+  OpenEvolve's per-iteration timeout to allow it. Interrupted runs can simply be left running.
 - On Windows set `PYTHONUTF8=1` (OpenEvolve logs emoji, which the default console codec rejects).
 
 ## SNIA (MSR Cambridge) traces

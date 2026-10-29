@@ -65,6 +65,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gate-feedback", choices=GATE_FEEDBACK_CHOICES, default="full",
                         help="full: failed candidates' rejection text is fed back to OpenEvolve as "
                              "artifacts; none: the gates only filter (score -1, no explanation)")
+    parser.add_argument("--limit-wait-hours", type=float, default=12.0,
+                        help="claude_code provider: longest a single LLM call may wait for a spent "
+                             "subscription limit to reset (added to the per-iteration timeout)")
     Setup.add_arguments(parser)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out", type=Path, required=True)
@@ -100,6 +103,9 @@ def main(argv: list[str] | None = None) -> int:
     config.evaluator.cascade_evaluation = False
     config.evaluator.parallel_evaluations = 1
     config.evaluator.timeout = args.eval_timeout_s or (7200 if setup.evaluation_profile else 1800)
+    if args.provider == "claude_code":
+        # OpenEvolve abandons an iteration after evaluator.timeout + 30 s, LLM wait included.
+        config.evaluator.timeout += int(args.limit_wait_hours * 3600)
 
     model = LLMModelConfig(name=args.model, weight=1.0)
     if args.provider == "claude_code":
