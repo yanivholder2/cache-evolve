@@ -34,6 +34,9 @@ TAIL_CHARS = 4000
 
 
 SETUP_ENV = "COMPARISON_SETUP"
+# "full": OpenEvolve sees the gates' rejection text; "none": gates are a pass/fail filter.
+GATE_FEEDBACK_ENV = "COMPARISON_GATE_FEEDBACK"
+GATE_FEEDBACK_CHOICES = ("full", "none")
 
 
 @dataclass(frozen=True)

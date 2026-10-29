@@ -12,7 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from comparison.common import REPO_ROOT, Setup, default_evolve_file  # noqa: E402
+from comparison.common import (  # noqa: E402
+    GATE_FEEDBACK_CHOICES, GATE_FEEDBACK_ENV, REPO_ROOT, Setup, default_evolve_file,
+)
 
 SYSTEM_MESSAGE = """\
 You are evolving a cache implementation written in Rust. The program is one source
@@ -60,6 +62,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--eval-timeout-s", type=int, default=None,
                         help="per-candidate evaluation limit (default 1800; 7200 under an evaluation "
                              "profile, whose trace grid is much slower)")
+    parser.add_argument("--gate-feedback", choices=GATE_FEEDBACK_CHOICES, default="full",
+                        help="full: failed candidates' rejection text is fed back to OpenEvolve as "
+                             "artifacts; none: the gates only filter (score -1, no explanation)")
     Setup.add_arguments(parser)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out", type=Path, required=True)
@@ -74,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
     setup = Setup.from_args(args)
     setup.validate()
     os.environ.update(setup.to_env())
+    os.environ[GATE_FEEDBACK_ENV] = args.gate_feedback
     os.environ["COMPARISON_EVOLVE_FILE"] = evolve_file
     os.environ["COMPARISON_LOG_DIR"] = str(out)
 
@@ -112,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     (out / "run.json").write_text(json.dumps({
-        "subject": args.subject, "setup": asdict(setup), "evolve_file": evolve_file, "iterations": args.iterations,
+        "subject": args.subject, "setup": asdict(setup), "gate_feedback": args.gate_feedback, "evolve_file": evolve_file, "iterations": args.iterations,
         "model": args.model, "provider": args.provider, "seed": args.seed,
         "openevolve_version": __import__("openevolve")._version.__version__,
     }, indent=2))

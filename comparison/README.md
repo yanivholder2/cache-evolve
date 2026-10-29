@@ -72,8 +72,12 @@ Each framework is run as published, so these differences are the thing under tes
 cache-evolve's hypothesis step, self-repair loop, insight ledger, Pareto/weighted
 selection and agent tools (Read/Glob/Grep/Write/Edit) versus OpenEvolve's
 single-shot SEARCH/REPLACE mutation, island/MAP-Elites database and artifact
-feedback. Failures reach OpenEvolve as artifacts (the gate's rejection text), the
-counterpart of cache-evolve's self-repair prompt.
+feedback. By default failures reach OpenEvolve as artifacts (the gate's rejection text), the
+counterpart of cache-evolve's self-repair prompt. That text is cache-evolve tooling,
+so `--gate-feedback none` turns it off: the same gates still decide validity and a
+failed candidate still scores -1, but OpenEvolve is told nothing about why. Run both
+settings (separate `--out` dirs) to measure how much of OpenEvolve's result depends on it;
+the setting is recorded in `config.json` and each arm's `run.json`.
 
 ## Fairness caveats you should state when reporting
 

@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from comparison.collect import (  # noqa: E402
     Candidate, collect_evolve, collect_openevolve, rescore, write_outputs,
 )
-from comparison.common import REPO_ROOT, Setup, default_evolve_file  # noqa: E402
+from comparison.common import GATE_FEEDBACK_CHOICES, REPO_ROOT, Setup, default_evolve_file  # noqa: E402
 
 
 def run(cmd: list[str], *, dry_run: bool, log: Path | None = None) -> None:
@@ -74,6 +74,7 @@ def run_openevolve_arm(args, setup: Setup, rep_dir: Path, rep: int) -> None:
         cmd += ["--weights", *(f"{d}={w}" for d, w in setup.weights.items())]
     if setup.simulator_timeout_s:
         cmd += ["--simulator-timeout-s", str(setup.simulator_timeout_s)]
+    cmd += ["--gate-feedback", args.gate_feedback]
     if args.eval_timeout_s:
         cmd += ["--eval-timeout-s", str(args.eval_timeout_s)]
     if args.openevolve_api_base:
@@ -101,6 +102,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="cache-evolve variant fan-out; 1 keeps timing measurements quiet")
     p.add_argument("--eval-timeout-s", type=int, default=None,
                    help="OpenEvolve per-candidate evaluation limit (default: 1800, or 7200 with a profile)")
+    p.add_argument("--gate-feedback", choices=GATE_FEEDBACK_CHOICES, default="full",
+                   help="OpenEvolve only. full: failed candidates' rejection text is fed back as "
+                        "artifacts; none: the gates only filter (score -1, no explanation)")
     Setup.add_arguments(p)
     p.add_argument("--openevolve-provider", choices=["claude_code", "openai"], default="claude_code")
     p.add_argument("--openevolve-api-base", default=None)

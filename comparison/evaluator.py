@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from comparison.common import Setup, evaluate_in_tempdir  # noqa: E402
+from comparison.common import GATE_FEEDBACK_ENV, Setup, evaluate_in_tempdir  # noqa: E402
 from openevolve.evaluation_result import EvaluationResult  # noqa: E402
 
 
@@ -51,9 +51,11 @@ def evaluate(program_path: str) -> EvaluationResult:
     metrics = {"combined_score": outcome.score, "passed": float(outcome.passed)}
     metrics.update({dim.replace("-", "_"): value for dim, value in outcome.dimensions.items()})
     artifacts = {}
-    if not outcome.passed:
+    if not outcome.passed and os.environ.get(GATE_FEEDBACK_ENV, "full") == "full":
         # The analogue of cache-evolve's self-repair feedback: OpenEvolve feeds
-        # artifacts of the parent into the next prompt.
+        # artifacts of the parent into the next prompt. With --gate-feedback none
+        # the gates are a binary filter (score -1, no explanation), so OpenEvolve
+        # gets none of cache-evolve's rejection text.
         artifacts["failure_stage"] = outcome.stage
         artifacts["failure_detail"] = outcome.detail
     return EvaluationResult(metrics=metrics, artifacts=artifacts)
