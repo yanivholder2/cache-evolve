@@ -1,0 +1,2 @@
+Policy,Hit Rate,Miss Rate,Hits,Misses,Requests,Evictions,Time
+dash.DashRust (ClassicLRU),34.36,65.64,3087187,5898300,8985487,0,4538

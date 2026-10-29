@@ -1,0 +1,207 @@
+{
+  "cycle": "0005",
+  "winners": [
+    "v001",
+    "v002",
+    "v003"
+  ],
+  "scores": {
+    "v001": 0.14893038558180735,
+    "v002": 0.06885301614273577,
+    "v003": 0.06253692221479062
+  },
+  "fitness_vectors": [
+    {
+      "variant": "v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3613
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4233
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35109999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4437
+            }
+          ],
+          "summary": 0.39485,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 148
+            },
+            {
+              "op": "put",
+              "p50_ns": 75,
+              "p99_ns": 100
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.36119999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4233
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35100000000000003
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4437
+            }
+          ],
+          "summary": 0.3948,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 152
+            },
+            {
+              "op": "put",
+              "p50_ns": 93,
+              "p99_ns": 133
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.42450000000000004
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35159999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4443
+            }
+          ],
+          "summary": 0.39555,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 80,
+              "p99_ns": 198
+            },
+            {
+              "op": "put",
+              "p50_ns": 95,
+              "p99_ns": 165
+            }
+          ],
+          "summary": 80,
+          "higher_is_better": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "variant": "v002",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.3617
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.42579999999999996
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.35159999999999997
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.44799999999999995
+        }
+      ],
+      "summary": 0.396775,
+      "higher_is_better": true
+    },
+    {
+      "dim": "metadata-size",
+      "values": [
+        {
+          "type": "Item<u64,u64>",
+          "bytes": 40
+        },
+        {
+          "type": "Dash<u64,u64,DashSegment>",
+          "bytes": 24
+        }
+      ],
+      "summary": 40,
+      "higher_is_better": false
+    },
+    {
+      "dim": "per-op-time",
+      "values": [
+        {
+          "op": "get",
+          "p50_ns": 119,
+          "p99_ns": 238
+        },
+        {
+          "op": "put",
+          "p50_ns": 156,
+          "p99_ns": 199
+        }
+      ],
+      "summary": 119,
+      "higher_is_better": false
+    }
+  ]
+}

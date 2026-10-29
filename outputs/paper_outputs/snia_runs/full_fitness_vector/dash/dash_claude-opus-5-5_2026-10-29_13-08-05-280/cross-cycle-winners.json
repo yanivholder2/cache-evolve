@@ -1,0 +1,2040 @@
+{
+  "winners": [
+    "cycle/0010/v002",
+    "cycle/0009/v003",
+    "cycle/0007/v003"
+  ],
+  "scores": {
+    "baseline": 0.0,
+    "cycle/0001/v001": -0.02952656410998025,
+    "cycle/0001/v002": 0.05670601420849984,
+    "cycle/0001/v003": 0.001744427773459423,
+    "cycle/0002/v001": 0.0595195140909995,
+    "cycle/0002/v002": -0.008464722789638274,
+    "cycle/0002/v003": 0.004369565610369002,
+    "cycle/0003/v001": 0.06734431208084021,
+    "cycle/0003/v002": 0.06512699072651353,
+    "cycle/0003/v003": 0.06256150689636475,
+    "cycle/0004/v001": 0.08531390661436401,
+    "cycle/0004/v002": 0.06761510511759075,
+    "cycle/0004/v003": 0.06885301614273577,
+    "cycle/0005/v001": 0.14893038558180735,
+    "cycle/0005/v002": 0.06885301614273577,
+    "cycle/0005/v003": 0.06253692221479062,
+    "cycle/0006/v001": 0.14218875973896855,
+    "cycle/0006/v002": 0.1493946022162368,
+    "cycle/0006/v003": 0.03865001175003165,
+    "cycle/0007/v001": 0.14935591749670102,
+    "cycle/0007/v002": -0.003683002223467513,
+    "cycle/0007/v003": 0.14951065637484412,
+    "cycle/0008/v001": 0.07696162258898397,
+    "cycle/0008/v002": 0.08973625698223037,
+    "cycle/0008/v003": 0.10758871273884202,
+    "cycle/0009/v001": 0.08782841338418991,
+    "cycle/0009/v002": 0.10893074712124232,
+    "cycle/0009/v003": 0.15078725211952498,
+    "cycle/0010/v001": 0.059198467072796024,
+    "cycle/0010/v002": 0.1509419909976681,
+    "cycle/0010/v003": 0.07847032665087952
+  },
+  "fitness_vectors": [
+    {
+      "variant": "baseline",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3554
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4225
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3435
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4296
+            }
+          ],
+          "summary": 0.38775,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 107,
+              "p99_ns": 365
+            },
+            {
+              "op": "put",
+              "p50_ns": 158,
+              "p99_ns": 214
+            }
+          ],
+          "summary": 107,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3608
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4257
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3594
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.45439999999999997
+            }
+          ],
+          "summary": 0.400075,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 133,
+              "p99_ns": 347
+            },
+            {
+              "op": "put",
+              "p50_ns": 172,
+              "p99_ns": 350
+            }
+          ],
+          "summary": 133,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3554
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.41960000000000003
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3436
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4292
+            }
+          ],
+          "summary": 0.38695,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 159
+            },
+            {
+              "op": "put",
+              "p50_ns": 93,
+              "p99_ns": 117
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0001/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3611
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4242
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35119999999999996
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.44799999999999995
+            }
+          ],
+          "summary": 0.396125,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 113,
+              "p99_ns": 242
+            },
+            {
+              "op": "put",
+              "p50_ns": 152,
+              "p99_ns": 192
+            }
+          ],
+          "summary": 113,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3611
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4216
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3502
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4415
+            }
+          ],
+          "summary": 0.3936,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 80,
+              "p99_ns": 195
+            },
+            {
+              "op": "put",
+              "p50_ns": 140,
+              "p99_ns": 224
+            }
+          ],
+          "summary": 80,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3617
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.42579999999999996
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35159999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.44799999999999995
+            }
+          ],
+          "summary": 0.396775,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 119,
+              "p99_ns": 238
+            },
+            {
+              "op": "put",
+              "p50_ns": 156,
+              "p99_ns": 199
+            }
+          ],
+          "summary": 119,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0002/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3554
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.41960000000000003
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3436
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4292
+            }
+          ],
+          "summary": 0.38695,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 104,
+              "p99_ns": 285
+            },
+            {
+              "op": "put",
+              "p50_ns": 159,
+              "p99_ns": 374
+            }
+          ],
+          "summary": 104,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3608
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4219
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.34979999999999994
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4428
+            }
+          ],
+          "summary": 0.393825,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 151
+            },
+            {
+              "op": "put",
+              "p50_ns": 94,
+              "p99_ns": 118
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3611
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4216
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3502
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4415
+            }
+          ],
+          "summary": 0.3936,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 77,
+              "p99_ns": 151
+            },
+            {
+              "op": "put",
+              "p50_ns": 106,
+              "p99_ns": 159
+            }
+          ],
+          "summary": 77,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0003/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.361
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4215
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3492
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4409
+            }
+          ],
+          "summary": 0.39315,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 78,
+              "p99_ns": 159
+            },
+            {
+              "op": "put",
+              "p50_ns": 94,
+              "p99_ns": 120
+            }
+          ],
+          "summary": 78,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3611
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4216
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3502
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4415
+            }
+          ],
+          "summary": 0.3936,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 109,
+              "p99_ns": 221
+            },
+            {
+              "op": "put",
+              "p50_ns": 119,
+              "p99_ns": 158
+            }
+          ],
+          "summary": 109,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3611
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4219
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3502
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4428
+            }
+          ],
+          "summary": 0.394,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 150
+            },
+            {
+              "op": "put",
+              "p50_ns": 91,
+              "p99_ns": 115
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0004/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.36119999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4233
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35100000000000003
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4437
+            }
+          ],
+          "summary": 0.3948,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 165
+            },
+            {
+              "op": "put",
+              "p50_ns": 93,
+              "p99_ns": 123
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3613
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4233
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35109999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4437
+            }
+          ],
+          "summary": 0.39485,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 148
+            },
+            {
+              "op": "put",
+              "p50_ns": 75,
+              "p99_ns": 100
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.36119999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4233
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35100000000000003
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4437
+            }
+          ],
+          "summary": 0.3948,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 152
+            },
+            {
+              "op": "put",
+              "p50_ns": 93,
+              "p99_ns": 133
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0005/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.42450000000000004
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35159999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4443
+            }
+          ],
+          "summary": 0.39555,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 40
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 40,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 80,
+              "p99_ns": 198
+            },
+            {
+              "op": "put",
+              "p50_ns": 95,
+              "p99_ns": 165
+            }
+          ],
+          "summary": 80,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4241
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3521
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.44329999999999997
+            }
+          ],
+          "summary": 0.395325,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 80,
+              "p99_ns": 184
+            },
+            {
+              "op": "put",
+              "p50_ns": 76,
+              "p99_ns": 132
+            }
+          ],
+          "summary": 80,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3614
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4238
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3514
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.444
+            }
+          ],
+          "summary": 0.39515,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 156
+            },
+            {
+              "op": "put",
+              "p50_ns": 73,
+              "p99_ns": 99
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0006/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3613
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4233
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35109999999999997
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4437
+            }
+          ],
+          "summary": 0.39485,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 135,
+              "p99_ns": 275
+            },
+            {
+              "op": "put",
+              "p50_ns": 149,
+              "p99_ns": 212
+            }
+          ],
+          "summary": 135,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3615
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4238
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35119999999999996
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.444
+            }
+          ],
+          "summary": 0.395125,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 152
+            },
+            {
+              "op": "put",
+              "p50_ns": 74,
+              "p99_ns": 99
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3614
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4239
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3514
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.44439999999999996
+            }
+          ],
+          "summary": 0.395275,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 158,
+              "p99_ns": 307
+            },
+            {
+              "op": "put",
+              "p50_ns": 173,
+              "p99_ns": 202
+            }
+          ],
+          "summary": 158,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0007/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4241
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3518
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4432
+            }
+          ],
+          "summary": 0.395225,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 148
+            },
+            {
+              "op": "put",
+              "p50_ns": 75,
+              "p99_ns": 100
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4239
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3517
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.44439999999999996
+            }
+          ],
+          "summary": 0.39545,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 115,
+              "p99_ns": 301
+            },
+            {
+              "op": "put",
+              "p50_ns": 141,
+              "p99_ns": 300
+            }
+          ],
+          "summary": 115,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4241
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3519
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4432
+            }
+          ],
+          "summary": 0.39525,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 108,
+              "p99_ns": 351
+            },
+            {
+              "op": "put",
+              "p50_ns": 75,
+              "p99_ns": 98
+            }
+          ],
+          "summary": 108,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0008/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3256
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4107
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3195
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4119
+            }
+          ],
+          "summary": 0.366925,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 75,
+              "p99_ns": 148
+            },
+            {
+              "op": "put",
+              "p50_ns": 78,
+              "p99_ns": 103
+            }
+          ],
+          "summary": 75,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4241
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3518
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4432
+            }
+          ],
+          "summary": 0.395225,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 109,
+              "p99_ns": 404
+            },
+            {
+              "op": "put",
+              "p50_ns": 130,
+              "p99_ns": 164
+            }
+          ],
+          "summary": 109,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3618
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4241
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3519
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4445
+            }
+          ],
+          "summary": 0.395575,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 98,
+              "p99_ns": 273
+            },
+            {
+              "op": "put",
+              "p50_ns": 99,
+              "p99_ns": 197
+            }
+          ],
+          "summary": 98,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0009/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3619
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.424
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3528
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.44549999999999995
+            }
+          ],
+          "summary": 0.39605,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 152
+            },
+            {
+              "op": "put",
+              "p50_ns": 93,
+              "p99_ns": 115
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v001",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3619
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.424
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3528
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.44549999999999995
+            }
+          ],
+          "summary": 0.39605,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 125,
+              "p99_ns": 235
+            },
+            {
+              "op": "put",
+              "p50_ns": 152,
+              "p99_ns": 186
+            }
+          ],
+          "summary": 125,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v002",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3619
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4242
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.3529
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4456
+            }
+          ],
+          "summary": 0.39615,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 76,
+              "p99_ns": 152
+            },
+            {
+              "op": "put",
+              "p50_ns": 94,
+              "p99_ns": 148
+            }
+          ],
+          "summary": 76,
+          "higher_is_better": false
+        }
+      ]
+    },
+    {
+      "variant": "cycle/0010/v003",
+      "dimensions": [
+        {
+          "dim": "hit-rate",
+          "values": [
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.36210000000000003
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4239
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 16384,
+              "hit_rate": 0.35350000000000004
+            },
+            {
+              "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+              "size": 131072,
+              "hit_rate": 0.4462
+            }
+          ],
+          "summary": 0.396425,
+          "higher_is_better": true
+        },
+        {
+          "dim": "metadata-size",
+          "values": [
+            {
+              "type": "Item<u64,u64>",
+              "bytes": 24
+            },
+            {
+              "type": "Dash<u64,u64,DashSegment>",
+              "bytes": 24
+            }
+          ],
+          "summary": 24,
+          "higher_is_better": false
+        },
+        {
+          "dim": "per-op-time",
+          "values": [
+            {
+              "op": "get",
+              "p50_ns": 115,
+              "p99_ns": 229
+            },
+            {
+              "op": "put",
+              "p50_ns": 167,
+              "p99_ns": 223
+            }
+          ],
+          "summary": 115,
+          "higher_is_better": false
+        }
+      ]
+    }
+  ],
+  "best_per_dimension": {
+    "hit-rate": {
+      "variant": "cycle/0001/v001",
+      "summary": 0.400075
+    },
+    "metadata-size": {
+      "variant": "cycle/0004/v001",
+      "summary": 24
+    },
+    "per-op-time": {
+      "variant": "cycle/0008/v003",
+      "summary": 75
+    }
+  }
+}
