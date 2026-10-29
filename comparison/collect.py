@@ -15,9 +15,7 @@ import statistics
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from comparison.common import (
-    FAILED_SCORE, REPO_ROOT, evaluate_in_tempdir, load_configs, score_fitness_vector,
-)
+from comparison.common import FAILED_SCORE, Setup, evaluate_in_tempdir, score_fitness_vector
 
 ARMS = ("evolve", "openevolve")
 
@@ -53,10 +51,9 @@ def collect_openevolve(run_dir: Path) -> list[Candidate]:
     return out
 
 
-def collect_evolve(outputs_dir: Path, subject: str, evolve_file: str) -> list[Candidate]:
-    cfg = load_configs(REPO_ROOT, subject=subject)
-    baseline_path = REPO_ROOT / "inputs" / "subjects" / subject / "baseline" / "eval" / "fitness-vector.json"
-    baseline = json.loads(baseline_path.read_text())
+def collect_evolve(outputs_dir: Path, setup: Setup, evolve_file: str) -> list[Candidate]:
+    cfg = setup.configs()
+    baseline = setup.baseline()
     out = []
     variants = sorted((outputs_dir / "cycles").glob("*/variants/v*"))
     for position, variant_dir in enumerate(variants, start=1):
@@ -80,12 +77,12 @@ def collect_evolve(outputs_dir: Path, subject: str, evolve_file: str) -> list[Ca
     return out
 
 
-def rescore(candidates: list[Candidate], *, subject: str, evolve_file: str) -> None:
+def rescore(candidates: list[Candidate], *, setup: Setup, evolve_file: str) -> None:
     """Serially re-evaluate every gate-passing candidate whose source is a single file."""
     todo = [c for c in candidates if c.passed and c.source is not None and c.extra_files == 0]
     for n, cand in enumerate(todo, start=1):
         print(f"  rescore {cand.arm}/rep{cand.rep} #{cand.index} ({n}/{len(todo)})", flush=True)
-        outcome = evaluate_in_tempdir(cand.source, subject=subject, evolve_file=evolve_file)
+        outcome = evaluate_in_tempdir(cand.source, setup=setup, evolve_file=evolve_file)
         cand.rescored = outcome.score
 
 

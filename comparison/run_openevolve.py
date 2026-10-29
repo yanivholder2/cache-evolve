@@ -7,11 +7,12 @@ import json
 import os
 import sys
 import tempfile
+from dataclasses import asdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from comparison.common import REPO_ROOT, default_evolve_file  # noqa: E402
+from comparison.common import REPO_ROOT, Setup, default_evolve_file  # noqa: E402
 
 SYSTEM_MESSAGE = """\
 You are evolving a cache implementation written in Rust. The program is one source
@@ -56,23 +57,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--api-base", default=None, help="OpenAI-compatible endpoint (provider=openai)")
     parser.add_argument("--max-tokens", type=int, default=16000)
     parser.add_argument("--llm-timeout-s", type=int, default=600)
-    parser.add_argument("--eval-timeout-s", type=int, default=1800)
+    parser.add_argument("--eval-timeout-s", type=int, default=None,
+                        help="per-candidate evaluation limit (default 1800; 7200 under an evaluation "
+                             "profile, whose trace grid is much slower)")
+    Setup.add_arguments(parser)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
 
     from openevolve.api import run_evolution
     from openevolve.config import Config, LLMModelConfig
-    from comparison.common import load_configs
 
     evolve_file = args.evolve_file or default_evolve_file(args.subject)
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    os.environ["COMPARISON_SUBJECT"] = args.subject
+    setup = Setup.from_args(args)
+    setup.validate()
+    os.environ.update(setup.to_env())
     os.environ["COMPARISON_EVOLVE_FILE"] = evolve_file
     os.environ["COMPARISON_LOG_DIR"] = str(out)
 
-    cfg = load_configs(REPO_ROOT, subject=args.subject)
+    cfg = setup.configs()
     seed_file = REPO_ROOT / "inputs" / "subjects" / args.subject / evolve_file
 
     config = Config()
@@ -88,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     config.prompt.system_message = build_system_message(args.subject, cfg.selection.weights or {})
     config.evaluator.cascade_evaluation = False
     config.evaluator.parallel_evaluations = 1
-    config.evaluator.timeout = args.eval_timeout_s
+    config.evaluator.timeout = args.eval_timeout_s or (7200 if setup.evaluation_profile else 1800)
 
     model = LLMModelConfig(name=args.model, weight=1.0)
     if args.provider == "claude_code":
@@ -107,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     (out / "run.json").write_text(json.dumps({
-        "subject": args.subject, "evolve_file": evolve_file, "iterations": args.iterations,
+        "subject": args.subject, "setup": asdict(setup), "evolve_file": evolve_file, "iterations": args.iterations,
         "model": args.model, "provider": args.provider, "seed": args.seed,
         "openevolve_version": __import__("openevolve")._version.__version__,
     }, indent=2))

@@ -1,8 +1,8 @@
 """OpenEvolve evaluator: scores a candidate with cache-evolve's own gates and
 fitness plugins (see common.evaluate_source).
 
-OpenEvolve imports this file and calls `evaluate(program_path)`; the subject and
-file under evolution come from the environment because that call carries no
+OpenEvolve imports this file and calls `evaluate(program_path)`; the setup (subject,
+profile, dimensions) and file under evolution come from the environment because that call carries no
 other arguments. Every evaluation is appended to $COMPARISON_LOG_DIR so the
 collector can reconstruct the run without parsing OpenEvolve's checkpoints."""
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from comparison.common import evaluate_in_tempdir  # noqa: E402
+from comparison.common import Setup, evaluate_in_tempdir  # noqa: E402
 from openevolve.evaluation_result import EvaluationResult  # noqa: E402
 
 
@@ -40,12 +40,12 @@ def _record(log_dir: Path, source: str, outcome) -> int:
 
 
 def evaluate(program_path: str) -> EvaluationResult:
-    subject = os.environ["COMPARISON_SUBJECT"]
+    setup = Setup.from_env()
     evolve_file = os.environ["COMPARISON_EVOLVE_FILE"]
     log_dir = Path(os.environ["COMPARISON_LOG_DIR"])
 
     source = Path(program_path).read_text(encoding="utf-8")
-    outcome = evaluate_in_tempdir(source, subject=subject, evolve_file=evolve_file)
+    outcome = evaluate_in_tempdir(source, setup=setup, evolve_file=evolve_file)
     _record(log_dir, source, outcome)
 
     metrics = {"combined_score": outcome.score, "passed": float(outcome.passed)}

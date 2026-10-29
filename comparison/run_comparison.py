@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from comparison.collect import (  # noqa: E402
     Candidate, collect_evolve, collect_openevolve, rescore, write_outputs,
 )
-from comparison.common import REPO_ROOT, default_evolve_file  # noqa: E402
+from comparison.common import REPO_ROOT, Setup, default_evolve_file  # noqa: E402
 
 
 def run(cmd: list[str], *, dry_run: bool, log: Path | None = None) -> None:
@@ -37,7 +37,7 @@ def run(cmd: list[str], *, dry_run: bool, log: Path | None = None) -> None:
         subprocess.run(cmd, cwd=REPO_ROOT, check=True, stdout=f, stderr=subprocess.STDOUT)
 
 
-def run_evolve_arm(args, rep_dir: Path) -> Path:
+def run_evolve_arm(args, setup: Setup, rep_dir: Path) -> Path:
     cycles = args.budget // args.cohort_size
     before = set((REPO_ROOT / "outputs").glob(f"{args.subject}_*"))
     cmd = [
@@ -45,6 +45,7 @@ def run_evolve_arm(args, rep_dir: Path) -> Path:
         "--subject", args.subject, "--cycles", str(cycles), "--cohort-size", str(args.cohort_size),
         "--ai-agent-tool", "claude-sdk", "--model", args.model,
         "--authoring-scope", "full-autonomy", "--max-workers", str(args.evolve_max_workers),
+        *setup.evolve_flags(),
     ]
     rep_dir.mkdir(parents=True, exist_ok=True)
     run(cmd, dry_run=args.dry_run, log=None if args.dry_run else rep_dir / "evolve.log")
@@ -57,7 +58,7 @@ def run_evolve_arm(args, rep_dir: Path) -> Path:
     return created[-1]
 
 
-def run_openevolve_arm(args, rep_dir: Path, rep: int) -> None:
+def run_openevolve_arm(args, setup: Setup, rep_dir: Path, rep: int) -> None:
     cmd = [
         sys.executable, "-m", "comparison.run_openevolve",
         "--subject", args.subject, "--iterations", str(args.budget), "--model", args.model,
@@ -65,6 +66,16 @@ def run_openevolve_arm(args, rep_dir: Path, rep: int) -> None:
     ]
     if args.evolve_file:
         cmd += ["--evolve-file", args.evolve_file]
+    if setup.evaluation_profile:
+        cmd += ["--evaluation-profile", setup.evaluation_profile]
+    if setup.dimensions:
+        cmd += ["--dimensions", *setup.dimensions]
+    if setup.weights:
+        cmd += ["--weights", *(f"{d}={w}" for d, w in setup.weights.items())]
+    if setup.simulator_timeout_s:
+        cmd += ["--simulator-timeout-s", str(setup.simulator_timeout_s)]
+    if args.eval_timeout_s:
+        cmd += ["--eval-timeout-s", str(args.eval_timeout_s)]
     if args.openevolve_api_base:
         cmd += ["--api-base", args.openevolve_api_base]
     rep_dir.mkdir(parents=True, exist_ok=True)
@@ -88,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--arms", nargs="+", choices=["evolve", "openevolve"], default=["evolve", "openevolve"])
     p.add_argument("--evolve-max-workers", type=int, default=1,
                    help="cache-evolve variant fan-out; 1 keeps timing measurements quiet")
+    p.add_argument("--eval-timeout-s", type=int, default=None,
+                   help="OpenEvolve per-candidate evaluation limit (default: 1800, or 7200 with a profile)")
+    Setup.add_arguments(p)
     p.add_argument("--openevolve-provider", choices=["claude_code", "openai"], default="claude_code")
     p.add_argument("--openevolve-api-base", default=None)
     p.add_argument("--out", type=Path, default=None, help="default: comparison_runs/<subject>-<timestamp>")
@@ -99,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.budget % args.cohort_size:
         p.error("--budget must be a multiple of --cohort-size (cache-evolve runs whole cycles)")
     evolve_file = args.evolve_file or default_evolve_file(args.subject)
+    setup = Setup.from_args(args)
+    setup.validate()
     out = args.out or REPO_ROOT / "comparison_runs" / f"{args.subject}-{time.strftime('%Y%m%d-%H%M%S')}"
     if args.collect_only and not out.is_dir():
         p.error(f"--collect-only needs an existing --out (got {out})")
@@ -113,9 +129,9 @@ def main(argv: list[str] | None = None) -> int:
                 if not args.dry_run:
                     (rep_dir / "started.json").write_text(json.dumps({"start": time.time()}))
                 if arm == "evolve":
-                    run_evolve_arm(args, rep_dir)
+                    run_evolve_arm(args, setup, rep_dir)
                 else:
-                    run_openevolve_arm(args, rep_dir, rep)
+                    run_openevolve_arm(args, setup, rep_dir, rep)
     if args.dry_run:
         return 0
 
@@ -126,7 +142,7 @@ def main(argv: list[str] | None = None) -> int:
             rep = int(rep_dir.name.removeprefix("rep"))
             if arm_dir.name == "evolve":
                 path = rep_dir / "outputs_path.txt"
-                cands = collect_evolve(Path(path.read_text()), args.subject, evolve_file) if path.is_file() else []
+                cands = collect_evolve(Path(path.read_text()), setup, evolve_file) if path.is_file() else []
             else:
                 cands = collect_openevolve(rep_dir)
             for c in cands:
@@ -138,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     if rescored:
         print("re-scoring gate-passing candidates serially ...", flush=True)
         for cands in by_run.values():
-            rescore(cands, subject=args.subject, evolve_file=evolve_file)
+            rescore(cands, setup=setup, evolve_file=evolve_file)
     summary = write_outputs(by_run, starts, out, rescored=rescored)
     print(json.dumps(summary, indent=2))
     print(f"wrote {out}/summary.json, candidates.csv, trajectory.png")

@@ -20,6 +20,25 @@ Prerequisites are the same as a normal `evolve` run (Caffeine checkout, JDK 25,
 A full lru_cache run of 30 candidates per arm takes a few hours; the first
 simulator call also builds Caffeine (~6 min).
 
+## SNIA (MSR Cambridge) traces
+
+The `msr` evaluation profile scores on the SNIA web_0 + hm_0 traces
+(`inputs/traces/msr/`, sizes 16384 and 131072; `lru_cache`, `tiny_lfu`, `dash` and
+`associative_cache` declare it, `s3_fifo` does not). This mirrors the cache-evolve
+`only_hit_rate` SNIA rows (SH01-SH05 in `outputs/paper_outputs/snia_runs/paper-runs-plan.md`):
+
+```bash
+python -m comparison.run_comparison --subject lru_cache --evaluation-profile msr     --dimensions hit-rate --simulator-timeout-s 1700     --budget 30 --cohort-size 3 --model claude-opus-5-5 --repeats 3
+```
+
+The profile, dimensions, weights and timeout reach both arms and the re-score, and
+scores are against the profile's own baseline anchor
+(`baseline/eval/profiles/msr/fitness-vector.json`), so MSR numbers must not be pooled with
+default-grid ones. The comparison needs a scalar score, so selection is `weighted`
+(a single dimension gets weight 1.0, the scalar equivalent of the Pareto selection those rows use).
+Expect hours per candidate-batch: Caffeine on MSR is about 18x slower per candidate than on the default trace, so
+OpenEvolve's per-candidate limit defaults to 7200 s under a profile (`--eval-timeout-s`).
+
 ## What is held equal
 
 | | cache-evolve | OpenEvolve |
