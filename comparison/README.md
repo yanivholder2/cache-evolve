@@ -20,6 +20,18 @@ Prerequisites are the same as a normal `evolve` run (Caffeine checkout, JDK 25,
 A full lru_cache run of 30 candidates per arm takes a few hours; the first
 simulator call also builds Caffeine (~6 min).
 
+## Environment checklist
+
+- `uv sync && uv pip install -r comparison/requirements.txt`
+- A `caffeine/` checkout beside this repo (`scripts/setup-caffeine.sh` on Linux, or
+  `git clone --depth 1 https://github.com/yanivholder2/caffeine.git ../caffeine`).
+- JDK 25 on `JAVA_HOME`/`PATH`. Without admin rights on Windows, unzip Amazon
+  Corretto 25 (`corretto.aws/downloads/latest/amazon-corretto-25-x64-windows-jdk.zip`)
+  into a user folder and point `JAVA_HOME` at it.
+- A logged-in `claude` CLI. OpenEvolve's backend finds it via `$CLAUDE_CLI`, then `PATH`,
+  then the newest VS Code Claude Code extension's bundled binary.
+- On Windows set `PYTHONUTF8=1` (OpenEvolve logs emoji, which the default console codec rejects).
+
 ## SNIA (MSR Cambridge) traces
 
 The `msr` evaluation profile scores on the SNIA web_0 + hm_0 traces
