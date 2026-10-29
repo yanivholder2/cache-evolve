@@ -1,0 +1,1041 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::{BuildHasherDefault, Hash, Hasher};
+
+pub mod tiny_lfu_jni;
+
+const SKETCH_DEPTH: usize = 4;
+const SKETCH_WIDTH_FACTOR: usize = 4;
+const MIN_SKETCH_WIDTH: usize = 16;
+
+/// Aging period: the sketch halves after `SAMPLE_FACTOR * capacity` additions.
+const SAMPLE_FACTOR: usize = 10;
+/// One 64-byte block holds 8 words x 16 four-bit counters.
+const COUNTERS_PER_BLOCK: usize = 128;
+/// After `>> 1`, clears the bit shifted in from the neighbouring nibble.
+const RESET_MASK: u64 = 0x7777_7777_7777_7777;
+
+/// FxHash-style multiply-rotate hasher with a splitmix64 avalanche finish.
+/// Cheap compared to SipHash; the finish step gives good bit dispersion for
+/// both the hashbrown control bytes and the sketch index bits.
+#[derive(Default, Clone, Copy)]
+pub struct FastHasher {
+	state: u64,
+}
+
+const FX_SEED: u64 = 0x51_7c_c1_b7_27_22_0a_95;
+
+impl FastHasher {
+	#[inline(always)]
+	fn add(&mut self, word: u64) {
+		self.state = (self.state.rotate_left(5) ^ word).wrapping_mul(FX_SEED);
+	}
+}
+
+#[inline(always)]
+fn splitmix64(mut z: u64) -> u64 {
+	z = z.wrapping_add(0x9e37_79b9_7f4a_7c15);
+	z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+	z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+	z ^ (z >> 31)
+}
+
+impl Hasher for FastHasher {
+	#[inline]
+	fn write(&mut self, bytes: &[u8]) {
+		let mut chunks = bytes.chunks_exact(8);
+		for c in &mut chunks {
+			let mut buf = [0u8; 8];
+			buf.copy_from_slice(c);
+			self.add(u64::from_le_bytes(buf));
+		}
+		let rem = chunks.remainder();
+		if !rem.is_empty() {
+			let mut buf = [0u8; 8];
+			buf[..rem.len()].copy_from_slice(rem);
+			self.add(u64::from_le_bytes(buf) ^ ((rem.len() as u64) << 56));
+		}
+	}
+
+	#[inline(always)]
+	fn write_u8(&mut self, i: u8) {
+		self.add(i as u64);
+	}
+
+	#[inline(always)]
+	fn write_u16(&mut self, i: u16) {
+		self.add(i as u64);
+	}
+
+	#[inline(always)]
+	fn write_u32(&mut self, i: u32) {
+		self.add(i as u64);
+	}
+
+	#[inline(always)]
+	fn write_u64(&mut self, i: u64) {
+		self.add(i);
+	}
+
+	#[inline(always)]
+	fn write_usize(&mut self, i: usize) {
+		self.add(i as u64);
+	}
+
+	#[inline(always)]
+	fn write_i64(&mut self, i: i64) {
+		self.add(i as u64);
+	}
+
+	#[inline(always)]
+	fn finish(&self) -> u64 {
+		splitmix64(self.state)
+	}
+}
+
+/// Hash a key once with the fast hasher; the result feeds the sketch
+/// and (via `HashedKey`) the map probe.
+#[inline(always)]
+fn key_hash<K: Hash>(key: &K) -> u64 {
+	let mut h = FastHasher::default();
+	key.hash(&mut h);
+	h.finish()
+}
+
+/// Pass-through hasher: the map key already carries its precomputed
+/// `key_hash`, so the map reuses it instead of hashing the key again.
+#[derive(Default, Clone, Copy)]
+pub struct PrehashedHasher {
+	state: u64,
+}
+
+impl Hasher for PrehashedHasher {
+	#[inline]
+	fn write(&mut self, bytes: &[u8]) {
+		// Fallback only; `HashedKey` always uses `write_u64`.
+		for &b in bytes {
+			self.state = (self.state.rotate_left(5) ^ b as u64).wrapping_mul(FX_SEED);
+		}
+	}
+
+	#[inline(always)]
+	fn write_u64(&mut self, i: u64) {
+		self.state = i;
+	}
+
+	#[inline(always)]
+	fn finish(&self) -> u64 {
+		self.state
+	}
+}
+
+type PrehashedBuildHasher = BuildHasherDefault<PrehashedHasher>;
+
+/// Map key carrying its precomputed fast hash. Equality compares the key.
+#[derive(Debug, Clone)]
+struct HashedKey<K> {
+	h: u64,
+	key: K,
+}
+
+impl<K> Hash for HashedKey<K> {
+	#[inline(always)]
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		state.write_u64(self.h);
+	}
+}
+
+impl<K: Eq> PartialEq for HashedKey<K> {
+	#[inline(always)]
+	fn eq(&self, other: &Self) -> bool {
+		self.h == other.h && self.key == other.key
+	}
+}
+
+impl<K: Eq> Eq for HashedKey<K> {}
+
+// ---------------------------------------------------------------------------
+// 32-bit links. `next` is a raw index (`NIL` = none). `prev` carries the
+// 2-bit region tag in bits 30–31 and the index in bits 0–29.
+// All link arithmetic stays in u32; indices widen to `usize` only at the
+// point of indexing `nodes`.
+// ---------------------------------------------------------------------------
+
+const REGION_SHIFT: u32 = 30;
+const REGION_MASK: u32 = 0b11 << REGION_SHIFT;
+/// "No link" sentinel for raw (untagged) 30-bit indices (= 0x3FFF_FFFF).
+/// `try_new` rejects capacities that could collide with it.
+const NIL: u32 = !REGION_MASK;
+/// `NIL` widened, for the capacity guard in `try_new`.
+const NIL_USIZE: usize = NIL as usize;
+
+const WINDOW: u32 = 0;
+const PROBATION: u32 = 1;
+const PROTECTED: u32 = 2;
+
+#[derive(Debug)]
+pub struct Node<K, V> {
+	key: K,
+	value: V,
+	/// Previous index in the node's region list (`NIL` if head), with the
+	/// region tag packed into the top two bits. Always read via `& !REGION_MASK`.
+	prev: u32,
+	/// Next index in the node's region list (`NIL` if tail).
+	next: u32,
+}
+
+// u64 key + u64 value + two u32 links = 24 bytes, no padding.
+const _: () = assert!(std::mem::size_of::<Node<u64, u64>>() <= 24);
+
+impl<K, V> Node<K, V> {
+	#[inline(always)]
+	fn prev_idx(&self) -> u32 {
+		self.prev & !REGION_MASK
+	}
+
+	#[inline(always)]
+	fn region(&self) -> u32 {
+		self.prev >> REGION_SHIFT
+	}
+
+	#[cfg_attr(not(test), allow(dead_code))]
+	#[inline(always)]
+	fn set_prev_idx(&mut self, p: u32) {
+		self.prev = (self.prev & REGION_MASK) | (p & !REGION_MASK);
+	}
+
+	#[cfg_attr(not(test), allow(dead_code))]
+	#[inline(always)]
+	fn set_region(&mut self, r: u32) {
+		self.prev = (self.prev & !REGION_MASK) | (r << REGION_SHIFT);
+	}
+
+	#[cfg_attr(not(test), allow(dead_code))]
+	#[inline(always)]
+	fn next_idx(&self) -> u32 {
+		self.next
+	}
+
+	#[cfg_attr(not(test), allow(dead_code))]
+	#[inline(always)]
+	fn set_next_idx(&mut self, n: u32) {
+		self.next = n;
+	}
+}
+
+#[derive(Debug, Clone, Copy)]
+struct RegionList {
+	head: u32,
+	tail: u32,
+	len: u32,
+}
+
+impl RegionList {
+	const fn empty() -> Self {
+		Self {
+			head: NIL,
+			tail: NIL,
+			len: 0,
+		}
+	}
+}
+
+#[derive(Debug)]
+pub struct TinyLfuCache<K, V> {
+	map: HashMap<HashedKey<K>, u32, PrehashedBuildHasher>,
+	nodes: Vec<Node<K, V>>,
+	/// Indexed by the 2-bit region tag; length 4 so `tag` indexing needs no
+	/// bounds check (slot 3 is never used).
+	lists: [RegionList; 4],
+	capacity: usize,
+	window_cap: u32,
+	protected_cap: u32,
+	sketch: CountMinSketch,
+}
+
+impl<K, V> TinyLfuCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	pub fn try_new(capacity: usize) -> Option<Self> {
+		if capacity == 0 {
+			log::error!("TinyLfuCache.try_new: capacity must be > 0");
+			return None;
+		}
+		if capacity >= NIL_USIZE {
+			log::error!(
+				"TinyLfuCache.try_new: capacity={capacity} must be < {NIL_USIZE} (32-bit node links)"
+			);
+			return None;
+		}
+		let width = (capacity * SKETCH_WIDTH_FACTOR)
+			.max(MIN_SKETCH_WIDTH)
+			.next_power_of_two();
+		let window_cap = (capacity / 100).max(1);
+		let main_cap = capacity - window_cap;
+		let protected_cap = (main_cap as f64 * 0.8) as usize;
+		log::info!(
+			"TinyLfuCache.try_new: capacity={capacity} sketch_width={width} window={window_cap} protected={protected_cap}"
+		);
+		Some(Self {
+			map: HashMap::with_capacity_and_hasher(capacity, PrehashedBuildHasher::default()),
+			nodes: Vec::with_capacity(capacity),
+			lists: [RegionList::empty(); 4],
+			capacity,
+			window_cap: window_cap as u32,
+			protected_cap: protected_cap as u32,
+			sketch: CountMinSketch::new(width, capacity),
+		})
+	}
+
+	pub fn new(capacity: usize) -> Self {
+		Self::try_new(capacity).expect("TinyLfuCache::new: initialization failed")
+	}
+
+	/// Heap bytes held by the frequency sketch: `blocks * 64` (4-bit counters,
+	/// `depth * width` of them packed into 64-byte cache-line blocks).
+	///
+	/// This is the FIXED metadata overhead TinyLfu carries beyond the per-entry nodes — it is
+	/// sized at construction from capacity (see `try_new`) and does not grow with population.
+	/// The metadata-size fitness bin reports it so variant edits to the sketch geometry are visible.
+	pub fn sketch_heap_bytes(&self) -> usize {
+		self.sketch.heap_bytes()
+	}
+
+	#[inline(always)]
+	fn node(&self, i: u32) -> &Node<K, V> {
+		debug_assert!((i as usize) < self.nodes.len());
+		// SAFETY: indices come only from the map or from list links, which
+		// always point at live slots (`nodes` never shrinks; a slot is pushed
+		// before it is linked or mapped).
+		unsafe { self.nodes.get_unchecked(i as usize) }
+	}
+
+	#[inline(always)]
+	fn node_mut(&mut self, i: u32) -> &mut Node<K, V> {
+		debug_assert!((i as usize) < self.nodes.len());
+		// SAFETY: indices come only from the map or from list links, which
+		// always point at live slots (`nodes` never shrinks; a slot is pushed
+		// before it is linked or mapped).
+		unsafe { self.nodes.get_unchecked_mut(i as usize) }
+	}
+
+	#[inline(always)]
+	fn list(&mut self, r: u32) -> &mut RegionList {
+		&mut self.lists[(r & 3) as usize]
+	}
+
+	/// Issues a read prefetch for node `i`. Skipped for the `NIL` sentinel.
+	/// Pure hint, with no observable effect.
+	#[inline(always)]
+	fn prefetch_node(&self, i: u32) {
+		if i == NIL {
+			return;
+		}
+		// Live indices are `< nodes.len()`; wrapping_add keeps this safe
+		// even if one were not, since the pointer is only used as a hint.
+		let ptr = self.nodes.as_ptr().wrapping_add(i as usize);
+		#[cfg(target_arch = "x86_64")]
+		{
+			use core::arch::x86_64::{_mm_prefetch, _MM_HINT_T0};
+			// SAFETY: prefetch is a hint and never faults; SSE is baseline on x86_64.
+			#[allow(unused_unsafe)]
+			unsafe {
+				_mm_prefetch::<_MM_HINT_T0>(ptr as *const i8);
+			}
+		}
+		#[cfg(not(target_arch = "x86_64"))]
+		{
+			let _ = ptr;
+		}
+	}
+
+	/// Prefetches the nodes `on_hit(idx)` will touch: the hit node's list
+	/// neighbours, the destination tail, and on a promotion that will
+	/// overflow protected, the demotion node (protected head) and the
+	/// probation tail. Does nothing when `on_hit` is a no-op (the node is
+	/// already the tail of its non-probation list).
+	#[inline(always)]
+	fn prefetch_hit_path(&self, idx: u32) {
+		let n = self.node(idx);
+		let r = n.region();
+		let dest_tail;
+		if r == PROBATION {
+			dest_tail = self.lists[PROTECTED as usize].tail;
+		} else {
+			dest_tail = self.lists[(r & 3) as usize].tail;
+			if dest_tail == idx {
+				return;
+			}
+		}
+		self.prefetch_node(n.prev & !REGION_MASK);
+		self.prefetch_node(n.next);
+		self.prefetch_node(dest_tail);
+		if r == PROBATION && self.lists[PROTECTED as usize].len >= self.protected_cap {
+			self.prefetch_node(self.lists[PROTECTED as usize].head);
+			self.prefetch_node(self.lists[PROBATION as usize].tail);
+		}
+	}
+
+	pub fn get(&mut self, key: &K) -> Option<&V> {
+		let h = key_hash(key);
+		// Start the sketch block load now so it overlaps the map probe.
+		self.sketch.prefetch(h);
+		let probe = HashedKey { h, key: key.clone() };
+		let found = self.map.get(&probe).copied();
+		// Put the relink node loads in flight before the sketch RMW.
+		if let Some(idx) = found {
+			self.prefetch_hit_path(idx);
+		}
+		// The increment runs on hit and miss alike (same rule as before; the
+		// map is not touched by it, so the reorder is semantics-preserving).
+		self.sketch.increment_hashed(h);
+		let idx = found?;
+		self.on_hit(idx);
+		Some(&self.node(idx).value)
+	}
+
+	pub fn put(&mut self, key: K, value: V) {
+		let key_h = key_hash(&key);
+		self.sketch.prefetch(key_h);
+		let hk = HashedKey { h: key_h, key };
+		let found = self.map.get(&hk).copied();
+		// Increment before any branching on the probe: still precedes
+		// `evict_one`, so the admission contest sees the same counts.
+		self.sketch.increment_hashed(key_h);
+		if let Some(idx) = found {
+			self.prefetch_hit_path(idx);
+			self.node_mut(idx).value = value;
+			self.on_hit(idx);
+			return;
+		}
+
+		if self.nodes.len() < self.capacity {
+			let idx = self.nodes.len() as u32;
+			self.nodes.push(Node {
+				key: hk.key.clone(),
+				value,
+				prev: NIL,
+				next: NIL,
+			});
+			self.push_back(idx, WINDOW);
+			self.map.insert(hk, idx);
+			// Spare room in main: window overflow just migrates to probation.
+			if self.lists[WINDOW as usize].len > self.window_cap {
+				let cand = self.lists[WINDOW as usize].head;
+				self.unlink(cand);
+				self.push_back(cand, PROBATION);
+			}
+			return;
+		}
+
+		// Full: pick a slot to free via the window-candidate vs main-victim contest.
+		let (slot, old_h) = self.evict_one();
+		let new_key = hk.key.clone();
+		let old_key = std::mem::replace(&mut self.node_mut(slot).key, new_key);
+		self.map.remove(&HashedKey { h: old_h, key: old_key });
+		self.node_mut(slot).value = value;
+		self.push_back(slot, WINDOW);
+		self.map.insert(hk, slot);
+	}
+
+	/// Runs the admission contest and unlinks the loser; returns its slot and
+	/// its hash (so the map removal does not rehash it).
+	fn evict_one(&mut self) -> (u32, u64) {
+		let cand = self.lists[WINDOW as usize].head;
+		let victim = if self.lists[PROBATION as usize].head != NIL {
+			self.lists[PROBATION as usize].head
+		} else {
+			self.lists[PROTECTED as usize].head
+		};
+
+		if cand == NIL {
+			// Window empty (not reachable in steady state); evict main victim.
+			let victim_h = key_hash(&self.node(victim).key);
+			self.unlink(victim);
+			return (victim, victim_h);
+		}
+		let cand_h = key_hash(&self.node(cand).key);
+		if victim == NIL {
+			// Main region empty (e.g. capacity 1): the candidate leaves.
+			self.unlink(cand);
+			return (cand, cand_h);
+		}
+		let victim_h = key_hash(&self.node(victim).key);
+		// Put both block loads in flight together before the dependent reads.
+		self.sketch.prefetch(cand_h);
+		self.sketch.prefetch(victim_h);
+		let cand_freq = self.sketch.estimate_hashed(cand_h);
+		let victim_freq = self.sketch.estimate_hashed(victim_h);
+		if cand_freq > victim_freq {
+			self.unlink(victim);
+			self.unlink(cand);
+			self.push_back(cand, PROBATION);
+			(victim, victim_h)
+		} else {
+			self.unlink(cand);
+			(cand, cand_h)
+		}
+	}
+
+	#[inline]
+	fn on_hit(&mut self, idx: u32) {
+		let r = self.node(idx).region();
+		if r == PROBATION {
+			self.unlink(idx);
+			self.push_back(idx, PROTECTED);
+			if self.lists[PROTECTED as usize].len > self.protected_cap {
+				let d = self.lists[PROTECTED as usize].head;
+				self.unlink(d);
+				self.push_back(d, PROBATION);
+			}
+		} else if self.list(r).tail != idx {
+			self.unlink(idx);
+			self.push_back(idx, r);
+		}
+	}
+
+	/// Detaches `idx` from its region list. The node's own links are left
+	/// stale: every caller immediately `push_back`s it, which overwrites both.
+	#[inline(always)]
+	fn unlink(&mut self, idx: u32) {
+		let tagged = self.node(idx).prev;
+		let next = self.node(idx).next;
+		let r = tagged >> REGION_SHIFT;
+		let prev = tagged & !REGION_MASK;
+		if prev == NIL {
+			self.list(r).head = next;
+		} else {
+			self.node_mut(prev).next = next;
+		}
+		if next == NIL {
+			self.list(r).tail = prev;
+		} else {
+			let nn = self.node_mut(next);
+			nn.prev = (nn.prev & REGION_MASK) | prev;
+		}
+		self.list(r).len -= 1;
+	}
+
+	#[inline(always)]
+	fn push_back(&mut self, idx: u32, r: u32) {
+		let tail = self.list(r).tail;
+		{
+			let n = self.node_mut(idx);
+			n.prev = (r << REGION_SHIFT) | tail;
+			n.next = NIL;
+		}
+		if tail == NIL {
+			self.list(r).head = idx;
+		} else {
+			self.node_mut(tail).next = idx;
+		}
+		let l = self.list(r);
+		l.tail = idx;
+		l.len += 1;
+	}
+}
+
+/// One cache line of counters: 8 words x 16 four-bit counters.
+#[repr(align(64))]
+#[derive(Debug, Clone, Copy, Default)]
+struct Block([u64; 8]);
+
+/// Cache-line-blocked count-min sketch with 4-bit saturating counters and
+/// periodic halving (TinyLFU aging). All `SKETCH_DEPTH` counters of a key
+/// live in one 64-byte block; row `i` uses word pair `2i, 2i+1`.
+#[derive(Debug)]
+struct CountMinSketch {
+	table: Vec<Block>,
+	block_mask: usize,
+	/// Increments since the last reset.
+	additions: u32,
+	/// Reset threshold (`SAMPLE_FACTOR * capacity`).
+	sample_size: u32,
+}
+
+impl CountMinSketch {
+	/// `width` is counters per row (power of two); total counters
+	/// `SKETCH_DEPTH * width` are packed into 128-counter blocks.
+	fn new(width: usize, capacity: usize) -> Self {
+		let blocks = (width * SKETCH_DEPTH / COUNTERS_PER_BLOCK)
+			.max(1)
+			.next_power_of_two();
+		let sample_size = capacity
+			.saturating_mul(SAMPLE_FACTOR)
+			.clamp(1, u32::MAX as usize) as u32;
+		Self {
+			table: vec![Block::default(); blocks],
+			block_mask: blocks - 1,
+			additions: 0,
+			sample_size,
+		}
+	}
+
+	/// Heap bytes backing the counter table: one 64-byte line per block.
+	fn heap_bytes(&self) -> usize {
+		self.table.len() * 64
+	}
+
+	/// Block selected by the high 32 bits of the hash.
+	#[inline(always)]
+	fn block_index(&self, h: u64) -> usize {
+		((h >> 32) as usize) & self.block_mask
+	}
+
+	/// Issues a read prefetch for the block `h` maps to. Pure hint: no
+	/// observable effect on counters.
+	#[inline(always)]
+	fn prefetch(&self, h: u64) {
+		let bi = self.block_index(h);
+		// `bi <= block_mask < table.len()`, so the pointer is in bounds.
+		let ptr = self.table.as_ptr().wrapping_add(bi);
+		#[cfg(target_arch = "x86_64")]
+		{
+			use core::arch::x86_64::{_mm_prefetch, _MM_HINT_T0};
+			// SAFETY: prefetch is a hint and never faults; SSE is baseline on x86_64.
+			#[allow(unused_unsafe)]
+			unsafe {
+				_mm_prefetch::<_MM_HINT_T0>(ptr as *const i8);
+			}
+		}
+		#[cfg(not(target_arch = "x86_64"))]
+		{
+			// aarch64 `_prefetch` is not stable; no-op elsewhere.
+			let _ = ptr;
+		}
+	}
+
+	#[inline(always)]
+	fn increment_hashed(&mut self, h: u64) {
+		let bi = self.block_index(h);
+		let block = &mut self.table[bi].0;
+		let mut added = false;
+		for i in 0..SKETCH_DEPTH {
+			let (w, shift) = Self::position(h, i);
+			if (block[w] >> shift) & 0xF < 15 {
+				block[w] += 1u64 << shift;
+				added = true;
+			}
+		}
+		if added {
+			self.additions += 1;
+			if self.additions >= self.sample_size {
+				self.reset();
+			}
+		}
+	}
+
+	/// For row `i`, byte `i` of the low hash half picks the word (bit 4,
+	/// within the row's pair) and the nibble (bits 0..4).
+	#[inline(always)]
+	fn position(h: u64, i: usize) -> (usize, u32) {
+		let b = (h >> (i * 8)) as u32 & 0xFF;
+		let word = 2 * i + ((b >> 4) & 1) as usize;
+		let shift = (b & 0xF) << 2;
+		(word, shift)
+	}
+
+	/// Halves every counter and the addition count.
+	#[cold]
+	fn reset(&mut self) {
+		let mut odd: u32 = 0;
+		for block in self.table.iter_mut() {
+			for w in block.0.iter_mut() {
+				odd += (*w & 0x1111_1111_1111_1111).count_ones();
+				*w = (*w >> 1) & RESET_MASK;
+			}
+		}
+		self.additions = (self.additions - (odd >> 2).min(self.additions)) >> 1;
+	}
+
+	#[inline(always)]
+	fn estimate_hashed(&self, h: u64) -> u32 {
+		let block = &self.table[self.block_index(h)].0;
+		let mut min = 15u32;
+		for i in 0..SKETCH_DEPTH {
+			let (w, shift) = Self::position(h, i);
+			let c = ((block[w] >> shift) & 0xF) as u32;
+			if c < min {
+				min = c;
+			}
+		}
+		min
+	}
+}
+
+impl<K, V> framework::Cache<K, V> for TinyLfuCache<K, V>
+where
+	K: Hash + Eq + Clone + Debug,
+	V: Debug,
+{
+	fn put(&mut self, key: K, value: V) {
+		TinyLfuCache::put(self, key, value);
+	}
+
+	fn get(&mut self, key: &K) -> Option<&V> {
+		TinyLfuCache::get(self, key)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn get_miss_returns_none() {
+		let mut cache = TinyLfuCache::<i64, i64>::new(4);
+		assert!(cache.get(&42).is_none());
+	}
+
+	#[test]
+	fn put_then_get() {
+		let mut cache = TinyLfuCache::new(4);
+		cache.put(1, 10);
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+	}
+
+	#[test]
+	fn sketch_counts_increment() {
+		let mut s = CountMinSketch::new(16, 4);
+		let h = key_hash(&7i64);
+		s.increment_hashed(h);
+		s.increment_hashed(h);
+		assert!(s.estimate_hashed(h) >= 2);
+	}
+
+	#[test]
+	fn sketch_saturates_at_15() {
+		let mut s = CountMinSketch::new(64, 1_000);
+		let h = key_hash(&3i64);
+		for _ in 0..100 {
+			s.increment_hashed(h);
+		}
+		assert_eq!(s.estimate_hashed(h), 15);
+	}
+
+	#[test]
+	fn sketch_ages_by_halving() {
+		// sample_size = 10: the 10th addition triggers a reset.
+		let mut s = CountMinSketch::new(16, 1);
+		let h = key_hash(&11i64);
+		for _ in 0..9 {
+			s.increment_hashed(h);
+		}
+		assert_eq!(s.estimate_hashed(h), 9);
+		s.increment_hashed(h);
+		assert_eq!(s.estimate_hashed(h), 5);
+	}
+
+	#[test]
+	fn sketch_prefetch_is_side_effect_free() {
+		let mut s = CountMinSketch::new(64, 1_000);
+		for k in 0..200i64 {
+			let h = key_hash(&k);
+			s.prefetch(h);
+			assert_eq!(s.estimate_hashed(h), 0);
+			s.increment_hashed(h);
+		}
+		assert_eq!(s.additions, 200);
+	}
+
+	#[test]
+	fn node_prefetch_handles_sentinel_and_live_indices() {
+		let mut cache = TinyLfuCache::<i64, i64>::new(8);
+		cache.prefetch_node(NIL);
+		for k in 0..8i64 {
+			cache.put(k, k);
+		}
+		for i in 0..8u32 {
+			cache.prefetch_node(i);
+			cache.prefetch_hit_path(i);
+		}
+		check_lists(&cache);
+	}
+
+	#[test]
+	fn sketch_heap_within_budget() {
+		let cache = TinyLfuCache::<i64, i64>::new(1024);
+		assert_eq!(cache.sketch_heap_bytes(), 8 * 1024);
+	}
+
+	#[test]
+	fn region_tag_roundtrips_without_corrupting_links() {
+		let mut n = Node { key: 1u64, value: 2u64, prev: NIL, next: NIL };
+		n.set_prev_idx(5);
+		n.set_region(PROTECTED);
+		assert_eq!(n.prev_idx(), 5);
+		assert_eq!(n.region(), PROTECTED);
+		n.set_prev_idx(NIL);
+		assert_eq!(n.prev_idx(), NIL);
+		assert_eq!(n.region(), PROTECTED);
+		n.set_next_idx(7);
+		assert_eq!(n.next_idx(), 7);
+		assert_eq!(n.region(), PROTECTED);
+	}
+
+	#[test]
+	fn node_is_24_bytes() {
+		assert_eq!(std::mem::size_of::<Node<u64, u64>>(), 24);
+	}
+
+	#[test]
+	fn capacity_colliding_with_sentinel_is_rejected() {
+		assert!(TinyLfuCache::<i64, i64>::try_new(NIL_USIZE).is_none());
+	}
+
+	#[test]
+	fn eviction_prefers_hot_items() {
+		// cap 2: window 1, probation/protected share 1.
+		let mut cache = TinyLfuCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20); // 1 -> probation, 2 in window
+		cache.get(&1); // make key 1 hotter than key 2
+		cache.get(&3);
+		cache.get(&3);
+		cache.put(3, 30); // candidate 2 loses to victim 1
+
+		assert_eq!(*cache.get(&1).unwrap(), 10);
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+		assert!(cache.get(&2).is_none());
+	}
+
+	#[test]
+	fn cold_window_candidate_is_evicted() {
+		let mut cache = TinyLfuCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.get(&1);
+		cache.put(3, 30); // newcomer always enters window; candidate 2 evicted
+		cache.put(4, 40); // candidate 3 (freq 1) loses to victim 1
+
+		assert!(cache.get(&1).is_some());
+		assert!(cache.get(&4).is_some());
+		assert!(cache.get(&3).is_none());
+		assert!(cache.get(&2).is_none());
+	}
+
+	#[test]
+	fn update_promotes_existing_item_and_admits_hot_arrivals() {
+		let mut cache = TinyLfuCache::new(2);
+		cache.put(1, 10);
+		cache.put(2, 20);
+		cache.put(1, 11);
+		cache.get(&3);
+		cache.get(&3);
+		cache.put(3, 30);
+
+		assert_eq!(*cache.get(&1).unwrap(), 11);
+		assert_eq!(*cache.get(&3).unwrap(), 30);
+		assert!(cache.get(&2).is_none());
+	}
+
+	#[test]
+	fn capacity_one_works() {
+		let mut cache = TinyLfuCache::new(1);
+		for k in 0..10i64 {
+			if cache.get(&k).is_none() {
+				cache.put(k, k);
+			}
+		}
+		let resident = (0..10i64).filter(|k| cache.get(k).is_some()).count();
+		assert!(resident <= 1);
+	}
+
+	/// Walks all three region lists and checks lengths, region tags and
+	/// back-links against the node table.
+	fn check_lists(cache: &TinyLfuCache<i64, i64>) {
+		let mut total = 0usize;
+		for r in [WINDOW, PROBATION, PROTECTED] {
+			let list = cache.lists[r as usize];
+			let mut cur = list.head;
+			let mut prev = NIL;
+			let mut count = 0u32;
+			while cur != NIL {
+				let n = &cache.nodes[cur as usize];
+				assert_eq!(n.region(), r, "node {cur} tagged {} found in list {r}", n.region());
+				assert_eq!(n.prev_idx(), prev, "node {cur} has a broken back-link");
+				prev = cur;
+				cur = n.next;
+				count += 1;
+				assert!(count as usize <= cache.nodes.len(), "cycle in list {r}");
+			}
+			assert_eq!(list.tail, prev, "list {r} tail mismatch");
+			assert_eq!(list.len, count, "list {r} len mismatch");
+			total += count as usize;
+		}
+		assert_eq!(total, cache.nodes.len());
+		assert_eq!(cache.map.len(), cache.nodes.len());
+		assert_eq!(cache.lists[3].len, 0);
+	}
+
+	/// The skewed 10k-op key sequence shared by the consistency and
+	/// equivalence tests.
+	fn skewed_keys() -> Vec<i64> {
+		let mut s: u64 = 0x2545_f491_4f6c_dd1d;
+		(0..10_000)
+			.map(|_| {
+				s = s.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+				let r = s >> 33;
+				// Skewed key space: half the ops hit a hot set of 32 keys.
+				if r & 1 == 0 { ((r >> 1) % 32) as i64 } else { ((r >> 1) % 512) as i64 }
+			})
+			.collect()
+	}
+
+	#[test]
+	fn mixed_ops_keep_lists_consistent() {
+		let mut cache = TinyLfuCache::<i64, i64>::new(64);
+		for key in skewed_keys() {
+			if cache.get(&key).is_none() {
+				cache.put(key, key * 3);
+			} else {
+				assert_eq!(*cache.get(&key).unwrap(), key * 3);
+			}
+			check_lists(&cache);
+		}
+	}
+
+	// --- Older parent (cycle 0005/v001) op order: increment first, then probe. ---
+
+	fn parent_get(c: &mut TinyLfuCache<i64, i64>, key: &i64) -> Option<i64> {
+		let h = key_hash(key);
+		c.sketch.increment_hashed(h);
+		let probe = HashedKey { h, key: *key };
+		let &idx = c.map.get(&probe)?;
+		c.on_hit(idx);
+		Some(c.node(idx).value)
+	}
+
+	fn parent_put(c: &mut TinyLfuCache<i64, i64>, key: i64, value: i64) {
+		let key_h = key_hash(&key);
+		c.sketch.increment_hashed(key_h);
+		let hk = HashedKey { h: key_h, key };
+		if let Some(&idx) = c.map.get(&hk) {
+			c.node_mut(idx).value = value;
+			c.on_hit(idx);
+			return;
+		}
+		if c.nodes.len() < c.capacity {
+			let idx = c.nodes.len() as u32;
+			c.nodes.push(Node { key, value, prev: NIL, next: NIL });
+			c.push_back(idx, WINDOW);
+			c.map.insert(hk, idx);
+			if c.lists[WINDOW as usize].len > c.window_cap {
+				let cand = c.lists[WINDOW as usize].head;
+				c.unlink(cand);
+				c.push_back(cand, PROBATION);
+			}
+			return;
+		}
+		// Parent contest without prefetches.
+		let cand = c.lists[WINDOW as usize].head;
+		let victim = if c.lists[PROBATION as usize].head != NIL {
+			c.lists[PROBATION as usize].head
+		} else {
+			c.lists[PROTECTED as usize].head
+		};
+		let (slot, old_h) = if cand == NIL {
+			let vh = key_hash(&c.node(victim).key);
+			c.unlink(victim);
+			(victim, vh)
+		} else {
+			let ch = key_hash(&c.node(cand).key);
+			if victim == NIL {
+				c.unlink(cand);
+				(cand, ch)
+			} else {
+				let vh = key_hash(&c.node(victim).key);
+				if c.sketch.estimate_hashed(ch) > c.sketch.estimate_hashed(vh) {
+					c.unlink(victim);
+					c.unlink(cand);
+					c.push_back(cand, PROBATION);
+					(victim, vh)
+				} else {
+					c.unlink(cand);
+					(cand, ch)
+				}
+			}
+		};
+		let old_key = std::mem::replace(&mut c.node_mut(slot).key, key);
+		c.map.remove(&HashedKey { h: old_h, key: old_key });
+		c.node_mut(slot).value = value;
+		c.push_back(slot, WINDOW);
+		c.map.insert(hk, slot);
+	}
+
+	#[test]
+	fn reordered_ops_match_parent_exactly() {
+		for cap in [1usize, 2, 7, 64] {
+			let mut new = TinyLfuCache::<i64, i64>::new(cap);
+			let mut old = TinyLfuCache::<i64, i64>::new(cap);
+			let (mut new_hits, mut old_hits) = (0u32, 0u32);
+			for key in skewed_keys() {
+				let n = new.get(&key).copied();
+				let o = parent_get(&mut old, &key);
+				assert_eq!(n, o, "cap {cap}: get({key}) diverged");
+				if n.is_some() {
+					new_hits += 1;
+				} else {
+					new.put(key, key * 3);
+				}
+				if o.is_some() {
+					old_hits += 1;
+				} else {
+					parent_put(&mut old, key, key * 3);
+				}
+			}
+			assert_eq!(new_hits, old_hits, "cap {cap}: hit counts diverged");
+			let mut nk: Vec<i64> = new.map.keys().map(|k| k.key).collect();
+			let mut ok: Vec<i64> = old.map.keys().map(|k| k.key).collect();
+			nk.sort_unstable();
+			ok.sort_unstable();
+			assert_eq!(nk, ok, "cap {cap}: resident sets diverged");
+			assert_eq!(new.sketch.additions, old.sketch.additions);
+			for (a, b) in new.sketch.table.iter().zip(old.sketch.table.iter()) {
+				assert_eq!(a.0, b.0, "cap {cap}: sketch state diverged");
+			}
+			check_lists(&new);
+		}
+	}
+
+	// --- Direct parent (cycle 0006/v003) hit path: no node prefetches. ---
+
+	fn v003_get(c: &mut TinyLfuCache<i64, i64>, key: &i64) -> Option<i64> {
+		let h = key_hash(key);
+		c.sketch.prefetch(h);
+		let probe = HashedKey { h, key: *key };
+		let found = c.map.get(&probe).copied();
+		c.sketch.increment_hashed(h);
+		let idx = found?;
+		c.on_hit(idx);
+		Some(c.node(idx).value)
+	}
+
+	#[test]
+	fn node_prefetch_hit_sequence_matches_parent() {
+		for cap in [1usize, 2, 7, 64, 300] {
+			let mut new = TinyLfuCache::<i64, i64>::new(cap);
+			let mut old = TinyLfuCache::<i64, i64>::new(cap);
+			for key in skewed_keys() {
+				let n = new.get(&key).copied();
+				let o = v003_get(&mut old, &key);
+				assert_eq!(n, o, "cap {cap}: get({key}) diverged from v003");
+				if n.is_none() {
+					new.put(key, key * 3);
+					old.put(key, key * 3);
+				}
+			}
+			for r in 0..4 {
+				assert_eq!(new.lists[r].head, old.lists[r].head, "cap {cap}: list {r} head");
+				assert_eq!(new.lists[r].tail, old.lists[r].tail, "cap {cap}: list {r} tail");
+				assert_eq!(new.lists[r].len, old.lists[r].len, "cap {cap}: list {r} len");
+			}
+			for (a, b) in new.nodes.iter().zip(old.nodes.iter()) {
+				assert_eq!((a.key, a.prev, a.next), (b.key, b.prev, b.next));
+			}
+			check_lists(&new);
+		}
+	}
+}

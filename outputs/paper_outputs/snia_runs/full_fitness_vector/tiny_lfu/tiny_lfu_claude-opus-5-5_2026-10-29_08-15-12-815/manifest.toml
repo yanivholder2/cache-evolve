@@ -1,0 +1,38 @@
+[subject]
+name = "tiny_lfu"
+crate-path = "."
+cdylib-name = "tiny_lfu"
+
+[[gates]]
+name = "invariant gate"
+test = "invariant_gate"
+marker = "invariant gate violated: P[1-3] [a-z_]+"
+
+[contract]
+protected-files = ["src/tiny_lfu/tiny_lfu_jni.rs"]
+
+[caffeine]
+config-prefix = "caffeine.simulator.tinyLfu"
+policy-spec-name = "tinylfu.TinyLfuRust"
+supports-log-path = false
+
+[bench]
+binary-name = "tiny_lfu-evolve-per-op-time"
+
+[metadata]
+binary-name = "tiny_lfu-evolve-metadata-size"
+
+[docs]
+context = "CONTEXT.md"
+insight = "baseline/insight.md"
+
+[evaluation]
+fitness-vector = "baseline/eval/fitness-vector.json"
+traces = ["lirs:inputs/traces/workload-a.trace.gz"]
+sizes = [2048]
+
+# MSR Cambridge block-I/O grid (--evaluation-profile msr): both traces crossed
+# with both sizes, averaged like the default grid.
+[evaluation.profiles.msr]
+traces = ["lirs:inputs/traces/msr/web_0.trace.gz", "lirs:inputs/traces/msr/hm_0.trace.gz"]
+sizes = [16384, 131072]

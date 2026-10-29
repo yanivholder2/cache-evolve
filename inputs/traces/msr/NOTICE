@@ -1,0 +1,52 @@
+MSR Cambridge block I/O traces (web_0, hm_0)
+============================================
+
+Source: SNIA IOTTA Repository, "MSR Cambridge Traces"
+  https://iotta.snia.org/traces/block-io/388
+  web_0 from msr-cambridge2.tar (SHA-1 effc3656ef7946abbf8f0df296cf82262c341145)
+  hm_0  from msr-cambridge1.tar (SHA-1 28ef578dcafa98b94ba9d9fd1205e7eec58f43d8)
+
+Converted with scripts/convert_msr_trace.py (defaults): each request is
+expanded into the 4 KiB blocks it touches, one key (offset // 4096) per line,
+reads and writes both counted as accesses.
+
+Please cite:
+  Dushyanth Narayanan, Austin Donnelly, and Antony Rowstron.
+  Write Off-Loading: Practical Power Management for Enterprise Storage.
+  Proc. 6th USENIX Conference on File and Storage Technologies (FAST '08).
+  http://www.usenix.org/event/fast08/tech/narayanan.html
+
+The trace data files are distributed under the SNIA Trace Data Files
+Download License, reproduced below.
+
+Copyright (c) 2008 Storage Networking Industry Association (SNIA).
+For downloaded materials that are licensed under any license approved 
+by the Open Source Initiative (OSI - 
+
+www.opensource.org/licenses), a copyright license is hereby 
+granted to any person obtaining a copy of these I/O trace tool(s) 
+and/or trace data file(s) and associated documentation ("Trace Tools 
+and Data Files") pursuant to and subject to the terms and conditions 
+of said open source license.
+For downloaded materials that are licensed under any license not 
+approved by the Open Source Initiative, permission is hereby 
+granted, free of charge, to any person obtaining a copy of these 
+I/O trace tool(s) and/or trace data file(s) and associated 
+documentation ("Trace Tools and Data Files") to deal in the Trace 
+Tools and Data Files without restriction, including without limitation 
+the rights to use, copy, modify, merge, publish, distribute, 
+sublicense, and/or sell copies of the Trace Tools and Data Files, 
+and to permit persons to whom the Trace Tools and Data Files are 
+furnished to do so.
+The above copyright notice and this permission notice (including the 
+following disclaimers) shall be included in all copies or substantial 
+portions of the Trace Tools and Data Files.
+THE TRACE TOOLS AND DATA FILES ARE PROVIDED "AS IS," WITH ALL FAULTS , 
+DEFECTS, AND ERRORS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+INCLUDING, BUT NOT LIMITED TO, THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT 
+SHALL SNIA OR CONTRIBUTORS OF THE TRACE TOOLS AND DATA FILES BE LIABLE 
+FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION 
+WITH THE TRACE TOOLS AND DATA FILES OR THE USE OR OTHER DEALINGS IN 
+THE TRACE TOOLS AND DATA FILES.

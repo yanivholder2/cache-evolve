@@ -2,8 +2,8 @@
 """Aggregate real run outputs under outputs/paper_outputs/ into per-group JSON.
 
 Runs are grouped under outputs/paper_outputs/<batch>/<group>/<subject>/<run>/,
-where <batch> is a `v<N>_runs` folder (v1_runs for the original runs, v2_runs
-for the Claude 5.5 runs) and <group> is the fitness configuration the runs
+where <batch> is any `*_runs` folder (e.g. v1_runs for the original runs,
+v2_runs for the Claude 5.5 runs) and <group> is the fitness configuration the runs
 share (e.g. only_hit_rate, full_fitness_vector). Each group becomes
 its own plots/paper-plots/data_<group>.json holding the runs of every batch, so
 hit-rate-only and full-fitness-vector runs stay in separate datasets while the
@@ -41,9 +41,11 @@ PAPER_PLOTS_DIR = PLOTS_DIR / "paper-plots"
 
 UNKNOWN = "unknown"
 
-# Batch folders under paper_outputs/ (v1_runs, v2_runs, ...); anything else at
-# that level (e.g. a batch's plan doc) is ignored.
-BATCH_DIR_RE = re.compile(r"^v(?P<n>\d+)_runs$")
+# Batch folders under paper_outputs/ are any `*_runs` dir (v1_runs, v2_runs,
+# snia_runs, ...); anything else at that level is ignored, as is a batch's plan
+# doc. `v<N>_runs` batches sort first by N, then the rest by name.
+BATCH_DIR_SUFFIX = "_runs"
+VERSIONED_BATCH_RE = re.compile(r"^v(?P<n>\d+)_runs$")
 ORIGINAL_BATCH = "v1_runs"
 
 # Every fitness dimension the framework currently emits. A variant whose
@@ -377,8 +379,14 @@ def group_run_dirs(group_dir: Path) -> list[tuple[Path, str]]:
 
 def batch_dirs() -> list[tuple[str, Path]]:
     """(batch name, dir holding that batch's groups), in batch order."""
-    batches = [p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir() and BATCH_DIR_RE.match(p.name)]
-    return [(p.name, p) for p in sorted(batches, key=lambda p: int(BATCH_DIR_RE.match(p.name)["n"]))]
+    batches = [p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir() and p.name.endswith(BATCH_DIR_SUFFIX)]
+    return [(p.name, p) for p in sorted(batches, key=lambda p: batch_sort_key(p.name))]
+
+
+def batch_sort_key(name: str) -> tuple[int, int, str]:
+    """`v<N>_runs` first in numeric N order, then any other batch by name."""
+    versioned = VERSIONED_BATCH_RE.match(name)
+    return (0, int(versioned["n"]), name) if versioned else (1, 0, name)
 
 
 def group_dirs_by_name() -> dict[str, list[tuple[str, Path]]]:
@@ -424,7 +432,7 @@ def main():
     parser.add_argument(
         "groups",
         nargs="*",
-        help="group folder name(s) under outputs/paper_outputs/v<N>_runs/ to aggregate; "
+        help="group folder name(s) under outputs/paper_outputs/<batch>_runs/ to aggregate; "
         "default: every group",
     )
     args = parser.parse_args()

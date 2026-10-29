@@ -38,10 +38,13 @@ Under `claude-sdk`, `--model` takes any `claude-<family>-<version>` id (e.g. `cl
 `claude-sonnet-5-5`, `claude-haiku-5-5`) — don't reject an id for being absent
 from a list.
 
-**Paper runs.** If the request references the paper run plan or a plan row id
-(e.g. `F01`), read `outputs/paper_outputs/v2_runs/paper-runs-plan.md` first and launch that row's exact
-command — every setting pinned, no natural-language translation. Don't edit
-the plan doc; its "Checking run status" section says how to see which rows are done.
+**Plan rows (optional).** A plan is never required. Only if the request gives
+a row id **and** a plan path, e.g. `SH01 from
+outputs/paper_outputs/<batch>/paper-runs-plan.md`, read that plan and launch
+that row's exact command — every setting pinned, no natural-language
+translation. Never go looking for a plan file on your own: a bare row id with
+no plan path → stop and ask which plan. If the row id isn't in the named plan,
+stop and ask. Don't edit the plan doc.
 
 Confirm the assembled command line back to the user in one line before
 launching. Flags are non-persistent overrides — never edit `config.toml` or any

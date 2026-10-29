@@ -146,14 +146,14 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** reviewing or creating a PR.
 
-### [outputs/paper_outputs/v2_runs/paper-runs-plan.md](../outputs/paper_outputs/v2_runs/paper-runs-plan.md)
+### [outputs/paper_outputs/snia_runs/paper-runs-plan.md](../outputs/paper_outputs/snia_runs/paper-runs-plan.md)
 
 * Goal
 * How a run works
 * Commands
 * Session prompt
-* Updating this file
-* Status
+* Checking run status
+* Run matrix
 * Notes
 
-**Read when** launching or promoting a paper run (or given a plan row id like `F01`).
+**Read when** launching or promoting an MSR/SNIA real-trace paper run (or given a plan row id like `SH01`).

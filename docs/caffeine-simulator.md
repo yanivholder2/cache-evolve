@@ -30,6 +30,8 @@ The top-level `caffeine.simulator.policies` list defaults to empty — without i
 
 `-Dcaffeine.simulator.policies.0=<spec-name>` chooses which policy implementation runs. Each policy reads its own settings under a config-key prefix (`caffeine.simulator.<prefix>.*`); the available keys are defined by the policy class itself. A JNI-backed policy additionally requires the matching cdylib on `java.library.path`. Consult the policy's source for the exact keys and any geometry/validity constraints it enforces.
 
+`scripts/caffeine_runner.py` emits a subject's fixed `[caffeine.geometry]` keys verbatim and derives each `[caffeine.size-divisors]` key per size as `size / divisor` (e.g. dash `numOfSegments`), splitting a multi-size sweep into one call per size. A policy constructor that throws can leave Caffeine exiting 0 with no `hit_rate_<size>.csv`; the runner treats a missing per-size CSV as a failure and reports the Java exception line.
+
 ## Output files
 
 All paths relative to Caffeine's reports dir (`simulator/build/reports/simulate/` unless overridden via `--outputDir`). Files are **overwritten** between runs — copy them out before re-invoking on a different trace.

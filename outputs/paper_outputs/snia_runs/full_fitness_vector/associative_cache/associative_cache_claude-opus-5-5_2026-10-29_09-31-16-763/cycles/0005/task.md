@@ -1,0 +1,109 @@
+# Task: cycle-insight-writer
+
+Cycle: 0005
+Output dir: /home/user/cache-evolve/outputs/associative_cache_2026-10-29_09-31-16-763/cycles/0005
+
+## Winners
+
+- v002
+- v001
+- v003
+
+## Variant insights
+
+- /home/user/cache-evolve/outputs/associative_cache_2026-10-29_09-31-16-763/cycles/0005/variants/v001/insight.md
+- /home/user/cache-evolve/outputs/associative_cache_2026-10-29_09-31-16-763/cycles/0005/variants/v002/insight.md
+- /home/user/cache-evolve/outputs/associative_cache_2026-10-29_09-31-16-763/cycles/0005/variants/v003/insight.md
+
+## Hypotheses (this cycle)
+
+- /home/user/cache-evolve/outputs/associative_cache_2026-10-29_09-31-16-763/cycles/0005/hypotheses/H01.md
+- /home/user/cache-evolve/outputs/associative_cache_2026-10-29_09-31-16-763/cycles/0005/hypotheses/H02.md
+- /home/user/cache-evolve/outputs/associative_cache_2026-10-29_09-31-16-763/cycles/0005/hypotheses/H03.md
+
+## Prior cycles digest
+
+### Cycle 0002
+
+# Cycle 0002 Insight
+
+## Cohort outcome
+
+Two variants refined last cycle's scan-resistant policies: bimodal insertion on top of LIP (v001) and a 2-bit GCLOCK with a bounded sweep (v002). The third variant (v003) went after the lookup scan with a dense key mirror. v001 is the only Winner, and only just: its hit-rate summary edged up because of one cell (hm_0 at the 128-wide size), while it lost slightly on web_0 and put latency got worse.
+
+## Patterns
+
+- Hit-rate gains from changing the replacement rule are now small, and each one trades between workloads. BIP's blind MRU admission gives back scan resistance on web_0. Extra GCLOCK levels add only a little hit rate, though they did so at every point. The easy scan-resistance gains were taken in cycle 0001.
+- Put latency is still set by the mechanism, not by policy dispatch. Removing the per-op string compare (v001) had no visible effect, because the mid-bucket memmove dominates. Capping the sweep (v002) and scanning dense keys (v003) both helped the put tail. Each also made the typical put slower, through more full-window sweeps or writes to two allocations.
+- The get p50 summary got worse in both speed-oriented variants. In v003 the cause was clearly locality: a separate key Vec adds a second memory stream to every hit, and on short scans that costs more than density saves. Splitting hot data across allocations is the wrong shape of fix.
+- Tail and median now move in opposite directions. Changes that bound worst-case work (sweep cap, dense absence scan) improve p99, and every one so far has added per-op cost at p50.
+- Metadata-size stayed flat again. v003 showed that this dimension cannot see memory held in side arrays inside the bucket.
+
+## Open questions
+
+- Is v002's small get p50 regression real or noise? Its get-path change was tiny.
+- Can a period that scales with bucket size, or a reuse-aware MRU admission signal, keep BIP's small-bucket gain without losing web_0?
+- Would a per-slot fingerprint or tag array stored in the same cache line, or a dense reference-bit array for the sweep, cut get p50 where a separate key Vec did not?
+
+## Continuation
+
+Keep v002's 16-slot sweep cap and clear-on-insert as the base mechanism for the put tail. Treat further replacement-rule tweaks as low yield unless they target a specific workload (for example, BIP admission that scales with bucket size). Spend most of the next cycle on get p50 with layouts that keep the key and the hit-time data together (inline tags or fingerprints, SIMD-friendly blocks), and drop the separate-Vec key mirror. For LIP-style insertion, look for a cheaper insert-at-depth rather than trimming dispatch overhead.
+
+
+### Cycle 0003
+
+# Cycle 0003 Insight
+
+## Cohort outcome
+
+Two variants tried to shorten the get scan by changing scan order or key placement: v001 reversed the scan from the MRU end under LIP/BIP, and v003 used swap-halfway self-organization under CLOCK. The third (v002) replaced BIP's fixed-period MRU admission with a 16-entry ghost ring. v001 and v002 are the Winners, but both wins are marginal. v001 changed nothing measurable beyond noise. v002 traded the hm_0 small-bucket gain for web_0 large-bucket scan resistance and paid for it in put latency.
+
+## Patterns
+
+- Changing scan order or key placement does not move get p50. Reversing the scan gave about a noise-level gain. Self-organizing swaps made it clearly worse, because they turned CLOCK's one-byte hit store into writes across two cache lines. Across three cycles, the lookup cost tracks how many full-key compares are done, not where the hit sits. Hits under quarter-depth insertion are not concentrated at either end.
+- Hit-path writes must stay as cheap as a bit store. Any reordering on hits (v003) gives back CLOCK's latency advantage and also slightly disturbs the hand's eviction order.
+- A reuse signal only works if its window matches the workload's reuse distance. A fixed 16-key ghost catches nothing on hm_0's slow-shifting set, so on small buckets it behaves like plain LIP. It does correctly keep scan keys out of MRU on web_0. Neither BIP's blind period nor the short ghost wins on both workloads.
+- Every extra structure on the put-miss path again raised put p50 and p99. The `Vec::insert` memmove at quarter depth is still the main cost, with the new work added on top.
+- The metadata-size metric is blind to memory held inside each bucket. This is now confirmed twice (key mirror, ghost ring), so do not treat flat metadata as evidence that a change is free.
+
+## Open questions
+
+- Would a ghost window sized to `max_size` (or a hashed bit-set reuse filter) catch hm_0 reuse on 128-wide buckets without losing web_0?
+- Does a compact inline tag/fingerprint pre-filter actually cut get p50? All three cycles' insights point to it, but it has not been tested yet.
+- Can quarter-depth insertion avoid the memmove, for example with a segmented or CLOCK-like approximation of LIP, so that put latency stops growing with every policy tweak?
+
+## Continuation
+
+Stop changing scan order and hit-time reordering: both are exhausted. Make the next speed hypothesis a compact fingerprint/tag pre-filter that reduces full-key compares while keeping the hit-path write a single store. For hit rate, pursue a reuse filter that scales with bucket size (a sized ghost or a hashed bit set) as a replacement for both BIP's period and the fixed 16-slot ring. Separately, target the cost of the insert-at-depth memmove. Treat flat metadata-size as uninformative whenever a change adds per-bucket state.
+
+
+### Cycle 0004
+
+# Cycle 0004 Insight
+
+## Cohort outcome
+
+Three variants worked on three separate axes. v001 merged the full-bucket evict and quarter-depth insert into one partial rotation, aiming at put latency. v002 replaced BIP's period with a hashed ghost bit set sized to the bucket, aiming at hit rate. v003 narrowed `Item`'s bookkeeping fields, aiming at metadata-size. v003 is the Winner because it is the first variant in four cycles to move metadata-size, with hit rate exactly unchanged.
+
+## Patterns
+
+- Per-op-time could not be trusted this cycle. All three variants got slower on get, including v001, whose get path is byte-identical to its parent. That points to a shift in the benchmark environment rather than to any one change. As a result, no speed hypothesis was actually tested: v001's predicted memmove saving and v003's predicted cache-line gain are both still open.
+- Rewrites that keep the layout are reliable on hit rate. v001 (fused rotation) and v003 (narrow fields) both matched every hit-rate cell exactly, so the parent's policy can now be treated as a stable base to build on.
+- New hot-path costs keep coming in with changes meant to be cheap. Examples: a dynamic policy call on every miss (v001), SipHash twice per miss plus periodic full clears (v002), and a global atomic clock on every put (v003). Each one plausibly cancels the gain it sits next to. Any work added to the put path must be per-bucket and non-atomic, or decided once at construction.
+- A reuse filter has to be sparse to be useful. At about one bit per tracked eviction, v002's filter fills up and acts like a high-rate random MRU promoter. That hurt hm_0 at both widths and web_0 on wide buckets, worse than BIP's blind 1/32. Its all-at-once reset also starves shifting working sets. This is the second reuse-signal design to fail on the two-workload tradeoff.
+- Metadata-size can move after all: it measures `Item` layout, not per-bucket state. Shrinking the item is the one lever that reaches this dimension.
+
+## Open questions
+
+- With the benchmark rerun against its parent in the same session, does the fused rotation (without the dynamic victim check, and using `ptr::copy`) actually cut put latency?
+- With the 24-byte item kept but the shared atomic clock removed (a per-bucket tick, or no write at all), does the denser layout speed up the scan?
+- Is any reuse filter worth another attempt? It would need several bits per key, gradual aging and a cheap integer hash, and it is still not clear it can beat BIP on both workloads.
+
+## Continuation
+
+Build on v003's 24-byte `Item`, but replace the global atomic tick with a per-bucket counter, or skip the write when the policy never reads it. Then layer v001's fused rotation on top, cleaned up (victim-is-index-0 cached at construction, `ptr::copy` shift). Judge both against a same-session parent baseline, since this cycle's per-op-time numbers are unreliable. Deprioritize hashed ghost filters. The inline fingerprint/tag pre-filter for get p50, recommended for two cycles now, is still untested and should be one of the next hypotheses.
+
+
+## Write
+
+Exactly one file: `cycle-insight.md` in the output dir.

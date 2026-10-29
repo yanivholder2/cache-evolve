@@ -64,13 +64,15 @@ def test_run_setup_falls_back_to_snapshot_model(tmp_path):
 
 
 def test_groups_span_batches(tmp_path, monkeypatch):
-    # Every batch sits at paper_outputs/v<N>_runs/<group>/, ordered by N; a
-    # batch's plan doc is ignored. Same-named groups merge across batches.
+    # Every batch sits at paper_outputs/<name>_runs/<group>/; v<N>_runs order by
+    # N, other batches follow by name; non-batch dirs and a plan doc are ignored. Same-named groups merge across batches.
     for rel in (
         "v1_runs/full_fitness_vector/dash/dash_claude-opus-4-8_2026-06-06_02-45-01-395",
         "v1_runs/only_hit_rate/dash/dash_claude-opus-4-8_2026-06-05_18-13-17-700",
         "v2_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-10-20_01-00-00-000",
         "v10_runs/full_fitness_vector/dash/dash_claude-opus-9-9_2027-01-01_01-00-00-000",
+        "snia_runs/full_fitness_vector/dash/dash_claude-opus-5-5_2026-11-01_01-00-00-000",
+        "scratch/only_hit_rate/dash/dash_claude-opus-5-5_2026-11-01_01-00-00-000",
     ):
         (tmp_path / rel).mkdir(parents=True)
     (tmp_path / "v2_runs" / "paper-runs-plan.md").write_text("# plan\n")
@@ -79,7 +81,7 @@ def test_groups_span_batches(tmp_path, monkeypatch):
     groups = build_data.resolve_groups([])
 
     assert sorted(groups) == ["full_fitness_vector", "only_hit_rate"]
-    assert [batch for batch, _ in groups["full_fitness_vector"]] == ["v1_runs", "v2_runs", "v10_runs"]
+    assert [batch for batch, _ in groups["full_fitness_vector"]] == ["v1_runs", "v2_runs", "v10_runs", "snia_runs"]
     assert groups["full_fitness_vector"][1][1] == tmp_path / "v2_runs" / "full_fitness_vector"
     assert [batch for batch, _ in groups["only_hit_rate"]] == ["v1_runs"]
 

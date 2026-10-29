@@ -61,7 +61,7 @@ def flag_overrides(args: argparse.Namespace) -> dict[str, dict[str, object]]:
             "hypothesis_attempts": args.hypothesis_attempts,
         },
         "simulator": {"timeout_s": args.simulator_timeout_s},
-        "fitness": {"dimensions": args.dimensions},
+        "fitness": {"dimensions": args.dimensions, "evaluation_profile": args.evaluation_profile},
         "selection": {"method": args.selection_method, "winners_count": args.winners_count},
     }
     overrides: dict[str, dict[str, object]] = {}

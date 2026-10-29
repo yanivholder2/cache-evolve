@@ -155,6 +155,68 @@ def test_list_geometry_must_be_non_empty_integers(tmp_path: Path):
         load_subject(root)
 
 
+def test_dash_declares_size_derived_segment_count():
+    # numOfSegments scales with the cache size; its divisor is the per-segment
+    # capacity implied by the fixed geometry.
+    caffeine = load_subject(DASH_SUBJECT).caffeine
+    geometry = caffeine.geometry
+    per_segment = (geometry["numOfNormalBuckets"] + geometry["numOfStashBuckets"]) * geometry["bucketSize"]
+    assert caffeine.size_divisors == {"numOfSegments": per_segment}
+    assert caffeine.as_runner_kwargs()["size_divisors"] == {"numOfSegments": per_segment}
+
+
+def test_size_divisors_parsed(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + '\n[caffeine.size-divisors]\nnumOfSegments = 256\n')
+    assert load_subject(root).caffeine.size_divisors == {"numOfSegments": 256}
+
+
+def test_size_divisors_default_empty(tmp_path: Path):
+    assert load_subject(_write_valid_subject(tmp_path)).caffeine.size_divisors == {}
+
+
+@pytest.mark.parametrize("value", ["0", "-2", "true", '"256"', "[256]"])
+def test_size_divisors_must_be_positive_integers(tmp_path: Path, value: str):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + f'\n[caffeine.size-divisors]\nnumOfSegments = {value}\n')
+    with pytest.raises(SubjectManifestError, match="size-divisors.numOfSegments: must be a positive integer"):
+        load_subject(root)
+
+
+def test_size_divisors_reject_sizes_not_multiple(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(tmp_path, text + '\n[caffeine.size-divisors]\nnumOfSegments = 200\n')
+    with pytest.raises(SubjectManifestError, match=r"evaluation.sizes: sizes \[512\] are not multiples"):
+        load_subject(root)
+
+
+def test_size_divisors_check_profile_sizes(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text
+        + '\n[evaluation.profiles.big]\nsizes = [1024, 1000]\n'
+        + '\n[caffeine.size-divisors]\nnumOfSegments = 256\n',
+    )
+    with pytest.raises(SubjectManifestError, match=r"evaluation.profiles.big.sizes: sizes \[1000\]"):
+        load_subject(root)
+
+
+def test_size_divisor_key_cannot_also_be_fixed_geometry(tmp_path: Path):
+    root = _write_valid_subject(tmp_path)
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(
+        tmp_path,
+        text + '\n[caffeine.geometry]\nnumOfSegments = 1\n\n[caffeine.size-divisors]\nnumOfSegments = 256\n',
+    )
+    with pytest.raises(SubjectManifestError, match="already fixed in caffeine.geometry"):
+        load_subject(root)
+
+
 def test_extension_points_carry_contract_and_impl_files():
     subject = load_subject(DASH_SUBJECT)
     by_name = {ep.name: ep for ep in subject.extension_points}
@@ -794,3 +856,154 @@ def test_axis_descriptions_map_name_to_description():
             "budget constant."
         ),
     }
+
+
+# --- evaluation profiles ---
+
+
+def _add_profile(root: Path, body: str) -> None:
+    text = (root / "manifest.toml").read_text()
+    _rewrite_manifest(root, text + "\n[evaluation.profiles.msr]\n" + body)
+
+
+def _write_profile_baseline(root: Path, grid: list[tuple[str, int]]) -> Path:
+    """Write the msr profile's baseline anchor at its conventional path."""
+    path = root / "baseline" / "eval" / "profiles" / "msr" / "fitness-vector.json"
+    path.parent.mkdir(parents=True)
+    _write_baseline(root, grid)
+    (root / "eval" / "fitness.json").rename(path)
+    _write_baseline(root, [("lirs:multi1.trace.gz", 512)])  # restore the default anchor
+    return path
+
+
+def test_no_profiles_keeps_default_evaluation(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.profiles == {}
+    assert subject.evaluation_for(None) is subject.evaluation
+    subject.validate_profile_baseline(None)
+
+
+def test_profile_overrides_traces_and_inherits_sizes(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, 'traces = ["lirs:web_0.trace.gz", "lirs:hm_0.trace.gz"]\n')
+    subject = load_subject(tmp_path)
+    # Default grid untouched by the profile.
+    assert subject.evaluation.traces == ("lirs:multi1.trace.gz",)
+    assert subject.evaluation.fitness_vector == Path("eval/fitness.json")
+    profile = subject.evaluation_for("msr")
+    assert profile.traces == ("lirs:web_0.trace.gz", "lirs:hm_0.trace.gz")
+    assert profile.sizes == (512,)
+    assert profile.fitness_vector == Path("baseline/eval/profiles/msr/fitness-vector.json")
+
+
+def test_profile_overrides_sizes(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [65536, 131072]\n")
+    profile = load_subject(tmp_path).evaluation_for("msr")
+    assert profile.traces == ("lirs:multi1.trace.gz",)
+    assert profile.sizes == (65536, 131072)
+
+
+def test_unknown_profile_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024]\n")
+    subject = load_subject(tmp_path)
+    with pytest.raises(SubjectManifestError, match=r"profile 'nope'.*declared profiles: \['msr'\]"):
+        subject.evaluation_for("nope")
+    with pytest.raises(SubjectManifestError, match=r"profile 'nope'"):
+        subject.validate_profile_baseline("nope")
+
+
+@pytest.mark.parametrize(
+    ("body", "pattern"),
+    [
+        ("", r"evaluation.profiles.msr.*non-empty table"),
+        ("timeout = 5\n", r"evaluation.profiles.msr.*unknown field 'timeout'"),
+        ("sizes = [0]\n", r"evaluation.profiles.msr.sizes.*positive"),
+        ('traces = ["web_0"]\n', r"evaluation.profiles.msr.traces.*format.*path"),
+    ],
+)
+def test_malformed_profile_is_rejected(tmp_path: Path, body: str, pattern: str):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, body)
+    with pytest.raises(SubjectManifestError, match=pattern):
+        load_subject(tmp_path)
+
+
+def test_simulator_log_level_defaults_to_none(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024]\n")
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.simulator_log_level is None
+    assert subject.evaluation_for("msr").simulator_log_level is None
+
+
+def test_profile_simulator_log_level_caps_only_that_profile(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, 'sizes = [1024]\nsimulator-log-level = "info"\n')
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.simulator_log_level is None
+    assert subject.evaluation_for("msr").simulator_log_level == "INFO"
+
+
+def test_profile_inherits_default_simulator_log_level(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    text = (tmp_path / "manifest.toml").read_text(encoding="utf-8")
+    text = text.replace("[evaluation]\n", '[evaluation]\nsimulator-log-level = "WARNING"\n', 1)
+    _rewrite_manifest(tmp_path, text + '\n[evaluation.profiles.msr]\nsizes = [1024]\n'
+                      '\n[evaluation.profiles.big]\nsizes = [2048]\nsimulator-log-level = "INFO"\n')
+    subject = load_subject(tmp_path)
+    assert subject.evaluation.simulator_log_level == "WARNING"
+    assert subject.evaluation_for("msr").simulator_log_level == "WARNING"
+    assert subject.evaluation_for("big").simulator_log_level == "INFO"
+
+
+@pytest.mark.parametrize("value", ['"VERBOSE"', "1"])
+def test_bad_simulator_log_level_is_rejected(tmp_path: Path, value: str):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, f"sizes = [1024]\nsimulator-log-level = {value}\n")
+    with pytest.raises(SubjectManifestError, match=r"evaluation.profiles.msr.simulator-log-level: must be one of"):
+        load_subject(tmp_path)
+
+
+@pytest.mark.parametrize("subject_name", ["dash", "associative_cache"])
+def test_msr_profile_caps_simulator_log_level_for_per_op_debug_subjects(subject_name: str):
+    """dash and associative_cache log every operation at DEBUG; on the ~9M-event
+    MSR traces that is GBs per Caffeine call, so their msr profile caps it. The
+    default (Zipf) grid stays uncapped."""
+    repo_root = Path(__file__).resolve().parents[1]
+    subject = load_subject(repo_root / "inputs" / "subjects" / subject_name)
+    assert subject.evaluation.simulator_log_level is None
+    assert subject.evaluation_for("msr").simulator_log_level == "INFO"
+
+
+def test_profile_baseline_missing_points_at_measure_baseline(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024]\n")
+    # Loading succeeds without the profile anchor, so measure_baseline can create it.
+    subject = load_subject(tmp_path)
+    with pytest.raises(
+        SubjectManifestError,
+        match=r"evaluation.profiles.msr: baseline fitness vector not found.*"
+              r"measure_baseline.py stub --evaluation-profile msr",
+    ):
+        subject.validate_profile_baseline("msr")
+
+
+def test_profile_baseline_grid_matching_passes(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024, 2048]\n")
+    _write_profile_baseline(
+        tmp_path, [("lirs:multi1.trace.gz", 1024), ("lirs:multi1.trace.gz", 2048)]
+    )
+    load_subject(tmp_path).validate_profile_baseline("msr")
+
+
+def test_profile_baseline_grid_mismatch_is_rejected(tmp_path: Path):
+    _write_valid_subject(tmp_path)
+    _add_profile(tmp_path, "sizes = [1024, 2048]\n")
+    # Anchor measured on the default grid, not the profile's.
+    _write_profile_baseline(tmp_path, [("lirs:multi1.trace.gz", 512)])
+    with pytest.raises(SubjectManifestError, match=r"evaluation.profiles.msr: baseline 'hit-rate' grid"):
+        load_subject(tmp_path).validate_profile_baseline("msr")

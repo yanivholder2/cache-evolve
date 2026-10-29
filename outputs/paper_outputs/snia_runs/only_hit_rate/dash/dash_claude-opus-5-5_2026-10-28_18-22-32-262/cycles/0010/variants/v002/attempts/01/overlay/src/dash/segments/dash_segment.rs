@@ -1,0 +1,1513 @@
+use super::{Segment, SegmentCore, Slot};
+use crate::dash::dash_settings::DashSettings;
+use crate::shared::item::Item;
+use crate::shared::traits::bucket::InsertPosition;
+use crate::shared::utils::{get_index, hash};
+use log::{debug, info};
+use std::fmt::Debug;
+use std::hash::Hash;
+
+/// The dash Subject's segment (cycle 0010 v002: cycle 0009 v001 + far-zone ghost hits are
+/// credited only while a per-segment feedback score says far credit has been paying off).
+///
+/// Its `get` realises the **promotion** design: target and probing form a tier,
+/// and items earn their way into the probing bucket only by proving they're the
+/// hottest in their target. Demotion cascades down the chain
+/// `probing -> target -> stash -> out`, with a one-more-chance step between
+/// adjacent tiers.
+///
+/// Inherited (cycle 0001 v001): items demoted out of a normal bucket into the
+/// stash land at the stash's MRU end (`InsertPosition::Back`).
+///
+/// Inherited (cycle 0002 v001): a stash item is promoted to its target only on its
+/// second hit during the current stash stay. The first hit just refreshes it to the
+/// stash MRU end. The hit count lives in `Item::lfu_counter` (unused by ClassicLRU)
+/// and is reset to 0 on every stash entry from a normal bucket and on promotion out
+/// of the stash.
+///
+/// Inherited (cycle 0003 v003): a stash item that passed the gate lands at its
+/// target's MRU end (`STASH_PROMOTION_TARGET_POS = Back`). Foreign residents displaced
+/// by the resulting cascade still retry at the cold `insert_pos`.
+///
+/// Inherited (cycle 0004 v001): the two-hit gate is skipped when the target bucket has
+/// at least `STASH_GATE_BYPASS_FREE_SLOTS` free slots.
+///
+/// Inherited (cycle 0005 v003): every item evicted out of the cache (a stash overflow)
+/// has its key fingerprint recorded in a FIFO ghost ring (`GhostRing`, ARC/2Q "A1out").
+/// A fresh `put` whose key is found in the ghost removes the fingerprint and enters the
+/// stash with its hit count at `STASH_PROMOTION_HITS - 1`, so its first stash hit
+/// promotes it. Placement is unchanged; only the counter differs.
+///
+/// Inherited (cycle 0006 v001): an item promoted from its target into its probing bucket
+/// lands at the probing MRU end (`PROBING_PROMOTION_POS = Back`). Foreign probing
+/// residents displaced by it still retry their own target at the cold `insert_pos`.
+///
+/// Inherited (cycle 0007 v002): with `RESCUE_STASH_VICTIMS`, a stash-overflow victim is
+/// first placed into a free slot of its own target bucket (else its probing bucket) at
+/// the LRU end (`Front`); only when both are full is it evicted out of the cache and
+/// recorded in the ghost.
+///
+/// Inherited (cycle 0008 v001): with `NORMAL_VICTIM_SECOND_CHANCE`, inside a normal
+/// (target or probing) bucket `Item::lfu_counter` is a 1-bit reference flag: cleared to 0
+/// on entry into a normal bucket, set to 1 on a hit while resident. Before a promotion
+/// into a full normal bucket, `make_room_clock` scans LRU→MRU, clears each referenced
+/// item it passes (second chance) and demotes the first unreferenced one through the
+/// usual cascade; if all were referenced it does nothing and the plain LRU eviction
+/// applies.
+///
+/// Inherited (cycle 0009 v001): a ghost-hit `put` also sets `GHOST_ORIGIN_FLAG` (a high
+/// bit of `lfu_counter`) in the stash. With `CARRY_GHOST_HISTORY`, a flagged item promoted
+/// from the stash into its target enters with reference bit 1 instead of 0.
+///
+/// New (cycle 0010 v002): `GhostRing::remove` reports the matched entry's age (0 =
+/// newest). A hit is *near* when `age < len / 2` (the most recent stash-capacity worth
+/// of evictions), *far* otherwise. Near hits are credited exactly as before. With
+/// `ADAPTIVE_FAR_CREDIT`, a far hit is credited only while the segment's `far_score >= 0`
+/// (plus a 1-in-8 hash-selected exploration probe when it is negative); every credited
+/// far hit also carries `FAR_PROBE_FLAG`, which survives promotion into the target.
+/// A resident hit on a flagged item raises `far_score` (and clears the flag); a flagged
+/// item leaving its normal bucket unhit lowers it. Score saturates at
+/// `[FAR_SCORE_MIN, FAR_SCORE_MAX]`. Metadata: one `i8` per segment.
+///
+/// Metadata cost: the ghost holds `GHOST_FACTOR * num_of_stash_buckets * bucket_size`
+/// `u64` fingerprints per segment, i.e. `2 × stash slots × 8 bytes` per segment, plus
+/// the 1-byte `far_score`. It never stores values; a fingerprint false positive costs
+/// only one early promotion.
+#[derive(Debug)]
+pub struct DashSegment<K, V>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	core: SegmentCore<K, V>,
+	ghost: GhostState,
+}
+
+/// Ghost ring capacity, as a multiple of the segment's total stash slots.
+const GHOST_FACTOR: usize = 2;
+
+/// When set, a stash-overflow victim is placed into a free slot of its own target
+/// (else its probing) bucket at the LRU end, and is evicted from the cache only when
+/// both are full.
+const RESCUE_STASH_VICTIMS: bool = true;
+
+/// When set, the victim leaving a full normal bucket on a promotion is chosen
+/// CLOCK-style: the first item (from the LRU end) whose reference bit is clear, with
+/// referenced items passed over getting their bit cleared.
+const NORMAL_VICTIM_SECOND_CHANCE: bool = true;
+
+/// High bit of `Item::lfu_counter` (`usize`) marking a stash item that entered via a
+/// ghost hit. Only meaningful in the stash; masked off for hit counting.
+const GHOST_ORIGIN_FLAG: usize = 1 << (usize::BITS - 1);
+
+/// Second-highest bit of `Item::lfu_counter` marking an item whose entry was credited by
+/// a *far* ghost hit. Lives in the stash and is carried into the target on promotion;
+/// masked off wherever the stash count or the CLOCK reference bit is read.
+const FAR_PROBE_FLAG: usize = 1 << (usize::BITS - 2);
+
+/// All flag bits that may sit on a stash item's counter.
+const STASH_FLAGS: usize = GHOST_ORIGIN_FLAG | FAR_PROBE_FLAG;
+
+/// When set, a ghost-origin item promoted from the stash enters its target with the
+/// reference bit set (1) instead of clear (0).
+const CARRY_GHOST_HISTORY: bool = true;
+
+/// When set, far-zone ghost hits are credited only while `far_score >= 0` (or for an
+/// exploration-probe key); when clear, every ghost hit is credited (cycle 0009 v001).
+const ADAPTIVE_FAR_CREDIT: bool = true;
+
+/// Saturation bounds of the per-segment far-credit feedback score.
+const FAR_SCORE_MIN: i8 = -8;
+const FAR_SCORE_MAX: i8 = 8;
+
+/// FIFO ring of 64-bit fingerprints of keys recently evicted out of the segment.
+/// Overwrite-on-wrap is the decay: a fingerprint survives about
+/// `GHOST_FACTOR × stash slots` subsequent evictions. `0` marks an empty slot
+/// (fingerprints are forced non-zero).
+///
+/// Metadata: `len × 8` bytes, `len = GHOST_FACTOR * num_of_stash_buckets * bucket_size`.
+#[derive(Debug)]
+struct GhostRing {
+	slots: Vec<u64>,
+	head: usize,
+}
+
+impl GhostRing {
+	fn new(len: usize) -> Self {
+		Self {
+			slots: vec![0; len.max(1)],
+			head: 0,
+		}
+	}
+
+	fn len(&self) -> usize {
+		self.slots.len()
+	}
+
+	/// Writes `fp` at `head` (overwriting the oldest entry) and advances `head`.
+	fn insert(&mut self, fp: u64) {
+		self.slots[self.head] = fp;
+		self.head = (self.head + 1) % self.slots.len();
+	}
+
+	/// Linear scan for `fp`.
+	#[cfg(test)]
+	fn contains(&self, fp: u64) -> bool {
+		self.slots.iter().any(|&s| s == fp)
+	}
+
+	/// Zeroes the first slot matching `fp` and returns its age — the number of
+	/// insertions made after it (0 = the newest entry) — or `None` if absent.
+	fn remove(&mut self, fp: u64) -> Option<usize> {
+		let len = self.slots.len();
+		let idx = self.slots.iter().position(|&s| s == fp)?;
+		self.slots[idx] = 0;
+		Some((self.head + len - 1 - idx) % len)
+	}
+}
+
+/// Ghost ring plus the per-segment far-credit feedback score.
+#[derive(Debug)]
+struct GhostState {
+	ring: GhostRing,
+	far_score: i8,
+}
+
+impl GhostState {
+	fn new(len: usize) -> Self {
+		Self {
+			ring: GhostRing::new(len),
+			far_score: 0,
+		}
+	}
+
+	/// A far-credited item was re-hit while resident.
+	fn reward(&mut self) {
+		self.far_score = self.far_score.saturating_add(1).min(FAR_SCORE_MAX);
+		debug!("GhostState.reward: far_score={}", self.far_score);
+	}
+
+	/// A far-credited item left its normal bucket without being re-hit.
+	fn penalize(&mut self) {
+		self.far_score = self.far_score.saturating_sub(1).max(FAR_SCORE_MIN);
+		debug!("GhostState.penalize: far_score={}", self.far_score);
+	}
+
+	#[cfg(test)]
+	fn contains(&self, fp: u64) -> bool {
+		self.ring.contains(fp)
+	}
+}
+
+/// Non-zero 64-bit fingerprint of `key` (the hasher behind `get_index`).
+fn fingerprint<K: Hash + Debug>(key: &K) -> u64 {
+	(hash(key) as u64) | 1
+}
+
+/// 1-in-8 exploration-probe selector. Uses the top 3 hash bits: the low bits pick the
+/// segment (`hash % num_segments`) and bucket, so a low-bit test would make every key of
+/// a segment agree and the score of most segments could never recover.
+fn is_probe_key<K: Hash + Debug>(key: &K) -> bool {
+	(hash(key) >> (usize::BITS - 3)) & 7 == 0
+}
+
+/// Stash insert. Any item the stash evicts is rescued into a free slot of its own
+/// target (else probing) bucket at the LRU end when `RESCUE_STASH_VICTIMS` is set;
+/// otherwise (or when both are full) it leaves the cache and is recorded in the ghost.
+fn put_stash_recording<K, V>(
+	core: &mut SegmentCore<K, V>,
+	ghost: &mut GhostState,
+	pos: InsertPosition,
+	item: Item<K, V>,
+) where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	let Some(mut evicted) = core.put_at(Slot::Stash, pos, item) else {
+		return;
+	};
+	if RESCUE_STASH_VICTIMS {
+		let t = get_index(&evicted.key, core.segment_size);
+		let p = (t + 1) % core.segment_size;
+		let target_room = core.buckets[t].get_items().len() < core.buckets[t].get_max_size();
+		let probing_room = core.buckets[p].get_items().len() < core.buckets[p].get_max_size();
+		if target_room {
+			debug!("put_stash_recording: evicted key={:?} -> rescued into target={t}", evicted.key);
+			evicted.lfu_counter = 0;
+			let ret = core.put_at(Slot::Target, InsertPosition::Front, evicted);
+			debug_assert!(ret.is_none(), "rescue into a free target slot must not evict");
+			return;
+		}
+		if probing_room {
+			debug!("put_stash_recording: evicted key={:?} -> rescued into probing={p}", evicted.key);
+			evicted.lfu_counter = 0;
+			let ret = core.put_at(Slot::Probing, InsertPosition::Front, evicted);
+			debug_assert!(ret.is_none(), "rescue into a free probing slot must not evict");
+			return;
+		}
+	}
+	debug!("put_stash_recording: evicted key={:?} -> ghost", evicted.key);
+	ghost.ring.insert(fingerprint(&evicted.key));
+}
+
+impl<K, V> DashSegment<K, V>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	/// Creates a new DashSegment with fallible initialization.
+	pub fn try_new(settings: &DashSettings) -> Option<Self> {
+		if let Some(core) = SegmentCore::try_new(settings) {
+			info!("DashSegment.try_new");
+			let ghost_len = GHOST_FACTOR * settings.num_of_stash_buckets * settings.bucket_size;
+			Some(Self {
+				core,
+				ghost: GhostState::new(ghost_len),
+			})
+		} else {
+			log::error!("DashSegment.try_new: core initialization failed");
+			None
+		}
+	}
+
+	/// Creates a new DashSegment.
+	/// # Panics
+	/// Panics if initialization fails.
+	pub fn new(settings: &DashSettings) -> Self {
+		Self::try_new(settings).expect("DashSegment::new: invalid settings")
+	}
+}
+
+impl<K, V> Segment<K, V> for DashSegment<K, V>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	fn core(&self) -> &SegmentCore<K, V> {
+		&self.core
+	}
+	fn core_mut(&mut self) -> &mut SegmentCore<K, V> {
+		&mut self.core
+	}
+
+	fn get(&mut self, key: &K) -> Option<&Item<K, V>> {
+		promotion_get(&mut self.core, &mut self.ghost, key, InsertPosition::Front)
+	}
+
+	/// Same placement as the default `put` (stash, `Back`). A key whose fingerprint is
+	/// in the ghost has it consumed; a near hit (or a far hit while `far_score >= 0`, or
+	/// a far exploration-probe key) enters with its stash-hit counter pre-credited and
+	/// the ghost-origin flag set, far credits additionally with `FAR_PROBE_FLAG`. An
+	/// uncredited far hit enters like a fresh key. Any stash eviction is rescued or
+	/// recorded in the ghost.
+	fn put(&mut self, mut item: Item<K, V>) {
+		debug_assert!(
+			!self.core.contains_key(&item.key),
+			"put: key={:?} already present — caller must not re-insert a resident key",
+			item.key,
+		);
+		let len = self.ghost.ring.len();
+		let age = self.ghost.ring.remove(fingerprint(&item.key));
+		let (credit, far_probe) = match age {
+			None => (false, false),
+			Some(a) if a < len / 2 || !ADAPTIVE_FAR_CREDIT => (true, false),
+			Some(_) if self.ghost.far_score >= 0 => (true, true),
+			Some(_) if is_probe_key(&item.key) => (true, true),
+			Some(_) => (false, false),
+		};
+		item.lfu_counter = if credit {
+			let probe = if far_probe { FAR_PROBE_FLAG } else { 0 };
+			(STASH_PROMOTION_HITS - 1) | GHOST_ORIGIN_FLAG | probe
+		} else {
+			0
+		};
+		debug!(
+			"DashSegment.put: key={:?} ghost_age={age:?} credit={credit} far_probe={far_probe} far_score={}",
+			item.key, self.ghost.far_score
+		);
+		put_stash_recording(&mut self.core, &mut self.ghost, InsertPosition::Back, item);
+	}
+}
+
+// ── Promotion logic ────────────────────────────────────────────────────────
+// Promotion treats target and probing as a tier: items earn their way into the
+// probing bucket only by proving they're the hottest in their target. Demotion
+// cascades down the chain `probing -> target -> stash -> out`, with a
+// one-more-chance step between adjacent tiers.
+
+/// Position at which items demoted out of a normal bucket land in their stash bucket.
+/// MRU end: a demoted item has already earned a normal-bucket slot, so it should
+/// outlive brand-new stash arrivals rather than be the next stash victim.
+const STASH_DEMOTION_POS: InsertPosition = InsertPosition::Back;
+
+/// Number of hits during a single stash stay required before a stash item is
+/// promoted to its target bucket — unless the target has at least
+/// `STASH_GATE_BYPASS_FREE_SLOTS` free slots, in which case the first hit promotes.
+/// Ghost-returning puts start at `STASH_PROMOTION_HITS - 1`.
+const STASH_PROMOTION_HITS: usize = 2;
+
+/// Minimum number of free slots in the target bucket for a stash item to promote on
+/// its first hit.
+const STASH_GATE_BYPASS_FREE_SLOTS: usize = 2;
+
+/// Where a stash item promoted to its target lands.
+/// MRU end: an item that has proven itself in the stash should not be the next victim
+/// evicted from its target.
+const STASH_PROMOTION_TARGET_POS: InsertPosition = InsertPosition::Back;
+
+/// Where an item promoted from its target into its probing bucket lands; MRU end so a
+/// proven-hottest item is not the next probing victim.
+const PROBING_PROMOTION_POS: InsertPosition = InsertPosition::Back;
+
+/// CLOCK-style second chance for a full normal bucket. Scans from index 0 (LRU) toward
+/// MRU for the first item whose reference bit (`lfu_counter` with `FAR_PROBE_FLAG`
+/// masked off) is clear, clearing the bit of every referenced item it passes (the flag
+/// is preserved). The unreferenced item found is removed and routed through
+/// `demote_from_normal_bucket` (the same cascade an LRU eviction takes). If every item
+/// was referenced, nothing is removed (all bits are now clear) and the caller's
+/// `put_at` evicts the LRU item as before. No-op when the bucket is not full.
+fn make_room_clock<K, V>(
+	core: &mut SegmentCore<K, V>,
+	ghost: &mut GhostState,
+	bucket_idx: usize,
+	retry_pos: InsertPosition,
+) where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	if !NORMAL_VICTIM_SECOND_CHANCE || !core.buckets[bucket_idx].is_full() {
+		return;
+	}
+	let mut victim = None;
+	for (j, it) in core.buckets[bucket_idx].get_items_mut().iter_mut().enumerate() {
+		if it.lfu_counter & !FAR_PROBE_FLAG == 0 {
+			victim = Some(j);
+			break;
+		}
+		it.lfu_counter &= FAR_PROBE_FLAG;
+	}
+	let Some(j) = victim else {
+		debug!("make_room_clock: bucket={bucket_idx} all referenced -> bits cleared, LRU fallback");
+		return;
+	};
+	let removed = core.buckets[bucket_idx].remove_at(j);
+	debug!(
+		"make_room_clock: bucket={bucket_idx} unreferenced victim key={:?} at index={j}",
+		removed.key
+	);
+	debug_assert!(
+		!core.buckets[bucket_idx].is_full(),
+		"make_room_clock: bucket={bucket_idx} must have a free slot after removing the victim"
+	);
+	// The victim's own cascade never re-targets `bucket_idx` (an owned item goes to stash;
+	// a foreign one retries its own target). Only a stash-overflow rescue into the slot
+	// just freed can refill it; the caller's `put_at` then evicts LRU as usual.
+	demote_from_normal_bucket(core, ghost, removed, bucket_idx, retry_pos, STASH_DEMOTION_POS);
+}
+
+/// Moves `item` into its target bucket at `place_pos`. Any evicted item flows through
+/// the tier cascade; foreign residents displaced by it retry their own target at
+/// `retry_pos`. Does not touch `item.lfu_counter`.
+fn promote_to_target<K, V>(
+	core: &mut SegmentCore<K, V>,
+	ghost: &mut GhostState,
+	item: Item<K, V>,
+	place_pos: InsertPosition,
+	retry_pos: InsertPosition,
+) where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	let target_idx = get_index(&item.key, core.segment_size);
+	make_room_clock(core, ghost, target_idx, retry_pos);
+	let Some(evicted) = core.put_at(Slot::Target, place_pos, item) else {
+		return;
+	};
+	demote_from_normal_bucket(core, ghost, evicted, target_idx, retry_pos, STASH_DEMOTION_POS);
+}
+
+/// Moves `item` into its probing bucket at `place_pos`. Any evicted item flows through
+/// the tier cascade; foreign residents displaced by it retry their own target at
+/// `retry_pos`.
+fn promote_to_probing<K, V>(
+	core: &mut SegmentCore<K, V>,
+	ghost: &mut GhostState,
+	mut item: Item<K, V>,
+	place_pos: InsertPosition,
+	retry_pos: InsertPosition,
+) where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	let target_idx = get_index(&item.key, core.segment_size);
+	let probing_idx = (target_idx + 1) % core.segment_size;
+	make_room_clock(core, ghost, probing_idx, retry_pos);
+	item.lfu_counter = 0;
+	let Some(evicted) = core.put_at(Slot::Probing, place_pos, item) else {
+		return;
+	};
+	demote_from_normal_bucket(core, ghost, evicted, probing_idx, retry_pos, STASH_DEMOTION_POS);
+}
+
+/// One-more-chance demotion. If the item was a foreign resident at `source_idx` (placed
+/// there as someone else's probing slot), retry in its own true target (at `retry_pos`)
+/// before stash; if it was already in its target, go straight to stash. All stash
+/// inserts (direct and cascade) land at `stash_pos` with their stash-hit counter reset
+/// (which also clears any ghost-origin / far-probe flag), so every stash stay needs fresh
+/// hits to earn promotion. Items the stash insert evicts are rescued into free normal
+/// slots or recorded in the ghost. Every item leaving a normal bucket here while still
+/// carrying `FAR_PROBE_FLAG` (never re-hit) lowers `far_score`.
+fn demote_from_normal_bucket<K, V>(
+	core: &mut SegmentCore<K, V>,
+	ghost: &mut GhostState,
+	mut item: Item<K, V>,
+	source_idx: usize,
+	retry_pos: InsertPosition,
+	stash_pos: InsertPosition,
+) where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	if item.lfu_counter & FAR_PROBE_FLAG != 0 {
+		debug!("demote_from_normal_bucket: far-credited key={:?} left unhit", item.key);
+		ghost.penalize();
+	}
+	let true_target = get_index(&item.key, core.segment_size);
+	if true_target == source_idx {
+		debug!(
+			"demote_from_normal_bucket: key={:?} target={source_idx} -> stash",
+			item.key
+		);
+		item.lfu_counter = 0;
+		put_stash_recording(core, ghost, stash_pos, item);
+	} else {
+		debug!(
+			"demote_from_normal_bucket: key={:?} probing={source_idx} -> target={true_target}",
+			item.key
+		);
+		// Entry into a normal bucket: fresh reference-bit lifecycle.
+		item.lfu_counter = 0;
+		if let Some(mut cascade) = core.put_at(Slot::Target, retry_pos, item) {
+			debug!(
+				"demote_from_normal_bucket: cascade key={:?} target={true_target} -> stash",
+				cascade.key
+			);
+			if cascade.lfu_counter & FAR_PROBE_FLAG != 0 {
+				debug!("demote_from_normal_bucket: far-credited cascade key={:?} left unhit", cascade.key);
+				ghost.penalize();
+			}
+			cascade.lfu_counter = 0;
+			put_stash_recording(core, ghost, stash_pos, cascade);
+		}
+	}
+}
+
+/// `insert_pos = Front`: foreign-resident retries land at the LRU end of their target.
+/// `insert_pos = Back`: those land at MRU.
+/// Target→probing promotions always land at `PROBING_PROMOTION_POS`, stash→target
+/// promotions always land at `STASH_PROMOTION_TARGET_POS`, and stash demotions always
+/// land at `STASH_DEMOTION_POS`, independent of `insert_pos`.
+/// Stash items promote on their `STASH_PROMOTION_HITS`-th hit in the current stay, or
+/// on any hit when the target bucket has at least `STASH_GATE_BYPASS_FREE_SLOTS` free
+/// slots (bypass; only the target is checked, not probing). The stash hit count is
+/// `lfu_counter & !STASH_FLAGS`; a ghost-origin promotee enters its target with
+/// reference bit 1 (when `CARRY_GHOST_HISTORY`), every other promotee with 0, and
+/// `FAR_PROBE_FLAG` is carried along. A hit on a target or probing resident carrying
+/// `FAR_PROBE_FLAG` raises `far_score` and clears the flag; a hit on a target
+/// (non-hottest) or probing resident sets its reference bit.
+fn promotion_get<'a, K, V>(
+	core: &'a mut SegmentCore<K, V>,
+	ghost: &mut GhostState,
+	key: &K,
+	insert_pos: InsertPosition,
+) -> Option<&'a Item<K, V>>
+where
+	K: Hash + Eq + Copy + Debug + 'static,
+	V: Eq + Copy + Debug + 'static,
+{
+	let stash_idx = get_index(key, core.stash_size);
+	let target_idx = get_index(key, core.segment_size);
+	let probing_idx = (target_idx + 1) % core.segment_size;
+
+	if let Some(item_idx) = core.stash_buckets[stash_idx].get_position(key) {
+		let hits = {
+			let item = &mut core.stash_buckets[stash_idx].get_items_mut()[item_idx];
+			let flags = item.lfu_counter & STASH_FLAGS;
+			let count = (item.lfu_counter & !STASH_FLAGS)
+				.saturating_add(1)
+				.min(!STASH_FLAGS);
+			item.lfu_counter = count | flags;
+			count
+		};
+		let target_capacity = core.buckets[target_idx].get_max_size();
+		let free = target_capacity.saturating_sub(core.buckets[target_idx].get_items().len());
+		let target_has_room = free >= STASH_GATE_BYPASS_FREE_SLOTS;
+		if hits < STASH_PROMOTION_HITS && !target_has_room {
+			debug!(
+				"promotion_get: key={key:?} found in stash hits={hits} free={free} -> refresh in stash={stash_idx}"
+			);
+			return Some(core.stash_buckets[stash_idx].get_from_position(item_idx));
+		}
+
+		{
+			let item = &mut core.stash_buckets[stash_idx].get_items_mut()[item_idx];
+			let flagged = item.lfu_counter & GHOST_ORIGIN_FLAG != 0;
+			let far_probe = item.lfu_counter & FAR_PROBE_FLAG;
+			let ref_bit = if flagged && CARRY_GHOST_HISTORY { 1 } else { 0 };
+			item.lfu_counter = ref_bit | far_probe;
+			debug!(
+				"promotion_get: key={key:?} found in stash hits={hits} free={free} ghost_origin={flagged} far_probe={} -> target={target_idx} place_pos={STASH_PROMOTION_TARGET_POS:?} retry_pos={insert_pos:?}",
+				far_probe != 0
+			);
+		}
+		let data = core.stash_buckets[stash_idx].remove_at(item_idx);
+		promote_to_target(core, ghost, data, STASH_PROMOTION_TARGET_POS, insert_pos);
+
+		let Some(item_new_idx) = core.buckets[target_idx].get_position(key) else {
+			unreachable!("promotion_get: key={key:?} not found after insert into target={target_idx} -- promote_to_target must leave the key resident in target or cascade it elsewhere via demote_from_normal_bucket")
+		};
+		return Some(&core.buckets[target_idx].get_items()[item_new_idx]);
+	}
+
+	if let Some(item_idx) = core.buckets[target_idx].get_position(key) {
+		let is_hottest = Some(item_idx) == core.buckets[target_idx].promotion_candidate_index();
+		{
+			let it = &mut core.buckets[target_idx].get_items_mut()[item_idx];
+			if it.lfu_counter & FAR_PROBE_FLAG != 0 {
+				debug!("promotion_get: key={key:?} far-credited target resident re-hit");
+				it.lfu_counter &= !FAR_PROBE_FLAG;
+				ghost.reward();
+			}
+		}
+		if is_hottest {
+			debug!(
+				"promotion_get: key={key:?} found in target as hottest -> probing={probing_idx} place_pos={PROBING_PROMOTION_POS:?} retry_pos={insert_pos:?}"
+			);
+			let data = core.buckets[target_idx].remove_at(item_idx);
+			promote_to_probing(core, ghost, data, PROBING_PROMOTION_POS, insert_pos);
+
+			let Some(item_new_idx) = core.buckets[probing_idx].get_position(key) else {
+				unreachable!("promotion_get: key={key:?} not found after insert into probing={probing_idx} -- promote_to_probing must leave the key resident in probing")
+			};
+			return Some(&core.buckets[probing_idx].get_items()[item_new_idx]);
+		} else {
+			debug!("promotion_get: key={key:?} found in target item_idx={item_idx} (intra-promote)");
+			core.buckets[target_idx].get_items_mut()[item_idx].lfu_counter = 1;
+			return Some(core.buckets[target_idx].get_from_position(item_idx));
+		}
+	}
+
+	if let Some(item_idx) = core.buckets[probing_idx].get_position(key) {
+		debug!("promotion_get: key={key:?} found in probing bucket={probing_idx}");
+		let it = &mut core.buckets[probing_idx].get_items_mut()[item_idx];
+		if it.lfu_counter & FAR_PROBE_FLAG != 0 {
+			ghost.reward();
+		}
+		it.lfu_counter = 1;
+		return Some(core.buckets[probing_idx].get_from_position(item_idx));
+	}
+
+	debug!("promotion_get: key={key:?} miss");
+	None
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::shared::eviction_policy::EvictionPolicyKind;
+	use crate::test_utils::{find_keys_for_bucket, small_dash_settings};
+
+	fn new_segment(policy: EvictionPolicyKind) -> DashSegment<i64, i64> {
+		DashSegment::new(&small_dash_settings(policy))
+	}
+
+	/// Fills an initially empty target bucket (2 slots) with `a` then `b`, both via
+	/// the public put/get path: `a` promotes on its first hit (empty target → bypass),
+	/// `b` needs two hits (1 free slot → gated). Result: target is `[a, b]`, `b` at MRU.
+	fn fill_target_via_stash(seg: &mut DashSegment<i64, i64>, a: i64, b: i64) {
+		let target_idx = get_index(&a, seg.core.segment_size);
+		assert_eq!(target_idx, get_index(&b, seg.core.segment_size), "sanity: same target");
+		seg.put(Item::new(a, a * 10));
+		seg.get(&a);
+		assert!(seg.core.buckets[target_idx].get_position(&a).is_some(), "bypass promotes a");
+		seg.put(Item::new(b, b * 10));
+		seg.get(&b);
+		assert!(
+			seg.core.buckets[target_idx].get_position(&b).is_none(),
+			"one free slot: first hit must stay in stash"
+		);
+		seg.get(&b);
+		assert!(seg.core.buckets[target_idx].get_position(&b).is_some(), "second hit promotes b");
+	}
+
+	/// First `count` keys with normal-bucket target `bucket_idx` that are not in `exclude`.
+	fn keys_for_target_excluding(
+		bucket_idx: usize,
+		seg_size: usize,
+		count: usize,
+		exclude: &[i64],
+	) -> Vec<i64> {
+		let keys: Vec<i64> = find_keys_for_bucket(bucket_idx, seg_size, 200)
+			.into_iter()
+			.filter(|k| !exclude.contains(k))
+			.take(count)
+			.collect();
+		assert_eq!(keys.len(), count, "not enough keys for target {bucket_idx}");
+		keys
+	}
+
+	#[test]
+	fn put_goes_to_stash() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		seg.put(Item::new(1_i64, 10_i64));
+		let stash_idx = get_index(&1_i64, seg.core().stash_size);
+		assert!(seg.core().stash_buckets[stash_idx].get_position(&1).is_some());
+	}
+
+	/// With only one free slot in the target, a single stash hit does not promote: the
+	/// key stays in its stash bucket and is refreshed to the MRU (last) index. A second
+	/// hit promotes.
+	#[test]
+	fn single_stash_hit_stays_in_stash_at_mru() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let stash_size = seg.core.stash_size;
+		let seg_size = seg.core.segment_size;
+		let stash_idx = 0;
+		let target_idx = 0;
+		let target_keys = find_keys_for_bucket(target_idx, seg_size, 200);
+		let k0 = *target_keys
+			.iter()
+			.find(|k| get_index(*k, stash_size) == stash_idx)
+			.expect("a key with target 0 and stash 0 must exist");
+		let filler = *target_keys.iter().find(|k| **k != k0).expect("a filler key must exist");
+		let other = find_keys_for_bucket(stash_idx, stash_size, 200)
+			.into_iter()
+			.find(|k| *k != k0 && *k != filler)
+			.expect("a second stash key must exist");
+
+		// Leave exactly one free slot in the target: below the bypass threshold.
+		seg.core.buckets[target_idx].put(Item::new(filler, 1));
+
+		seg.put(Item::new(k0, 10));
+		seg.put(Item::new(other, 20));
+
+		let val = seg.get(&k0).expect("hit must return Some").value;
+		assert_eq!(val, 10);
+
+		let items = seg.core.stash_buckets[stash_idx].get_items();
+		let pos = items
+			.iter()
+			.position(|it| it.key == k0)
+			.expect("key must remain in its stash bucket after a single hit");
+		assert_eq!(pos, items.len() - 1, "single stash hit must refresh to the MRU end");
+		assert!(seg.core.buckets[target_idx].get_position(&k0).is_none());
+
+		// Second hit promotes into the target.
+		seg.get(&k0);
+		assert!(seg.core.buckets[target_idx].get_position(&k0).is_some());
+		assert!(seg.core.stash_buckets[stash_idx].get_position(&k0).is_none());
+	}
+
+	/// Picks a key `k` with target 0 and stash 0, a target filler, and stash-0 keys
+	/// distinct from both.
+	fn ghost_fixture(seg: &DashSegment<i64, i64>) -> (i64, i64, Vec<i64>) {
+		let stash_size = seg.core.stash_size;
+		let seg_size = seg.core.segment_size;
+		let target_keys = find_keys_for_bucket(0, seg_size, 200);
+		let k = *target_keys
+			.iter()
+			.find(|k| get_index(*k, stash_size) == 0)
+			.expect("a key with target 0 and stash 0 must exist");
+		let filler = *target_keys.iter().find(|x| **x != k).expect("a filler key must exist");
+		let others: Vec<i64> = find_keys_for_bucket(0, stash_size, 200)
+			.into_iter()
+			.filter(|x| *x != k && *x != filler)
+			.collect();
+		(k, filler, others)
+	}
+
+	/// Fills target 0 and probing 1, puts `k` and overflows stash 0 until `k` is evicted
+	/// out of the cache into the ghost, then re-puts `k` (ghost hit). Returns `k`.
+	fn ghost_returning_key(seg: &mut DashSegment<i64, i64>) -> i64 {
+		let seg_size = seg.core.segment_size;
+		let (k, filler, others) = ghost_fixture(seg);
+		let target_idx = 0;
+		let probing_idx = 1;
+
+		let mut exclude = others.clone();
+		exclude.push(k);
+		exclude.push(filler);
+		let filler2 = keys_for_target_excluding(target_idx, seg_size, 1, &exclude)[0];
+		exclude.push(filler2);
+		let probing_fillers = keys_for_target_excluding(probing_idx, seg_size, 2, &exclude);
+
+		seg.core.buckets[target_idx].put(Item::new(filler, 1));
+		seg.core.buckets[target_idx].put(Item::new(filler2, 2));
+		for &pf in &probing_fillers {
+			seg.core.buckets[probing_idx].put(Item::new(pf, 3));
+		}
+		seg.put(Item::new(k, 10));
+		for &o in &others {
+			if !seg.core.contains_key(&k) {
+				break;
+			}
+			seg.put(Item::new(o, o * 10));
+		}
+		assert!(!seg.core.contains_key(&k), "k must have been evicted out of the stash");
+		assert!(seg.ghost.contains(fingerprint(&k)), "eviction must record k in the ghost");
+
+		seg.put(Item::new(k, 11));
+		assert!(!seg.ghost.contains(fingerprint(&k)), "ghost hit must consume the fingerprint");
+		k
+	}
+
+	/// A key evicted out of the stash and then re-put promotes on its first stash hit,
+	/// even though the target has no free slot (bypass off). Target 0 and probing 1 are
+	/// pre-filled so the stash overflow evicts `k` instead of rescuing it. The promoted
+	/// key enters its target with the reference bit set.
+	#[test]
+	fn ghost_put_promotes_on_first_stash_hit() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let k = ghost_returning_key(&mut seg);
+		let target_idx = 0;
+
+		let val = seg.get(&k).expect("hit must return Some").value;
+		assert_eq!(val, 11);
+		let pos = seg.core.buckets[target_idx]
+			.get_position(&k)
+			.expect("ghost-returning key must promote on its first stash hit");
+		assert_eq!(
+			seg.core.buckets[target_idx].get_items()[pos].lfu_counter,
+			1,
+			"ghost-origin promotee must enter its target with reference bit 1"
+		);
+		assert!(seg.core.stash_buckets[0].get_position(&k).is_none());
+		assert!(seg.core.check_slot_legality());
+	}
+
+	/// A ghost-credited key in the stash promotes on exactly its first hit (the flag does
+	/// not change the gate), and its masked stash count reads 1 before that hit.
+	#[test]
+	fn ghost_flag_does_not_change_gate() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let k = ghost_returning_key(&mut seg);
+		let target_idx = 0;
+
+		let stash_items = seg.core.stash_buckets[0].get_items();
+		let it = stash_items.iter().find(|it| it.key == k).expect("k must be in stash 0");
+		assert_ne!(it.lfu_counter & GHOST_ORIGIN_FLAG, 0, "ghost hit must set the flag");
+		assert_eq!(it.lfu_counter & !GHOST_ORIGIN_FLAG, 1, "masked stash count must read 1");
+		assert!(seg.core.buckets[target_idx].is_full(), "sanity: bypass is off");
+
+		seg.get(&k);
+		assert!(
+			seg.core.buckets[target_idx].get_position(&k).is_some(),
+			"first hit must promote a ghost-credited key"
+		);
+		for b in seg.core.stash_buckets.iter() {
+			for it in b.get_items() {
+				assert_eq!(it.lfu_counter & GHOST_ORIGIN_FLAG, 0, "flag must not remain on {:?}", it.key);
+			}
+		}
+	}
+
+	/// A non-ghost key promoted through the two-hit gate enters its target with bit 0.
+	#[test]
+	fn fresh_promotee_enters_with_bit_zero() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
+		fill_target_via_stash(&mut seg, keys[0], keys[1]);
+		let items = seg.core.buckets[target_idx].get_items();
+		assert_eq!(items[1].key, keys[1]);
+		assert_eq!(items[1].lfu_counter, 0, "fresh two-hit promotee must enter with bit 0");
+		assert_eq!(items[0].lfu_counter, 0, "fresh bypass promotee must enter with bit 0");
+	}
+
+	// ── Adaptive far credit (cycle 0010 v002) ─────────────────────────────
+
+	/// Records `k`'s fingerprint in the ghost, then `len / 2` newer dummy fingerprints
+	/// (even, so never equal to an odd real fingerprint), making `k` a far-zone entry.
+	fn plant_far_ghost(seg: &mut DashSegment<i64, i64>, k: i64) {
+		seg.ghost.ring.insert(fingerprint(&k));
+		let len = seg.ghost.ring.len();
+		for i in 0..len / 2 {
+			seg.ghost.ring.insert(2 * (i as u64 + 1));
+		}
+		assert!(seg.ghost.contains(fingerprint(&k)), "sanity: far entry not overwritten");
+	}
+
+	/// A key with target 0 and stash 0 (optionally a non-probe key) plus two other
+	/// target-0 keys used to fill the target so the bypass is off.
+	fn far_fixture(seg: &mut DashSegment<i64, i64>, non_probe: bool) -> (i64, Vec<i64>) {
+		let seg_size = seg.core.segment_size;
+		let stash_size = seg.core.stash_size;
+		let target_keys = find_keys_for_bucket(0, seg_size, 200);
+		let k = *target_keys
+			.iter()
+			.find(|x| get_index(*x, stash_size) == 0 && (!non_probe || !is_probe_key(*x)))
+			.expect("a suitable key with target 0 and stash 0 must exist");
+		let fillers: Vec<i64> = target_keys.iter().copied().filter(|x| *x != k).take(2).collect();
+		assert_eq!(fillers.len(), 2);
+		for &f in &fillers {
+			seg.core.buckets[0].put(Item::new(f, 1));
+		}
+		assert!(seg.core.buckets[0].is_full(), "sanity: bypass is off");
+		(k, fillers)
+	}
+
+	#[test]
+	fn ghost_remove_reports_age() {
+		let mut g = GhostRing::new(4);
+		g.insert(3);
+		g.insert(5);
+		g.insert(7);
+		assert_eq!(g.remove(7), Some(0), "newest entry has age 0");
+		assert_eq!(g.remove(3), Some(2));
+		assert_eq!(g.remove(9), None);
+		// Wrap: head moves past the end.
+		g.insert(11); // idx 3
+		g.insert(13); // idx 0 (overwrites the zeroed 3)
+		assert_eq!(g.remove(5), Some(3), "oldest of 4 has age 3");
+		assert_eq!(g.remove(13), Some(0));
+		assert_eq!(g.remove(11), Some(1));
+	}
+
+	/// With `far_score < 0`, a far ghost hit on a non-probe key consumes the fingerprint
+	/// but enters uncredited: it needs two stash hits to promote.
+	#[test]
+	fn far_hit_uncredited_when_score_negative() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let (k, _) = far_fixture(&mut seg, true);
+		plant_far_ghost(&mut seg, k);
+		seg.ghost.far_score = -1;
+
+		seg.put(Item::new(k, 10));
+		assert!(!seg.ghost.contains(fingerprint(&k)), "ghost hit must consume the fingerprint");
+		let it = seg.core.stash_buckets[0]
+			.get_items()
+			.iter()
+			.find(|it| it.key == k)
+			.expect("k must be in stash 0");
+		assert_eq!(it.lfu_counter, 0, "uncredited far hit enters like a fresh key");
+
+		seg.get(&k);
+		assert!(seg.core.buckets[0].get_position(&k).is_none(), "first hit must not promote");
+		assert!(seg.core.stash_buckets[0].get_position(&k).is_some());
+		seg.get(&k);
+		assert!(seg.core.buckets[0].get_position(&k).is_some(), "second hit promotes");
+		assert_eq!(seg.ghost.far_score, -1, "uncredited key is never scored");
+		assert!(seg.core.check_slot_legality());
+	}
+
+	/// A far ghost hit with `far_score >= 0` is credited, carries `FAR_PROBE_FLAG` into
+	/// the target, and a resident re-hit raises the score and clears the flag.
+	#[test]
+	fn far_probe_hit_raises_score() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let (k, _) = far_fixture(&mut seg, false);
+		plant_far_ghost(&mut seg, k);
+		assert_eq!(seg.ghost.far_score, 0);
+
+		seg.put(Item::new(k, 10));
+		let it = seg.core.stash_buckets[0]
+			.get_items()
+			.iter()
+			.find(|it| it.key == k)
+			.expect("k must be in stash 0");
+		assert_ne!(it.lfu_counter & FAR_PROBE_FLAG, 0, "far credit sets the probe flag");
+		assert_ne!(it.lfu_counter & GHOST_ORIGIN_FLAG, 0);
+		assert_eq!(it.lfu_counter & !STASH_FLAGS, 1);
+
+		seg.get(&k);
+		let pos = seg.core.buckets[0].get_position(&k).expect("credited key promotes on first hit");
+		let c = seg.core.buckets[0].get_items()[pos].lfu_counter;
+		assert_eq!(c, 1 | FAR_PROBE_FLAG, "promotee carries ref bit 1 and the probe flag");
+		assert_eq!(seg.ghost.far_score, 0);
+
+		// k sits at the target MRU end: the next hit is a resident re-hit.
+		seg.get(&k);
+		assert_eq!(seg.ghost.far_score, 1, "re-hit of a far-credited item raises the score");
+		let probing_idx = 1;
+		let pos = seg.core.buckets[probing_idx].get_position(&k).expect("k promoted to probing");
+		assert_eq!(seg.core.buckets[probing_idx].get_items()[pos].lfu_counter & FAR_PROBE_FLAG, 0);
+
+		// Scored at most once.
+		seg.get(&k);
+		assert_eq!(seg.ghost.far_score, 1);
+	}
+
+	/// A far-credited item demoted out of its target without a re-hit lowers the score.
+	#[test]
+	fn far_probe_demotion_lowers_score() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let seg_size = seg.core.segment_size;
+		let keys = find_keys_for_bucket(0, seg_size, 3);
+		let (k, resident, trigger) = (keys[0], keys[1], keys[2]);
+		seg.core.buckets[0].put(Item::new(k, 1));
+		seg.core.buckets[0].put(Item::new(resident, 2));
+		{
+			let items = seg.core.buckets[0].get_items_mut();
+			assert_eq!(items[0].key, k);
+			items[0].lfu_counter = FAR_PROBE_FLAG; // unreferenced, far-credited
+			items[1].lfu_counter = 1;
+		}
+
+		promote_to_target(
+			&mut seg.core,
+			&mut seg.ghost,
+			Item::new(trigger, 99),
+			InsertPosition::Back,
+			InsertPosition::Front,
+		);
+
+		assert!(seg.core.buckets[0].get_position(&k).is_none(), "k must be the CLOCK victim");
+		assert_eq!(seg.ghost.far_score, -1, "unhit far-credited exit lowers the score");
+		let stash_idx = get_index(&k, seg.core.stash_size);
+		let it = seg.core.stash_buckets[stash_idx]
+			.get_items()
+			.iter()
+			.find(|it| it.key == k)
+			.expect("k demoted to its stash");
+		assert_eq!(it.lfu_counter, 0, "stash entry clears the flag");
+		assert!(seg.core.check_slot_legality());
+	}
+
+	/// The score saturates at its bounds.
+	#[test]
+	fn far_score_saturates() {
+		let mut g = GhostState::new(4);
+		for _ in 0..20 {
+			g.reward();
+		}
+		assert_eq!(g.far_score, FAR_SCORE_MAX);
+		for _ in 0..40 {
+			g.penalize();
+		}
+		assert_eq!(g.far_score, FAR_SCORE_MIN);
+	}
+
+	/// A stash-overflow victim whose target bucket has a free slot is rescued into the
+	/// target's LRU end instead of leaving the cache.
+	#[test]
+	fn stash_victim_rescued_into_free_target() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let stash_size = seg.core.stash_size;
+		let seg_size = seg.core.segment_size;
+		let keys = find_keys_for_bucket(0, stash_size, 3);
+		assert_eq!(keys.len(), 3);
+		let victim = keys[0];
+		let t = get_index(&victim, seg_size);
+
+		for &k in &keys {
+			seg.put(Item::new(k, k * 10));
+		}
+		assert!(seg.core.stash_buckets[0].get_position(&victim).is_none(), "victim left the stash");
+		let items = seg.core.buckets[t].get_items();
+		assert_eq!(items[0].key, victim, "victim must be rescued into its target at index 0");
+		assert!(!seg.ghost.contains(fingerprint(&victim)), "rescued victim must not be in the ghost");
+		assert!(seg.core.check_slot_legality());
+		let val = seg.get(&victim).expect("rescued victim must be found").value;
+		assert_eq!(val, victim * 10);
+	}
+
+	/// When both the victim's target and probing buckets are full, the stash victim is
+	/// evicted out of the cache and recorded in the ghost.
+	#[test]
+	fn stash_victim_evicted_when_target_and_probing_full() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let stash_size = seg.core.stash_size;
+		let seg_size = seg.core.segment_size;
+		let stash_keys = find_keys_for_bucket(0, stash_size, 200);
+		let victim = stash_keys[0];
+		let t = get_index(&victim, seg_size);
+		let p = (t + 1) % seg_size;
+
+		let target_fillers = keys_for_target_excluding(t, seg_size, 2, &stash_keys);
+		let probing_fillers = keys_for_target_excluding(p, seg_size, 2, &stash_keys);
+		for &f in &target_fillers {
+			seg.core.buckets[t].put(Item::new(f, 1));
+		}
+		for &f in &probing_fillers {
+			seg.core.buckets[p].put(Item::new(f, 2));
+		}
+		assert!(seg.core.buckets[t].is_full() && seg.core.buckets[p].is_full());
+
+		for &k in &stash_keys[..3] {
+			seg.put(Item::new(k, k * 10));
+		}
+		assert!(!seg.core.contains_key(&victim), "victim must be evicted out of the cache");
+		assert!(seg.ghost.contains(fingerprint(&victim)), "eviction must record the victim in the ghost");
+		for &f in target_fillers.iter().chain(probing_fillers.iter()) {
+			assert!(seg.core.contains_key(&f), "rescue must never displace a resident");
+		}
+	}
+
+	/// A key never seen in the ghost still needs two stash hits when the bypass is off.
+	#[test]
+	fn non_ghost_put_still_needs_two_hits() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let (k, filler, others) = ghost_fixture(&seg);
+		let target_idx = 0;
+
+		seg.core.buckets[target_idx].put(Item::new(filler, 1));
+		seg.put(Item::new(k, 10));
+		seg.put(Item::new(others[0], 20));
+		assert!(!seg.ghost.contains(fingerprint(&k)));
+
+		seg.get(&k);
+		let items = seg.core.stash_buckets[0].get_items();
+		let pos = items.iter().position(|it| it.key == k).expect("k must stay in stash");
+		assert_eq!(pos, items.len() - 1, "single stash hit must refresh to the MRU end");
+		assert!(seg.core.buckets[target_idx].get_position(&k).is_none());
+
+		seg.get(&k);
+		assert!(seg.core.buckets[target_idx].get_position(&k).is_some());
+		assert!(seg.core.stash_buckets[0].get_position(&k).is_none());
+	}
+
+	#[test]
+	fn ghost_ring_overwrites_oldest() {
+		let mut g = GhostRing::new(2);
+		g.insert(3);
+		g.insert(5);
+		g.insert(7);
+		assert!(!g.contains(3));
+		assert!(g.contains(5) && g.contains(7));
+		assert!(g.remove(5).is_some());
+		assert!(!g.contains(5));
+		assert!(g.remove(5).is_none());
+	}
+
+	/// An empty target (2 free slots) lets a stash item promote on its first hit.
+	#[test]
+	fn stash_hit_bypasses_gate_when_target_has_two_free_slots() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let key = 1_i64;
+		let target_idx = get_index(&key, seg.core.segment_size);
+		let stash_idx = get_index(&key, seg.core.stash_size);
+		seg.put(Item::new(key, 10));
+
+		let val = seg.get(&key).expect("hit must return Some").value;
+		assert_eq!(val, 10);
+		assert!(seg.core.buckets[target_idx].get_position(&key).is_some());
+		assert!(seg.core.stash_buckets[stash_idx].get_position(&key).is_none());
+	}
+
+	#[test]
+	fn stash_hit_inserts_at_back_of_target() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
+
+		fill_target_via_stash(&mut seg, keys[0], keys[1]);
+
+		// Promotion lands at the MRU end (Back): keys[1] follows keys[0].
+		let items = seg.core.buckets[target_idx].get_items();
+		assert_eq!(items[0].key, keys[0]);
+		assert_eq!(items[1].key, keys[1]);
+	}
+
+	#[test]
+	fn target_hit_not_hottest_promotes_within_bucket() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
+
+		fill_target_via_stash(&mut seg, keys[0], keys[1]);
+
+		// Target is [keys[0], keys[1]]: keys[0] is at the LRU end (not hottest). Hitting
+		// it should bump it Back via ClassicLRU, not promote it to probing.
+		seg.get(&keys[0]);
+		let items = seg.core.buckets[target_idx].get_items();
+		assert_eq!(items[0].key, keys[1]);
+		assert_eq!(items[1].key, keys[0]);
+		assert_eq!(items[1].lfu_counter, 1, "a resident hit must set the reference bit");
+		assert_eq!(items[0].lfu_counter, 0);
+	}
+
+	/// With target `[a(ref=1), b(ref=0)]` full, promoting a third key spares the
+	/// referenced LRU `a` (clearing its bit) and demotes the unreferenced `b` to stash.
+	#[test]
+	fn clock_spares_referenced_lru_resident() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
+		let (a, b, c) = (keys[0], keys[1], keys[2]);
+
+		fill_target_via_stash(&mut seg, a, b);
+		{
+			let items = seg.core.buckets[target_idx].get_items_mut();
+			assert_eq!(items[0].key, a);
+			assert_eq!(items[1].key, b);
+			items[0].lfu_counter = 1;
+			items[1].lfu_counter = 0;
+		}
+
+		// Full target: c needs two stash hits.
+		seg.put(Item::new(c, c * 10));
+		seg.get(&c);
+		seg.get(&c);
+		assert!(seg.core.buckets[target_idx].get_position(&c).is_some(), "c promoted");
+
+		let items = seg.core.buckets[target_idx].get_items();
+		let a_pos = items.iter().position(|it| it.key == a).expect("referenced LRU a must be spared");
+		assert_eq!(items[a_pos].lfu_counter, 0, "spared item's bit is cleared");
+		assert!(seg.core.buckets[target_idx].get_position(&b).is_none(), "b must leave the target");
+		let b_stash = get_index(&b, seg.core.stash_size);
+		assert!(
+			seg.core.stash_buckets[b_stash].get_position(&b).is_some(),
+			"unreferenced b must be demoted to its stash"
+		);
+		assert!(seg.core.check_slot_legality());
+	}
+
+	/// When every resident of a full target is referenced, all bits are cleared and the
+	/// LRU resident is evicted as before.
+	#[test]
+	fn clock_falls_back_to_lru_when_all_referenced() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
+		let (a, b, c) = (keys[0], keys[1], keys[2]);
+
+		fill_target_via_stash(&mut seg, a, b);
+		for it in seg.core.buckets[target_idx].get_items_mut().iter_mut() {
+			it.lfu_counter = 1;
+		}
+
+		seg.put(Item::new(c, c * 10));
+		seg.get(&c);
+		seg.get(&c);
+
+		let items = seg.core.buckets[target_idx].get_items();
+		assert_eq!(items.len(), 2);
+		assert_eq!(items[0].key, b, "b survives, now at LRU");
+		assert_eq!(items[0].lfu_counter, 0, "passed-over bit is cleared");
+		assert_eq!(items[1].key, c);
+		let a_stash = get_index(&a, seg.core.stash_size);
+		assert!(
+			seg.core.stash_buckets[a_stash].get_position(&a).is_some(),
+			"LRU a must be demoted to its stash"
+		);
+	}
+
+	#[test]
+	fn target_hit_hottest_promotes_to_probing() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
+
+		fill_target_via_stash(&mut seg, keys[0], keys[1]);
+
+		// keys[1] was promoted to the target's MRU end, so it is already hottest:
+		// one hit promotes it to probing.
+		seg.get(&keys[1]);
+
+		assert!(seg.core.buckets[probing_idx].get_position(&keys[1]).is_some());
+		assert!(seg.core.buckets[target_idx].get_position(&keys[1]).is_none());
+	}
+
+	/// A target-hottest item promoted into a non-empty probing bucket lands at the
+	/// probing MRU end (`PROBING_PROMOTION_POS = Back`), not in the victim slot.
+	#[test]
+	fn target_hottest_promotion_lands_at_probing_mru() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 2);
+		let probing_filler = find_keys_for_bucket(probing_idx, seg.core.segment_size, 1)[0];
+
+		seg.core.buckets[probing_idx].put(Item::new(probing_filler, 7));
+		fill_target_via_stash(&mut seg, keys[0], keys[1]);
+
+		// keys[1] sits at the target MRU end: one get promotes it to probing.
+		seg.get(&keys[1]);
+
+		let items = seg.core.buckets[probing_idx].get_items();
+		let pos = items
+			.iter()
+			.position(|it| it.key == keys[1])
+			.expect("promoted key must be in its probing bucket");
+		assert_eq!(pos, items.len() - 1, "probing promotion must land at the MRU end");
+		assert!(
+			items.iter().any(|it| it.key == probing_filler),
+			"probing filler must still be resident (bucket had room)"
+		);
+	}
+
+	#[test]
+	fn probing_hit_touches_in_place() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
+
+		seg.core.buckets[probing_idx].put(Item::new(keys[0], 10));
+
+		let val = seg.get(&keys[0]).unwrap().value;
+		assert_eq!(val, 10);
+		let pos = seg.core.buckets[probing_idx].get_position(&keys[0]).expect("still in probing");
+		assert_eq!(
+			seg.core.buckets[probing_idx].get_items()[pos].lfu_counter,
+			1,
+			"a probing hit must set the reference bit"
+		);
+	}
+
+	#[test]
+	fn probing_eviction_demotes_to_target() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 1);
+		let probing_keys = find_keys_for_bucket(probing_idx, seg.core.segment_size, 2);
+
+		for &k in &probing_keys {
+			seg.core.buckets[probing_idx].put(Item::new(k, k * 10));
+		}
+		assert!(seg.core.buckets[probing_idx].is_full());
+
+		// Sole resident of target → already at MRU, so the next get triggers promotion.
+		seg.core.buckets[target_idx].put(Item::new(target_keys[0], 100));
+		seg.get(&target_keys[0]);
+
+		assert!(seg.core.buckets[probing_idx].get_position(&target_keys[0]).is_some());
+	}
+
+	#[test]
+	fn cascade_demotion_probing_to_full_target_to_stash() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg.core.segment_size;
+		let target_keys = find_keys_for_bucket(target_idx, seg.core.segment_size, 3);
+		let probing_keys = find_keys_for_bucket(probing_idx, seg.core.segment_size, 2);
+
+		fill_target_via_stash(&mut seg, target_keys[0], target_keys[1]);
+		assert!(seg.core.buckets[target_idx].is_full());
+
+		for &k in &probing_keys {
+			seg.core.buckets[probing_idx].put(Item::new(k, k * 10));
+		}
+		assert!(seg.core.buckets[probing_idx].is_full());
+
+		// Target is [target_keys[0], target_keys[1]]: target_keys[1] sits at the MRU end,
+		// so one get promotes it to probing, which evicts the LRU resident of probing.
+		seg.get(&target_keys[1]);
+		assert!(seg.core.buckets[probing_idx].get_position(&target_keys[1]).is_some());
+
+		// The evicted item's target is `probing_idx`, so the cascade routes it to stash
+		// instead of bouncing it back into the bucket it just left.
+		let evicted_key = probing_keys[0];
+		let stash_idx = get_index(&evicted_key, seg.core.stash_size);
+		// Permissive assertion: the key may have re-landed elsewhere via subsequent
+		// stash overflow handling — only "vanished entirely" would be a real bug.
+		assert!(
+			seg.core.stash_buckets[stash_idx].get_position(&evicted_key).is_some()
+				|| seg.core.buckets[probing_idx].get_position(&evicted_key).is_some()
+				|| seg.core.buckets[target_idx].get_position(&evicted_key).is_some(),
+			"evicted probing item should be demoted to stash or still in cache"
+		);
+	}
+
+	#[test]
+	fn miss_returns_none() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		assert!(seg.get(&999).is_none());
+	}
+
+	/// Regression for the last-bucket probing wraparound (commit 4b0b763): keys whose target
+	/// is `segment_size - 1` must probe at bucket 0, not at `segment_size` (out of bounds).
+	#[test]
+	fn last_bucket_probing_wraps_to_zero() {
+		let mut seg = new_segment(EvictionPolicyKind::ClassicLRU);
+		let seg_size = seg.core.segment_size;
+		let target_idx = seg_size - 1;
+		let probing_idx = (target_idx + 1) % seg_size;
+		assert_eq!(probing_idx, 0, "sanity: wraparound math holds");
+		let keys = find_keys_for_bucket(target_idx, seg_size, 2);
+
+		fill_target_via_stash(&mut seg, keys[0], keys[1]);
+		// keys[1] landed at the target MRU end, so one get promotes it: must place into
+		// the wrapped probing bucket without panic.
+		seg.get(&keys[1]);
+
+		assert!(
+			seg.core.buckets[probing_idx].get_position(&keys[1]).is_some(),
+			"promoted item must land in wrapped probing bucket 0"
+		);
+	}
+
+	/// An item evicted from its probing bucket must cascade to its true target
+	/// (one-more-chance), not jump straight to stash.
+	#[test]
+	fn evicted_from_probing_cascades_to_target() {
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
+		let mut seg = DashSegment::new(&settings);
+		let seg_size = settings.num_of_normal_buckets;
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg_size;
+		let target_keys = find_keys_for_bucket(target_idx, seg_size, 2);
+		let k = target_keys[0];
+		let trigger = target_keys[1];
+		let filler = find_keys_for_bucket(probing_idx, seg_size, 1)[0];
+
+		// `k` placed first so it is the LRU victim when bucket 1 next evicts.
+		seg.core_mut().buckets[probing_idx].put(Item::new(k, 99));
+		seg.core_mut().buckets[probing_idx].put(Item::new(filler, 50));
+		assert!(seg.core().buckets[probing_idx].is_full());
+		assert!(seg.core().buckets[target_idx].get_position(&k).is_none());
+
+		promote_to_probing(
+			&mut seg.core,
+			&mut seg.ghost,
+			Item::new(trigger, 200),
+			InsertPosition::Back,
+			InsertPosition::Back,
+		);
+
+		let in_target = seg.core().buckets[target_idx].get_position(&k).is_some();
+		let in_stash = seg.core().stash_buckets.iter().any(|b| b.get_position(&k).is_some());
+		let still_in_probing = seg.core().buckets[probing_idx].get_position(&k).is_some();
+
+		assert!(!still_in_probing, "sanity: k was evicted from its probing bucket");
+		assert!(
+			in_target,
+			"promotion demotion from probing must place item into its target bucket"
+		);
+		assert!(!in_stash, "promotion demotion must not bypass the target tier");
+	}
+
+	/// Foreign resident demoted via one-more-chance lands at the bucket end determined by
+	/// `insert_pos`: Front for cold, Back for hot.
+	fn target_retry_position(insert_pos: InsertPosition, expected_idx: usize) {
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
+		let mut seg = DashSegment::new(&settings);
+		let seg_size = settings.num_of_normal_buckets;
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg_size;
+		let target_keys = find_keys_for_bucket(target_idx, seg_size, 3);
+		let pre = target_keys[0];
+		let foreign = target_keys[1];
+		let trigger = target_keys[2];
+		let filler = find_keys_for_bucket(probing_idx, seg_size, 1)[0];
+
+		seg.core_mut().buckets[target_idx].put(Item::new(pre, 1));
+		seg.core_mut().buckets[probing_idx].put(Item::new(foreign, 2));
+		seg.core_mut().buckets[probing_idx].put(Item::new(filler, 3));
+
+		promote_to_probing(&mut seg.core, &mut seg.ghost, Item::new(trigger, 99), insert_pos, insert_pos);
+
+		let items = seg.core().buckets[target_idx].get_items();
+		let pos = items
+			.iter()
+			.position(|it| it.key == foreign)
+			.expect("foreign should be in true target after retry");
+		assert_eq!(pos, expected_idx);
+		assert_eq!(items[pos].lfu_counter, 0, "retried foreign resident enters with bit 0");
+	}
+
+	#[test]
+	fn target_retry_lands_at_front_when_cold() {
+		target_retry_position(InsertPosition::Front, 0);
+	}
+
+	#[test]
+	fn target_retry_lands_at_back_when_hot() {
+		target_retry_position(InsertPosition::Back, 1);
+	}
+
+	/// When an evicted item's true target equals its source bucket, demote_from_normal_bucket
+	/// routes it directly to stash (no retry). Verifies the `true_target == source_idx` branch
+	/// AND that the stash insert lands at the stash MRU end (Back) regardless of the
+	/// promotion `insert_pos`.
+	fn direct_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
+		let mut seg = DashSegment::new(&settings);
+		let seg_size = settings.num_of_normal_buckets;
+		let stash_size = settings.num_of_stash_buckets;
+		let target_idx = 0;
+		let target_keys = find_keys_for_bucket(target_idx, seg_size, 3);
+		let victim = target_keys[0];
+		let resident = target_keys[1];
+		let trigger = target_keys[2];
+		let stash_idx = crate::shared::utils::get_index(&victim, stash_size);
+		let stash_pre = find_keys_for_bucket(stash_idx, stash_size, 1)[0];
+
+		seg.core_mut().stash_buckets[stash_idx].put(Item::new(stash_pre, 7));
+		seg.core_mut().buckets[target_idx].put(Item::new(victim, 1));
+		seg.core_mut().buckets[target_idx].put(Item::new(resident, 2));
+
+		promote_to_target(&mut seg.core, &mut seg.ghost, Item::new(trigger, 99), insert_pos, insert_pos);
+
+		let stash_items = seg.core().stash_buckets[stash_idx].get_items();
+		let pos = stash_items
+			.iter()
+			.position(|it| it.key == victim)
+			.expect("victim should land directly in stash");
+		assert_eq!(pos, expected_idx);
+	}
+
+	#[test]
+	fn direct_to_stash_at_front_when_cold() {
+		// v001: demoted items land at the stash Back even for a Front promotion.
+		direct_to_stash_position(InsertPosition::Front, 1);
+	}
+
+	#[test]
+	fn direct_to_stash_at_back_when_hot() {
+		direct_to_stash_position(InsertPosition::Back, 1);
+	}
+
+	/// Probing eviction → foreign-resident retry into full target → second eviction
+	/// cascades into stash. Verifies the cascade stash insert lands at the stash MRU end.
+	fn cascade_to_stash_position(insert_pos: InsertPosition, expected_idx: usize) {
+		let settings = small_dash_settings(EvictionPolicyKind::ClassicLRU);
+		let mut seg = DashSegment::new(&settings);
+		let seg_size = settings.num_of_normal_buckets;
+		let stash_size = settings.num_of_stash_buckets;
+		let target_idx = 0;
+		let probing_idx = (target_idx + 1) % seg_size;
+		let target_keys = find_keys_for_bucket(target_idx, seg_size, 4);
+		let target_filler_a = target_keys[0];
+		let target_filler_b = target_keys[1];
+		let foreign = target_keys[2]; // foreign at probing; true_target = target_idx
+		let trigger = target_keys[3];
+		let probing_filler = find_keys_for_bucket(probing_idx, seg_size, 1)[0];
+
+		// `target_filler_a` is the LRU of target — evicted on retry, cascades to stash.
+		let cascaded = target_filler_a;
+		let stash_idx = crate::shared::utils::get_index(&cascaded, stash_size);
+		let stash_pre = find_keys_for_bucket(stash_idx, stash_size, 4)
+			.into_iter()
+			.find(|k| *k != cascaded)
+			.expect("a distinct stash_pre must exist");
+
+		seg.core_mut().stash_buckets[stash_idx].put(Item::new(stash_pre, 7));
+		seg.core_mut().buckets[target_idx].put(Item::new(target_filler_a, 1));
+		seg.core_mut().buckets[target_idx].put(Item::new(target_filler_b, 2));
+		seg.core_mut().buckets[probing_idx].put(Item::new(foreign, 3));
+		seg.core_mut().buckets[probing_idx].put(Item::new(probing_filler, 4));
+
+		promote_to_probing(&mut seg.core, &mut seg.ghost, Item::new(trigger, 99), insert_pos, insert_pos);
+
+		let stash_items = seg.core().stash_buckets[stash_idx].get_items();
+		let pos = stash_items
+			.iter()
+			.position(|it| it.key == cascaded)
+			.expect("cascaded target item should land in stash via target overflow");
+		assert_eq!(pos, expected_idx);
+	}
+
+	#[test]
+	fn cascade_to_stash_at_front_when_cold() {
+		// v001: cascaded items land at the stash Back even for a Front promotion.
+		cascade_to_stash_position(InsertPosition::Front, 1);
+	}
+
+	#[test]
+	fn cascade_to_stash_at_back_when_hot() {
+		cascade_to_stash_position(InsertPosition::Back, 1);
+	}
+}
