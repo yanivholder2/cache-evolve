@@ -1,0 +1,19 @@
+{
+  "subject": "tiny_lfu",
+  "setup": {
+    "subject": "tiny_lfu",
+    "evaluation_profile": "msr",
+    "dimensions": [
+      "hit-rate"
+    ],
+    "weights": null,
+    "simulator_timeout_s": 1700
+  },
+  "gate_feedback": "full",
+  "evolve_file": "src/tiny_lfu/mod.rs",
+  "iterations": 30,
+  "model": "claude-opus-5-5",
+  "provider": "claude_code",
+  "seed": 42,
+  "openevolve_version": "0.4.0"
+}

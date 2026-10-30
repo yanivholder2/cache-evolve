@@ -1,0 +1,29 @@
+{
+  "subject": "tiny_lfu",
+  "evolve_file": "src/tiny_lfu/mod.rs",
+  "budget": 30,
+  "cohort_size": 3,
+  "model": "claude-opus-5-5",
+  "repeats": 1,
+  "seed": 42,
+  "arms": [
+    "evolve",
+    "openevolve"
+  ],
+  "evolve_run_dir": "comparison_runs\\reference\\outputs\\paper_outputs\\snia_runs\\only_hit_rate\\tiny_lfu\\tiny_lfu_claude-opus-5-5_2026-10-28_12-54-17-355",
+  "evolve_max_workers": 1,
+  "eval_timeout_s": null,
+  "gate_feedback": "full",
+  "evaluation_profile": "msr",
+  "dimensions": [
+    "hit-rate"
+  ],
+  "weights": null,
+  "simulator_timeout_s": 1700,
+  "openevolve_provider": "claude_code",
+  "openevolve_api_base": null,
+  "out": "comparison_runs\\tiny_lfu-msr-opus",
+  "skip_rescore": false,
+  "collect_only": false,
+  "dry_run": false
+}

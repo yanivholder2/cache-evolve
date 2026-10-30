@@ -1,0 +1,14 @@
+{
+  "id": "3d01a8c6-1eb7-4dd6-bcd4-975abd6f91c3",
+  "generation": 3,
+  "iteration": 26,
+  "timestamp": 1793401092.078537,
+  "parent_id": "3604dd67-d624-460f-97a0-f3dc06a850b8",
+  "metrics": {
+    "combined_score": 0.10786405358471846,
+    "passed": 1.0,
+    "hit_rate": 0.558225
+  },
+  "language": "rust",
+  "saved_at": 1793402298.8114643
+}

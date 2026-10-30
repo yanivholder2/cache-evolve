@@ -1,0 +1,39 @@
+{
+  "evolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 30,
+    "pass_rate": 1.0,
+    "beat_baseline": 30,
+    "best_score": 0.11520714462912439,
+    "median_passing_score": 0.11128752170677261,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 0,
+    "multi_file_candidates": 0
+  },
+  "openevolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 30,
+    "pass_rate": 1.0,
+    "beat_baseline": 30,
+    "best_score": 0.10786405358471846,
+    "median_passing_score": 0.09233440833540073,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 0,
+    "multi_file_candidates": 0,
+    "wall_minutes_to_last_candidate": 131.7,
+    "token_usage": {
+      "attempts": 30,
+      "attempts_missing_usage": 0,
+      "complete": true,
+      "totals": {
+        "input_tokens": 256,
+        "output_tokens": 707357,
+        "cache_read_tokens": 7645228,
+        "cache_write_tokens": 1356940,
+        "total_tokens": 9709781
+      },
+      "reported_cost_usd": 26.6213668,
+      "attempts_with_cost": 30
+    }
+  }
+}

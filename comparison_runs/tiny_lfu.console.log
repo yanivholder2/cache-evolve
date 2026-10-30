@@ -1,0 +1,102 @@
+$ C:\Projects\cache-evolve\.venv\Scripts\python.exe -m comparison.run_openevolve --subject tiny_lfu --iterations 30 --model claude-opus-5-5 --provider claude_code --seed 42 --out comparison_runs\tiny_lfu-msr-opus\openevolve\rep0 --evaluation-profile msr --dimensions hit-rate --simulator-timeout-s 1700 --gate-feedback full
+re-scoring gate-passing candidates serially ...
+  rescore evolve/rep0 #1 (1/30)
+  rescore evolve/rep0 #2 (2/30)
+  rescore evolve/rep0 #3 (3/30)
+  rescore evolve/rep0 #4 (4/30)
+  rescore evolve/rep0 #5 (5/30)
+  rescore evolve/rep0 #6 (6/30)
+  rescore evolve/rep0 #7 (7/30)
+  rescore evolve/rep0 #8 (8/30)
+  rescore evolve/rep0 #9 (9/30)
+  rescore evolve/rep0 #10 (10/30)
+  rescore evolve/rep0 #11 (11/30)
+  rescore evolve/rep0 #12 (12/30)
+  rescore evolve/rep0 #13 (13/30)
+  rescore evolve/rep0 #14 (14/30)
+  rescore evolve/rep0 #15 (15/30)
+  rescore evolve/rep0 #16 (16/30)
+  rescore evolve/rep0 #17 (17/30)
+  rescore evolve/rep0 #18 (18/30)
+  rescore evolve/rep0 #19 (19/30)
+  rescore evolve/rep0 #20 (20/30)
+  rescore evolve/rep0 #21 (21/30)
+  rescore evolve/rep0 #22 (22/30)
+  rescore evolve/rep0 #23 (23/30)
+  rescore evolve/rep0 #24 (24/30)
+  rescore evolve/rep0 #25 (25/30)
+  rescore evolve/rep0 #26 (26/30)
+  rescore evolve/rep0 #27 (27/30)
+  rescore evolve/rep0 #28 (28/30)
+  rescore evolve/rep0 #29 (29/30)
+  rescore evolve/rep0 #30 (30/30)
+  rescore openevolve/rep0 #1 (1/30)
+  rescore openevolve/rep0 #2 (2/30)
+  rescore openevolve/rep0 #3 (3/30)
+  rescore openevolve/rep0 #4 (4/30)
+  rescore openevolve/rep0 #5 (5/30)
+  rescore openevolve/rep0 #6 (6/30)
+  rescore openevolve/rep0 #7 (7/30)
+  rescore openevolve/rep0 #8 (8/30)
+  rescore openevolve/rep0 #9 (9/30)
+  rescore openevolve/rep0 #10 (10/30)
+  rescore openevolve/rep0 #11 (11/30)
+  rescore openevolve/rep0 #12 (12/30)
+  rescore openevolve/rep0 #13 (13/30)
+  rescore openevolve/rep0 #14 (14/30)
+  rescore openevolve/rep0 #15 (15/30)
+  rescore openevolve/rep0 #16 (16/30)
+  rescore openevolve/rep0 #17 (17/30)
+  rescore openevolve/rep0 #18 (18/30)
+  rescore openevolve/rep0 #19 (19/30)
+  rescore openevolve/rep0 #20 (20/30)
+  rescore openevolve/rep0 #21 (21/30)
+  rescore openevolve/rep0 #22 (22/30)
+  rescore openevolve/rep0 #23 (23/30)
+  rescore openevolve/rep0 #24 (24/30)
+  rescore openevolve/rep0 #25 (25/30)
+  rescore openevolve/rep0 #26 (26/30)
+  rescore openevolve/rep0 #27 (27/30)
+  rescore openevolve/rep0 #28 (28/30)
+  rescore openevolve/rep0 #29 (29/30)
+  rescore openevolve/rep0 #30 (30/30)
+{
+  "evolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 30,
+    "pass_rate": 1.0,
+    "beat_baseline": 30,
+    "best_score": 0.11520714462912439,
+    "median_passing_score": 0.11128752170677261,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 0,
+    "multi_file_candidates": 0
+  },
+  "openevolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 30,
+    "pass_rate": 1.0,
+    "beat_baseline": 30,
+    "best_score": 0.10786405358471846,
+    "median_passing_score": 0.09233440833540073,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 0,
+    "multi_file_candidates": 0,
+    "wall_minutes_to_last_candidate": 131.7,
+    "token_usage": {
+      "attempts": 30,
+      "attempts_missing_usage": 0,
+      "complete": true,
+      "totals": {
+        "input_tokens": 256,
+        "output_tokens": 707357,
+        "cache_read_tokens": 7645228,
+        "cache_write_tokens": 1356940,
+        "total_tokens": 9709781
+      },
+      "reported_cost_usd": 26.6213668,
+      "attempts_with_cost": 30
+    }
+  }
+}
+wrote comparison_runs\tiny_lfu-msr-opus/summary.json, candidates.csv, trajectory.png
