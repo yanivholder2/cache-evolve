@@ -98,6 +98,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--repeats", type=int, default=1)
     p.add_argument("--seed", type=int, default=42, help="OpenEvolve seed (rep k uses seed+k)")
     p.add_argument("--arms", nargs="+", choices=["evolve", "openevolve"], default=["evolve", "openevolve"])
+    p.add_argument("--evolve-run-dir", type=Path, default=None,
+                   help="use this finished cache-evolve run (an outputs/ run dir, e.g. a promoted "
+                        "paper_outputs run) as the evolve arm instead of running one; its settings must "
+                        "match the profile/dimensions given here")
     p.add_argument("--evolve-max-workers", type=int, default=1,
                    help="cache-evolve variant fan-out; 1 keeps timing measurements quiet")
     p.add_argument("--eval-timeout-s", type=int, default=None,
@@ -114,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dry-run", action="store_true")
     args = p.parse_args(argv)
 
+    if args.evolve_run_dir and not (args.evolve_run_dir / "cycles").is_dir():
+        p.error(f"--evolve-run-dir {args.evolve_run_dir} has no cycles/ directory")
     if args.budget % args.cohort_size:
         p.error("--budget must be a multiple of --cohort-size (cache-evolve runs whole cycles)")
     evolve_file = args.evolve_file or default_evolve_file(args.subject)
@@ -129,6 +135,12 @@ def main(argv: list[str] | None = None) -> int:
         for rep in range(args.repeats):
             for arm in args.arms:
                 rep_dir = out / arm / f"rep{rep}"
+                if arm == "evolve" and args.evolve_run_dir:
+                    # An existing run: nothing to execute and no start time to plot; it is rep0 only.
+                    if rep == 0 and not args.dry_run:
+                        rep_dir.mkdir(parents=True, exist_ok=True)
+                        (rep_dir / "outputs_path.txt").write_text(str(args.evolve_run_dir.resolve()))
+                    continue
                 rep_dir.mkdir(parents=True, exist_ok=True)
                 if not args.dry_run:
                     (rep_dir / "started.json").write_text(json.dumps({"start": time.time()}))

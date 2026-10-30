@@ -227,4 +227,8 @@ __pycache__/
 !outputs/paper_outputs/**/*.log
 # Downloaded workload traces (large, licensed; fetched locally)
 /traces/
-comparison_runs/
+# Comparison-run data is committed (summaries, candidates, logs); the 49 MB-per-run
+# OpenEvolve checkpoints and the extracted reference runs stay local.
+comparison_runs/reference/
+comparison_runs/**/checkpoints/
+!comparison_runs/**/*.log
