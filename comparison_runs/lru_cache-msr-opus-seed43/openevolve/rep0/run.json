@@ -1,0 +1,19 @@
+{
+  "subject": "lru_cache",
+  "setup": {
+    "subject": "lru_cache",
+    "evaluation_profile": "msr",
+    "dimensions": [
+      "hit-rate"
+    ],
+    "weights": null,
+    "simulator_timeout_s": 1700
+  },
+  "gate_feedback": "full",
+  "evolve_file": "src/lru_cache/mod.rs",
+  "iterations": 30,
+  "model": "claude-opus-5-5",
+  "provider": "claude_code",
+  "seed": 43,
+  "openevolve_version": "0.4.0"
+}
