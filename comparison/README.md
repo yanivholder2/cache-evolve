@@ -87,9 +87,22 @@ the setting is recorded in `config.json` and each arm's `run.json`.
 
 - **Budget unit.** Parity is on candidate programs evaluated, not on LLM calls.
   cache-evolve spends more calls per candidate (hypothesis, up to 3 implementation
-  attempts, insights); OpenEvolve spends one. Wall-clock is plotted for that
-  reason, but token cost is only logged for cache-evolve (OpenEvolve's CLI backend
-  does not report it). Compare cost from your Anthropic usage page if it matters.
+  attempts, insights); OpenEvolve normally spends one, plus retries. Wall-clock is
+  plotted and tokens are recorded for both arms. OpenEvolve writes
+  `token_usage.jsonl` in each `openevolve/rep<k>/` directory: one record per Claude
+  CLI invocation or OpenAI-compatible API attempt, including failures/retries.
+  Claude uses JSON output; the API backend wraps the completion transport.
+  `token_usage_summary.json` holds run totals (also written on failure), and
+  collection includes the current totals in `summary.json` under `token_usage`.
+  Input, output, cache-read and cache-write tokens are disjoint counts, matching
+  cache-evolve's naming; `total_tokens` sums those four categories. OpenAI cached
+  input is subtracted from its inclusive prompt count. Raw provider usage is kept
+  for auditing, including reasoning tokens (already included in output tokens).
+  Missing usage, including timed-out calls, is flagged with
+  `attempts_missing_usage` and `complete: false`; totals then reflect only reported
+  usage. Older runs without a ledger are incomplete, not measured zero-token runs.
+  Claude's reported USD cost is retained when available; it is not subscription
+  spend. Token logging measures consumption; it does not enforce a token budget.
 - **One file.** OpenEvolve evolves a single file, so the default subjects are the
   ones whose logic lives in `src/<subject>/mod.rs` (`lru_cache`, `s3_fifo`,
   `tiny_lfu`). cache-evolve can write any overlay file; `summary.json` counts

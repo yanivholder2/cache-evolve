@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import glob
+import json
 import logging
 import os
 import re
@@ -24,6 +25,8 @@ import tempfile
 from pathlib import Path
 
 from openevolve.llm.claude_code import ClaudeCodeLLM
+
+from comparison.token_usage import claude_usage, record_usage
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +127,7 @@ class IsolatedClaudeCodeLLM(ClaudeCodeLLM):
         # The parent builds [claude, -p, ..., --system-prompt, <sys>, ..., <prompt>].
         cmd = list(cmd)
         prompt = cmd.pop()
+        cmd[cmd.index("--output-format") + 1] = "json"
         cwd = _scratch()
         cmd[0] = claude_executable()
         sys_file = None
@@ -139,17 +143,42 @@ class IsolatedClaudeCodeLLM(ClaudeCodeLLM):
                 errors="replace", timeout=timeout, cwd=cwd,
             )
         except subprocess.TimeoutExpired:
+            record_usage(provider="claude_code", model=self.model, status="timeout")
             raise asyncio.TimeoutError("Claude CLI subprocess timed out")
+        except OSError:
+            record_usage(provider="claude_code", model=self.model, status="error")
+            raise
         finally:
             if sys_file:
                 Path(sys_file).unlink(missing_ok=True)
         if result.returncode != 0 and result.stderr.strip():
             self._warn(result.stderr.strip()[:500])
         output = result.stdout.strip()
-        for text in (output, result.stderr.strip()):
+        try:
+            payload = json.loads(output)
+            if not isinstance(payload, dict):
+                payload = {}
+        except json.JSONDecodeError:
+            payload = {}
+        raw = payload.get("usage")
+        record_usage(
+            provider="claude_code", model=self.model,
+            status="error" if result.returncode or payload.get("is_error") else "response",
+            usage=claude_usage(raw), raw_usage=raw, cost_usd=payload.get("total_cost_usd"),
+        )
+        # The JSON envelope must never reach OpenEvolve's mutation parser.
+        reply = payload.get("result", "")
+        if isinstance(reply, str) and reply:
+            output = reply
+        for text in (output, result.stderr.strip(), " ".join(payload.get("errors") or [])):
             if detect_usage_limit(text):
                 raise UsageLimitReached(text)
-        if not output:
+        if not payload:
+            raise RuntimeError("Claude CLI did not return a JSON result with usage metadata")
+        if result.returncode or payload.get("is_error"):
+            raise RuntimeError(f"Claude CLI generation failed (subtype={payload.get('subtype')})")
+        output = reply
+        if not isinstance(output, str) or not output:
             raise RuntimeError(f"Empty response from Claude CLI. stderr: {result.stderr[:500]}")
         return output
 

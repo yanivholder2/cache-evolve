@@ -112,6 +112,8 @@ def main(argv: list[str] | None = None) -> int:
         from comparison.claude_code_llm import init_isolated_claude_code_client
         model.init_client = init_isolated_claude_code_client
     else:
+        from comparison.openai_llm import init_usage_logging_openai_client
+        model.init_client = init_usage_logging_openai_client
         model.provider = "openai"
         if args.api_base:
             model.api_base = args.api_base
@@ -129,14 +131,19 @@ def main(argv: list[str] | None = None) -> int:
         "openevolve_version": __import__("openevolve")._version.__version__,
     }, indent=2))
 
-    result = run_evolution(
-        initial_program=str(seed_file),
-        evaluator=str(Path(__file__).with_name("evaluator.py")),
-        config=config,
-        iterations=args.iterations,
-        output_dir=str(out / "openevolve_output"),
-        cleanup=False,
-    )
+    from comparison.token_usage import write_usage_summary
+
+    try:
+        result = run_evolution(
+            initial_program=str(seed_file),
+            evaluator=str(Path(__file__).with_name("evaluator.py")),
+            config=config,
+            iterations=args.iterations,
+            output_dir=str(out / "openevolve_output"),
+            cleanup=False,
+        )
+    finally:
+        write_usage_summary(out)
     print(f"openevolve best_score={result.best_score}")
     return 0
 

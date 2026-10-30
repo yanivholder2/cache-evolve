@@ -16,6 +16,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from comparison.common import FAILED_SCORE, Setup, evaluate_in_tempdir, score_fitness_vector
+from comparison.token_usage import summarise_usage
 
 ARMS = ("evolve", "openevolve")
 
@@ -139,6 +140,9 @@ def write_outputs(by_run: dict[tuple[str, int], list[Candidate]], starts: dict, 
         f"{arm}/rep{rep}": summarise(cands, started=starts.get((arm, rep)), rescored=rescored)
         for (arm, rep), cands in sorted(by_run.items())
     }
+    for arm, rep in by_run:
+        if arm == "openevolve":
+            summary[f"{arm}/rep{rep}"]["token_usage"] = summarise_usage(out / arm / f"rep{rep}")
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
     _plot(by_run, starts, out, rescored=rescored)
     return summary
