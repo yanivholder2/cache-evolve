@@ -1,0 +1,328 @@
+2026-10-30 13:07:50,654 - INFO - Logging to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\logs\openevolve_20261030_130750.log
+2026-10-30 13:07:50,822 - INFO - Set random seed to 44 for reproducibility
+2026-10-30 13:07:50,830 - INFO - Initialized ClaudeCodeLLM with model: claude-opus-5-5
+2026-10-30 13:07:50,830 - INFO - Initialized LLM ensemble with models: claude-opus-5-5 (weight: 1.00)
+2026-10-30 13:07:50,830 - INFO - Initialized ClaudeCodeLLM with model: claude-opus-5-5
+2026-10-30 13:07:50,909 - INFO - Initialized prompt sampler
+2026-10-30 13:07:50,914 - INFO - Set custom templates: system=evaluator_system_message, user=None
+2026-10-30 13:07:50,914 - INFO - Initialized program database with 0 programs
+2026-10-30 13:07:50,915 - INFO - Successfully loaded evaluation function from C:\Projects\cache-evolve\comparison\evaluator.py
+2026-10-30 13:07:50,915 - INFO - Initialized evaluator with C:\Projects\cache-evolve\comparison\evaluator.py
+2026-10-30 13:07:50,915 - INFO - Initialized OpenEvolve with C:\Projects\cache-evolve\inputs\subjects\lru_cache\src\lru_cache\mod.rs
+2026-10-30 13:07:50,915 - INFO - Adding initial program to database
+2026-10-30 13:07:50,969 - INFO - build gate: compiling variant cycle/0001/v001 ...
+2026-10-30 13:07:59,073 - INFO - build gate: passed
+2026-10-30 13:07:59,366 - INFO - contract gate: passed for cycle/0001/v001
+2026-10-30 13:07:59,687 - INFO - universal invariant gate: passed for cycle/0001/v001
+2026-10-30 13:08:00,149 - INFO - invariant gate: passed for cycle/0001/v001
+2026-10-30 13:08:00,291 - INFO - gate-check: all gates passed for cycle/0001/v001
+2026-10-30 13:08:00,317 - INFO - building cdylib for variant cycle/0001/v001 ...
+2026-10-30 13:08:07,071 - INFO - cdylib built at C:\Users\User\AppData\Local\Temp\variant-target-z50bo0gy\release\lru_cache.dll
+2026-10-30 13:08:07,071 - INFO - [cycle/0001/v001] caffeine simulate trace=lirs:inputs/traces/msr/web_0.trace.gz sizes=[16384, 131072] policy=lrurust.LruRust
+2026-10-30 13:08:11,048 - INFO - [cycle/0001/v001] caffeine simulate trace=lirs:inputs/traces/msr/hm_0.trace.gz sizes=[16384, 131072] policy=lrurust.LruRust
+2026-10-30 13:08:15,009 - INFO - Evaluated program 17d06c17-2f3e-4caf-a833-18853648412d in 24.09s: combined_score=0.0000, passed=1.0000, hit_rate=0.5276
+2026-10-30 13:08:15,009 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 5, 'diversity': 0}
+2026-10-30 13:08:15,010 - INFO - Initialized process parallel controller with 1 workers
+2026-10-30 13:08:15,010 - INFO - Set max None tasks per child
+2026-10-30 13:08:15,011 - INFO - Started process pool with 1 processes
+2026-10-30 13:08:15,011 - INFO - Using island-based evolution with 5 islands
+2026-10-30 13:08:15,011 - INFO - Island Status:
+2026-10-30 13:08:15,011 - INFO -  * Island 0: 1 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0 (best: 17d06c17-2f3e-4caf-a833-18853648412d)
+2026-10-30 13:08:15,011 - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:08:15,011 - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:08:15,011 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:08:15,011 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:08:15,011 - INFO - Starting process-based evolution from iteration 1 for 30 iterations (total: 31)
+2026-10-30 13:08:15,177 - INFO - Early stopping disabled
+2026-10-30 13:17:12,803 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 9, 'diversity': 5}
+2026-10-30 13:17:12,803 - INFO - New best program a1465136-b562-4c80-8a3a-33dec85cf231 replaces 17d06c17-2f3e-4caf-a833-18853648412d (combined_score: 0.0000 → 0.0411, +0.0411)
+2026-10-30 13:17:12,803 - INFO - Iteration 1: Program a1465136-b562-4c80-8a3a-33dec85cf231 (parent: 17d06c17-2f3e-4caf-a833-18853648412d) completed in 536.86s
+2026-10-30 13:17:12,803 - INFO - Metrics: combined_score=0.0411, passed=1.0000, hit_rate=0.5494
+2026-10-30 13:17:12,803 - INFO - 🌟 New best solution found at iteration 1: a1465136-b562-4c80-8a3a-33dec85cf231
+2026-10-30 13:17:12,803 - INFO - Checkpoint interval reached at iteration 1
+2026-10-30 13:17:12,803 - INFO - Island Status:
+2026-10-30 13:17:12,803 - INFO -  * Island 0: 2 programs, best=0.0411, avg=0.0206, diversity=4475.90, gen=1 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 13:17:12,803 - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:17:12,803 - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:17:12,803 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:17:12,803 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:17:12,805 - INFO - Saved database with 2 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_1
+2026-10-30 13:17:12,806 - INFO - Saved best program at checkpoint 1 with metrics: combined_score=0.0411, passed=1.0000, hit_rate=0.5494
+2026-10-30 13:17:12,806 - INFO - Saved checkpoint at iteration 1 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_1
+2026-10-30 13:24:53,504 - INFO - New MAP-Elites cell occupied in island 1: {'complexity': 9, 'diversity': 0}
+2026-10-30 13:24:53,504 - INFO - Iteration 2: Program 4467ab0b-0f99-476e-9663-e6ed13b4fccd (parent: 17d06c17-2f3e-4caf-a833-18853648412d) completed in 460.69s
+2026-10-30 13:24:53,504 - INFO - Metrics: combined_score=0.0379, passed=1.0000, hit_rate=0.5476
+2026-10-30 13:24:53,504 - INFO - Checkpoint interval reached at iteration 2
+2026-10-30 13:24:53,504 - INFO - Island Status:
+2026-10-30 13:24:53,504 - INFO -  * Island 0: 2 programs, best=0.0411, avg=0.0206, diversity=4475.90, gen=1 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 13:24:53,504 - INFO -    Island 1: 1 programs, best=0.0379, avg=0.0379, diversity=0.00, gen=1 (best: 4467ab0b-0f99-476e-9663-e6ed13b4fccd)
+2026-10-30 13:24:53,504 - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:24:53,505 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:24:53,505 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:24:53,507 - INFO - Saved database with 3 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_2
+2026-10-30 13:24:53,508 - INFO - Saved best program at checkpoint 2 with metrics: combined_score=0.0411, passed=1.0000, hit_rate=0.5494
+2026-10-30 13:24:53,508 - INFO - Saved checkpoint at iteration 2 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_2
+2026-10-30 13:34:23,080 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 9, 'diversity': 0}
+2026-10-30 13:34:23,080 - INFO - Iteration 3: Program 8f43bb83-601f-4d49-8520-0eaea95bf775 (parent: 17d06c17-2f3e-4caf-a833-18853648412d) completed in 569.58s
+2026-10-30 13:34:23,080 - INFO - Metrics: combined_score=0.0398, passed=1.0000, hit_rate=0.5487
+2026-10-30 13:34:23,080 - INFO - Checkpoint interval reached at iteration 3
+2026-10-30 13:34:23,081 - INFO - Island Status:
+2026-10-30 13:34:23,081 - INFO -  * Island 0: 2 programs, best=0.0411, avg=0.0206, diversity=4475.90, gen=1 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 13:34:23,081 - INFO -    Island 1: 1 programs, best=0.0379, avg=0.0379, diversity=0.00, gen=1 (best: 4467ab0b-0f99-476e-9663-e6ed13b4fccd)
+2026-10-30 13:34:23,081 - INFO -    Island 2: 1 programs, best=0.0398, avg=0.0398, diversity=0.00, gen=1 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 13:34:23,081 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:34:23,081 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:34:23,084 - INFO - Saved database with 4 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_3
+2026-10-30 13:34:23,085 - INFO - Saved best program at checkpoint 3 with metrics: combined_score=0.0411, passed=1.0000, hit_rate=0.5494
+2026-10-30 13:34:23,085 - INFO - Saved checkpoint at iteration 3 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_3
+2026-10-30 13:39:19,737 - INFO - New MAP-Elites cell occupied in island 3: {'complexity': 7, 'diversity': 0}
+2026-10-30 13:39:19,737 - INFO - New best program d5a11d10-a39f-46c1-897c-3de07cde31b8 replaces a1465136-b562-4c80-8a3a-33dec85cf231 (combined_score: 0.0411 → 0.0459, +0.0048)
+2026-10-30 13:39:19,737 - INFO - Iteration 4: Program d5a11d10-a39f-46c1-897c-3de07cde31b8 (parent: 17d06c17-2f3e-4caf-a833-18853648412d) completed in 296.67s
+2026-10-30 13:39:19,737 - INFO - Metrics: combined_score=0.0459, passed=1.0000, hit_rate=0.5519
+2026-10-30 13:39:19,737 - INFO - 🌟 New best solution found at iteration 4: d5a11d10-a39f-46c1-897c-3de07cde31b8
+2026-10-30 13:39:19,737 - INFO - Checkpoint interval reached at iteration 4
+2026-10-30 13:39:19,738 - INFO - Island Status:
+2026-10-30 13:39:19,738 - INFO -  * Island 0: 2 programs, best=0.0411, avg=0.0206, diversity=4475.90, gen=1 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 13:39:19,738 - INFO -    Island 1: 1 programs, best=0.0379, avg=0.0379, diversity=0.00, gen=1 (best: 4467ab0b-0f99-476e-9663-e6ed13b4fccd)
+2026-10-30 13:39:19,738 - INFO -    Island 2: 1 programs, best=0.0398, avg=0.0398, diversity=0.00, gen=1 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 13:39:19,738 - INFO -    Island 3: 1 programs, best=0.0459, avg=0.0459, diversity=0.00, gen=1 (best: d5a11d10-a39f-46c1-897c-3de07cde31b8)
+2026-10-30 13:39:19,738 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-30 13:39:19,742 - INFO - Saved database with 5 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_4
+2026-10-30 13:39:19,743 - INFO - Saved best program at checkpoint 4 with metrics: combined_score=0.0459, passed=1.0000, hit_rate=0.5519
+2026-10-30 13:39:19,743 - INFO - Saved checkpoint at iteration 4 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_4
+2026-10-30 13:45:08,922 - INFO - New MAP-Elites cell occupied in island 4: {'complexity': 8, 'diversity': 0}
+2026-10-30 13:45:08,923 - INFO - Iteration 5: Program 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9 (parent: 17d06c17-2f3e-4caf-a833-18853648412d) completed in 349.17s
+2026-10-30 13:45:08,923 - INFO - Metrics: combined_score=0.0420, passed=1.0000, hit_rate=0.5498
+2026-10-30 13:45:08,923 - INFO - Checkpoint interval reached at iteration 5
+2026-10-30 13:45:08,923 - INFO - Island Status:
+2026-10-30 13:45:08,923 - INFO -  * Island 0: 2 programs, best=0.0411, avg=0.0206, diversity=4475.90, gen=1 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 13:45:08,923 - INFO -    Island 1: 1 programs, best=0.0379, avg=0.0379, diversity=0.00, gen=1 (best: 4467ab0b-0f99-476e-9663-e6ed13b4fccd)
+2026-10-30 13:45:08,923 - INFO -    Island 2: 1 programs, best=0.0398, avg=0.0398, diversity=0.00, gen=1 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 13:45:08,923 - INFO -    Island 3: 1 programs, best=0.0459, avg=0.0459, diversity=0.00, gen=1 (best: d5a11d10-a39f-46c1-897c-3de07cde31b8)
+2026-10-30 13:45:08,923 - INFO -    Island 4: 1 programs, best=0.0420, avg=0.0420, diversity=0.00, gen=1 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 13:45:08,927 - INFO - Saved database with 6 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_5
+2026-10-30 13:45:08,928 - INFO - Saved best program at checkpoint 5 with metrics: combined_score=0.0459, passed=1.0000, hit_rate=0.5519
+2026-10-30 13:45:08,928 - INFO - Saved checkpoint at iteration 5 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_5
+2026-10-30 13:53:29,938 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 9, 'diversity': 4}
+2026-10-30 13:53:29,938 - INFO - Iteration 6: Program b9a34121-02da-4496-a51c-2fe33a616f68 (parent: 17d06c17-2f3e-4caf-a833-18853648412d) completed in 501.01s
+2026-10-30 13:53:29,938 - INFO - Metrics: combined_score=0.0401, passed=1.0000, hit_rate=0.5488
+2026-10-30 13:53:29,938 - INFO - Checkpoint interval reached at iteration 6
+2026-10-30 13:53:29,938 - INFO - Island Status:
+2026-10-30 13:53:29,939 - INFO -  * Island 0: 3 programs, best=0.0411, avg=0.0271, diversity=4049.67, gen=2 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 13:53:29,939 - INFO -    Island 1: 1 programs, best=0.0379, avg=0.0379, diversity=0.00, gen=1 (best: 4467ab0b-0f99-476e-9663-e6ed13b4fccd)
+2026-10-30 13:53:29,939 - INFO -    Island 2: 1 programs, best=0.0398, avg=0.0398, diversity=0.00, gen=1 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 13:53:29,939 - INFO -    Island 3: 1 programs, best=0.0459, avg=0.0459, diversity=0.00, gen=1 (best: d5a11d10-a39f-46c1-897c-3de07cde31b8)
+2026-10-30 13:53:29,939 - INFO -    Island 4: 1 programs, best=0.0420, avg=0.0420, diversity=0.00, gen=1 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 13:53:29,944 - INFO - Saved database with 7 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_6
+2026-10-30 13:53:29,945 - INFO - Saved best program at checkpoint 6 with metrics: combined_score=0.0459, passed=1.0000, hit_rate=0.5519
+2026-10-30 13:53:29,945 - INFO - Saved checkpoint at iteration 6 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_6
+2026-10-30 13:59:44,355 - INFO - New MAP-Elites cell occupied in island 1: {'complexity': 7, 'diversity': 0}
+2026-10-30 13:59:44,355 - INFO - Iteration 7: Program 014d12d7-1a84-4c2e-9a8b-e26b78e17f27 (parent: 4467ab0b-0f99-476e-9663-e6ed13b4fccd) completed in 374.43s
+2026-10-30 13:59:44,355 - INFO - Metrics: combined_score=0.0427, passed=1.0000, hit_rate=0.5502
+2026-10-30 13:59:44,355 - INFO - Checkpoint interval reached at iteration 7
+2026-10-30 13:59:44,356 - INFO - Island Status:
+2026-10-30 13:59:44,356 - INFO -  * Island 0: 3 programs, best=0.0411, avg=0.0271, diversity=4049.67, gen=2 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 13:59:44,356 - INFO -    Island 1: 2 programs, best=0.0427, avg=0.0403, diversity=416.40, gen=2 (best: 014d12d7-1a84-4c2e-9a8b-e26b78e17f27)
+2026-10-30 13:59:44,356 - INFO -    Island 2: 1 programs, best=0.0398, avg=0.0398, diversity=0.00, gen=1 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 13:59:44,356 - INFO -    Island 3: 1 programs, best=0.0459, avg=0.0459, diversity=0.00, gen=1 (best: d5a11d10-a39f-46c1-897c-3de07cde31b8)
+2026-10-30 13:59:44,356 - INFO -    Island 4: 1 programs, best=0.0420, avg=0.0420, diversity=0.00, gen=1 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 13:59:44,362 - INFO - Saved database with 8 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_7
+2026-10-30 13:59:44,363 - INFO - Saved best program at checkpoint 7 with metrics: combined_score=0.0459, passed=1.0000, hit_rate=0.5519
+2026-10-30 13:59:44,363 - INFO - Saved checkpoint at iteration 7 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_7
+2026-10-30 14:06:18,195 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 7, 'diversity': 0}
+2026-10-30 14:06:18,195 - INFO - Iteration 8: Program a80df336-524b-4275-aab8-1495e48e4d6b (parent: 8f43bb83-601f-4d49-8520-0eaea95bf775) completed in 393.84s
+2026-10-30 14:06:18,195 - INFO - Metrics: combined_score=0.0279, passed=1.0000, hit_rate=0.5423
+2026-10-30 14:06:18,195 - INFO - Checkpoint interval reached at iteration 8
+2026-10-30 14:06:18,196 - INFO - Island Status:
+2026-10-30 14:06:18,196 - INFO -  * Island 0: 3 programs, best=0.0411, avg=0.0271, diversity=4049.67, gen=2 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 14:06:18,196 - INFO -    Island 1: 2 programs, best=0.0427, avg=0.0403, diversity=416.40, gen=2 (best: 014d12d7-1a84-4c2e-9a8b-e26b78e17f27)
+2026-10-30 14:06:18,196 - INFO -    Island 2: 2 programs, best=0.0398, avg=0.0339, diversity=414.40, gen=2 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 14:06:18,196 - INFO -    Island 3: 1 programs, best=0.0459, avg=0.0459, diversity=0.00, gen=1 (best: d5a11d10-a39f-46c1-897c-3de07cde31b8)
+2026-10-30 14:06:18,196 - INFO -    Island 4: 1 programs, best=0.0420, avg=0.0420, diversity=0.00, gen=1 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 14:06:18,203 - INFO - Saved database with 9 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_8
+2026-10-30 14:06:18,203 - INFO - Saved best program at checkpoint 8 with metrics: combined_score=0.0459, passed=1.0000, hit_rate=0.5519
+2026-10-30 14:06:18,203 - INFO - Saved checkpoint at iteration 8 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_8
+2026-10-30 14:12:50,562 - INFO - New MAP-Elites cell occupied in island 3: {'complexity': 5, 'diversity': 0}
+2026-10-30 14:12:50,562 - INFO - New best program 80aa3970-f8fb-4a87-aa6e-3a8586b69180 replaces d5a11d10-a39f-46c1-897c-3de07cde31b8 (combined_score: 0.0459 → 0.0485, +0.0026)
+2026-10-30 14:12:50,562 - INFO - Iteration 9: Program 80aa3970-f8fb-4a87-aa6e-3a8586b69180 (parent: d5a11d10-a39f-46c1-897c-3de07cde31b8) completed in 392.37s
+2026-10-30 14:12:50,562 - INFO - Metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:12:50,562 - INFO - 🌟 New best solution found at iteration 9: 80aa3970-f8fb-4a87-aa6e-3a8586b69180
+2026-10-30 14:12:50,562 - INFO - Checkpoint interval reached at iteration 9
+2026-10-30 14:12:50,563 - INFO - Island Status:
+2026-10-30 14:12:50,563 - INFO -  * Island 0: 3 programs, best=0.0411, avg=0.0271, diversity=4049.67, gen=2 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 14:12:50,563 - INFO -    Island 1: 2 programs, best=0.0427, avg=0.0403, diversity=416.40, gen=2 (best: 014d12d7-1a84-4c2e-9a8b-e26b78e17f27)
+2026-10-30 14:12:50,563 - INFO -    Island 2: 2 programs, best=0.0398, avg=0.0339, diversity=414.40, gen=2 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 14:12:50,563 - INFO -    Island 3: 2 programs, best=0.0485, avg=0.0472, diversity=147.00, gen=2 (best: 80aa3970-f8fb-4a87-aa6e-3a8586b69180)
+2026-10-30 14:12:50,564 - INFO -    Island 4: 1 programs, best=0.0420, avg=0.0420, diversity=0.00, gen=1 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 14:12:50,570 - INFO - Saved database with 10 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_9
+2026-10-30 14:12:50,571 - INFO - Saved best program at checkpoint 9 with metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:12:50,571 - INFO - Saved checkpoint at iteration 9 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_9
+2026-10-30 14:21:55,415 - INFO - New MAP-Elites cell occupied in island 4: {'complexity': 9, 'diversity': 2}
+2026-10-30 14:21:55,415 - INFO - Iteration 10: Program 4688b7b0-37b6-42bc-984e-5a9151d8a677 (parent: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9) completed in 544.85s
+2026-10-30 14:21:55,415 - INFO - Metrics: combined_score=0.0349, passed=1.0000, hit_rate=0.5461
+2026-10-30 14:21:55,415 - INFO - Checkpoint interval reached at iteration 10
+2026-10-30 14:21:55,416 - INFO - Island Status:
+2026-10-30 14:21:55,416 - INFO -  * Island 0: 3 programs, best=0.0411, avg=0.0271, diversity=4049.67, gen=2 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 14:21:55,416 - INFO -    Island 1: 2 programs, best=0.0427, avg=0.0403, diversity=416.40, gen=2 (best: 014d12d7-1a84-4c2e-9a8b-e26b78e17f27)
+2026-10-30 14:21:55,416 - INFO -    Island 2: 2 programs, best=0.0398, avg=0.0339, diversity=414.40, gen=2 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 14:21:55,416 - INFO -    Island 3: 2 programs, best=0.0485, avg=0.0472, diversity=147.00, gen=2 (best: 80aa3970-f8fb-4a87-aa6e-3a8586b69180)
+2026-10-30 14:21:55,416 - INFO -    Island 4: 2 programs, best=0.0420, avg=0.0384, diversity=2114.30, gen=2 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 14:21:55,423 - INFO - Saved database with 11 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_10
+2026-10-30 14:21:55,424 - INFO - Saved best program at checkpoint 10 with metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:21:55,424 - INFO - Saved checkpoint at iteration 10 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_10
+Claude Code CLI timeout on attempt 1/4. Retrying...
+2026-10-30 14:38:41,060 - INFO - Iteration 11: Program fac55b09-96e1-4c9e-a0ac-191983ec54cb (parent: 17d06c17-2f3e-4caf-a833-18853648412d) completed in 1005.65s
+2026-10-30 14:38:41,060 - INFO - Metrics: combined_score=0.0398, passed=1.0000, hit_rate=0.5486
+2026-10-30 14:38:41,060 - INFO - Checkpoint interval reached at iteration 11
+2026-10-30 14:38:41,062 - INFO - Island Status:
+2026-10-30 14:38:41,062 - INFO -  * Island 0: 4 programs, best=0.0411, avg=0.0303, diversity=3648.73, gen=3 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 14:38:41,062 - INFO -    Island 1: 2 programs, best=0.0427, avg=0.0403, diversity=416.40, gen=2 (best: 014d12d7-1a84-4c2e-9a8b-e26b78e17f27)
+2026-10-30 14:38:41,062 - INFO -    Island 2: 2 programs, best=0.0398, avg=0.0339, diversity=414.40, gen=2 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 14:38:41,062 - INFO -    Island 3: 2 programs, best=0.0485, avg=0.0472, diversity=147.00, gen=2 (best: 80aa3970-f8fb-4a87-aa6e-3a8586b69180)
+2026-10-30 14:38:41,062 - INFO -    Island 4: 2 programs, best=0.0420, avg=0.0384, diversity=2114.30, gen=2 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 14:38:41,070 - INFO - Saved database with 12 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_11
+2026-10-30 14:38:41,071 - INFO - Saved best program at checkpoint 11 with metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:38:41,071 - INFO - Saved checkpoint at iteration 11 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_11
+2026-10-30 14:43:07,040 - INFO - New MAP-Elites cell occupied in island 1: {'complexity': 8, 'diversity': 1}
+2026-10-30 14:43:07,040 - INFO - Iteration 12: Program 8c00d2e7-f00b-4660-bb83-7299fc88f223 (parent: 014d12d7-1a84-4c2e-9a8b-e26b78e17f27) completed in 265.97s
+2026-10-30 14:43:07,040 - INFO - Metrics: combined_score=0.0438, passed=1.0000, hit_rate=0.5507
+2026-10-30 14:43:07,040 - INFO - Checkpoint interval reached at iteration 12
+2026-10-30 14:43:07,042 - INFO - Island Status:
+2026-10-30 14:43:07,042 - INFO -  * Island 0: 4 programs, best=0.0411, avg=0.0303, diversity=3648.73, gen=3 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 14:43:07,042 - INFO -    Island 1: 3 programs, best=0.0438, avg=0.0414, diversity=1032.73, gen=3 (best: 8c00d2e7-f00b-4660-bb83-7299fc88f223)
+2026-10-30 14:43:07,042 - INFO -    Island 2: 2 programs, best=0.0398, avg=0.0339, diversity=414.40, gen=2 (best: 8f43bb83-601f-4d49-8520-0eaea95bf775)
+2026-10-30 14:43:07,042 - INFO -    Island 3: 2 programs, best=0.0485, avg=0.0472, diversity=147.00, gen=2 (best: 80aa3970-f8fb-4a87-aa6e-3a8586b69180)
+2026-10-30 14:43:07,042 - INFO -    Island 4: 2 programs, best=0.0420, avg=0.0384, diversity=2114.30, gen=2 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 14:43:07,051 - INFO - Saved database with 13 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_12
+2026-10-30 14:43:07,052 - INFO - Saved best program at checkpoint 12 with metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:43:07,052 - INFO - Saved checkpoint at iteration 12 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_12
+2026-10-30 14:50:39,422 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 9, 'diversity': 4}
+2026-10-30 14:50:39,422 - INFO - Iteration 13: Program 1e32405b-958d-4983-be84-60bec570a06d (parent: a80df336-524b-4275-aab8-1495e48e4d6b) completed in 452.39s
+2026-10-30 14:50:39,422 - INFO - Metrics: combined_score=0.0451, passed=1.0000, hit_rate=0.5514
+2026-10-30 14:50:39,422 - INFO - Checkpoint interval reached at iteration 13
+2026-10-30 14:50:39,425 - INFO - Island Status:
+2026-10-30 14:50:39,425 - INFO -  * Island 0: 4 programs, best=0.0411, avg=0.0303, diversity=3648.73, gen=3 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 14:50:39,425 - INFO -    Island 1: 3 programs, best=0.0438, avg=0.0414, diversity=1032.73, gen=3 (best: 8c00d2e7-f00b-4660-bb83-7299fc88f223)
+2026-10-30 14:50:39,425 - INFO -    Island 2: 3 programs, best=0.0451, avg=0.0376, diversity=1846.33, gen=3 (best: 1e32405b-958d-4983-be84-60bec570a06d)
+2026-10-30 14:50:39,425 - INFO -    Island 3: 2 programs, best=0.0485, avg=0.0472, diversity=147.00, gen=2 (best: 80aa3970-f8fb-4a87-aa6e-3a8586b69180)
+2026-10-30 14:50:39,425 - INFO -    Island 4: 2 programs, best=0.0420, avg=0.0384, diversity=2114.30, gen=2 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 14:50:39,435 - INFO - Saved database with 14 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_13
+2026-10-30 14:50:39,436 - INFO - Saved best program at checkpoint 13 with metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:50:39,436 - INFO - Saved checkpoint at iteration 13 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_13
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-4op5jilh.md'. Retrying...
+2026-10-30 14:52:56,433 - INFO - Iteration 14: Program 2a91504a-7fc7-4269-a371-d4c1f6d176df (parent: d5a11d10-a39f-46c1-897c-3de07cde31b8) completed in 137.01s
+2026-10-30 14:52:56,433 - INFO - Metrics: combined_score=-1.0000, passed=0.0000
+2026-10-30 14:52:56,433 - INFO - Checkpoint interval reached at iteration 14
+2026-10-30 14:52:56,436 - INFO - Island Status:
+2026-10-30 14:52:56,436 - INFO -  * Island 0: 4 programs, best=0.0411, avg=0.0303, diversity=3648.73, gen=3 (best: a1465136-b562-4c80-8a3a-33dec85cf231)
+2026-10-30 14:52:56,436 - INFO -    Island 1: 3 programs, best=0.0438, avg=0.0414, diversity=1032.73, gen=3 (best: 8c00d2e7-f00b-4660-bb83-7299fc88f223)
+2026-10-30 14:52:56,436 - INFO -    Island 2: 3 programs, best=0.0451, avg=0.0376, diversity=1846.33, gen=3 (best: 1e32405b-958d-4983-be84-60bec570a06d)
+2026-10-30 14:52:56,436 - INFO -    Island 3: 3 programs, best=0.0485, avg=-0.3019, diversity=134.87, gen=3 (best: 80aa3970-f8fb-4a87-aa6e-3a8586b69180)
+2026-10-30 14:52:56,436 - INFO -    Island 4: 2 programs, best=0.0420, avg=0.0384, diversity=2114.30, gen=2 (best: 2b24bad7-f5c6-46b9-ac0c-d09278c5bba9)
+2026-10-30 14:52:56,446 - INFO - Saved database with 15 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_14
+2026-10-30 14:52:56,447 - INFO - Saved best program at checkpoint 14 with metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:52:56,447 - INFO - Saved checkpoint at iteration 14 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_14
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-n4c2awkt.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-xdic0k9x.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-s3ks0u1r.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-s3ks0u1r.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-ionepzc7.md'. Retrying...
+2026-10-30 14:53:11,468 - WARNING - Iteration 15 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-s3ks0u1r.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-5w462wz6.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-tops6cax.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9d2b6vfj.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9d2b6vfj.md'
+2026-10-30 14:53:26,514 - WARNING - Iteration 16 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9d2b6vfj.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-y9q81p8d.md'. Retrying...
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-1o8tsq_p.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-wmek493j.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-0krlujeo.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-0krlujeo.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-uv8m8_96.md'. Retrying...
+2026-10-30 14:53:41,567 - WARNING - Iteration 17 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-0krlujeo.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-148cyadn.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-0va577ny.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9y60nar6.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9y60nar6.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-qonlodt_.md'. Retrying...
+2026-10-30 14:53:56,611 - WARNING - Iteration 18 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9y60nar6.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-o8i8jtes.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-f7furirk.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-yh8u8db1.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-yh8u8db1.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-xa72josb.md'. Retrying...
+2026-10-30 14:54:11,641 - WARNING - Iteration 19 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-yh8u8db1.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-xx3p2olr.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-2_j1fskz.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-_hsdzo9p.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-_hsdzo9p.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-shuuwfza.md'. Retrying...
+2026-10-30 14:54:26,666 - WARNING - Iteration 20 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-_hsdzo9p.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-qh6e_nuu.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-42o8ufnc.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-ep2uzj_8.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-ep2uzj_8.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-tt2cevqg.md'. Retrying...
+2026-10-30 14:54:41,717 - WARNING - Iteration 21 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-ep2uzj_8.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-kt6d33fm.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-05ycd89t.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-gh3bibgz.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-gh3bibgz.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-502dhsn1.md'. Retrying...
+2026-10-30 14:54:56,744 - WARNING - Iteration 22 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-gh3bibgz.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-arkz2oov.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-8ondm2sj.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-27b_ypc5.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-27b_ypc5.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-w55cg4y2.md'. Retrying...
+2026-10-30 14:55:11,789 - WARNING - Iteration 23 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-27b_ypc5.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-td881wav.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9sxvnjh7.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-13onve3b.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-13onve3b.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-a4caij3u.md'. Retrying...
+2026-10-30 14:55:26,811 - WARNING - Iteration 24 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-13onve3b.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-a67vdjr8.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-gqxnal9a.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-6bw8zx9l.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-6bw8zx9l.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-00uwff5w.md'. Retrying...
+2026-10-30 14:55:41,853 - WARNING - Iteration 25 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-6bw8zx9l.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-t6appzx2.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-a7q1ti0t.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-nx978waj.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-nx978waj.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-40ek4w6m.md'. Retrying...
+2026-10-30 14:55:56,895 - WARNING - Iteration 26 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-nx978waj.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-2_ofw8rz.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-yjcyz197.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9z5f2ljx.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9z5f2ljx.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-w1ylux9e.md'. Retrying...
+2026-10-30 14:56:11,935 - WARNING - Iteration 27 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-9z5f2ljx.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-apxosehr.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-_5mnf8tu.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-sco5aqcy.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-sco5aqcy.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-p36h7x45.md'. Retrying...
+2026-10-30 14:56:26,974 - WARNING - Iteration 28 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-sco5aqcy.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-quy578vl.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-85y0c7sc.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-wmc5ek2i.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-wmc5ek2i.md'
+Claude Code CLI error on attempt 1/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-yjzu_8zo.md'. Retrying...
+2026-10-30 14:56:42,019 - WARNING - Iteration 29 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-wmc5ek2i.md'
+Claude Code CLI error on attempt 2/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-t00v17ts.md'. Retrying...
+Claude Code CLI error on attempt 3/4: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-q2mbz9xt.md'. Retrying...
+All 4 attempts failed with error: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-sio22rdo.md'
+LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-sio22rdo.md'
+2026-10-30 14:56:57,057 - WARNING - Iteration 30 error: LLM generation failed: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\openevolve-claude-cwd-arx4jpu9\\openevolve-sys-sio22rdo.md'
+2026-10-30 14:56:57,057 - INFO - ✅ Evolution completed - Maximum iterations reached
+2026-10-30 14:56:57,067 - INFO - Saved database with 15 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_30
+2026-10-30 14:56:57,068 - INFO - Saved best program at checkpoint 30 with metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:56:57,068 - INFO - Saved checkpoint at iteration 30 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\checkpoints\checkpoint_30
+2026-10-30 14:56:57,075 - INFO - Stopped process pool
+2026-10-30 14:56:57,075 - INFO - Using tracked best program: 80aa3970-f8fb-4a87-aa6e-3a8586b69180
+2026-10-30 14:56:57,075 - INFO - Evolution complete. Best program has metrics: combined_score=0.0485, passed=1.0000, hit_rate=0.5532
+2026-10-30 14:56:57,076 - INFO - Saved best program to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\best\best_program.rs with program info to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0\openevolve_output\best\best_program_info.json
+openevolve best_score=0.0484696294892448

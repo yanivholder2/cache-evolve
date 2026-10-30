@@ -1,0 +1,28 @@
+{
+  "subject": "lru_cache",
+  "evolve_file": "src/lru_cache/mod.rs",
+  "budget": 30,
+  "cohort_size": 3,
+  "model": "claude-opus-5-5",
+  "repeats": 1,
+  "seed": 44,
+  "arms": [
+    "openevolve"
+  ],
+  "evolve_run_dir": null,
+  "evolve_max_workers": 1,
+  "eval_timeout_s": null,
+  "gate_feedback": "full",
+  "evaluation_profile": "msr",
+  "dimensions": [
+    "hit-rate"
+  ],
+  "weights": null,
+  "simulator_timeout_s": 1700,
+  "openevolve_provider": "claude_code",
+  "openevolve_api_base": null,
+  "out": "comparison_runs\\lru_cache-msr-opus-seed44",
+  "skip_rescore": false,
+  "collect_only": false,
+  "dry_run": false
+}

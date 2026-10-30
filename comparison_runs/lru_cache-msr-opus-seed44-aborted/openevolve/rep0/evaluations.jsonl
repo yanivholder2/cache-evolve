@@ -1,0 +1,15 @@
+{"index": 0, "time": 1793358495.0089667, "passed": true, "score": 0.0, "stage": "ok", "dimensions": {"hit-rate": 0.52765}}
+{"index": 1, "time": 1793359032.7999887, "passed": true, "score": 0.04112574623329869, "stage": "ok", "dimensions": {"hit-rate": 0.54935}}
+{"index": 2, "time": 1793359493.4915583, "passed": true, "score": 0.037856533687103344, "stage": "ok", "dimensions": {"hit-rate": 0.547625}}
+{"index": 3, "time": 1793360063.0708325, "passed": true, "score": 0.039846489150004875, "stage": "ok", "dimensions": {"hit-rate": 0.548675}}
+{"index": 4, "time": 1793360359.7358358, "passed": true, "score": 0.04591111532265717, "stage": "ok", "dimensions": {"hit-rate": 0.551875}}
+{"index": 5, "time": 1793360708.9101284, "passed": true, "score": 0.04197858428882783, "stage": "ok", "dimensions": {"hit-rate": 0.5498}}
+{"index": 6, "time": 1793361209.924844, "passed": true, "score": 0.040083388609873975, "stage": "ok", "dimensions": {"hit-rate": 0.5488}}
+{"index": 7, "time": 1793361584.3518445, "passed": true, "score": 0.04268928266843555, "stage": "ok", "dimensions": {"hit-rate": 0.550175}}
+{"index": 8, "time": 1793361978.1914022, "passed": true, "score": 0.027859376480621714, "stage": "ok", "dimensions": {"hit-rate": 0.54235}}
+{"index": 9, "time": 1793362370.5575266, "passed": true, "score": 0.0484696294892448, "stage": "ok", "dimensions": {"hit-rate": 0.553225}}
+{"index": 10, "time": 1793362915.4099402, "passed": true, "score": 0.03487160049275104, "stage": "ok", "dimensions": {"hit-rate": 0.54605}}
+{"index": 11, "time": 1793363921.0557492, "passed": true, "score": 0.03979910925803093, "stage": "ok", "dimensions": {"hit-rate": 0.54865}}
+{"index": 12, "time": 1793364187.0221553, "passed": true, "score": 0.043779020183834005, "stage": "ok", "dimensions": {"hit-rate": 0.55075}}
+{"index": 13, "time": 1793364639.41616, "passed": true, "score": 0.04505827726712803, "stage": "ok", "dimensions": {"hit-rate": 0.551425}}
+{"index": 14, "time": 1793364776.4213393, "passed": false, "score": -1.0, "stage": "gate:build gate", "dimensions": {}}
