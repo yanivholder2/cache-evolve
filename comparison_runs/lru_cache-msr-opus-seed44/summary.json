@@ -1,0 +1,14 @@
+{
+  "openevolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 29,
+    "pass_rate": 0.9666666666666667,
+    "beat_baseline": 29,
+    "best_score": 0.05666635080072025,
+    "median_passing_score": 0.047142992513977244,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 0,
+    "multi_file_candidates": 0,
+    "wall_minutes_to_last_candidate": 452.8
+  }
+}

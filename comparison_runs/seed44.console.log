@@ -1,0 +1,46 @@
+$ C:\Projects\cache-evolve\.venv\Scripts\python.exe -m comparison.run_openevolve --subject lru_cache --iterations 30 --model claude-opus-5-5 --provider claude_code --seed 44 --out comparison_runs\lru_cache-msr-opus-seed44\openevolve\rep0 --evaluation-profile msr --dimensions hit-rate --simulator-timeout-s 1700 --gate-feedback full
+re-scoring gate-passing candidates serially ...
+  rescore openevolve/rep0 #1 (1/29)
+  rescore openevolve/rep0 #2 (2/29)
+  rescore openevolve/rep0 #3 (3/29)
+  rescore openevolve/rep0 #4 (4/29)
+  rescore openevolve/rep0 #5 (5/29)
+  rescore openevolve/rep0 #6 (6/29)
+  rescore openevolve/rep0 #7 (7/29)
+  rescore openevolve/rep0 #8 (8/29)
+  rescore openevolve/rep0 #9 (9/29)
+  rescore openevolve/rep0 #10 (10/29)
+  rescore openevolve/rep0 #11 (11/29)
+  rescore openevolve/rep0 #12 (12/29)
+  rescore openevolve/rep0 #13 (13/29)
+  rescore openevolve/rep0 #14 (14/29)
+  rescore openevolve/rep0 #16 (15/29)
+  rescore openevolve/rep0 #17 (16/29)
+  rescore openevolve/rep0 #18 (17/29)
+  rescore openevolve/rep0 #19 (18/29)
+  rescore openevolve/rep0 #20 (19/29)
+  rescore openevolve/rep0 #21 (20/29)
+  rescore openevolve/rep0 #22 (21/29)
+  rescore openevolve/rep0 #23 (22/29)
+  rescore openevolve/rep0 #24 (23/29)
+  rescore openevolve/rep0 #25 (24/29)
+  rescore openevolve/rep0 #26 (25/29)
+  rescore openevolve/rep0 #27 (26/29)
+  rescore openevolve/rep0 #28 (27/29)
+  rescore openevolve/rep0 #29 (28/29)
+  rescore openevolve/rep0 #30 (29/29)
+{
+  "openevolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 29,
+    "pass_rate": 0.9666666666666667,
+    "beat_baseline": 29,
+    "best_score": 0.05666635080072025,
+    "median_passing_score": 0.047142992513977244,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 0,
+    "multi_file_candidates": 0,
+    "wall_minutes_to_last_candidate": 452.8
+  }
+}
+wrote comparison_runs\lru_cache-msr-opus-seed44/summary.json, candidates.csv, trajectory.png
