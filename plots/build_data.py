@@ -4,10 +4,10 @@
 Runs are grouped under outputs/paper_outputs/<batch>/<group>/<subject>/<run>/,
 where <batch> is any `*_runs` folder (e.g. v1_runs for the original runs,
 v2_runs for the Claude 5.5 runs) and <group> is the fitness configuration the runs
-share (e.g. only_hit_rate, full_fitness_vector). Each group becomes
-its own plots/paper-plots/data_<group>.json holding the runs of every batch, so
-hit-rate-only and full-fitness-vector runs stay in separate datasets while the
-models of different batches are compared side by side.
+share (e.g. only_hit_rate, full_fitness_vector). Each group and evaluation
+profile is a separate dataset across batches. The default (unnamed Zipf)
+profile keeps plots/paper-plots/data_<group>.json; --evaluation-profile msr
+writes plots/paper-plots/profiles/profile-msr/data_<group>.json instead.
 
 Emits one row per variant per cycle, plus a baseline row when the run
 recorded one. Each canonical fitness dimension absent from a variant's
@@ -17,7 +17,10 @@ Run-setup fields are read from the config.toml snapshot the runner copies
 into each run folder at start, except the model, which is parsed from the
 run dir name (see model_from_run_name). Runs predating that snapshot fall back to
 the authoritative cycle count and ledger cohort size, with the rest left
-as "unknown" / -1.
+as "unknown" / -1. For evaluation-profile only, missing snapshots in the
+historical v1/v2 batches imply the default profile; other batches are unknown
+(null) and excluded. A snapshot without evaluation_profile uses the default
+profile (empty string), matching the runner.
 
 Idempotent: regenerates the data files from scratch on every invocation.
 Stdlib only (tomllib needs Python 3.11+). Run with the project venv:
@@ -31,6 +34,7 @@ import argparse
 import json
 import re
 import tomllib
+from urllib.parse import quote
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -40,6 +44,22 @@ PLOTS_DIR = REPO_ROOT / "plots"
 PAPER_PLOTS_DIR = PLOTS_DIR / "paper-plots"
 
 UNKNOWN = "unknown"
+DEFAULT_PROFILE = ""
+LEGACY_DEFAULT_BATCHES = {"v1_runs", "v2_runs"}
+
+
+def profile_directory(root: Path, evaluation_profile: str) -> Path:
+    """Keep legacy paths for the default grid; isolate named profiles safely."""
+    if evaluation_profile == DEFAULT_PROFILE:
+        return root
+    return root / "profiles" / ("profile-" + quote(evaluation_profile, safe=""))
+
+
+def setup_profile(setup: dict) -> str | None:
+    """Read profile metadata, allowing only known historical batches to infer it."""
+    if "evaluation-profile" in setup:
+        return setup["evaluation-profile"]
+    return DEFAULT_PROFILE if setup.get("batch") in LEGACY_DEFAULT_BATCHES else None
 
 # Batch folders under paper_outputs/ are any `*_runs` dir (v1_runs, v2_runs,
 # snia_runs, ...); anything else at that level is ignored, as is a batch's plan
@@ -204,12 +224,14 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int, batch: str = ORIGIN
         "hypothesis-attempts": MISSING,
         "authoring-scope": UNKNOWN,
         "fitness-dimensions": [],
+        "evaluation-profile": DEFAULT_PROFILE if batch in LEGACY_DEFAULT_BATCHES else None,
     }
     config_path = run_dir / "config.toml"
     if config_path.exists():
         config = tomllib.loads(config_path.read_text())
         framework = config.get("framework", {})
         fitness = config.get("fitness", {})
+        setup["evaluation-profile"] = fitness.get("evaluation_profile", DEFAULT_PROFILE)
         setup["ai-agent-tool"] = framework.get("ai_agent_tool", UNKNOWN)
         if setup["model"] == UNKNOWN:
             setup["model"] = framework.get("model", UNKNOWN)
@@ -410,20 +432,28 @@ def resolve_groups(selectors: list[str]) -> dict[str, list[tuple[str, Path]]]:
     return {selector: groups[selector] for selector in selectors}
 
 
-def build_group(name: str, batches: list[tuple[str, Path]]) -> Path:
-    """Aggregate one group, across batches, into plots/paper-plots/data_<group>.json;
-    return its path."""
+def build_group(
+    name: str, batches: list[tuple[str, Path]], evaluation_profile: str = DEFAULT_PROFILE,
+) -> Path:
+    """Aggregate one fitness group and evaluation profile across batches."""
     runs = []
+    excluded = 0
     for batch, group_dir in batches:
         for run_dir, subject in group_run_dirs(group_dir):
             built = build_run(run_dir, subject, batch)
             if built is not None:
-                runs.append(built)
-    PAPER_PLOTS_DIR.mkdir(parents=True, exist_ok=True)
-    data_path = PAPER_PLOTS_DIR / f"data_{name}.json"
-    data_path.write_text(json.dumps({"runs": runs}, indent=2) + "\n")
+                if setup_profile(built["setup"]) == evaluation_profile:
+                    runs.append(built)
+                else:
+                    excluded += 1
+    out_dir = profile_directory(PAPER_PLOTS_DIR, evaluation_profile)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    data_path = out_dir / f"data_{name}.json"
+    data_path.write_text(json.dumps({"evaluation-profile": evaluation_profile, "runs": runs}, indent=2) + "\n")
     variant_count = sum(len(run["variants"]) for run in runs)
     print(f"Wrote {data_path} with {len(runs)} runs and {variant_count} variant rows.")
+    if excluded:
+        print(f"Excluded {excluded} runs with a different or unknown evaluation profile.")
     return data_path
 
 
@@ -435,11 +465,16 @@ def main():
         help="group folder name(s) under outputs/paper_outputs/<batch>_runs/ to aggregate; "
         "default: every group",
     )
+    parser.add_argument(
+        "--evaluation-profile", default=DEFAULT_PROFILE,
+        help="evaluation profile to include (e.g. msr); default: unnamed Zipf grid",
+    )
     args = parser.parse_args()
 
     for name, batches in resolve_groups(args.groups).items():
-        build_group(name, batches)
+        build_group(name, batches, args.evaluation_profile)
 
 
 if __name__ == "__main__":
     main()
+

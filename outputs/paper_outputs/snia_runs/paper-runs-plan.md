@@ -23,10 +23,11 @@ matrix is 4 SH runs plus 4 SF runs. The cross-workload rows are blocked on a mis
 [run matrix](#run-matrix).
 
 **Where results go:** `outputs/paper_outputs/snia_runs/<mode>/<subject>/<run>/`,
-with the same `<mode>` folders and run-dir names as v2. This batch is kept out
-of `v<N>_runs/` on purpose: `plots/build_data.py` only picks up folders that
-match `^v\d+_runs$`, so MSR results can't end up in the Zipf datasets. MSR
-plots need a follow-up (see [Notes](#notes)).
+with the same `<mode>` folders and run-dir names as v2. The plotting pipeline
+accepts all `*_runs` batches but selects one evaluation profile at a time.
+Default commands retain the v1/v2 Zipf datasets. Build and plot MSR with
+`--evaluation-profile msr`; its datasets and figures live separately under
+`plots/paper-plots/profiles/profile-msr/` (see [plots README](../../../../plots/README.md)).
 
 ### Matrix design (one line per choice)
 
@@ -235,9 +236,12 @@ only simulator time, once the tool below exists.
   `VariantDir`, runs the gates, and writes `eval/fitness-vector.json` outside
   the run dir, plus a `cross_workload/` output folder under `snia_runs/`. Until
   that lands, don't invent commands for these rows.
-- **Plots.** `plots/build_data.py` ignores `snia_runs/` (batch regex
-  `^v\d+_runs$`). Comparing MSR to Zipf needs it to treat the evaluation
-  profile as a dataset key, not a batch.
+- **Plots.** The dataset key is fitness mode plus evaluation profile, not
+  batch. `setup["evaluation-profile"]` preserves the run's snapshot value.
+  Compare MSR results against their own MSR baseline and Zipf results against
+  their own Zipf baseline; do not pool raw hit rates or weighted scores across
+  profiles. Separate figures show within-workload improvements, not transfer.
+  Cross-workload generalisation still requires the SX rescoring described above.
 - **Resolved: one averaged profile with shared sizes.** Per-trace profiles
   (`msr_web0`, `msr_hm0`) were rejected: they would double the matrix, and
   `hit-rate.json` already keeps every (trace, size) point for per-volume
@@ -259,3 +263,4 @@ only simulator time, once the tool below exists.
   from scratch avoids it. Gradle's cold dependency fetch has also hit HTTP 429
   from Maven Central (v2 F04, F13). Treat both as infra failures, not variant
   failures.
+
