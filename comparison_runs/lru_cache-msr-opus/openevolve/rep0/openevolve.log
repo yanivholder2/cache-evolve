@@ -1,0 +1,450 @@
+2026-10-29 21:46:54,513 - INFO - Logging to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\logs\openevolve_20261029_214654.log
+2026-10-29 21:46:55,115 - INFO - Set random seed to 42 for reproducibility
+2026-10-29 21:46:55,151 - INFO - Initialized ClaudeCodeLLM with model: claude-opus-5-5
+2026-10-29 21:46:55,151 - INFO - Initialized LLM ensemble with models: claude-opus-5-5 (weight: 1.00)
+2026-10-29 21:46:55,151 - INFO - Initialized ClaudeCodeLLM with model: claude-opus-5-5
+2026-10-29 21:46:55,520 - INFO - Initialized prompt sampler
+2026-10-29 21:46:55,538 - INFO - Set custom templates: system=evaluator_system_message, user=None
+2026-10-29 21:46:55,539 - INFO - Initialized program database with 0 programs
+2026-10-29 21:46:55,547 - INFO - Successfully loaded evaluation function from C:\Projects\cache-evolve\comparison\evaluator.py
+2026-10-29 21:46:55,547 - INFO - Initialized evaluator with C:\Projects\cache-evolve\comparison\evaluator.py
+2026-10-29 21:46:55,548 - INFO - Initialized OpenEvolve with C:\Projects\cache-evolve\inputs\subjects\lru_cache\src\lru_cache\mod.rs
+2026-10-29 21:46:55,548 - INFO - Adding initial program to database
+2026-10-29 21:46:55,751 - INFO - build gate: compiling variant cycle/0001/v001 ...
+2026-10-29 21:47:36,518 - INFO - build gate: passed
+2026-10-29 21:47:37,412 - INFO - contract gate: passed for cycle/0001/v001
+2026-10-29 21:47:38,209 - INFO - universal invariant gate: passed for cycle/0001/v001
+2026-10-29 21:47:39,159 - INFO - invariant gate: passed for cycle/0001/v001
+2026-10-29 21:47:39,655 - INFO - gate-check: all gates passed for cycle/0001/v001
+2026-10-29 21:47:39,763 - INFO - building cdylib for variant cycle/0001/v001 ...
+2026-10-29 21:48:03,355 - INFO - cdylib built at C:\Users\User\AppData\Local\Temp\variant-target-rawn4ndh\release\lru_cache.dll
+2026-10-29 21:48:03,355 - INFO - [cycle/0001/v001] caffeine simulate trace=lirs:inputs/traces/msr/web_0.trace.gz sizes=[16384, 131072] policy=lrurust.LruRust
+2026-10-29 21:49:18,707 - INFO - [cycle/0001/v001] caffeine simulate trace=lirs:inputs/traces/msr/hm_0.trace.gz sizes=[16384, 131072] policy=lrurust.LruRust
+2026-10-29 21:49:33,800 - INFO - Evaluated program 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf in 158.25s: combined_score=0.0000, passed=1.0000, hit_rate=0.5276
+2026-10-29 21:49:33,802 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 5, 'diversity': 0}
+2026-10-29 21:49:33,808 - INFO - Initialized process parallel controller with 1 workers
+2026-10-29 21:49:33,809 - INFO - Set max None tasks per child
+2026-10-29 21:49:33,811 - INFO - Started process pool with 1 processes
+2026-10-29 21:49:33,811 - INFO - Using island-based evolution with 5 islands
+2026-10-29 21:49:33,811 - INFO - Island Status:
+2026-10-29 21:49:33,811 - INFO -  * Island 0: 1 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0 (best: 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf)
+2026-10-29 21:49:33,811 - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 21:49:33,811 - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 21:49:33,811 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 21:49:33,812 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 21:49:33,812 - INFO - Starting process-based evolution from iteration 1 for 30 iterations (total: 31)
+2026-10-29 21:49:34,799 - INFO - Early stopping disabled
+2026-10-29 22:02:03,238 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 9, 'diversity': 5}
+2026-10-29 22:02:03,238 - INFO - New best program 60de4cd6-4c9d-498d-9f90-caa15ac02b0d replaces 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf (combined_score: 0.0000 → 0.0490, +0.0490)
+2026-10-29 22:02:03,239 - INFO - Iteration 1: Program 60de4cd6-4c9d-498d-9f90-caa15ac02b0d (parent: 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf) completed in 743.98s
+2026-10-29 22:02:03,239 - INFO - Metrics: combined_score=0.0490, passed=1.0000, hit_rate=0.5535
+2026-10-29 22:02:03,239 - INFO - 🌟 New best solution found at iteration 1: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d
+2026-10-29 22:02:03,239 - INFO - Checkpoint interval reached at iteration 1
+2026-10-29 22:02:03,239 - INFO - Island Status:
+2026-10-29 22:02:03,239 - INFO -  * Island 0: 2 programs, best=0.0490, avg=0.0245, diversity=3201.60, gen=1 (best: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d)
+2026-10-29 22:02:03,239 - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:02:03,239 - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:02:03,239 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:02:03,239 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:02:03,255 - INFO - Saved database with 2 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_1
+2026-10-29 22:02:03,262 - INFO - Saved best program at checkpoint 1 with metrics: combined_score=0.0490, passed=1.0000, hit_rate=0.5535
+2026-10-29 22:02:03,263 - INFO - Saved checkpoint at iteration 1 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_1
+2026-10-29 22:11:13,548 - INFO - New MAP-Elites cell occupied in island 1: {'complexity': 9, 'diversity': 9}
+2026-10-29 22:11:13,548 - INFO - Iteration 2: Program 2871f592-cace-42f6-aa88-2a399dc9f73b (parent: 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf) completed in 550.31s
+2026-10-29 22:11:13,548 - INFO - Metrics: combined_score=0.0382, passed=1.0000, hit_rate=0.5478
+2026-10-29 22:11:13,548 - INFO - Checkpoint interval reached at iteration 2
+2026-10-29 22:11:13,548 - INFO - Island Status:
+2026-10-29 22:11:13,548 - INFO -  * Island 0: 2 programs, best=0.0490, avg=0.0245, diversity=3201.60, gen=1 (best: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d)
+2026-10-29 22:11:13,548 - INFO -    Island 1: 1 programs, best=0.0382, avg=0.0382, diversity=0.00, gen=1 (best: 2871f592-cace-42f6-aa88-2a399dc9f73b)
+2026-10-29 22:11:13,548 - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:11:13,548 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:11:13,548 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:11:13,552 - INFO - Saved database with 3 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_2
+2026-10-29 22:11:13,552 - INFO - Saved best program at checkpoint 2 with metrics: combined_score=0.0490, passed=1.0000, hit_rate=0.5535
+2026-10-29 22:11:13,552 - INFO - Saved checkpoint at iteration 2 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_2
+2026-10-29 22:18:37,957 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 3, 'diversity': 0}
+2026-10-29 22:18:37,957 - INFO - Iteration 3: Program 7153958c-e008-4efc-8c15-8e429565d76a (parent: 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf) completed in 444.40s
+2026-10-29 22:18:37,957 - INFO - Metrics: combined_score=0.0405, passed=1.0000, hit_rate=0.5490
+2026-10-29 22:18:37,957 - INFO - Checkpoint interval reached at iteration 3
+2026-10-29 22:18:37,958 - INFO - Island Status:
+2026-10-29 22:18:37,958 - INFO -  * Island 0: 2 programs, best=0.0490, avg=0.0245, diversity=3201.60, gen=1 (best: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d)
+2026-10-29 22:18:37,958 - INFO -    Island 1: 1 programs, best=0.0382, avg=0.0382, diversity=0.00, gen=1 (best: 2871f592-cace-42f6-aa88-2a399dc9f73b)
+2026-10-29 22:18:37,958 - INFO -    Island 2: 1 programs, best=0.0405, avg=0.0405, diversity=0.00, gen=1 (best: 7153958c-e008-4efc-8c15-8e429565d76a)
+2026-10-29 22:18:37,958 - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:18:37,958 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:18:37,965 - INFO - Saved database with 4 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_3
+2026-10-29 22:18:37,967 - INFO - Saved best program at checkpoint 3 with metrics: combined_score=0.0490, passed=1.0000, hit_rate=0.5535
+2026-10-29 22:18:37,967 - INFO - Saved checkpoint at iteration 3 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_3
+2026-10-29 22:26:56,579 - INFO - New MAP-Elites cell occupied in island 3: {'complexity': 7, 'diversity': 0}
+2026-10-29 22:26:56,579 - INFO - Iteration 4: Program 8128af12-9e01-40b5-923c-b8fad82020eb (parent: 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf) completed in 498.62s
+2026-10-29 22:26:56,579 - INFO - Metrics: combined_score=0.0386, passed=1.0000, hit_rate=0.5480
+2026-10-29 22:26:56,579 - INFO - Checkpoint interval reached at iteration 4
+2026-10-29 22:26:56,579 - INFO - Island Status:
+2026-10-29 22:26:56,579 - INFO -  * Island 0: 2 programs, best=0.0490, avg=0.0245, diversity=3201.60, gen=1 (best: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d)
+2026-10-29 22:26:56,580 - INFO -    Island 1: 1 programs, best=0.0382, avg=0.0382, diversity=0.00, gen=1 (best: 2871f592-cace-42f6-aa88-2a399dc9f73b)
+2026-10-29 22:26:56,580 - INFO -    Island 2: 1 programs, best=0.0405, avg=0.0405, diversity=0.00, gen=1 (best: 7153958c-e008-4efc-8c15-8e429565d76a)
+2026-10-29 22:26:56,580 - INFO -    Island 3: 1 programs, best=0.0386, avg=0.0386, diversity=0.00, gen=1 (best: 8128af12-9e01-40b5-923c-b8fad82020eb)
+2026-10-29 22:26:56,580 - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2026-10-29 22:26:56,583 - INFO - Saved database with 5 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_4
+2026-10-29 22:26:56,584 - INFO - Saved best program at checkpoint 4 with metrics: combined_score=0.0490, passed=1.0000, hit_rate=0.5535
+2026-10-29 22:26:56,584 - INFO - Saved checkpoint at iteration 4 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_4
+2026-10-29 22:35:31,120 - INFO - New MAP-Elites cell occupied in island 4: {'complexity': 6, 'diversity': 0}
+2026-10-29 22:35:31,120 - INFO - Iteration 5: Program 0c2ef911-6a21-45d5-b0c1-66db8099588e (parent: 9cbba898-1dba-4a95-8ce4-ae7ae567eaaf) completed in 514.54s
+2026-10-29 22:35:31,120 - INFO - Metrics: combined_score=0.0465, passed=1.0000, hit_rate=0.5522
+2026-10-29 22:35:31,120 - INFO - Checkpoint interval reached at iteration 5
+2026-10-29 22:35:31,121 - INFO - Island Status:
+2026-10-29 22:35:31,121 - INFO -  * Island 0: 2 programs, best=0.0490, avg=0.0245, diversity=3201.60, gen=1 (best: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d)
+2026-10-29 22:35:31,121 - INFO -    Island 1: 1 programs, best=0.0382, avg=0.0382, diversity=0.00, gen=1 (best: 2871f592-cace-42f6-aa88-2a399dc9f73b)
+2026-10-29 22:35:31,121 - INFO -    Island 2: 1 programs, best=0.0405, avg=0.0405, diversity=0.00, gen=1 (best: 7153958c-e008-4efc-8c15-8e429565d76a)
+2026-10-29 22:35:31,121 - INFO -    Island 3: 1 programs, best=0.0386, avg=0.0386, diversity=0.00, gen=1 (best: 8128af12-9e01-40b5-923c-b8fad82020eb)
+2026-10-29 22:35:31,121 - INFO -    Island 4: 1 programs, best=0.0465, avg=0.0465, diversity=0.00, gen=1 (best: 0c2ef911-6a21-45d5-b0c1-66db8099588e)
+2026-10-29 22:35:31,125 - INFO - Saved database with 6 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_5
+2026-10-29 22:35:31,126 - INFO - Saved best program at checkpoint 5 with metrics: combined_score=0.0490, passed=1.0000, hit_rate=0.5535
+2026-10-29 22:35:31,126 - INFO - Saved checkpoint at iteration 5 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_5
+2026-10-29 22:42:15,900 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 6, 'diversity': 0}
+2026-10-29 22:42:15,900 - INFO - New best program 1f587140-4ae9-4244-b0c6-b60377eb5995 replaces 60de4cd6-4c9d-498d-9f90-caa15ac02b0d (combined_score: 0.0490 → 0.0498, +0.0008)
+2026-10-29 22:42:15,900 - INFO - Iteration 6: Program 1f587140-4ae9-4244-b0c6-b60377eb5995 (parent: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d) completed in 404.77s
+2026-10-29 22:42:15,900 - INFO - Metrics: combined_score=0.0498, passed=1.0000, hit_rate=0.5540
+2026-10-29 22:42:15,900 - INFO - 🌟 New best solution found at iteration 6: 1f587140-4ae9-4244-b0c6-b60377eb5995
+2026-10-29 22:42:15,900 - INFO - Checkpoint interval reached at iteration 6
+2026-10-29 22:42:15,900 - INFO - Island Status:
+2026-10-29 22:42:15,900 - INFO -  * Island 0: 3 programs, best=0.0498, avg=0.0330, diversity=2518.53, gen=2 (best: 1f587140-4ae9-4244-b0c6-b60377eb5995)
+2026-10-29 22:42:15,900 - INFO -    Island 1: 1 programs, best=0.0382, avg=0.0382, diversity=0.00, gen=1 (best: 2871f592-cace-42f6-aa88-2a399dc9f73b)
+2026-10-29 22:42:15,900 - INFO -    Island 2: 1 programs, best=0.0405, avg=0.0405, diversity=0.00, gen=1 (best: 7153958c-e008-4efc-8c15-8e429565d76a)
+2026-10-29 22:42:15,900 - INFO -    Island 3: 1 programs, best=0.0386, avg=0.0386, diversity=0.00, gen=1 (best: 8128af12-9e01-40b5-923c-b8fad82020eb)
+2026-10-29 22:42:15,900 - INFO -    Island 4: 1 programs, best=0.0465, avg=0.0465, diversity=0.00, gen=1 (best: 0c2ef911-6a21-45d5-b0c1-66db8099588e)
+2026-10-29 22:42:15,910 - INFO - Saved database with 7 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_6
+2026-10-29 22:42:15,911 - INFO - Saved best program at checkpoint 6 with metrics: combined_score=0.0498, passed=1.0000, hit_rate=0.5540
+2026-10-29 22:42:15,911 - INFO - Saved checkpoint at iteration 6 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_6
+2026-10-29 22:50:22,165 - INFO - New MAP-Elites cell occupied in island 1: {'complexity': 9, 'diversity': 6}
+2026-10-29 22:50:22,165 - INFO - Iteration 7: Program f35d2593-618f-4f90-86e9-8779245d11b3 (parent: 2871f592-cace-42f6-aa88-2a399dc9f73b) completed in 486.27s
+2026-10-29 22:50:22,165 - INFO - Metrics: combined_score=0.0470, passed=1.0000, hit_rate=0.5525
+2026-10-29 22:50:22,165 - INFO - Checkpoint interval reached at iteration 7
+2026-10-29 22:50:22,165 - INFO - Island Status:
+2026-10-29 22:50:22,165 - INFO -  * Island 0: 3 programs, best=0.0498, avg=0.0330, diversity=2518.53, gen=2 (best: 1f587140-4ae9-4244-b0c6-b60377eb5995)
+2026-10-29 22:50:22,165 - INFO -    Island 1: 2 programs, best=0.0470, avg=0.0426, diversity=820.50, gen=2 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 22:50:22,165 - INFO -    Island 2: 1 programs, best=0.0405, avg=0.0405, diversity=0.00, gen=1 (best: 7153958c-e008-4efc-8c15-8e429565d76a)
+2026-10-29 22:50:22,165 - INFO -    Island 3: 1 programs, best=0.0386, avg=0.0386, diversity=0.00, gen=1 (best: 8128af12-9e01-40b5-923c-b8fad82020eb)
+2026-10-29 22:50:22,165 - INFO -    Island 4: 1 programs, best=0.0465, avg=0.0465, diversity=0.00, gen=1 (best: 0c2ef911-6a21-45d5-b0c1-66db8099588e)
+2026-10-29 22:50:22,172 - INFO - Saved database with 8 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_7
+2026-10-29 22:50:22,174 - INFO - Saved best program at checkpoint 7 with metrics: combined_score=0.0498, passed=1.0000, hit_rate=0.5540
+2026-10-29 22:50:22,174 - INFO - Saved checkpoint at iteration 7 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_7
+2026-10-29 23:00:08,692 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 7, 'diversity': 2}
+2026-10-29 23:00:08,692 - INFO - Iteration 8: Program 5d720c88-51b5-4190-bcb2-b6d10c2740ad (parent: 7153958c-e008-4efc-8c15-8e429565d76a) completed in 586.53s
+2026-10-29 23:00:08,692 - INFO - Metrics: combined_score=0.0470, passed=1.0000, hit_rate=0.5524
+2026-10-29 23:00:08,692 - INFO - Checkpoint interval reached at iteration 8
+2026-10-29 23:00:08,702 - INFO - Island Status:
+2026-10-29 23:00:08,702 - INFO -  * Island 0: 3 programs, best=0.0498, avg=0.0330, diversity=2518.53, gen=2 (best: 1f587140-4ae9-4244-b0c6-b60377eb5995)
+2026-10-29 23:00:08,702 - INFO -    Island 1: 2 programs, best=0.0470, avg=0.0426, diversity=820.50, gen=2 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:00:08,702 - INFO -    Island 2: 2 programs, best=0.0470, avg=0.0438, diversity=2652.20, gen=2 (best: 5d720c88-51b5-4190-bcb2-b6d10c2740ad)
+2026-10-29 23:00:08,702 - INFO -    Island 3: 1 programs, best=0.0386, avg=0.0386, diversity=0.00, gen=1 (best: 8128af12-9e01-40b5-923c-b8fad82020eb)
+2026-10-29 23:00:08,703 - INFO -    Island 4: 1 programs, best=0.0465, avg=0.0465, diversity=0.00, gen=1 (best: 0c2ef911-6a21-45d5-b0c1-66db8099588e)
+2026-10-29 23:00:08,723 - INFO - Saved database with 9 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_8
+2026-10-29 23:00:08,725 - INFO - Saved best program at checkpoint 8 with metrics: combined_score=0.0498, passed=1.0000, hit_rate=0.5540
+2026-10-29 23:00:08,725 - INFO - Saved checkpoint at iteration 8 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_8
+2026-10-29 23:09:58,546 - INFO - New MAP-Elites cell occupied in island 3: {'complexity': 9, 'diversity': 6}
+2026-10-29 23:09:58,546 - INFO - Iteration 9: Program 4b66240d-07ea-4c1d-8ee5-26e78ce85df9 (parent: 8128af12-9e01-40b5-923c-b8fad82020eb) completed in 589.85s
+2026-10-29 23:09:58,546 - INFO - Metrics: combined_score=0.0497, passed=1.0000, hit_rate=0.5538
+2026-10-29 23:09:58,546 - INFO - Checkpoint interval reached at iteration 9
+2026-10-29 23:09:58,547 - INFO - Island Status:
+2026-10-29 23:09:58,547 - INFO -  * Island 0: 3 programs, best=0.0498, avg=0.0330, diversity=2518.53, gen=2 (best: 1f587140-4ae9-4244-b0c6-b60377eb5995)
+2026-10-29 23:09:58,547 - INFO -    Island 1: 2 programs, best=0.0470, avg=0.0426, diversity=820.50, gen=2 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:09:58,548 - INFO -    Island 2: 2 programs, best=0.0470, avg=0.0438, diversity=2652.20, gen=2 (best: 5d720c88-51b5-4190-bcb2-b6d10c2740ad)
+2026-10-29 23:09:58,548 - INFO -    Island 3: 2 programs, best=0.0497, avg=0.0441, diversity=2396.10, gen=2 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:09:58,548 - INFO -    Island 4: 1 programs, best=0.0465, avg=0.0465, diversity=0.00, gen=1 (best: 0c2ef911-6a21-45d5-b0c1-66db8099588e)
+2026-10-29 23:09:58,566 - INFO - Saved database with 10 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_9
+2026-10-29 23:09:58,569 - INFO - Saved best program at checkpoint 9 with metrics: combined_score=0.0498, passed=1.0000, hit_rate=0.5540
+2026-10-29 23:09:58,569 - INFO - Saved checkpoint at iteration 9 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_9
+2026-10-29 23:19:45,909 - INFO - Island 4 MAP-Elites cell replaced: {'complexity': 6, 'diversity': 0} (fitness: 0.047 -> 0.048)
+2026-10-29 23:19:45,909 - INFO - Cleaned up 1 stale island best program references
+2026-10-29 23:19:45,909 - INFO - Iteration 10: Program 29414830-350d-4bd6-945d-b7574ccce38f (parent: 0c2ef911-6a21-45d5-b0c1-66db8099588e) completed in 587.37s
+2026-10-29 23:19:45,910 - INFO - Metrics: combined_score=0.0478, passed=1.0000, hit_rate=0.5529
+2026-10-29 23:19:45,910 - INFO - Checkpoint interval reached at iteration 10
+2026-10-29 23:19:45,911 - INFO - Island Status:
+2026-10-29 23:19:45,911 - INFO -  * Island 0: 3 programs, best=0.0498, avg=0.0330, diversity=2518.53, gen=2 (best: 1f587140-4ae9-4244-b0c6-b60377eb5995)
+2026-10-29 23:19:45,911 - INFO -    Island 1: 2 programs, best=0.0470, avg=0.0426, diversity=820.50, gen=2 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:19:45,911 - INFO -    Island 2: 2 programs, best=0.0470, avg=0.0438, diversity=2652.20, gen=2 (best: 5d720c88-51b5-4190-bcb2-b6d10c2740ad)
+2026-10-29 23:19:45,912 - INFO -    Island 3: 2 programs, best=0.0497, avg=0.0441, diversity=2396.10, gen=2 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:19:45,912 - INFO -    Island 4: 1 programs, best=0.0478, avg=0.0478, diversity=0.00, gen=2 (best: 29414830-350d-4bd6-945d-b7574ccce38f)
+2026-10-29 23:19:45,929 - INFO - Saved database with 10 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_10
+2026-10-29 23:19:45,930 - INFO - Saved best program at checkpoint 10 with metrics: combined_score=0.0498, passed=1.0000, hit_rate=0.5540
+2026-10-29 23:19:45,931 - INFO - Saved checkpoint at iteration 10 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_10
+2026-10-29 23:24:26,424 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 7, 'diversity': 0}
+2026-10-29 23:24:26,424 - INFO - New best program 2174e49e-50cf-4148-90af-96440a453460 replaces 1f587140-4ae9-4244-b0c6-b60377eb5995 (combined_score: 0.0498 → 0.0510, +0.0011)
+2026-10-29 23:24:26,425 - INFO - Iteration 11: Program 2174e49e-50cf-4148-90af-96440a453460 (parent: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d) completed in 280.51s
+2026-10-29 23:24:26,425 - INFO - Metrics: combined_score=0.0510, passed=1.0000, hit_rate=0.5545
+2026-10-29 23:24:26,425 - INFO - 🌟 New best solution found at iteration 11: 2174e49e-50cf-4148-90af-96440a453460
+2026-10-29 23:24:26,425 - INFO - Checkpoint interval reached at iteration 11
+2026-10-29 23:24:26,427 - INFO - Island Status:
+2026-10-29 23:24:26,427 - INFO -  * Island 0: 4 programs, best=0.0510, avg=0.0375, diversity=2344.88, gen=3 (best: 2174e49e-50cf-4148-90af-96440a453460)
+2026-10-29 23:24:26,427 - INFO -    Island 1: 2 programs, best=0.0470, avg=0.0426, diversity=820.50, gen=2 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:24:26,427 - INFO -    Island 2: 2 programs, best=0.0470, avg=0.0438, diversity=2652.20, gen=2 (best: 5d720c88-51b5-4190-bcb2-b6d10c2740ad)
+2026-10-29 23:24:26,427 - INFO -    Island 3: 2 programs, best=0.0497, avg=0.0441, diversity=2396.10, gen=2 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:24:26,427 - INFO -    Island 4: 1 programs, best=0.0478, avg=0.0478, diversity=0.00, gen=2 (best: 29414830-350d-4bd6-945d-b7574ccce38f)
+2026-10-29 23:24:26,443 - INFO - Saved database with 11 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_11
+2026-10-29 23:24:26,444 - INFO - Saved best program at checkpoint 11 with metrics: combined_score=0.0510, passed=1.0000, hit_rate=0.5545
+2026-10-29 23:24:26,445 - INFO - Saved checkpoint at iteration 11 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_11
+2026-10-29 23:29:14,770 - INFO - Iteration 12: Program 1c3d13c1-ae48-405b-b68d-7b2dfecd10d6 (parent: f35d2593-618f-4f90-86e9-8779245d11b3) completed in 288.35s
+2026-10-29 23:29:14,770 - INFO - Metrics: combined_score=0.0430, passed=1.0000, hit_rate=0.5504
+2026-10-29 23:29:14,770 - INFO - Checkpoint interval reached at iteration 12
+2026-10-29 23:29:14,772 - INFO - Island Status:
+2026-10-29 23:29:14,773 - INFO -  * Island 0: 4 programs, best=0.0510, avg=0.0375, diversity=2344.88, gen=3 (best: 2174e49e-50cf-4148-90af-96440a453460)
+2026-10-29 23:29:14,773 - INFO -    Island 1: 3 programs, best=0.0470, avg=0.0428, diversity=1249.87, gen=3 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:29:14,773 - INFO -    Island 2: 2 programs, best=0.0470, avg=0.0438, diversity=2652.20, gen=2 (best: 5d720c88-51b5-4190-bcb2-b6d10c2740ad)
+2026-10-29 23:29:14,773 - INFO -    Island 3: 2 programs, best=0.0497, avg=0.0441, diversity=2396.10, gen=2 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:29:14,773 - INFO -    Island 4: 1 programs, best=0.0478, avg=0.0478, diversity=0.00, gen=2 (best: 29414830-350d-4bd6-945d-b7574ccce38f)
+2026-10-29 23:29:14,797 - INFO - Saved database with 12 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_12
+2026-10-29 23:29:14,799 - INFO - Saved best program at checkpoint 12 with metrics: combined_score=0.0510, passed=1.0000, hit_rate=0.5545
+2026-10-29 23:29:14,799 - INFO - Saved checkpoint at iteration 12 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_12
+2026-10-29 23:31:23,386 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 6, 'diversity': 1}
+2026-10-29 23:31:23,387 - INFO - Iteration 13: Program c8f8d3bc-90d1-4caa-8a70-604cd34ed61f (parent: 5d720c88-51b5-4190-bcb2-b6d10c2740ad) completed in 128.61s
+2026-10-29 23:31:23,387 - INFO - Metrics: combined_score=0.0471, passed=1.0000, hit_rate=0.5525
+2026-10-29 23:31:23,387 - INFO - Checkpoint interval reached at iteration 13
+2026-10-29 23:31:23,388 - INFO - Island Status:
+2026-10-29 23:31:23,388 - INFO -  * Island 0: 4 programs, best=0.0510, avg=0.0375, diversity=2344.88, gen=3 (best: 2174e49e-50cf-4148-90af-96440a453460)
+2026-10-29 23:31:23,389 - INFO -    Island 1: 3 programs, best=0.0470, avg=0.0428, diversity=1249.87, gen=3 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:31:23,389 - INFO -    Island 2: 3 programs, best=0.0471, avg=0.0449, diversity=1809.27, gen=3 (best: c8f8d3bc-90d1-4caa-8a70-604cd34ed61f)
+2026-10-29 23:31:23,389 - INFO -    Island 3: 2 programs, best=0.0497, avg=0.0441, diversity=2396.10, gen=2 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:31:23,389 - INFO -    Island 4: 1 programs, best=0.0478, avg=0.0478, diversity=0.00, gen=2 (best: 29414830-350d-4bd6-945d-b7574ccce38f)
+2026-10-29 23:31:23,397 - INFO - Saved database with 13 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_13
+2026-10-29 23:31:23,397 - INFO - Saved best program at checkpoint 13 with metrics: combined_score=0.0510, passed=1.0000, hit_rate=0.5545
+2026-10-29 23:31:23,397 - INFO - Saved checkpoint at iteration 13 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_13
+2026-10-29 23:37:50,255 - INFO - New MAP-Elites cell occupied in island 3: {'complexity': 8, 'diversity': 5}
+2026-10-29 23:37:50,256 - INFO - Iteration 14: Program 415ac55b-0163-45e8-a831-c4d574bc9543 (parent: 8128af12-9e01-40b5-923c-b8fad82020eb) completed in 386.88s
+2026-10-29 23:37:50,256 - INFO - Metrics: combined_score=0.0474, passed=1.0000, hit_rate=0.5526
+2026-10-29 23:37:50,256 - INFO - Checkpoint interval reached at iteration 14
+2026-10-29 23:37:50,264 - INFO - Island Status:
+2026-10-29 23:37:50,264 - INFO -  * Island 0: 4 programs, best=0.0510, avg=0.0375, diversity=2344.88, gen=3 (best: 2174e49e-50cf-4148-90af-96440a453460)
+2026-10-29 23:37:50,264 - INFO -    Island 1: 3 programs, best=0.0470, avg=0.0428, diversity=1249.87, gen=3 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:37:50,264 - INFO -    Island 2: 3 programs, best=0.0471, avg=0.0449, diversity=1809.27, gen=3 (best: c8f8d3bc-90d1-4caa-8a70-604cd34ed61f)
+2026-10-29 23:37:50,264 - INFO -    Island 3: 3 programs, best=0.0497, avg=0.0452, diversity=1830.87, gen=3 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:37:50,264 - INFO -    Island 4: 1 programs, best=0.0478, avg=0.0478, diversity=0.00, gen=2 (best: 29414830-350d-4bd6-945d-b7574ccce38f)
+2026-10-29 23:37:50,289 - INFO - Saved database with 14 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_14
+2026-10-29 23:37:50,290 - INFO - Saved best program at checkpoint 14 with metrics: combined_score=0.0510, passed=1.0000, hit_rate=0.5545
+2026-10-29 23:37:50,290 - INFO - Saved checkpoint at iteration 14 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_14
+2026-10-29 23:46:14,763 - INFO - New MAP-Elites cell occupied in island 4: {'complexity': 8, 'diversity': 2}
+2026-10-29 23:46:14,763 - INFO - Iteration 15: Program 41b611e1-2cfe-43b0-8de3-0032139dcd15 (parent: 29414830-350d-4bd6-945d-b7574ccce38f) completed in 504.51s
+2026-10-29 23:46:14,763 - INFO - Metrics: combined_score=0.0492, passed=1.0000, hit_rate=0.5536
+2026-10-29 23:46:14,764 - INFO - Checkpoint interval reached at iteration 15
+2026-10-29 23:46:14,769 - INFO - Island Status:
+2026-10-29 23:46:14,769 - INFO -  * Island 0: 4 programs, best=0.0510, avg=0.0375, diversity=2344.88, gen=3 (best: 2174e49e-50cf-4148-90af-96440a453460)
+2026-10-29 23:46:14,769 - INFO -    Island 1: 3 programs, best=0.0470, avg=0.0428, diversity=1249.87, gen=3 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:46:14,769 - INFO -    Island 2: 3 programs, best=0.0471, avg=0.0449, diversity=1809.27, gen=3 (best: c8f8d3bc-90d1-4caa-8a70-604cd34ed61f)
+2026-10-29 23:46:14,769 - INFO -    Island 3: 3 programs, best=0.0497, avg=0.0452, diversity=1830.87, gen=3 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:46:14,769 - INFO -    Island 4: 2 programs, best=0.0492, avg=0.0485, diversity=2132.40, gen=3 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-29 23:46:14,795 - INFO - Saved database with 15 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_15
+2026-10-29 23:46:14,799 - INFO - Saved best program at checkpoint 15 with metrics: combined_score=0.0510, passed=1.0000, hit_rate=0.5545
+2026-10-29 23:46:14,799 - INFO - Saved checkpoint at iteration 15 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_15
+2026-10-29 23:49:47,276 - INFO - Island 0 MAP-Elites cell replaced: {'complexity': 6, 'diversity': 0} (fitness: 0.050 -> 0.052)
+2026-10-29 23:49:47,277 - INFO - New best program b2ab800f-c12f-48d5-b429-7a9277e6e981 replaces 2174e49e-50cf-4148-90af-96440a453460 (combined_score: 0.0510 → 0.0520, +0.0010)
+2026-10-29 23:49:47,277 - INFO - Iteration 16: Program b2ab800f-c12f-48d5-b429-7a9277e6e981 (parent: 1f587140-4ae9-4244-b0c6-b60377eb5995) completed in 212.52s
+2026-10-29 23:49:47,277 - INFO - Metrics: combined_score=0.0520, passed=1.0000, hit_rate=0.5551
+2026-10-29 23:49:47,277 - INFO - 🌟 New best solution found at iteration 16: b2ab800f-c12f-48d5-b429-7a9277e6e981
+2026-10-29 23:49:47,277 - INFO - Checkpoint interval reached at iteration 16
+2026-10-29 23:49:47,281 - INFO - Island Status:
+2026-10-29 23:49:47,281 - INFO -  * Island 0: 4 programs, best=0.0520, avg=0.0380, diversity=2568.27, gen=4 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-29 23:49:47,281 - INFO -    Island 1: 3 programs, best=0.0470, avg=0.0428, diversity=1249.87, gen=3 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:49:47,282 - INFO -    Island 2: 3 programs, best=0.0471, avg=0.0449, diversity=1809.27, gen=3 (best: c8f8d3bc-90d1-4caa-8a70-604cd34ed61f)
+2026-10-29 23:49:47,282 - INFO -    Island 3: 3 programs, best=0.0497, avg=0.0452, diversity=1830.87, gen=3 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:49:47,282 - INFO -    Island 4: 2 programs, best=0.0492, avg=0.0485, diversity=2132.40, gen=3 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-29 23:49:47,309 - INFO - Saved database with 15 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_16
+2026-10-29 23:49:47,311 - INFO - Saved best program at checkpoint 16 with metrics: combined_score=0.0520, passed=1.0000, hit_rate=0.5551
+2026-10-29 23:49:47,311 - INFO - Saved checkpoint at iteration 16 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_16
+2026-10-29 23:55:00,460 - INFO - New MAP-Elites cell occupied in island 1: {'complexity': 9, 'diversity': 3}
+2026-10-29 23:55:00,460 - INFO - Iteration 17: Program 21d97d7f-e5e4-4263-992a-1857a1d4c587 (parent: 1c3d13c1-ae48-405b-b68d-7b2dfecd10d6) completed in 313.18s
+2026-10-29 23:55:00,460 - INFO - Metrics: combined_score=0.0363, passed=1.0000, hit_rate=0.5468
+2026-10-29 23:55:00,461 - INFO - Checkpoint interval reached at iteration 17
+2026-10-29 23:55:00,466 - INFO - Island Status:
+2026-10-29 23:55:00,466 - INFO -  * Island 0: 4 programs, best=0.0520, avg=0.0380, diversity=2568.27, gen=4 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-29 23:55:00,466 - INFO -    Island 1: 4 programs, best=0.0470, avg=0.0411, diversity=1101.13, gen=4 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:55:00,466 - INFO -    Island 2: 3 programs, best=0.0471, avg=0.0449, diversity=1809.27, gen=3 (best: c8f8d3bc-90d1-4caa-8a70-604cd34ed61f)
+2026-10-29 23:55:00,466 - INFO -    Island 3: 3 programs, best=0.0497, avg=0.0452, diversity=1830.87, gen=3 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:55:00,466 - INFO -    Island 4: 2 programs, best=0.0492, avg=0.0485, diversity=2132.40, gen=3 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-29 23:55:00,489 - INFO - Saved database with 16 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_17
+2026-10-29 23:55:00,491 - INFO - Saved best program at checkpoint 17 with metrics: combined_score=0.0520, passed=1.0000, hit_rate=0.5551
+2026-10-29 23:55:00,491 - INFO - Saved checkpoint at iteration 17 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_17
+2026-10-29 23:57:58,601 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 6, 'diversity': 0}
+2026-10-29 23:57:58,601 - INFO - New best program 1d73014e-1602-4b2f-8063-b6945a8d30a1 replaces b2ab800f-c12f-48d5-b429-7a9277e6e981 (combined_score: 0.0520 → 0.0542, +0.0021)
+2026-10-29 23:57:58,601 - INFO - Iteration 18: Program 1d73014e-1602-4b2f-8063-b6945a8d30a1 (parent: 5d720c88-51b5-4190-bcb2-b6d10c2740ad) completed in 178.15s
+2026-10-29 23:57:58,601 - INFO - Metrics: combined_score=0.0542, passed=1.0000, hit_rate=0.5562
+2026-10-29 23:57:58,601 - INFO - 🌟 New best solution found at iteration 18: 1d73014e-1602-4b2f-8063-b6945a8d30a1
+2026-10-29 23:57:58,601 - INFO - Checkpoint interval reached at iteration 18
+2026-10-29 23:57:58,605 - INFO - Island Status:
+2026-10-29 23:57:58,605 - INFO -  * Island 0: 4 programs, best=0.0520, avg=0.0380, diversity=2568.27, gen=4 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-29 23:57:58,605 - INFO -    Island 1: 4 programs, best=0.0470, avg=0.0411, diversity=1101.13, gen=4 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-29 23:57:58,605 - INFO -    Island 2: 4 programs, best=0.0542, avg=0.0472, diversity=1689.23, gen=4 (best: 1d73014e-1602-4b2f-8063-b6945a8d30a1)
+2026-10-29 23:57:58,605 - INFO -    Island 3: 3 programs, best=0.0497, avg=0.0452, diversity=1830.87, gen=3 (best: 4b66240d-07ea-4c1d-8ee5-26e78ce85df9)
+2026-10-29 23:57:58,605 - INFO -    Island 4: 2 programs, best=0.0492, avg=0.0485, diversity=2132.40, gen=3 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-29 23:57:58,616 - INFO - Saved database with 17 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_18
+2026-10-29 23:57:58,617 - INFO - Saved best program at checkpoint 18 with metrics: combined_score=0.0542, passed=1.0000, hit_rate=0.5562
+2026-10-29 23:57:58,618 - INFO - Saved checkpoint at iteration 18 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_18
+2026-10-30 00:02:44,833 - INFO - New MAP-Elites cell occupied in island 3: {'complexity': 9, 'diversity': 3}
+2026-10-30 00:02:44,833 - INFO - Iteration 19: Program e942dd80-b97b-4dc4-80b3-e1d20bdade04 (parent: 415ac55b-0163-45e8-a831-c4d574bc9543) completed in 286.22s
+2026-10-30 00:02:44,833 - INFO - Metrics: combined_score=0.0521, passed=1.0000, hit_rate=0.5552
+2026-10-30 00:02:44,833 - INFO - Checkpoint interval reached at iteration 19
+2026-10-30 00:02:44,843 - INFO - Island Status:
+2026-10-30 00:02:44,843 - INFO -  * Island 0: 4 programs, best=0.0520, avg=0.0380, diversity=2568.27, gen=4 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-30 00:02:44,843 - INFO -    Island 1: 4 programs, best=0.0470, avg=0.0411, diversity=1101.13, gen=4 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-30 00:02:44,843 - INFO -    Island 2: 4 programs, best=0.0542, avg=0.0472, diversity=1689.23, gen=4 (best: 1d73014e-1602-4b2f-8063-b6945a8d30a1)
+2026-10-30 00:02:44,843 - INFO -    Island 3: 4 programs, best=0.0521, avg=0.0469, diversity=1551.97, gen=4 (best: e942dd80-b97b-4dc4-80b3-e1d20bdade04)
+2026-10-30 00:02:44,843 - INFO -    Island 4: 2 programs, best=0.0492, avg=0.0485, diversity=2132.40, gen=3 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:02:44,869 - INFO - Saved database with 18 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_19
+2026-10-30 00:02:44,871 - INFO - Saved best program at checkpoint 19 with metrics: combined_score=0.0542, passed=1.0000, hit_rate=0.5562
+2026-10-30 00:02:44,871 - INFO - Saved checkpoint at iteration 19 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_19
+2026-10-30 00:06:15,255 - INFO - New MAP-Elites cell occupied in island 4: {'complexity': 8, 'diversity': 1}
+2026-10-30 00:06:15,255 - INFO - Iteration 20: Program c178072d-b8a4-4a29-ad9b-96b8196ed9e8 (parent: 41b611e1-2cfe-43b0-8de3-0032139dcd15) completed in 210.43s
+2026-10-30 00:06:15,255 - INFO - Metrics: combined_score=0.0486, passed=1.0000, hit_rate=0.5533
+2026-10-30 00:06:15,255 - INFO - Checkpoint interval reached at iteration 20
+2026-10-30 00:06:15,259 - INFO - Island Status:
+2026-10-30 00:06:15,259 - INFO -  * Island 0: 4 programs, best=0.0520, avg=0.0380, diversity=2568.27, gen=4 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-30 00:06:15,259 - INFO -    Island 1: 4 programs, best=0.0470, avg=0.0411, diversity=1101.13, gen=4 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-30 00:06:15,259 - INFO -    Island 2: 4 programs, best=0.0542, avg=0.0472, diversity=1689.23, gen=4 (best: 1d73014e-1602-4b2f-8063-b6945a8d30a1)
+2026-10-30 00:06:15,259 - INFO -    Island 3: 4 programs, best=0.0521, avg=0.0469, diversity=1551.97, gen=4 (best: e942dd80-b97b-4dc4-80b3-e1d20bdade04)
+2026-10-30 00:06:15,259 - INFO -    Island 4: 3 programs, best=0.0492, avg=0.0485, diversity=1507.80, gen=4 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:06:15,277 - INFO - Saved database with 19 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_20
+2026-10-30 00:06:15,280 - INFO - Saved best program at checkpoint 20 with metrics: combined_score=0.0542, passed=1.0000, hit_rate=0.5562
+2026-10-30 00:06:15,280 - INFO - Saved checkpoint at iteration 20 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_20
+2026-10-30 00:10:59,444 - INFO - Iteration 21: Program 3a58e464-31f7-4f31-897c-19fe95604681 (parent: 60de4cd6-4c9d-498d-9f90-caa15ac02b0d) completed in 284.18s
+2026-10-30 00:10:59,444 - INFO - Metrics: combined_score=0.0460, passed=1.0000, hit_rate=0.5519
+2026-10-30 00:10:59,444 - INFO - Checkpoint interval reached at iteration 21
+2026-10-30 00:10:59,455 - INFO - Island Status:
+2026-10-30 00:10:59,455 - INFO -  * Island 0: 5 programs, best=0.0520, avg=0.0396, diversity=2353.23, gen=5 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-30 00:10:59,455 - INFO -    Island 1: 4 programs, best=0.0470, avg=0.0411, diversity=1101.13, gen=4 (best: f35d2593-618f-4f90-86e9-8779245d11b3)
+2026-10-30 00:10:59,455 - INFO -    Island 2: 4 programs, best=0.0542, avg=0.0472, diversity=1689.23, gen=4 (best: 1d73014e-1602-4b2f-8063-b6945a8d30a1)
+2026-10-30 00:10:59,455 - INFO -    Island 3: 4 programs, best=0.0521, avg=0.0469, diversity=1551.97, gen=4 (best: e942dd80-b97b-4dc4-80b3-e1d20bdade04)
+2026-10-30 00:10:59,456 - INFO -    Island 4: 3 programs, best=0.0492, avg=0.0485, diversity=1507.80, gen=4 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:10:59,482 - INFO - Saved database with 20 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_21
+2026-10-30 00:10:59,483 - INFO - Saved best program at checkpoint 21 with metrics: combined_score=0.0542, passed=1.0000, hit_rate=0.5562
+2026-10-30 00:10:59,483 - INFO - Saved checkpoint at iteration 21 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_21
+2026-10-30 00:14:02,405 - INFO - New MAP-Elites cell occupied in island 1: {'complexity': 8, 'diversity': 0}
+2026-10-30 00:14:02,405 - INFO - Iteration 22: Program 6fe2b49f-1417-450c-8eb1-d08a93b81629 (parent: 21d97d7f-e5e4-4263-992a-1857a1d4c587) completed in 182.95s
+2026-10-30 00:14:02,405 - INFO - Metrics: combined_score=0.0477, passed=1.0000, hit_rate=0.5528
+2026-10-30 00:14:02,405 - INFO - Checkpoint interval reached at iteration 22
+2026-10-30 00:14:02,409 - INFO - Island Status:
+2026-10-30 00:14:02,409 - INFO -  * Island 0: 5 programs, best=0.0520, avg=0.0396, diversity=2353.23, gen=5 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-30 00:14:02,409 - INFO -    Island 1: 5 programs, best=0.0477, avg=0.0425, diversity=1067.47, gen=5 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:14:02,409 - INFO -    Island 2: 4 programs, best=0.0542, avg=0.0472, diversity=1689.23, gen=4 (best: 1d73014e-1602-4b2f-8063-b6945a8d30a1)
+2026-10-30 00:14:02,409 - INFO -    Island 3: 4 programs, best=0.0521, avg=0.0469, diversity=1551.97, gen=4 (best: e942dd80-b97b-4dc4-80b3-e1d20bdade04)
+2026-10-30 00:14:02,409 - INFO -    Island 4: 3 programs, best=0.0492, avg=0.0485, diversity=1507.80, gen=4 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:14:02,441 - INFO - Saved database with 21 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_22
+2026-10-30 00:14:02,443 - INFO - Saved best program at checkpoint 22 with metrics: combined_score=0.0542, passed=1.0000, hit_rate=0.5562
+2026-10-30 00:14:02,443 - INFO - Saved checkpoint at iteration 22 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_22
+2026-10-30 00:16:47,402 - INFO - New MAP-Elites cell occupied in island 2: {'complexity': 7, 'diversity': 0}
+2026-10-30 00:16:47,403 - INFO - New best program 5721f8b9-2584-4742-8ca1-d66c363943c8 replaces 1d73014e-1602-4b2f-8063-b6945a8d30a1 (combined_score: 0.0542 → 0.0553, +0.0012)
+2026-10-30 00:16:47,403 - INFO - Iteration 23: Program 5721f8b9-2584-4742-8ca1-d66c363943c8 (parent: c8f8d3bc-90d1-4caa-8a70-604cd34ed61f) completed in 165.00s
+2026-10-30 00:16:47,403 - INFO - Metrics: combined_score=0.0553, passed=1.0000, hit_rate=0.5568
+2026-10-30 00:16:47,403 - INFO - 🌟 New best solution found at iteration 23: 5721f8b9-2584-4742-8ca1-d66c363943c8
+2026-10-30 00:16:47,403 - INFO - Checkpoint interval reached at iteration 23
+2026-10-30 00:16:47,410 - INFO - Island Status:
+2026-10-30 00:16:47,410 - INFO -  * Island 0: 5 programs, best=0.0520, avg=0.0396, diversity=2353.23, gen=5 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-30 00:16:47,411 - INFO -    Island 1: 5 programs, best=0.0477, avg=0.0425, diversity=1067.47, gen=5 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:16:47,411 - INFO -    Island 2: 5 programs, best=0.0553, avg=0.0488, diversity=1492.77, gen=5 (best: 5721f8b9-2584-4742-8ca1-d66c363943c8)
+2026-10-30 00:16:47,411 - INFO -    Island 3: 4 programs, best=0.0521, avg=0.0469, diversity=1551.97, gen=4 (best: e942dd80-b97b-4dc4-80b3-e1d20bdade04)
+2026-10-30 00:16:47,411 - INFO -    Island 4: 3 programs, best=0.0492, avg=0.0485, diversity=1507.80, gen=4 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:16:47,443 - INFO - Saved database with 22 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_23
+2026-10-30 00:16:47,445 - INFO - Saved best program at checkpoint 23 with metrics: combined_score=0.0553, passed=1.0000, hit_rate=0.5568
+2026-10-30 00:16:47,445 - INFO - Saved checkpoint at iteration 23 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_23
+2026-10-30 00:19:01,996 - INFO - Island 3 MAP-Elites cell replaced: {'complexity': 9, 'diversity': 3} (fitness: 0.052 -> 0.055)
+2026-10-30 00:19:01,996 - INFO - Cleaned up 1 stale island best program references
+2026-10-30 00:19:01,996 - INFO - Iteration 24: Program 45d1d8e6-8f44-47a2-aac2-d61f37289cf3 (parent: 415ac55b-0163-45e8-a831-c4d574bc9543) completed in 134.58s
+2026-10-30 00:19:01,996 - INFO - Metrics: combined_score=0.0545, passed=1.0000, hit_rate=0.5564
+2026-10-30 00:19:01,996 - INFO - Checkpoint interval reached at iteration 24
+2026-10-30 00:19:02,000 - INFO - Island Status:
+2026-10-30 00:19:02,000 - INFO -  * Island 0: 5 programs, best=0.0520, avg=0.0396, diversity=2353.23, gen=5 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-30 00:19:02,000 - INFO -    Island 1: 5 programs, best=0.0477, avg=0.0425, diversity=1067.47, gen=5 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:19:02,000 - INFO -    Island 2: 5 programs, best=0.0553, avg=0.0488, diversity=1492.77, gen=5 (best: 5721f8b9-2584-4742-8ca1-d66c363943c8)
+2026-10-30 00:19:02,000 - INFO -    Island 3: 4 programs, best=0.0545, avg=0.0475, diversity=1627.42, gen=5 (best: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3)
+2026-10-30 00:19:02,000 - INFO -    Island 4: 3 programs, best=0.0492, avg=0.0485, diversity=1507.80, gen=4 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:19:02,026 - INFO - Saved database with 22 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_24
+2026-10-30 00:19:02,028 - INFO - Saved best program at checkpoint 24 with metrics: combined_score=0.0553, passed=1.0000, hit_rate=0.5568
+2026-10-30 00:19:02,028 - INFO - Saved checkpoint at iteration 24 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_24
+2026-10-30 00:21:32,487 - INFO - New MAP-Elites cell occupied in island 4: {'complexity': 8, 'diversity': 0}
+2026-10-30 00:21:32,487 - INFO - Iteration 25: Program fbbb45c9-a501-4c63-8aef-23f4f6ae60fd (parent: 29414830-350d-4bd6-945d-b7574ccce38f) completed in 150.50s
+2026-10-30 00:21:32,487 - INFO - Metrics: combined_score=0.0486, passed=1.0000, hit_rate=0.5533
+2026-10-30 00:21:32,487 - INFO - Checkpoint interval reached at iteration 25
+2026-10-30 00:21:32,505 - INFO - Island Status:
+2026-10-30 00:21:32,505 - INFO -  * Island 0: 5 programs, best=0.0520, avg=0.0396, diversity=2353.23, gen=5 (best: b2ab800f-c12f-48d5-b429-7a9277e6e981)
+2026-10-30 00:21:32,505 - INFO -    Island 1: 5 programs, best=0.0477, avg=0.0425, diversity=1067.47, gen=5 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:21:32,505 - INFO -    Island 2: 5 programs, best=0.0553, avg=0.0488, diversity=1492.77, gen=5 (best: 5721f8b9-2584-4742-8ca1-d66c363943c8)
+2026-10-30 00:21:32,508 - INFO -    Island 3: 4 programs, best=0.0545, avg=0.0475, diversity=1627.42, gen=5 (best: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3)
+2026-10-30 00:21:32,508 - INFO -    Island 4: 4 programs, best=0.0492, avg=0.0485, diversity=1132.48, gen=5 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:21:32,544 - INFO - Saved database with 23 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_25
+2026-10-30 00:21:32,546 - INFO - Saved best program at checkpoint 25 with metrics: combined_score=0.0553, passed=1.0000, hit_rate=0.5568
+2026-10-30 00:21:32,546 - INFO - Saved checkpoint at iteration 25 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_25
+2026-10-30 00:23:53,770 - INFO - Island 0 MAP-Elites cell replaced: {'complexity': 6, 'diversity': 0} (fitness: 0.052 -> 0.054)
+2026-10-30 00:23:53,770 - INFO - Cleaned up 1 stale island best program references
+2026-10-30 00:23:53,770 - INFO - Iteration 26: Program e45a3756-84c6-4344-81de-34b005f42bd5 (parent: 3a58e464-31f7-4f31-897c-19fe95604681) completed in 141.29s
+2026-10-30 00:23:53,770 - INFO - Metrics: combined_score=0.0542, passed=1.0000, hit_rate=0.5562
+2026-10-30 00:23:53,770 - INFO - Checkpoint interval reached at iteration 26
+2026-10-30 00:23:53,783 - INFO - Island Status:
+2026-10-30 00:23:53,783 - INFO -  * Island 0: 5 programs, best=0.0542, avg=0.0400, diversity=2358.88, gen=6 (best: e45a3756-84c6-4344-81de-34b005f42bd5)
+2026-10-30 00:23:53,783 - INFO -    Island 1: 5 programs, best=0.0477, avg=0.0425, diversity=1067.47, gen=5 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:23:53,783 - INFO -    Island 2: 5 programs, best=0.0553, avg=0.0488, diversity=1492.77, gen=5 (best: 5721f8b9-2584-4742-8ca1-d66c363943c8)
+2026-10-30 00:23:53,783 - INFO -    Island 3: 4 programs, best=0.0545, avg=0.0475, diversity=1627.42, gen=5 (best: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3)
+2026-10-30 00:23:53,783 - INFO -    Island 4: 4 programs, best=0.0492, avg=0.0485, diversity=1132.48, gen=5 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:23:53,822 - INFO - Saved database with 23 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_26
+2026-10-30 00:23:53,824 - INFO - Saved best program at checkpoint 26 with metrics: combined_score=0.0553, passed=1.0000, hit_rate=0.5568
+2026-10-30 00:23:53,824 - INFO - Saved checkpoint at iteration 26 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_26
+2026-10-30 00:26:48,768 - INFO - Iteration 27: Program b6f4a453-9b96-4c77-8fae-09f221564c2a (parent: 2871f592-cace-42f6-aa88-2a399dc9f73b) completed in 175.00s
+2026-10-30 00:26:48,768 - INFO - Metrics: combined_score=0.0283, passed=1.0000, hit_rate=0.5426
+2026-10-30 00:26:48,768 - INFO - Checkpoint interval reached at iteration 27
+2026-10-30 00:26:48,777 - INFO - Island Status:
+2026-10-30 00:26:48,778 - INFO -  * Island 0: 5 programs, best=0.0542, avg=0.0400, diversity=2358.88, gen=6 (best: e45a3756-84c6-4344-81de-34b005f42bd5)
+2026-10-30 00:26:48,778 - INFO -    Island 1: 6 programs, best=0.0477, avg=0.0401, diversity=1012.00, gen=6 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:26:48,778 - INFO -    Island 2: 5 programs, best=0.0553, avg=0.0488, diversity=1492.77, gen=5 (best: 5721f8b9-2584-4742-8ca1-d66c363943c8)
+2026-10-30 00:26:48,778 - INFO -    Island 3: 4 programs, best=0.0545, avg=0.0475, diversity=1627.42, gen=5 (best: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3)
+2026-10-30 00:26:48,778 - INFO -    Island 4: 4 programs, best=0.0492, avg=0.0485, diversity=1132.48, gen=5 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:26:48,819 - INFO - Saved database with 24 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_27
+2026-10-30 00:26:48,820 - INFO - Saved best program at checkpoint 27 with metrics: combined_score=0.0553, passed=1.0000, hit_rate=0.5568
+2026-10-30 00:26:48,820 - INFO - Saved checkpoint at iteration 27 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_27
+2026-10-30 00:29:47,477 - INFO - Island 2 MAP-Elites cell replaced: {'complexity': 7, 'diversity': 0} (fitness: 0.055 -> 0.057)
+2026-10-30 00:29:47,477 - INFO - New best program 7f5c54bf-efe8-469e-953d-02b0d5ce0120 replaces 5721f8b9-2584-4742-8ca1-d66c363943c8 (combined_score: 0.0553 → 0.0568, +0.0014)
+2026-10-30 00:29:47,477 - INFO - Cleaned up 1 stale island best program references
+2026-10-30 00:29:47,477 - INFO - Iteration 28: Program 7f5c54bf-efe8-469e-953d-02b0d5ce0120 (parent: c8f8d3bc-90d1-4caa-8a70-604cd34ed61f) completed in 178.70s
+2026-10-30 00:29:47,477 - INFO - Metrics: combined_score=0.0568, passed=1.0000, hit_rate=0.5576
+2026-10-30 00:29:47,478 - INFO - 🌟 New best solution found at iteration 28: 7f5c54bf-efe8-469e-953d-02b0d5ce0120
+2026-10-30 00:29:47,478 - INFO - Checkpoint interval reached at iteration 28
+2026-10-30 00:29:47,486 - INFO - Island Status:
+2026-10-30 00:29:47,486 - INFO -  * Island 0: 5 programs, best=0.0542, avg=0.0400, diversity=2358.88, gen=6 (best: e45a3756-84c6-4344-81de-34b005f42bd5)
+2026-10-30 00:29:47,486 - INFO -    Island 1: 6 programs, best=0.0477, avg=0.0401, diversity=1012.00, gen=6 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:29:47,486 - INFO -    Island 2: 5 programs, best=0.0568, avg=0.0491, diversity=1416.82, gen=6 (best: 7f5c54bf-efe8-469e-953d-02b0d5ce0120)
+2026-10-30 00:29:47,486 - INFO -    Island 3: 4 programs, best=0.0545, avg=0.0475, diversity=1627.42, gen=5 (best: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3)
+2026-10-30 00:29:47,486 - INFO -    Island 4: 4 programs, best=0.0492, avg=0.0485, diversity=1132.48, gen=5 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:29:47,523 - INFO - Saved database with 24 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_28
+2026-10-30 00:29:47,524 - INFO - Saved best program at checkpoint 28 with metrics: combined_score=0.0568, passed=1.0000, hit_rate=0.5576
+2026-10-30 00:29:47,524 - INFO - Saved checkpoint at iteration 28 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_28
+2026-10-30 00:33:42,983 - INFO - New MAP-Elites cell occupied in island 3: {'complexity': 9, 'diversity': 5}
+2026-10-30 00:33:42,983 - INFO - Iteration 29: Program 2d569d49-5d21-4998-a0c2-b6d5ed817d24 (parent: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3) completed in 235.50s
+2026-10-30 00:33:42,983 - INFO - Metrics: combined_score=0.0518, passed=1.0000, hit_rate=0.5550
+2026-10-30 00:33:42,983 - INFO - Checkpoint interval reached at iteration 29
+2026-10-30 00:33:42,992 - INFO - Island Status:
+2026-10-30 00:33:42,992 - INFO -  * Island 0: 5 programs, best=0.0542, avg=0.0400, diversity=2358.88, gen=6 (best: e45a3756-84c6-4344-81de-34b005f42bd5)
+2026-10-30 00:33:42,992 - INFO -    Island 1: 6 programs, best=0.0477, avg=0.0401, diversity=1012.00, gen=6 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:33:42,992 - INFO -    Island 2: 5 programs, best=0.0568, avg=0.0491, diversity=1416.82, gen=6 (best: 7f5c54bf-efe8-469e-953d-02b0d5ce0120)
+2026-10-30 00:33:42,992 - INFO -    Island 3: 5 programs, best=0.0545, avg=0.0484, diversity=1118.25, gen=6 (best: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3)
+2026-10-30 00:33:42,992 - INFO -    Island 4: 4 programs, best=0.0492, avg=0.0485, diversity=1132.48, gen=5 (best: 41b611e1-2cfe-43b0-8de3-0032139dcd15)
+2026-10-30 00:33:43,028 - INFO - Saved database with 25 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_29
+2026-10-30 00:33:43,029 - INFO - Saved best program at checkpoint 29 with metrics: combined_score=0.0568, passed=1.0000, hit_rate=0.5576
+2026-10-30 00:33:43,029 - INFO - Saved checkpoint at iteration 29 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_29
+2026-10-30 00:35:15,152 - INFO - Island 4 MAP-Elites cell replaced: {'complexity': 8, 'diversity': 0} (fitness: 0.049 -> 0.052)
+2026-10-30 00:35:15,153 - INFO - Iteration 30: Program 897f9018-5c70-488c-87a8-5604d03055ae (parent: c178072d-b8a4-4a29-ad9b-96b8196ed9e8) completed in 92.17s
+2026-10-30 00:35:15,153 - INFO - Metrics: combined_score=0.0522, passed=1.0000, hit_rate=0.5552
+2026-10-30 00:35:15,153 - INFO - Checkpoint interval reached at iteration 30
+2026-10-30 00:35:15,161 - INFO - Island Status:
+2026-10-30 00:35:15,161 - INFO -  * Island 0: 5 programs, best=0.0542, avg=0.0400, diversity=2358.88, gen=6 (best: e45a3756-84c6-4344-81de-34b005f42bd5)
+2026-10-30 00:35:15,161 - INFO -    Island 1: 6 programs, best=0.0477, avg=0.0401, diversity=1012.00, gen=6 (best: 6fe2b49f-1417-450c-8eb1-d08a93b81629)
+2026-10-30 00:35:15,161 - INFO -    Island 2: 5 programs, best=0.0568, avg=0.0491, diversity=1416.82, gen=6 (best: 7f5c54bf-efe8-469e-953d-02b0d5ce0120)
+2026-10-30 00:35:15,161 - INFO -    Island 3: 5 programs, best=0.0545, avg=0.0484, diversity=1118.25, gen=6 (best: 45d1d8e6-8f44-47a2-aac2-d61f37289cf3)
+2026-10-30 00:35:15,161 - INFO -    Island 4: 4 programs, best=0.0522, avg=0.0494, diversity=1145.83, gen=6 (best: 897f9018-5c70-488c-87a8-5604d03055ae)
+2026-10-30 00:35:15,198 - INFO - Saved database with 25 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_30
+2026-10-30 00:35:15,200 - INFO - Saved best program at checkpoint 30 with metrics: combined_score=0.0568, passed=1.0000, hit_rate=0.5576
+2026-10-30 00:35:15,200 - INFO - Saved checkpoint at iteration 30 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_30
+2026-10-30 00:35:15,200 - INFO - ✅ Evolution completed - Maximum iterations reached
+2026-10-30 00:35:15,246 - INFO - Saved database with 25 programs to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_30
+2026-10-30 00:35:15,247 - INFO - Saved best program at checkpoint 30 with metrics: combined_score=0.0568, passed=1.0000, hit_rate=0.5576
+2026-10-30 00:35:15,247 - INFO - Saved checkpoint at iteration 30 to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\checkpoints\checkpoint_30
+2026-10-30 00:35:15,259 - INFO - Stopped process pool
+2026-10-30 00:35:15,259 - INFO - Using tracked best program: 7f5c54bf-efe8-469e-953d-02b0d5ce0120
+2026-10-30 00:35:15,259 - INFO - Evolution complete. Best program has metrics: combined_score=0.0568, passed=1.0000, hit_rate=0.5576
+2026-10-30 00:35:15,261 - INFO - Saved best program to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\best\best_program.rs with program info to C:\Projects\cache-evolve\comparison_runs\lru_cache-msr-opus\openevolve\rep0\openevolve_output\best\best_program_info.json
+openevolve best_score=0.056761110584667936

@@ -1,0 +1,25 @@
+{
+  "evolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 30,
+    "pass_rate": 1.0,
+    "beat_baseline": 28,
+    "best_score": 0.06457879276035267,
+    "median_passing_score": 0.057187529612432605,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 2,
+    "multi_file_candidates": 2
+  },
+  "openevolve/rep0": {
+    "candidates": 30,
+    "passed_gates": 30,
+    "pass_rate": 1.0,
+    "beat_baseline": 30,
+    "best_score": 0.056761110584667936,
+    "median_passing_score": 0.048588079219179445,
+    "first_candidate_beating_baseline": 1,
+    "candidates_not_rescorable": 0,
+    "multi_file_candidates": 0,
+    "wall_minutes_to_last_candidate": 168.5
+  }
+}
