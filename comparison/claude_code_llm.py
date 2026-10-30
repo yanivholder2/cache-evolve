@@ -27,7 +27,14 @@ from openevolve.llm.claude_code import ClaudeCodeLLM
 
 logger = logging.getLogger(__name__)
 
-_SCRATCH = tempfile.mkdtemp(prefix="openevolve-claude-cwd-")
+_SCRATCH = str(Path(tempfile.gettempdir()) / "openevolve-claude-cwd")
+
+
+def _scratch() -> str:
+    """The empty working directory, recreated if a temp cleaner removed it mid-run
+    (a seed-44 run lost it after 14 iterations and every later call failed)."""
+    Path(_SCRATCH).mkdir(parents=True, exist_ok=True)
+    return _SCRATCH
 
 # Per-call spend cap passed to `claude --max-budget-usd`. OpenEvolve's model config
 # carries max_budget_usd=None, which the CLI rejects; a 16k-token Opus reply costs
@@ -98,7 +105,6 @@ def _version(path: str) -> list[str]:
 class IsolatedClaudeCodeLLM(ClaudeCodeLLM):
     def __init__(self, model_cfg=None):
         super().__init__(model_cfg)
-        self.cwd = _SCRATCH
         if not self.max_budget_usd:
             self.max_budget_usd = MAX_BUDGET_USD
 
@@ -118,18 +124,19 @@ class IsolatedClaudeCodeLLM(ClaudeCodeLLM):
         # The parent builds [claude, -p, ..., --system-prompt, <sys>, ..., <prompt>].
         cmd = list(cmd)
         prompt = cmd.pop()
+        cwd = _scratch()
         cmd[0] = claude_executable()
         sys_file = None
         if "--system-prompt" in cmd:
             at = cmd.index("--system-prompt")
-            handle, sys_file = tempfile.mkstemp(prefix="openevolve-sys-", suffix=".md", dir=_SCRATCH)
+            handle, sys_file = tempfile.mkstemp(prefix="openevolve-sys-", suffix=".md", dir=cwd)
             with os.fdopen(handle, "w", encoding="utf-8") as f:
                 f.write(cmd[at + 1])
             cmd[at:at + 2] = ["--system-prompt-file", sys_file]
         try:
             result = subprocess.run(
                 cmd, input=prompt, capture_output=True, text=True, encoding="utf-8",
-                errors="replace", timeout=timeout, cwd=self.cwd,
+                errors="replace", timeout=timeout, cwd=cwd,
             )
         except subprocess.TimeoutExpired:
             raise asyncio.TimeoutError("Claude CLI subprocess timed out")
