@@ -6,9 +6,15 @@ Source: SNIA IOTTA Repository, "MSR Cambridge Traces"
   web_0 from msr-cambridge2.tar (SHA-1 effc3656ef7946abbf8f0df296cf82262c341145)
   hm_0  from msr-cambridge1.tar (SHA-1 28ef578dcafa98b94ba9d9fd1205e7eec58f43d8)
 
-Converted with scripts/convert_msr_trace.py (defaults): each request is
-expanded into the 4 KiB blocks it touches, one key (offset // 4096) per line,
-reads and writes both counted as accesses.
+Converted with scripts/convert_msr_trace.py using its defaults:
+  --block-size 4096   (each request is expanded into the 4 KiB blocks it
+                       touches, one key (offset // 4096) per line)
+  no --reads-only     (reads and writes both counted as accesses)
+  no --max-events     (whole volume converted)
+
+  Trace   Events      Distinct blocks
+  web_0   9,642,398   1,915,690
+  hm_0    8,985,487     610,404
 
 Please cite:
   Dushyanth Narayanan, Austin Donnelly, and Antony Rowstron.

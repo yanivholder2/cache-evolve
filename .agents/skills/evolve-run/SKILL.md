@@ -96,7 +96,10 @@ Record the run's output dir — the newest `outputs/<subject>_<timestamp>/` unde
 - **Every cycle had a survivor.** Each `cycles/NNNN/cycle-winners.json` lists
   winners; the run log also prints `cycle NNNN survivors=X/Y rejected={…}`. Flag
   any cycle with 0 survivors and surface the rejection reason.
-- **Caffeine produced results**: `cycles/*/variants/*/eval/caffeine/*.csv` exist.
+- **Caffeine produced results**: `cycles/*/variants/*/eval/caffeine/*.csv` exist
+  (single-trace grid) or `cycles/*/variants/*/eval/caffeine/*/hit_rate_*.csv`
+  (multi-trace grid such as `--evaluation-profile msr`: one `<trace>_lirs/`
+  subdir per trace, e.g. `web_0_lirs/`, `hm_0_lirs/`).
 - **Ledger + leaderboard advanced**: `cycles-ledger.jsonl` and `leaderboard.md`
   are present and non-empty, with one ledger line per completed cycle.
 - **No truncated/empty logs**: the `*-writer.log.md` and per-variant attempt

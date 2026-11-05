@@ -192,6 +192,16 @@ Description of a Trace's workload characteristics (skew, working-set size,
 scan/hot-set behavior).
 _Avoid_: Trace doc, workload description.
 
+**Evaluation profile**:
+A named alternative (Trace, cache size) grid a Subject's manifest declares
+under `[evaluation.profiles.<name>]` (e.g. `msr`), overriding the default
+`[evaluation]` traces and/or sizes. A run opts in with `--evaluation-profile`;
+each profile has its own baseline anchor
+(`baseline/eval/profiles/<name>/fitness-vector.json`). Not a Trace profile: a
+Trace profile describes a workload, an Evaluation profile selects what a run is
+scored on.
+_Avoid_: Profile (bare), trace set, grid config.
+
 **Development suite**:
 Traces visible to the AI during evaluation.
 _Avoid_: Training set, dev set.

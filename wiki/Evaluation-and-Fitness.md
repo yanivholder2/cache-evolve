@@ -52,7 +52,7 @@ One `dimensions` entry per plugin. The winner-selection machinery ([Concepts](Co
 
 ### When scoring fails
 
-If the simulator fails (build error, non-zero exit, **timeout**, or missing/malformed output) or a plugin subprocess fails, scoring raises a fitness error. This does **not** crash the cycle: the variant is softly rejected and the rest of the cohort proceeds. The per-variant simulator timeout is configurable (`--simulator-timeout-s`, default 600s).
+If the simulator fails (build error, non-zero exit, **timeout**, or missing/malformed output) or a plugin subprocess fails, scoring raises a fitness error. This does **not** crash the cycle: the variant is softly rejected and the rest of the cohort proceeds. The simulator timeout is configurable (`--simulator-timeout-s`, default 600s) and bounds each trace's sweep over all sizes.
 
 ## Simulators
 
@@ -70,6 +70,8 @@ flowchart TD
     P --> FV["fitness-vector.json"]
 ```
 
+A variant is simulated on every (trace, size) point of the subject's `[evaluation]` grid, or of a named evaluation profile such as `msr` when the run passes `--evaluation-profile` (see [Baseline → Evaluation profiles](Baseline#evaluation-profiles)). Reports land under the variant's `eval/caffeine/`: flat (`hit_rate_<size>.csv`) for a single-trace grid, and one subdirectory per trace for a multi-trace grid (`<trace>_<format>/hit_rate_<size>.csv`, e.g. `web_0_lirs/`, `hm_0_lirs/`), so no trace's reports overwrite another's.
+
 ### Caffeine
 
 [Caffeine](https://github.com/ben-manes/caffeine) is a high-performance Java caching library whose simulator can replay access traces against pluggable policies. Evolve runs each variant as a Caffeine *policy* backed by the variant's compiled Rust library, over JNI.
@@ -80,7 +82,7 @@ flowchart TD
 - On the Java side, a small policy class (`<Subject>RustPolicy.java`) loads that library and forwards every cache operation to it.
 - The bridge is **pointer-based JNI**: the Rust side returns an opaque pointer when the cache is created, and Java passes that pointer back on every call, finally releasing it when the trace finishes.
 - The subject's manifest `[caffeine]` table tells the runner everything it needs — the policy spec name, the config prefix the Java side reads, the cache geometry, and so on — so the runner itself stays subject-agnostic.
-- A setting that scales with the cache size goes under `[caffeine.size-divisors]` as `key = divisor`; the runner passes `key = size / divisor` for each size (one Caffeine call per size) and every evaluated size must be an exact multiple. Dash uses it for `numOfSegments = size / 2048`.
+- A setting that scales with the cache size goes under `[caffeine.size-divisors]` as `key = divisor`; the runner passes `key = size / divisor` for each size (one Caffeine call per size) and every evaluated size must be an exact multiple. Dash uses it for `numOfSegments = size / 2048`. The per-size calls share one `--simulator-timeout-s` deadline, so the budget per trace is the same as for any other subject.
 - If Caffeine throws (e.g. a size its policy rejects) the runner fails loudly, naming the policy, size and Java exception, even when the JVM exits 0 without writing `hit_rate_<size>.csv`; the variant's evaluation fails.
 
 **Setting it up (user flow):**
