@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 
 use crate::dash::segments::Segment;
 use crate::shared::item::Item;
-use crate::shared::utils::get_index;
+use crate::shared::utils::segment_index;
 
 /// Multi-segment associative cache. Each segment owns its own normal buckets and stash
 /// and implements a probing strategy via `Segment`. `Dash` shards keys across segments
@@ -80,13 +80,13 @@ where
 	}
 
 	pub fn put(&mut self, key: K, value: V) {
-		let idx = get_index(&key, self.segments.len());
+		let idx = segment_index(&key, self.segments.len());
 		debug!("Dash.put: key={key:?} segment={idx}");
 		self.segments[idx].put(Item::new(key, value));
 	}
 
 	pub fn get_and_update_item(&mut self, key: &K) -> Option<&V> {
-		let idx = get_index(key, self.segments.len());
+		let idx = segment_index(key, self.segments.len());
 		debug!("Dash.get_and_update_item: key={key:?} segment={idx}");
 		let item = self.segments[idx].get(key)?;
 		Some(&item.value)

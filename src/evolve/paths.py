@@ -54,6 +54,13 @@ class CaffeineOutputDir:
     def hit_rate_csv(self, size: int) -> Path:
         return self.root / f"hit_rate_{size}.csv"
 
+    def for_trace(self, trace_name: str) -> CaffeineOutputDir:
+        """Per-trace report subdirectory (`<root>/<trace_name>/`). A grid with
+        several traces writes each trace's `hit_rate_<size>.csv` here, so one
+        trace's reports don't overwrite another's; a single-trace grid keeps
+        writing to `root` directly."""
+        return CaffeineOutputDir(root=self.root / trace_name)
+
 
 @dataclass(frozen=True)
 class VariantDir:
