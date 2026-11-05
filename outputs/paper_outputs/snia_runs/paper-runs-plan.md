@@ -221,7 +221,7 @@ this branch: the segment index now comes from the hash's high 32 bits; the
 single-segment default grid is unaffected). The old runs (SH01 0.405 vs 0.388,
 SF01 score 0.151) and the dash msr baseline of 0.388 measured that broken cache.
 The old run dirs are removed from the tree and remain in git at `230de476`. The
-re-measured dash msr baseline hit-rate is **TBD** (`<DASH_MSR_BASELINE>`; see
+re-measured dash msr baseline hit-rate is **0.510** (per-op get p50 75 ns, metadata 40 B; see
 `inputs/subjects/dash/baseline/eval/profiles/msr/fitness-vector.json`). Re-run
 both rows with the unchanged commands.
 
