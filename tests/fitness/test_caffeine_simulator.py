@@ -241,3 +241,12 @@ def test_simulate_variant_scores_the_profile_grid(
         (trace, size, pytest.approx(0.1 * (i + 1)))
         for i, (trace, sizes) in enumerate(expected_calls) for size in sizes
     ]
+
+
+def test_log_level_map_covers_manifest_simulator_log_levels():
+    # simulator_debug_mode indexes the map with a manifest `simulator-log-level`
+    # cap; every level the manifest loader accepts must have a debug_mode.
+    from evolve.fitness import caffeine_simulator
+    from evolve.subject import _SIMULATOR_LOG_LEVELS
+
+    assert set(caffeine_simulator._LOG_LEVEL_TO_DEBUG_MODE) == set(_SIMULATOR_LOG_LEVELS)

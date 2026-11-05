@@ -1007,3 +1007,13 @@ def test_profile_baseline_grid_mismatch_is_rejected(tmp_path: Path):
     _write_profile_baseline(tmp_path, [("lirs:multi1.trace.gz", 512)])
     with pytest.raises(SubjectManifestError, match=r"evaluation.profiles.msr: baseline 'hit-rate' grid"):
         load_subject(tmp_path).validate_profile_baseline("msr")
+
+
+@pytest.mark.parametrize("name", ["dash", "associative_cache", "lru_cache", "tiny_lfu"])
+def test_real_subject_msr_profile_baseline_is_valid(name: str):
+    # Regression: each committed msr anchor exists and is scored on exactly the
+    # profile's (trace, size) grid, so `--evaluation-profile msr` passes the
+    # run-boundary check.
+    subject = load_subject(REPO_ROOT / "inputs" / "subjects" / name)
+    assert "msr" in subject.evaluation.profiles
+    subject.validate_profile_baseline("msr")

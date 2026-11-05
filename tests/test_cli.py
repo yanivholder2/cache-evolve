@@ -296,3 +296,55 @@ def test_continue_rejects_evaluation_profile_flag():
     args = _build_arg_parser().parse_args(["--continue", "x", "--evaluation-profile", "msr"])
     with pytest.raises(SystemExit):
         _reject_overrides_with_continue(args)
+
+
+# --- evaluation profiles: run-boundary validation in main() ---
+
+
+def _redirect_main_outputs(monkeypatch, run_root: Path) -> None:
+    """Point main()'s run directory at ``run_root`` and stub the LLM adapter so
+    main() reaches profile validation without touching outputs/ or an SDK."""
+    import evolve.cli as cli
+
+    real_load_configs = cli.load_configs
+
+    def load_configs(*args, **kwargs):
+        cfg = real_load_configs(*args, **kwargs)
+        framework = dataclasses.replace(cfg.framework, outputs_root=run_root)
+        return dataclasses.replace(cfg, framework=framework)
+
+    monkeypatch.setattr(cli, "load_configs", load_configs)
+    monkeypatch.setattr(
+        cli, "ADAPTER_REGISTRY",
+        {name: (lambda **_: object()) for name in cli.ADAPTER_REGISTRY},
+    )
+
+
+def test_main_rejects_unknown_profile_before_snapshot(tmp_path, monkeypatch, capsys):
+    from evolve.cli import main
+
+    run_root = tmp_path / "run"
+    _redirect_main_outputs(monkeypatch, run_root)
+    with pytest.raises(SystemExit):
+        main(["--subject", "lru_cache", "--evaluation-profile", "nope"])
+    assert "evaluation profile 'nope' is not declared" in capsys.readouterr().err
+    assert not (run_root / "config.toml").exists()
+    assert not run_root.exists()
+
+
+def test_main_rejects_profile_with_missing_baseline_anchor(tmp_path, monkeypatch, capsys):
+    import evolve.cli as cli
+    from evolve.subject import load_subject
+
+    run_root = tmp_path / "run"
+    _redirect_main_outputs(monkeypatch, run_root)
+    # The real lru_cache manifest (declares msr), re-rooted at an empty dir so
+    # the profile's baseline anchor is absent.
+    real = load_subject(Path(cli.__file__).resolve().parents[2] / "inputs/subjects/lru_cache")
+    monkeypatch.setattr(cli, "load_subject", lambda _dir: dataclasses.replace(real, subject_dir=tmp_path))
+    with pytest.raises(SystemExit):
+        cli.main(["--subject", "lru_cache", "--evaluation-profile", "msr"])
+    err = capsys.readouterr().err
+    assert "evaluation.profiles.msr: baseline fitness vector not found" in err
+    assert "measure it with `.venv/bin/python scripts/measure_baseline.py lru_cache --evaluation-profile msr`" in err
+    assert not run_root.exists()
