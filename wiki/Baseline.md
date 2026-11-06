@@ -20,12 +20,12 @@ inputs/subjects/<name>/baseline/
 `fitness-vector.json` is a committed artifact. Regenerate it — and commit the diff — whenever something that affects the measurement changes (for example, the benchmark configuration or the set of fitness plugins), so that cohorts are always compared against a current anchor:
 
 ```bash
-uv run python scripts/measure_baseline.py
+.venv/bin/python scripts/measure_baseline.py [<subject>]
 ```
 
 The script builds the subject with an empty overlay, runs the correctness [gates](Concepts#gates) (aborting if the baseline itself fails them), and then computes fitness exactly as a live variant would — writing `eval/fitness/*.json` and the aggregated `eval/fitness-vector.json`.
 
-To measure a baseline for a specific subject, select it the usual way (via `--subject` / `config.toml`); the script measures whichever subject the configuration resolves to.
+The subject is an optional positional argument (e.g. `.venv/bin/python scripts/measure_baseline.py dash`); without it the script measures the subject `config.toml` selects. There is no `--subject` flag.
 
 ## Evaluation profiles
 

@@ -10,12 +10,17 @@ Input rows: Timestamp,Hostname,DiskNumber,Type,Offset,Size,ResponseTime
 (gzip CSV, Offset/Size in bytes). Key = Offset // block_size (+ following blocks).
 
     .venv/bin/python scripts/convert_msr_trace.py traces/msr/raw/web_0.csv.gz \
-        traces/msr/web_0.trace.gz [--block-size 4096] [--reads-only] [--max-events N]
+        inputs/traces/msr/web_0.trace.gz [--block-size 4096] [--reads-only] [--max-events N]
+
+Raw downloads go under the gitignored `traces/`; the converted trace goes under
+`inputs/traces/`, where subject manifests read it. Output is byte-reproducible
+(gzip header mtime is zeroed), so re-converting the same input yields the same file.
 """
 
 import argparse
 import csv
 import gzip
+import io
 from pathlib import Path
 
 BLOCK_SIZE = 4096  # bytes per cache key (page-sized block)
@@ -25,7 +30,14 @@ def convert(src: Path, dst: Path, block_size: int, reads_only: bool, max_events:
     requests = events = skipped = 0
     keys: set[int] = set()
     dst.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.open(src, "rt", newline="") as inp, gzip.open(dst, "wt") as out:
+    # GzipFile (not gzip.open) so the header mtime can be pinned to 0; with no
+    # filename embedded either, identical input gives byte-identical output.
+    with (
+        gzip.open(src, "rt", newline="") as inp,
+        open(dst, "wb") as raw,
+        gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as gz,
+        io.TextIOWrapper(gz, encoding="ascii", newline="\n") as out,
+    ):
         for row in csv.reader(inp):
             if len(row) != 7:
                 raise ValueError(f"{src}: expected 7 fields, got {len(row)}: {row!r}")

@@ -3,15 +3,15 @@
   "values": [
     {
       "op": "get",
-      "p50_ns": 107,
-      "p99_ns": 365
+      "p50_ns": 75,
+      "p99_ns": 149
     },
     {
       "op": "put",
-      "p50_ns": 158,
-      "p99_ns": 214
+      "p50_ns": 91,
+      "p99_ns": 111
     }
   ],
-  "summary": 107,
+  "summary": 75,
   "higher_is_better": false
 }

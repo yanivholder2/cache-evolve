@@ -247,3 +247,26 @@ def test_stale_csv_does_not_mask_failure(tmp_path, monkeypatch):
     with pytest.raises(caffeine_runner.CaffeineError, match=r"sizes \[4096\]"):
         _simulate(tmp_path, [4096])
     assert not (tmp_path / "hit_rate_4096.csv").exists()
+
+
+def test_size_divisor_calls_share_one_timeout_budget(tmp_path, monkeypatch):
+    # Split per-size calls must not each get the full timeout_s: the second call
+    # gets what the first left over, and an exhausted budget fails loudly.
+    clock = iter([0.0, 0.0, 3.2, 3.2])
+    monkeypatch.setattr(caffeine_runner.time, "monotonic", lambda: next(clock))
+    timeouts: list[int] = []
+
+    def run(cmd, **kwargs):
+        timeouts.append(kwargs["timeout"])
+        return _fake_run(0, "", write_sizes=(16384, 131072))(cmd, **kwargs)
+
+    monkeypatch.setattr(caffeine_runner.subprocess, "run", run)
+    _simulate(tmp_path, [16384, 131072], size_divisors={"numOfSegments": 2048}, timeout_s=5)
+    assert timeouts == [5, 2]
+
+    clock = iter([0.0, 0.0, 9.0])
+    monkeypatch.setattr(caffeine_runner.time, "monotonic", lambda: next(clock))
+    timeouts.clear()
+    with pytest.raises(caffeine_runner.CaffeineError, match=r"timed out after 5s.*budget spent before sizes=\[131072\]"):
+        _simulate(tmp_path, [16384, 131072], size_divisors={"numOfSegments": 2048}, timeout_s=5)
+    assert timeouts == [5]

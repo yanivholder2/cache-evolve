@@ -91,3 +91,36 @@ def test_unknown_group_selector_exits(tmp_path, monkeypatch):
     monkeypatch.setattr(build_data, "PAPER_OUTPUTS_DIR", tmp_path)
     with pytest.raises(SystemExit, match="v2_runs"):
         build_data.resolve_groups(["v2_runs"])
+
+
+def test_run_setup_reads_evaluation_profile(tmp_path):
+    run_dir = tmp_path / "dash_claude-opus-5-5_2026-11-01_01-00-00-000"
+    run_dir.mkdir()
+    (run_dir / "cycles-ledger.jsonl").write_text('{"cycle": 1, "cohort_size": 3}\n')
+    (run_dir / "config.toml").write_text('[fitness]\nevaluation_profile = "msr"\n')
+    assert build_data.run_setup(run_dir, "dash", 1)["evaluation-profile"] == "msr"
+    (run_dir / "config.toml").write_text('[fitness]\ndimensions = ["hit-rate"]\n')
+    assert build_data.run_setup(run_dir, "dash", 1)["evaluation-profile"] == "default"
+
+
+def test_build_group_splits_datasets_by_evaluation_profile(tmp_path, monkeypatch):
+    # MSR-profile runs score a different (trace, size) grid than default-grid
+    # runs, so they must land in their own dataset, never in data_<group>.json.
+    def fake_build_run(run_dir, subject, batch):
+        profile = "msr" if batch == "snia_runs" else "default"
+        return {"setup": {"batch": batch, "evaluation-profile": profile}, "variants": [{}]}
+
+    for batch in ("v2_runs", "snia_runs"):
+        (tmp_path / batch / "only_hit_rate" / "dash" / f"dash_{batch}").mkdir(parents=True)
+    monkeypatch.setattr(build_data, "build_run", fake_build_run)
+    monkeypatch.setattr(build_data, "PAPER_PLOTS_DIR", tmp_path / "plots")
+    batches = [(b, tmp_path / b / "only_hit_rate") for b in ("v2_runs", "snia_runs")]
+
+    paths = build_data.build_group("only_hit_rate", batches)
+
+    assert [p.name for p in paths] == ["data_only_hit_rate.json", "data_only_hit_rate_msr.json"]
+    import json
+    default = json.loads(paths[0].read_text())["runs"]
+    msr = json.loads(paths[1].read_text())["runs"]
+    assert [run["setup"]["batch"] for run in default] == ["v2_runs"]
+    assert [run["setup"]["batch"] for run in msr] == ["snia_runs"]

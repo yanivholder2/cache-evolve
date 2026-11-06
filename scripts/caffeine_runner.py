@@ -14,8 +14,10 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import math
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -146,7 +148,7 @@ class Invocation:
             )
         gradlew = "gradlew.bat" if os.name == "nt" else "gradlew"
         sizes_str = ",".join(f"{s:,}".replace(",", "_") for s in self.sizes)
-        title = self.title or _trace_display_name(self.trace)
+        title = self.title or trace_display_name(self.trace)
         jvm_args = ",".join((
             "-XX:+UseParallelGC",
             "-Xmx8g",
@@ -195,7 +197,7 @@ def _derive(size: int, divisor: int, config_key: str, policy_spec_name: str) -> 
     return size // divisor
 
 
-def _trace_display_name(trace: str) -> str:
+def trace_display_name(trace: str) -> str:
     """`lirs:multi1.trace.gz` -> `multi1_lirs`."""
     fmt, _, filename = trace.partition(":")
     basename = os.path.basename(filename or fmt)
@@ -314,6 +316,9 @@ def simulate(
     One Caffeine call sweeps every size, unless the subject declares
     `size_divisors`: their derived keys vary with the size, so each size gets
     its own call (all writing `hit_rate_<size>.csv` into `output_dir`).
+    `timeout_s` bounds the whole sweep either way: split calls share one
+    deadline, so a subject with size-derived keys gets the same budget per
+    trace as any other subject.
     """
 
     if not sizes:
@@ -328,7 +333,15 @@ def simulate(
     batches = [[size] for size in sizes] if size_divisors else [list(sizes)]
     stdout: list[str] = []
     stderr: list[str] = []
+    deadline = time.monotonic() + timeout_s
     for batch in batches:
+        remaining_s = math.ceil(deadline - time.monotonic())
+        if remaining_s <= 0:
+            raise CaffeineError(
+                f"caffeine simulator timed out after {timeout_s}s (policy={policy_spec_name}, "
+                f"trace={trace}, sizes={list(sizes)}, policies={list(policies)}; "
+                f"budget spent before sizes={batch})"
+            )
         invocation = Invocation(
             library_path=library_path,
             trace=trace,
@@ -345,7 +358,7 @@ def simulate(
             caffeine_dir=caffeine_dir,
             size_divisors=size_divisors,
         )
-        result = _invoke(invocation, timeout_s=timeout_s)
+        result = _invoke(invocation, timeout_s=remaining_s)
         stdout.append(result.stdout)
         stderr.append(result.stderr)
     return RunResult(output_dir=output_dir, stdout="\n".join(stdout), stderr="\n".join(stderr))
