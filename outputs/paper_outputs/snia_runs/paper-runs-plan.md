@@ -203,7 +203,7 @@ status](#checking-run-status) for the live state. v2 counterparts: see
 
 | ID | Mode | Subject | Model | Status | Session | Run dir | Global best vs baseline | PR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SH01 | only_hit_rate | dash | claude-opus-5-5 | invalidated — re-run needed | | | | |
+| SH01 | only_hit_rate | dash | claude-opus-5-5 | done (re-run) | session_01Hio5C33x9Zp1SWGKDacQgj | `only_hit_rate/dash/dash_claude-opus-5-5_2026-11-05_22-12-54-777` | 0.546 vs 0.510 (c10/v002) | #266 |
 | SH02 | only_hit_rate | associative_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/associative_cache/associative_cache_claude-opus-5-5_2026-10-28_14-10-09-632` | 0.549 vs 0.527 (c10/v002) | |
 | SH03 | only_hit_rate | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_11-39-56-149` | 0.562 vs 0.528 (c10/v003) | |
 | SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/tiny_lfu/tiny_lfu_claude-opus-5-5_2026-10-28_12-54-17-355` | 0.562 vs 0.504 (c09/v001) | |
