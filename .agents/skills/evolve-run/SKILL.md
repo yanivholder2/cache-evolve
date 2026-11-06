@@ -38,10 +38,13 @@ Under `claude-sdk`, `--model` takes any `claude-<family>-<version>` id (e.g. `cl
 `claude-sonnet-5-5`, `claude-haiku-5-5`) — don't reject an id for being absent
 from a list.
 
-**Paper runs.** If the request references the paper run plan or a plan row id
-(e.g. `F01`), read `outputs/paper_outputs/v2_runs/paper-runs-plan.md` first and launch that row's exact
-command — every setting pinned, no natural-language translation. Don't edit
-the plan doc; its "Checking run status" section says how to see which rows are done.
+**Plan rows (optional).** A plan is never required. Only if the request gives
+a row id **and** a plan path, e.g. `SH01 from
+outputs/paper_outputs/<batch>/paper-runs-plan.md`, read that plan and launch
+that row's exact command — every setting pinned, no natural-language
+translation. Never go looking for a plan file on your own: a bare row id with
+no plan path → stop and ask which plan. If the row id isn't in the named plan,
+stop and ask. Don't edit the plan doc.
 
 Confirm the assembled command line back to the user in one line before
 launching. Flags are non-persistent overrides — never edit `config.toml` or any
@@ -93,7 +96,10 @@ Record the run's output dir — the newest `outputs/<subject>_<timestamp>/` unde
 - **Every cycle had a survivor.** Each `cycles/NNNN/cycle-winners.json` lists
   winners; the run log also prints `cycle NNNN survivors=X/Y rejected={…}`. Flag
   any cycle with 0 survivors and surface the rejection reason.
-- **Caffeine produced results**: `cycles/*/variants/*/eval/caffeine/*.csv` exist.
+- **Caffeine produced results**: `cycles/*/variants/*/eval/caffeine/*.csv` exist
+  (single-trace grid) or `cycles/*/variants/*/eval/caffeine/*/hit_rate_*.csv`
+  (multi-trace grid such as `--evaluation-profile msr`: one `<trace>_lirs/`
+  subdir per trace, e.g. `web_0_lirs/`, `hm_0_lirs/`).
 - **Ledger + leaderboard advanced**: `cycles-ledger.jsonl` and `leaderboard.md`
   are present and non-empty, with one ledger line per completed cycle.
 - **No truncated/empty logs**: the `*-writer.log.md` and per-variant attempt

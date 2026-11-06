@@ -12,6 +12,20 @@ where
 	hash % size
 }
 
+/// Segment index for `key` among `size` segments, taken from the hash's high
+/// 32 bits. Bucket and stash indexes inside a segment use `hash % n` (the low
+/// bits); if the segment index also used `hash % size`, then whenever the
+/// segment count shares factors with the bucket count (e.g. 8 or 64 segments
+/// of 8 normal buckets) every key in a segment would map to the same few
+/// buckets, leaving most of the segment unreachable. With one segment this is
+/// always 0, identical to `get_index(key, 1)`.
+pub fn segment_index<K>(key: &K, size: usize) -> usize
+where
+	K: Hash + Debug,
+{
+	((hash(key) as u64 >> 32) as usize) % size
+}
+
 pub fn hash<K>(key: &K) -> usize
 where
 	K: Hash + Debug,
@@ -44,6 +58,31 @@ mod tests {
 			for key in 0..200 {
 				assert!(get_index(&key, size) < size);
 			}
+		}
+	}
+
+	#[test]
+	fn segment_index_single_segment_is_zero() {
+		for key in 0..200_i64 {
+			assert_eq!(segment_index(&key, 1), 0);
+		}
+	}
+
+	#[test]
+	fn segment_index_independent_of_bucket_index() {
+		// Within one of 8 segments, keys must still spread over all 8 normal
+		// buckets and all 24 stash buckets.
+		for segments in [8, 64] {
+			let mut buckets = std::collections::HashSet::new();
+			let mut stash = std::collections::HashSet::new();
+			for key in 0..100_000_i64 {
+				if segment_index(&key, segments) == 0 {
+					buckets.insert(get_index(&key, 8));
+					stash.insert(get_index(&key, 24));
+				}
+			}
+			assert_eq!(buckets.len(), 8, "segments={segments}");
+			assert_eq!(stash.len(), 24, "segments={segments}");
 		}
 	}
 

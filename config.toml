@@ -70,6 +70,12 @@ timeout_s = 600
 # "metadata-size" needs its [metadata] table. The runner measures only these.
 dimensions = ["hit-rate", "metadata-size", "per-op-time"]
 
+# Optional evaluation profile (--evaluation-profile): score on the subject
+# manifest's [evaluation.profiles.<name>] grid and its own baseline anchor
+# (baseline/eval/profiles/<name>/fitness-vector.json). Unset = the default
+# [evaluation] grid.
+# evaluation_profile = "msr"
+
 [selection]
 # How Winners are chosen from the fitness vectors. One of the keys in
 # src/evolve/aggregate/selectors/SELECTOR_REGISTRY:

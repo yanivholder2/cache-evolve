@@ -4,14 +4,19 @@ Aggregate run outputs into figures.
 
 ## Pipeline
 
-Paper runs live under `outputs/paper_outputs/v<N>_runs/<group>/<subject>/<run>/`,
-where `v<N>_runs` is the batch (`v1_runs/` for the original runs, `v2_runs/` for
-the Claude 5.5 runs) and `<group>` is the fitness configuration the runs share
-(`full_fitness_vector`, `only_hit_rate`). Each group is its own
-dataset spanning every batch, and each run's setup records its `batch`.
+Paper runs live under `outputs/paper_outputs/<batch>/<group>/<subject>/<run>/`,
+where `<batch>` is any `*_runs` folder (`v1_runs/` for the original runs,
+`v2_runs/` for the Claude 5.5 runs, `snia_runs/` for the MSR Cambridge runs) and
+`<group>` is the fitness configuration the runs share (`full_fitness_vector`,
+`only_hit_rate`). Each group is its own dataset spanning every batch, and each
+run's setup records its `batch` and `evaluation-profile`. Runs scored on a
+named evaluation profile (e.g. `msr`) use a different trace/size grid, so they
+are written to a separate `paper-plots/data_<group>_<profile>.json` and never
+mix with default-grid runs.
 
 1. **`build_data.py`** — walks `outputs/paper_outputs/`, writes one
-   `paper-plots/data_<group>.json` per group. Stdlib only, idempotent
+   `paper-plots/data_<group>.json` per group (plus
+   `data_<group>_<profile>.json` per named evaluation profile). Stdlib only, idempotent
    (rebuilds from scratch). One row per variant per cycle, plus a baseline row
    per run when its leaderboard (or `baseline-vs-winner-fitness-diff.md`)
    recorded one. Any fitness dimension absent from a variant's vector is

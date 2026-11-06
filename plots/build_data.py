@@ -2,12 +2,15 @@
 """Aggregate real run outputs under outputs/paper_outputs/ into per-group JSON.
 
 Runs are grouped under outputs/paper_outputs/<batch>/<group>/<subject>/<run>/,
-where <batch> is a `v<N>_runs` folder (v1_runs for the original runs, v2_runs
-for the Claude 5.5 runs) and <group> is the fitness configuration the runs
+where <batch> is any `*_runs` folder (e.g. v1_runs for the original runs,
+v2_runs for the Claude 5.5 runs) and <group> is the fitness configuration the runs
 share (e.g. only_hit_rate, full_fitness_vector). Each group becomes
 its own plots/paper-plots/data_<group>.json holding the runs of every batch, so
 hit-rate-only and full-fitness-vector runs stay in separate datasets while the
-models of different batches are compared side by side.
+models of different batches are compared side by side. Runs scored on a named
+evaluation profile (the snapshot's `fitness.evaluation_profile`, e.g. msr) use
+a different (trace, size) grid, so they go to data_<group>_<profile>.json
+instead and never mix with default-grid runs.
 
 Emits one row per variant per cycle, plus a baseline row when the run
 recorded one. Each canonical fitness dimension absent from a variant's
@@ -40,10 +43,16 @@ PLOTS_DIR = REPO_ROOT / "plots"
 PAPER_PLOTS_DIR = PLOTS_DIR / "paper-plots"
 
 UNKNOWN = "unknown"
+# Runs scored on the manifest's default [evaluation] grid. Runs on a named
+# evaluation profile (e.g. msr) use other traces/sizes, so their numbers are
+# not comparable and go to a separate data_<group>_<profile>.json.
+DEFAULT_PROFILE = "default"
 
-# Batch folders under paper_outputs/ (v1_runs, v2_runs, ...); anything else at
-# that level (e.g. a batch's plan doc) is ignored.
-BATCH_DIR_RE = re.compile(r"^v(?P<n>\d+)_runs$")
+# Batch folders under paper_outputs/ are any `*_runs` dir (v1_runs, v2_runs,
+# snia_runs, ...); anything else at that level is ignored, as is a batch's plan
+# doc. `v<N>_runs` batches sort first by N, then the rest by name.
+BATCH_DIR_SUFFIX = "_runs"
+VERSIONED_BATCH_RE = re.compile(r"^v(?P<n>\d+)_runs$")
 ORIGINAL_BATCH = "v1_runs"
 
 # Every fitness dimension the framework currently emits. A variant whose
@@ -202,6 +211,7 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int, batch: str = ORIGIN
         "hypothesis-attempts": MISSING,
         "authoring-scope": UNKNOWN,
         "fitness-dimensions": [],
+        "evaluation-profile": DEFAULT_PROFILE,
     }
     config_path = run_dir / "config.toml"
     if config_path.exists():
@@ -215,6 +225,7 @@ def run_setup(run_dir: Path, subject: str, cycle_count: int, batch: str = ORIGIN
         setup["hypothesis-attempts"] = framework.get("hypothesis_attempts", MISSING)
         setup["authoring-scope"] = framework.get("authoring_scope", UNKNOWN)
         setup["fitness-dimensions"] = fitness.get("dimensions", [])
+        setup["evaluation-profile"] = fitness.get("evaluation_profile") or DEFAULT_PROFILE
     return setup
 
 
@@ -377,8 +388,14 @@ def group_run_dirs(group_dir: Path) -> list[tuple[Path, str]]:
 
 def batch_dirs() -> list[tuple[str, Path]]:
     """(batch name, dir holding that batch's groups), in batch order."""
-    batches = [p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir() and BATCH_DIR_RE.match(p.name)]
-    return [(p.name, p) for p in sorted(batches, key=lambda p: int(BATCH_DIR_RE.match(p.name)["n"]))]
+    batches = [p for p in PAPER_OUTPUTS_DIR.iterdir() if p.is_dir() and p.name.endswith(BATCH_DIR_SUFFIX)]
+    return [(p.name, p) for p in sorted(batches, key=lambda p: batch_sort_key(p.name))]
+
+
+def batch_sort_key(name: str) -> tuple[int, int, str]:
+    """`v<N>_runs` first in numeric N order, then any other batch by name."""
+    versioned = VERSIONED_BATCH_RE.match(name)
+    return (0, int(versioned["n"]), name) if versioned else (1, 0, name)
 
 
 def group_dirs_by_name() -> dict[str, list[tuple[str, Path]]]:
@@ -402,21 +419,26 @@ def resolve_groups(selectors: list[str]) -> dict[str, list[tuple[str, Path]]]:
     return {selector: groups[selector] for selector in selectors}
 
 
-def build_group(name: str, batches: list[tuple[str, Path]]) -> Path:
-    """Aggregate one group, across batches, into plots/paper-plots/data_<group>.json;
-    return its path."""
-    runs = []
+def build_group(name: str, batches: list[tuple[str, Path]]) -> list[Path]:
+    """Aggregate one group, across batches, into plots/paper-plots/data_<group>.json
+    (default evaluation grid) plus one data_<group>_<profile>.json per named
+    evaluation profile seen; return the written paths."""
+    by_profile: dict[str, list[dict]] = {}
     for batch, group_dir in batches:
         for run_dir, subject in group_run_dirs(group_dir):
             built = build_run(run_dir, subject, batch)
             if built is not None:
-                runs.append(built)
+                by_profile.setdefault(built["setup"]["evaluation-profile"], []).append(built)
     PAPER_PLOTS_DIR.mkdir(parents=True, exist_ok=True)
-    data_path = PAPER_PLOTS_DIR / f"data_{name}.json"
-    data_path.write_text(json.dumps({"runs": runs}, indent=2) + "\n")
-    variant_count = sum(len(run["variants"]) for run in runs)
-    print(f"Wrote {data_path} with {len(runs)} runs and {variant_count} variant rows.")
-    return data_path
+    paths = []
+    for profile, runs in sorted(by_profile.items(), key=lambda item: item[0] != DEFAULT_PROFILE):
+        stem = name if profile == DEFAULT_PROFILE else f"{name}_{profile}"
+        data_path = PAPER_PLOTS_DIR / f"data_{stem}.json"
+        data_path.write_text(json.dumps({"runs": runs}, indent=2) + "\n")
+        variant_count = sum(len(run["variants"]) for run in runs)
+        print(f"Wrote {data_path} with {len(runs)} runs and {variant_count} variant rows.")
+        paths.append(data_path)
+    return paths
 
 
 def main():
@@ -424,7 +446,7 @@ def main():
     parser.add_argument(
         "groups",
         nargs="*",
-        help="group folder name(s) under outputs/paper_outputs/v<N>_runs/ to aggregate; "
+        help="group folder name(s) under outputs/paper_outputs/<batch>_runs/ to aggregate; "
         "default: every group",
     )
     args = parser.parse_args()

@@ -20,12 +20,22 @@ inputs/subjects/<name>/baseline/
 `fitness-vector.json` is a committed artifact. Regenerate it — and commit the diff — whenever something that affects the measurement changes (for example, the benchmark configuration or the set of fitness plugins), so that cohorts are always compared against a current anchor:
 
 ```bash
-uv run python scripts/measure_baseline.py
+.venv/bin/python scripts/measure_baseline.py [<subject>]
 ```
 
 The script builds the subject with an empty overlay, runs the correctness [gates](Concepts#gates) (aborting if the baseline itself fails them), and then computes fitness exactly as a live variant would — writing `eval/fitness/*.json` and the aggregated `eval/fitness-vector.json`.
 
-To measure a baseline for a specific subject, select it the usual way (via `--subject` / `config.toml`); the script measures whichever subject the configuration resolves to.
+The subject is an optional positional argument (e.g. `.venv/bin/python scripts/measure_baseline.py dash`); without it the script measures the subject `config.toml` selects. There is no `--subject` flag.
+
+## Evaluation profiles
+
+A manifest may declare named alternative grids, e.g. `[evaluation.profiles.msr]` with `traces` and/or `sizes` overriding `[evaluation]`. A run opts in with `--evaluation-profile msr` (or `fitness.evaluation_profile` in `config.toml`); without it the default grid and anchor are used. Each profile has its own anchor at `baseline/eval/profiles/<name>/fitness-vector.json`, created with:
+
+```bash
+.venv/bin/python scripts/measure_baseline.py <subject> --evaluation-profile <name>
+```
+
+`[evaluation]` and each profile may also set `simulator-log-level` (`"DEBUG"`, `"INFO"`, `"WARNING"`, …), a ceiling on the log level the subject's Rust cdylib gets during Caffeine calls on that grid, whatever `--log-level` is. A profile inherits the default grid's ceiling unless it sets its own. dash and associative_cache set `"INFO"` on `msr`, because they log every get/put at DEBUG, which would write about 5 GB of `rust-logs` per call on the large MSR traces.
 
 ## Going deeper
 

@@ -9,11 +9,14 @@ framework consumes.
 from __future__ import annotations
 
 import json
+import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+
+from evolve.paths import BaselineDir
 
 
 class SubjectManifestError(ValueError):
@@ -55,11 +58,25 @@ class Evaluation:
     declare the evaluation grid: each trace is a `"<format>:<path>"` string and
     sizes are cache capacities. The grid is their Cartesian product, scored
     identically for the baseline anchor and every variant.
+
+    `profiles` holds the optional named alternative grids declared under
+    `[evaluation.profiles.<name>]`, each already resolved to its own
+    `Evaluation` (the profile's `traces`/`sizes` override the default's; its
+    baseline anchor is `baseline/eval/profiles/<name>/fitness-vector.json`).
+    A run opts in with `--evaluation-profile`; see `Subject.evaluation_for`.
+
+    `simulator_log_level`, when set, caps the log level handed to the
+    subject's Rust cdylib during Caffeine calls on this grid, independently of
+    evolve's `--log-level` (e.g. `"INFO"` stops per-operation DEBUG lines from
+    writing GBs on a multi-million-event trace). None = follow `--log-level`.
+    A profile inherits the default grid's cap unless it declares its own.
     """
 
     fitness_vector: Path
     traces: tuple[str, ...]
     sizes: tuple[int, ...]
+    profiles: dict[str, Evaluation] = field(default_factory=dict)
+    simulator_log_level: str | None = None
 
 
 @dataclass(frozen=True)
@@ -75,7 +92,11 @@ class CaffeineConfig:
     `get*List`, e.g. associative_cache's `numOfBuckets`); the command builder
     emits scalars as `key=value` and lists in indexed `key.0=…` form.
     `policy_key` is the config key holding the eviction-policy list, or None
-    when the subject has none.
+    when the subject has none. `size_divisors` (manifest
+    `[caffeine.size-divisors]`) maps a config-key suffix to a divisor whose
+    value is derived per cache size as `size // divisor` (dash:
+    `numOfSegments = size / per-segment capacity`); every evaluated size must
+    be an exact multiple, and the runner makes one Caffeine call per size.
     """
 
     config_prefix: str
@@ -83,15 +104,18 @@ class CaffeineConfig:
     geometry: dict[str, int | list[int]]
     policy_key: str | None
     supports_log_path: bool
+    size_divisors: dict[str, int] = field(default_factory=dict)
 
     def as_runner_kwargs(self) -> dict:
-        """The caffeine-runner wiring kwargs (config_prefix, policy_spec_name, geometry, policy_key, supports_log_path)."""
+        """The caffeine-runner wiring kwargs (config_prefix, policy_spec_name, geometry,
+        policy_key, supports_log_path, size_divisors)."""
         return {
             "config_prefix": self.config_prefix,
             "policy_spec_name": self.policy_spec_name,
             "geometry": self.geometry,
             "policy_key": self.policy_key,
             "supports_log_path": self.supports_log_path,
+            "size_divisors": dict(self.size_divisors),
         }
 
 
@@ -174,15 +198,55 @@ class Subject:
     def axis_descriptions(self) -> dict[str, str]:
         return {ep.name: ep.description for ep in self.extension_points}
 
+    def evaluation_for(self, profile: str | None) -> Evaluation:
+        """The evaluation grid for `profile` (None = the default `[evaluation]`).
+        Raises `SubjectManifestError` naming the declared profiles when unknown."""
+        if profile is None:
+            return self.evaluation
+        try:
+            return self.evaluation.profiles[profile]
+        except KeyError:
+            raise SubjectManifestError(
+                f"evaluation profile {profile!r} is not declared by subject {self.name!r}; "
+                f"declared profiles: {sorted(self.evaluation.profiles)} "
+                f"(add an [evaluation.profiles.{profile}] table to its manifest.toml)"
+            ) from None
+
+    def validate_profile_baseline(self, profile: str | None) -> None:
+        """Check `profile`'s committed baseline anchor exists and is scored on
+        the profile's (trace, size) grid. The default grid is already checked at
+        load time; a profile's anchor is checked here, at the run boundary,
+        because `scripts/measure_baseline.py` must load the subject to create it."""
+        evaluation = self.evaluation_for(profile)
+        if profile is None:
+            return
+        where = f"evaluation.profiles.{profile}"
+        if not (self.subject_dir / evaluation.fitness_vector).is_file():
+            raise SubjectManifestError(
+                f"{where}: baseline fitness vector not found at "
+                f"{self.subject_dir / evaluation.fitness_vector}; measure it with "
+                f"`.venv/bin/python scripts/measure_baseline.py {self.name} "
+                f"--evaluation-profile {profile}` and commit the result"
+            )
+        _validate_baseline_grid(
+            self.subject_dir, evaluation.fitness_vector,
+            list(evaluation.traces), list(evaluation.sizes), where=where,
+        )
+
 
 _ALLOWED_TOP = {"subject", "extension-points", "gates", "contract", "caffeine", "docs", "evaluation", "bench", "metadata"}
 _ALLOWED_SUBJECT = {"name", "crate-path", "cdylib-name"}
 _ALLOWED_EP = {"name", "contract", "impl-files", "description"}
 _ALLOWED_GATES = {"name", "test", "marker"}
 _ALLOWED_CONTRACT = {"protected-files"}
-_ALLOWED_CAFFEINE = {"config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry"}
+_ALLOWED_CAFFEINE = {
+    "config-prefix", "policy-spec-name", "policy-key", "supports-log-path", "geometry", "size-divisors",
+}
 _ALLOWED_DOCS = {"context", "insight"}
-_ALLOWED_EVAL = {"fitness-vector", "traces", "sizes"}
+_ALLOWED_EVAL = {"fitness-vector", "traces", "sizes", "profiles", "simulator-log-level"}
+_ALLOWED_EVAL_PROFILE = {"traces", "sizes", "simulator-log-level"}
+_SIMULATOR_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+_PROFILE_NAME = re.compile(r"[a-z0-9][a-z0-9_-]*")
 _ALLOWED_BENCH = {"binary-name"}
 _ALLOWED_METADATA = {"binary-name"}
 
@@ -318,6 +382,7 @@ def load_subject(subject_dir: Path) -> Subject:
     caffeine = _load_caffeine(caffeine_table)
 
     evaluation = _load_evaluation(eval_table, subject_dir)
+    _check_size_divisors(caffeine, evaluation)
 
     bench = _load_bench(bench_table)
     metadata = _load_metadata(metadata_table)
@@ -366,13 +431,45 @@ def _load_caffeine(table: dict) -> CaffeineConfig:
             geometry[key] = value
         else:
             raise SubjectManifestError(f"caffeine.geometry.{key}: must be an integer or a list of integers")
+    divisors_raw = table.get("size-divisors", {})
+    if not isinstance(divisors_raw, dict):
+        raise SubjectManifestError(
+            f"caffeine.size-divisors: must be a table, got {type(divisors_raw).__name__}"
+        )
+    size_divisors: dict[str, int] = {}
+    for key, value in divisors_raw.items():
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise SubjectManifestError(f"caffeine.size-divisors.{key}: must be a positive integer")
+        if key in geometry:
+            raise SubjectManifestError(
+                f"caffeine.size-divisors.{key}: already fixed in caffeine.geometry"
+            )
+        size_divisors[key] = value
     return CaffeineConfig(
         config_prefix=config_prefix,
         policy_spec_name=policy_spec_name,
         geometry=geometry,
         policy_key=policy_key,
         supports_log_path=supports_log_path,
+        size_divisors=size_divisors,
     )
+
+
+def _check_size_divisors(caffeine: CaffeineConfig, evaluation: Evaluation) -> None:
+    """Every evaluated size (default grid and each profile) must be an exact
+    multiple of every `caffeine.size-divisors` divisor, so a mis-sized grid
+    fails at load rather than inside a Caffeine call."""
+    grids = [("evaluation.sizes", evaluation.sizes)] + [
+        (f"evaluation.profiles.{name}.sizes", profile.sizes)
+        for name, profile in evaluation.profiles.items()
+    ]
+    for where, sizes in grids:
+        for key, divisor in caffeine.size_divisors.items():
+            bad = [size for size in sizes if size % divisor]
+            if bad:
+                raise SubjectManifestError(
+                    f"{where}: sizes {bad} are not multiples of caffeine.size-divisors.{key} = {divisor}"
+                )
 
 
 def _load_evaluation(table: dict, subject_dir: Path) -> Evaluation:
@@ -381,43 +478,103 @@ def _load_evaluation(table: dict, subject_dir: Path) -> Evaluation:
     fv = _check_relative(fv_raw, "evaluation.fitness-vector")
     _check_exists(subject_dir, fv, "evaluation.fitness-vector")
 
-    traces_raw = _require(table, "traces", "evaluation")
-    if not isinstance(traces_raw, list) or not traces_raw:
-        raise SubjectManifestError("evaluation.traces: must be a non-empty list of strings")
+    traces = _parse_traces(_require(table, "traces", "evaluation"), "evaluation.traces")
+    sizes = _parse_sizes(_require(table, "sizes", "evaluation"), "evaluation.sizes")
+
+    _validate_baseline_grid(subject_dir, fv, traces, sizes)
+    log_level = _parse_simulator_log_level(table, "evaluation", None)
+    profiles = _load_evaluation_profiles(table.get("profiles", {}), traces, sizes, log_level)
+    return Evaluation(
+        fitness_vector=fv, traces=tuple(traces), sizes=tuple(sizes), profiles=profiles,
+        simulator_log_level=log_level,
+    )
+
+
+def _parse_simulator_log_level(table: dict, where: str, default: str | None) -> str | None:
+    if "simulator-log-level" not in table:
+        return default
+    value = table["simulator-log-level"]
+    if not isinstance(value, str) or value.upper() not in _SIMULATOR_LOG_LEVELS:
+        raise SubjectManifestError(
+            f"{where}.simulator-log-level: must be one of {list(_SIMULATOR_LOG_LEVELS)}, got {value!r}"
+        )
+    return value.upper()
+
+
+def _load_evaluation_profiles(
+    table: object,
+    default_traces: list[str],
+    default_sizes: list[int],
+    default_log_level: str | None = None,
+) -> dict[str, Evaluation]:
+    """Parse `[evaluation.profiles.<name>]` tables. Each overrides the default
+    grid's `traces` and/or `sizes`; its baseline anchor path is fixed by
+    convention (`BaselineDir`). The anchor itself is validated at the run
+    boundary (`Subject.validate_profile_baseline`), not here."""
+    if not isinstance(table, dict):
+        raise SubjectManifestError("evaluation.profiles: must be a table of named profiles")
+    profiles: dict[str, Evaluation] = {}
+    for name, profile in table.items():
+        where = f"evaluation.profiles.{name}"
+        if not _PROFILE_NAME.fullmatch(name):
+            raise SubjectManifestError(
+                f"{where}: profile name must match [a-z0-9][a-z0-9_-]*"
+            )
+        if not isinstance(profile, dict) or not profile:
+            raise SubjectManifestError(f"{where}: must be a non-empty table overriding traces and/or sizes")
+        _reject_unknown(profile, _ALLOWED_EVAL_PROFILE, where)
+        traces = _parse_traces(profile["traces"], f"{where}.traces") if "traces" in profile else default_traces
+        sizes = _parse_sizes(profile["sizes"], f"{where}.sizes") if "sizes" in profile else default_sizes
+        fitness_vector = BaselineDir(root=Path("baseline"), evaluation_profile=name).fitness_vector_json
+        log_level = _parse_simulator_log_level(profile, where, default_log_level)
+        profiles[name] = Evaluation(
+            fitness_vector=fitness_vector, traces=tuple(traces), sizes=tuple(sizes),
+            simulator_log_level=log_level,
+        )
+    return profiles
+
+
+def _parse_traces(raw: object, where: str) -> list[str]:
+    if not isinstance(raw, list) or not raw:
+        raise SubjectManifestError(f"{where}: must be a non-empty list of strings")
     traces: list[str] = []
-    for trace in traces_raw:
+    for trace in raw:
         fmt, sep, path = trace.partition(":") if isinstance(trace, str) else ("", "", "")
         if not isinstance(trace, str) or not sep or not fmt or not path:
             raise SubjectManifestError(
-                f"evaluation.traces: each entry must be a '<format>:<path>' string, got {trace!r}"
+                f"{where}: each entry must be a '<format>:<path>' string, got {trace!r}"
             )
         traces.append(trace)
+    return traces
 
-    sizes_raw = _require(table, "sizes", "evaluation")
-    if not isinstance(sizes_raw, list) or not sizes_raw:
-        raise SubjectManifestError("evaluation.sizes: must be a non-empty list of integers")
+
+def _parse_sizes(raw: object, where: str) -> list[int]:
+    if not isinstance(raw, list) or not raw:
+        raise SubjectManifestError(f"{where}: must be a non-empty list of integers")
     sizes: list[int] = []
-    for size in sizes_raw:
+    for size in raw:
         if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
             raise SubjectManifestError(
-                f"evaluation.sizes: each entry must be a positive integer, got {size!r}"
+                f"{where}: each entry must be a positive integer, got {size!r}"
             )
         if size in sizes:
-            raise SubjectManifestError(f"evaluation.sizes: duplicate size {size}")
+            raise SubjectManifestError(f"{where}: duplicate size {size}")
         sizes.append(size)
-
-    _validate_baseline_grid(subject_dir, fv, traces, sizes)
-    return Evaluation(fitness_vector=fv, traces=tuple(traces), sizes=tuple(sizes))
+    return sizes
 
 
 def _validate_baseline_grid(
-    subject_dir: Path, fitness_vector: Path, traces: list[str], sizes: list[int]
+    subject_dir: Path,
+    fitness_vector: Path,
+    traces: list[str],
+    sizes: list[int],
+    *,
+    where: str = "evaluation.fitness-vector",
 ) -> None:
     """The committed baseline anchor must be scored on the same (trace, size)
     grid as live variants, or the global cross_cycle_winners and leaderboard silently
     compare incomparable numbers. Catch a stale or stub anchor at load time."""
 
-    where = "evaluation.fitness-vector"
     try:
         data = json.loads((subject_dir / fitness_vector).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exception:

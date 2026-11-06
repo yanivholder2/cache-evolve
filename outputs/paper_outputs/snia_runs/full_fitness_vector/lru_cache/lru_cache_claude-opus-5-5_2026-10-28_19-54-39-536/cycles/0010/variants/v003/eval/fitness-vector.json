@@ -1,0 +1,64 @@
+{
+  "variant": "v003",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.4156
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.5611
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.4415
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.7332
+        }
+      ],
+      "summary": 0.53785,
+      "higher_is_better": true
+    },
+    {
+      "dim": "metadata-size",
+      "values": [
+        {
+          "type": "Node<u64,u64>",
+          "bytes": 16
+        },
+        {
+          "type": "LruCache<u64,u64>",
+          "bytes": 136
+        }
+      ],
+      "summary": 16,
+      "higher_is_better": false
+    },
+    {
+      "dim": "per-op-time",
+      "values": [
+        {
+          "op": "get",
+          "p50_ns": 35,
+          "p99_ns": 66
+        },
+        {
+          "op": "put",
+          "p50_ns": 56,
+          "p99_ns": 104
+        }
+      ],
+      "summary": 35,
+      "higher_is_better": false
+    }
+  ]
+}

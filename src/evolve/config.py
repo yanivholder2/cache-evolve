@@ -59,9 +59,15 @@ class FitnessConfig:
     Activation only — capability (which dimensions a subject *can* measure) lives
     in the Subject manifest. `dimensions` must be a subset of the subject's
     capable dimensions; the cli boundary cross-checks that against the manifest.
+
+    `evaluation_profile` names an `[evaluation.profiles.<name>]` grid in the
+    subject manifest to score on instead of its default `[evaluation]` grid;
+    None (the default) keeps the default grid and baseline. Existence is checked
+    against the manifest at the cli boundary.
     """
 
     dimensions: tuple[str, ...]
+    evaluation_profile: str | None = None
 
 
 @dataclass(frozen=True)
@@ -104,6 +110,7 @@ def load_configs(
     implementation_attempts: int | None = None,
     hypothesis_attempts: int | None = None,
     dimensions: list[str] | tuple[str, ...] | None = None,
+    evaluation_profile: str | None = None,
     selection_method: str | None = None,
     winners_count: int | None = None,
     weights: dict[str, float] | None = None,
@@ -166,7 +173,10 @@ def load_configs(
     simulator = SimulatorConfig(
         timeout_s=_resolve_positive_int(simulator_timeout_s, simulator_defaults, "timeout_s", "--simulator-timeout-s", "simulator"),
     )
-    fitness = FitnessConfig(dimensions=_resolve_dimensions(dimensions, fitness_defaults))
+    fitness = FitnessConfig(
+        dimensions=_resolve_dimensions(dimensions, fitness_defaults),
+        evaluation_profile=_resolve_evaluation_profile(evaluation_profile, fitness_defaults),
+    )
     selection = _resolve_selection(
         selection_defaults,
         fitness.dimensions,
@@ -245,6 +255,17 @@ def _resolve_dimensions(override: list[str] | tuple[str, ...] | None, defaults: 
     if len(set(value)) != len(value):
         raise ConfigError(f"{source} must not repeat a dimension, got: {value!r}")
     return tuple(value)
+
+
+def _resolve_evaluation_profile(override: str | None, defaults: dict) -> str | None:
+    """Optional: absent from both flag and config.toml means the default grid."""
+    value = override if override is not None else defaults.get("evaluation_profile")
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value:
+        source = "--evaluation-profile" if override is not None else "fitness.evaluation_profile"
+        raise ConfigError(f"{source} must be a non-empty string, got: {value!r}")
+    return value
 
 
 def _resolve_selection(

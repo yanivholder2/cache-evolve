@@ -8,17 +8,24 @@ dropping the multi-GB caffeine logs, deleting the original raw run dir once the
 copy verifies, then commit, push, and open a PR. The conventions below are
 non-obvious — follow, don't rediscover.
 
+## Input
+
+`/promote-run <batch>` — `<batch>` is the destination batch folder under
+`outputs/paper_outputs/` (e.g. `/promote-run <name>_runs`). It sets the copy
+destination and the PR title; if that folder doesn't exist yet, confirm before
+creating it. When no batch is given, stop and ask — never infer it from a plan
+file, folder names, or recency. A plan file is optional: touch one only if the
+user names it.
+
 ## Gotchas
 
 - `.gitignore` ignores `outputs/*` except `!outputs/paper_outputs/`: a raw run
   dir is untracked, a copy under `paper_outputs/` is trackable.
 - Layout is **per-batch, per-mode, per-subject**:
   `outputs/paper_outputs/<batch>/<mode>/<subject>/<subject>_<model>_<timestamp>/`.
-  Each batch is a `v<N>_runs/` folder: the original (4.x) runs are in
-  `v1_runs/`. **New runs go in the current batch,
-  `v2_runs/`** (the 5.5 matrix in `outputs/paper_outputs/v2_runs/paper-runs-plan.md`)
-  — never into `v1_runs/`. `plots/build_data.py` treats each `<mode>`
-  as one dataset across batches and takes the subject from the parent folder
+  **New runs go only in the `<batch>` from [Input](#input)** — never into
+  another batch folder. `plots/build_data.py` treats each `<mode>` as one
+  dataset across its batches and takes the subject from the parent folder
   name, so every level must be exact.
 - **`<mode>`** comes from the run's `config.toml` snapshot `[fitness].dimensions`:
   `["hit-rate", "metadata-size", "per-op-time"]` (weighted 0.6/0.2/0.2) →
@@ -41,7 +48,7 @@ non-obvious — follow, don't rediscover.
    `ClaudeSdkAdapter(model=…)` log line) and the **mode** (snapshot
    `[fitness].dimensions`, see Gotchas) now — the destination path needs both.
 
-2. **Curate-copy** into `outputs/paper_outputs/v2_runs/<mode>/<subject>/<subject>_<model>_<timestamp>/`
+2. **Curate-copy** into `outputs/paper_outputs/<batch>/<mode>/<subject>/<subject>_<model>_<timestamp>/`
    (raw name with the model spliced in before the timestamp), excluding the bloat
    above and any incomplete trailing cycle (a `cycles/NNNN/` with no
    `cycle-winners.json`). Keep everything else. The files inside keep their original
@@ -54,9 +61,9 @@ non-obvious — follow, don't rediscover.
    raw run dir (`outputs/<subject>_<timestamp>/`) so the run isn't left
    duplicated. Never delete before the copy is confirmed good.
 
-5. **Don't edit the plan doc.** `outputs/paper_outputs/v2_runs/paper-runs-plan.md` is not updated per
-   run (concurrent PRs conflicted on it); the promoted dir on `main` is the
-   run's status. Put run incidents (usage-limit resumes, agent or infra
+5. **Don't edit a plan doc** unless the user names one and asks for it (e.g. a
+   status row); by default none is updated per run (concurrent PRs conflicted
+   on it) and the promoted dir on `main` is the run's status. Put run incidents (usage-limit resumes, agent or infra
    failures) in the PR description instead.
 
 6. **Commit + PR.** Commit (subject, cycles completed, cohort size, global-best
@@ -64,8 +71,9 @@ non-obvious — follow, don't rediscover.
    then open a **draft** PR, or update its title if one exists. Report the
    global-best and PR link.
 
-   **Title:** `<subject> paper_outputs v2 (<mode>) — <model>, <N> cycles, <M> variants`
-   (e.g. `dash paper_outputs v2 (only_hit_rate) — claude-sonnet-5-5, 10 cycles, 3 variants`).
+   **Title:** `<subject> paper_outputs <label> (<mode>) — <model>, <N> cycles, <M> variants`
+   (e.g. batch `abc_runs` → `dash paper_outputs abc (only_hit_rate) — claude-opus-5-5, 10 cycles, 3 variants`).
+   - **label** — `<batch>` with a trailing `_runs` removed.
    - **mode** — the `<mode>` folder resolved in step 1.
    - **model** — the one resolved in step 1 (the model the run actually used,
      not the repo default); matches the `<model>` in the run-dir name.

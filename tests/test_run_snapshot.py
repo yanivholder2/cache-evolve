@@ -335,3 +335,11 @@ def test_overlay_config_weights_replaced_in_place_under_its_doc():
     out = overlay_config(_DOCUMENTED_WEIGHTS, {"selection.weights": {"hit-rate": 1.0}})
     assert "# Weights doc: keys MUST match.\n[selection.weights]\nhit-rate = 1.0\n\n# Simulator doc." in out
     assert tomllib.loads(out)["selection"]["weights"] == {"hit-rate": 1.0}
+
+
+def test_evaluation_profile_flag_round_trips_through_snapshot(tmp_path):
+    args = _parse(["--evaluation-profile", "msr"])
+    overrides = flag_overrides(args)
+    assert overrides == {"fitness": {"evaluation_profile": "msr"}}
+    snapshot = overlay_config('[fitness]\ndimensions = ["hit-rate"]\n', overrides)
+    assert 'evaluation_profile = "msr"' in snapshot

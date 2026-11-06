@@ -1,0 +1,32 @@
+# Cross-Cycle Insights
+
+## Recurring wins
+
+- Scan-resistant insertion is the only hit-rate lever that has paid off clearly. Examples are LIP quarter-depth insertion and a CLOCK reference bit cleared on insert. The gains are largest on wide buckets and were mostly captured in cycle 0001. Later refinements (BIP, GCLOCK levels, ghost filters) only trade small amounts between workloads.
+- Rewrites that keep the layout and the policy logic preserve hit rate exactly (fused rotation, narrowed fields). The current LIP/BIP lineage is a stable base to build on.
+- Bounding worst-case work on the put path, with a capped sweep or a dense absence scan, reliably improves put p99. In every case so far it has also cost something at p50.
+- Shrinking `Item` is the only change that has moved metadata-size (cycle 0004).
+
+## Recurring failures
+
+- Adding work to the put/miss path. This includes mid-bucket inserts, extra structures, hashing, atomics and dynamic calls. Each one has raised put latency. The quarter-depth `Vec::insert` memmove remains the main cost, and new work sits on top of it.
+- Speeding up get by changing scan order, reordering on hit, or using a separate key Vec. None of these moved get p50, and some made it worse through locality loss or extra cache-line writes. Lookup cost follows the number of full-key compares across the wide bucket.
+- Reuse/ghost filters as a replacement for BIP's period. Three designs have failed on the hm_0 vs web_0 tradeoff: a fixed 16-entry ring that was too short, and a hashed 1-bit set that saturated and was reset all at once. Neither beat blind 1/32 admission on both workloads.
+- Treating flat metadata-size as proof a change is free. The metric is blind to per-bucket side state such as key mirrors, ghost rings and bit sets.
+- Trusting per-op-time without a same-session parent baseline. In cycle 0004, a variant whose get path was unchanged from its parent still got slower, so environment drift can hide any real effect.
+
+## Open questions
+
+- The inline fingerprint/tag pre-filter for get p50 has been recommended for three cycles and never tested. Does it cut full-key compares while keeping the hit write a single store?
+- Does fused evict+insert rotation, with victim dispatch decided at construction and a `ptr::copy` shift, actually cut put latency when benchmarked in the same session as its parent?
+- Does the 24-byte `Item` speed up the scan once the global atomic tick is removed (replaced by a per-bucket tick, or no write at all)?
+- Is the quarter-depth insertion approximable without a memmove, for example with segments or a CLOCK-like scheme?
+- Does the v003 frequency-window victim selection from cycle 0001 actually run in the hit-rate harness? This is still unconfirmed.
+- Is any reuse filter worth another attempt? It would need multiple bits per key, gradual aging, a cheap hash and sizing to the bucket. Or should insertion depth / BIP period simply scale with bucket width?
+
+## Per-policy notes
+
+- LIP (quarter-depth insert): strong on scan-heavy workloads (web_0) and wide buckets; weaker gain at the small width. The memmove dominates put cost. A reversed scan gives no measurable get benefit.
+- BIP (LIP + periodic MRU admission): gives a slight hm_0 gain on small buckets but loses some web_0 scan resistance. Removing the string-compare dispatch was not visible in timings. The ghost-ring and hashed-ghost replacements for its period both did worse overall.
+- CLOCK / GCLOCK: the cheapest hit path (a single store). Clear-on-insert gives scan resistance. Capping the sweep at 16 slots fixes the put tail but adds work at put p50. Extra GCLOCK levels add a small, consistent hit-rate gain. Any reordering on hit (swap-halfway) loses its latency advantage.
+- ClassicLRU: the baseline. A per-op `name()` string compare is a pure overhead source and should be decided at construction. The frequency-aware tail-window victim produced results bit-identical to the baseline, so it is unvalidated.

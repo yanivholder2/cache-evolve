@@ -30,6 +30,8 @@ The top-level `caffeine.simulator.policies` list defaults to empty — without i
 
 `-Dcaffeine.simulator.policies.0=<spec-name>` chooses which policy implementation runs. Each policy reads its own settings under a config-key prefix (`caffeine.simulator.<prefix>.*`); the available keys are defined by the policy class itself. A JNI-backed policy additionally requires the matching cdylib on `java.library.path`. Consult the policy's source for the exact keys and any geometry/validity constraints it enforces.
 
+`scripts/caffeine_runner.py` emits a subject's fixed `[caffeine.geometry]` keys verbatim and derives each `[caffeine.size-divisors]` key per size as `size / divisor` (e.g. dash `numOfSegments`), splitting a multi-size sweep into one call per size. The split calls share one `timeout_s` deadline (`--simulator-timeout-s`): each call gets whatever the earlier ones left, so the budget per trace matches a subject swept in a single call. A policy constructor that throws can leave Caffeine exiting 0 with no `hit_rate_<size>.csv`; the runner treats a missing per-size CSV as a failure and reports the Java exception line.
+
 ## Output files
 
 All paths relative to Caffeine's reports dir (`simulator/build/reports/simulate/` unless overridden via `--outputDir`). Files are **overwritten** between runs — copy them out before re-invoking on a different trace.
@@ -67,3 +69,5 @@ A native cdylib policy may write its own log file(s), separate from anything Caf
 ## Pinning output to a custom directory
 
 Pass `--outputDir=<path>` (Caffeine's `simulator:simulate` flag) to redirect output. Required when multiple runs share the simulator concurrently or when results must survive past the next run.
+
+Evolve pins it to the variant's `eval/caffeine/` (`src/evolve/fitness/caffeine_simulator.py`). A single-trace grid writes there flat (`eval/caffeine/hit_rate_<size>.csv`). A multi-trace grid (e.g. the `msr` evaluation profile) gives each trace its own subdirectory named `<trace-basename>_<format>`, so traces don't overwrite each other: `eval/caffeine/web_0_lirs/hit_rate_<size>.csv`, `eval/caffeine/hm_0_lirs/hit_rate_<size>.csv`.

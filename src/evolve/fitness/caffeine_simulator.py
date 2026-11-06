@@ -111,6 +111,16 @@ _LOG_LEVEL_TO_DEBUG_MODE = {
 }
 
 
+def simulator_debug_mode(log_level: str, cap: str | None) -> int:
+    """Rust `debug_mode` for a Caffeine call: evolve's `log_level`, lowered to
+    the evaluation grid's `simulator-log-level` cap when one is declared."""
+
+    debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(log_level, 0)
+    if cap is None:
+        return debug_mode
+    return min(debug_mode, _LOG_LEVEL_TO_DEBUG_MODE[cap])
+
+
 def _per_size_csv(caffeine_out: CaffeineOutputDir, size: int) -> Path:
     candidate = caffeine_out.hit_rate_csv(size)
     if not candidate.is_file():
@@ -188,9 +198,10 @@ def simulate_variant(
     policy_name = DEFAULT_EVICTION_POLICY
     subject = load_subject(layout.sources.subject_dir)
     caffeine = subject.caffeine
-    traces = subject.evaluation.traces
-    sizes = subject.evaluation.sizes
-    debug_mode = _LOG_LEVEL_TO_DEBUG_MODE.get(cfg.framework.log_level, 0)
+    evaluation = subject.evaluation_for(layout.evaluation_profile)
+    traces = evaluation.traces
+    sizes = evaluation.sizes
+    debug_mode = simulator_debug_mode(cfg.framework.log_level, evaluation.simulator_log_level)
 
     caffeine_out = variant_dir.caffeine_dir
     caffeine_out.root.mkdir(parents=True, exist_ok=True)
@@ -209,7 +220,15 @@ def simulate_variant(
         gradle_stderr: list[str] = []
         # One native invocation per trace sweeps every size at once, emitting a
         # hit_rate_<size>.csv per size. Accumulate all (trace, size) points.
+        # With several traces each writes into its own subdirectory, so every
+        # trace's reports survive for inspection (one trace keeps the flat layout).
+        multi_trace = len(traces) > 1
         for trace in traces:
+            trace_out = (
+                caffeine_out.for_trace(caffeine_runner.trace_display_name(trace))
+                if multi_trace else caffeine_out
+            )
+            trace_out.root.mkdir(parents=True, exist_ok=True)
             # Log the policy caffeine actually runs (the subject's registered
             # spec name), not the internal eviction-selector default. They differ:
             # caffeine drives `policy_spec_name`; `policy_name` only feeds the
@@ -229,7 +248,7 @@ def simulate_variant(
                         **caffeine.as_runner_kwargs(),
                         debug_mode=debug_mode,
                         log_path=caffeine_out.rust_logs_dir,
-                        output_dir=caffeine_out.root,
+                        output_dir=trace_out.root,
                     )
             except caffeine_runner.CaffeineError as exception:
                 _write_gradle_logs(
@@ -242,7 +261,7 @@ def simulate_variant(
             gradle_stdout.append(run_result.stdout)
             gradle_stderr.append(run_result.stderr)
             for size in sizes:
-                csv_path = _per_size_csv(caffeine_out, size)
+                csv_path = _per_size_csv(trace_out, size)
                 results.extend(_parse_csv(csv_path, trace=trace, size=size))
 
         _write_gradle_logs(

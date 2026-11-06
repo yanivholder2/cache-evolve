@@ -109,6 +109,22 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** adding a Subject, touching `caffeine_runner.py`/manifest wiring, or wondering why `src/shared/` is duplicated per subject.
 
+## Simulator
+
+### [docs/caffeine-simulator.md](caffeine-simulator.md)
+
+* Invocation
+  * Required JVM args
+  * Required gradle args
+  * Policy selection and config
+* Output files
+  * Per-size CSV columns
+  * stdout (not in any file)
+  * JNI-side logs
+* Pinning output to a custom directory
+
+**Read when** invoking Caffeine, changing `scripts/caffeine_runner.py`, or reading a variant's `eval/caffeine/` reports.
+
 ## Conventions
 
 ### [docs/CONVENTIONS.md](CONVENTIONS.md)
@@ -146,14 +162,14 @@ Full thesis proposal: motivation, design, and initial hit-rate results.
 
 **Read when** reviewing or creating a PR.
 
-### [outputs/paper_outputs/v2_runs/paper-runs-plan.md](../outputs/paper_outputs/v2_runs/paper-runs-plan.md)
+### [outputs/paper_outputs/snia_runs/paper-runs-plan.md](../outputs/paper_outputs/snia_runs/paper-runs-plan.md)
 
 * Goal
 * How a run works
 * Commands
 * Session prompt
-* Updating this file
-* Status
+* Checking run status
+* Run matrix
 * Notes
 
-**Read when** launching or promoting a paper run (or given a plan row id like `F01`).
+**Read when** launching or promoting an MSR/SNIA real-trace paper run (or given a plan row id like `SH01`).
