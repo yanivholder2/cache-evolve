@@ -207,14 +207,14 @@ status](#checking-run-status) for the live state. v2 counterparts: see
 | SH02 | only_hit_rate | associative_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/associative_cache/associative_cache_claude-opus-5-5_2026-10-28_14-10-09-632` | 0.549 vs 0.527 (c10/v002) | |
 | SH03 | only_hit_rate | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_11-39-56-149` | 0.562 vs 0.528 (c10/v003) | |
 | SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/tiny_lfu/tiny_lfu_claude-opus-5-5_2026-10-28_12-54-17-355` | 0.562 vs 0.504 (c09/v001) | |
-| SF01 | full_fitness_vector | dash | claude-opus-5-5 | done | session_01Hio5C5m2zG4qiZfgqm2ddj | `full_fitness_vector/dash/dash_claude-opus-5-5_2026-11-05_22-15-04-763` | score 0.075 (c10/v002): hit-rate 0.535 vs 0.510, metadata 40 vs 40 B, per-op 58 vs 75 ns | |
+| SF01 | full_fitness_vector | dash | claude-opus-5-5 | done (re-run) | session_01Hio5C5m2zG4qiZfgqm2ddj | `full_fitness_vector/dash/dash_claude-opus-5-5_2026-11-05_22-15-04-763` | score 0.075 (c10/v002): hit-rate 0.535 vs 0.510, metadata 40 vs 40 B, per-op 58 vs 75 ns | #266 |
 | SF02 | full_fitness_vector | associative_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `full_fitness_vector/associative_cache/associative_cache_claude-opus-5-5_2026-10-29_09-31-16-763` | score 0.176 (c10/v002): hit-rate 0.541 vs 0.527, metadata 24 vs 40 B, per-op 33 vs 55 ns | |
 | SF03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_19-54-39-536` | score 0.139 (c10/v003): hit-rate 0.538 vs 0.528, metadata 16 vs 48 B, per-op 35 vs 34 ns | |
 | SF05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `full_fitness_vector/tiny_lfu/tiny_lfu_claude-opus-5-5_2026-10-29_08-15-12-815` | score 0.297 (c09/v002): hit-rate 0.559 vs 0.504, metadata 24 vs 48 B, per-op 35 vs 102 ns | |
 | SX01 | rescore Zipf→MSR | the four (winners of their v2 Opus only_hit_rate runs) | claude-opus-5-5 | blocked | | | | |
 | SX02 | rescore MSR→Zipf | the four (SH01–SH03, SH05 winners) | claude-opus-5-5 | blocked | | | | |
 
-**SH01/SF01 (dash) are invalidated — re-run needed.** Dash derived the
+**SH01/SF01 (dash) were re-run after a Dash bug.** Dash derived the
 segment index and the in-segment bucket from the same hash bits, so on the MSR
 grid (8/64 segments) only ~5 of 32 buckets per segment were reachable (fixed in
 this branch: the segment index now comes from the hash's high 32 bits; the
@@ -222,8 +222,12 @@ single-segment default grid is unaffected). The old runs (SH01 0.405 vs 0.388,
 SF01 score 0.151) and the dash msr baseline of 0.388 measured that broken cache.
 The old run dirs are removed from the tree and remain in git at `230de476`. The
 re-measured dash msr baseline hit-rate is **0.510** (per-op get p50 75 ns, metadata 40 B; see
-`inputs/subjects/dash/baseline/eval/profiles/msr/fitness-vector.json`). Re-run
-both rows with the unchanged commands.
+`inputs/subjects/dash/baseline/eval/profiles/msr/fitness-vector.json`). Both
+rows were re-run with the unchanged commands (rows above). Incidents: SH01
+resumed twice (cycle 8: hypotheses-writer ended its turn without writing H
+files; cycle 10: usage limit); SF01 resumed once (cycle 9: usage limit), and its
+cycle-1 v001/v003 were rejected by a Gradle HTTP 429 from Maven Central (infra,
+not the variants), so cycle 1 ran with one survivor.
 
 SH04/SF04 (s3_fifo) are dropped: its linear-scan eviction takes ~1 h per variant
 on MSR, so it has no `msr` profile. IDs are not renumbered, so the number still
