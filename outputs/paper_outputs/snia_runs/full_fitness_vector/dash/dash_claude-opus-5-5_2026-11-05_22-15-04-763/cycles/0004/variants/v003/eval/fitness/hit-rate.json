@@ -1,0 +1,27 @@
+{
+  "dim": "hit-rate",
+  "values": [
+    {
+      "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+      "size": 16384,
+      "hit_rate": 0.4155
+    },
+    {
+      "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+      "size": 131072,
+      "hit_rate": 0.5594
+    },
+    {
+      "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+      "size": 16384,
+      "hit_rate": 0.4349
+    },
+    {
+      "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+      "size": 131072,
+      "hit_rate": 0.7241
+    }
+  ],
+  "summary": 0.533475,
+  "higher_is_better": true
+}
