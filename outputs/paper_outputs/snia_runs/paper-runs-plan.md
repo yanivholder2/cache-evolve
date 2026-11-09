@@ -17,9 +17,8 @@ reads and writes both count as accesses.
 | hm_0 | 8.99M | 610k | `inputs/traces/msr/hm_0.trace.gz` |
 
 Model: `claude-opus-5-5` only, the same `--model` value as the v2 Opus runs.
-Subjects: four of the five v2 subjects (dash, associative_cache, lru_cache,
-tiny_lfu); s3_fifo is skipped (see the [run matrix](#run-matrix)). The matrix
-is one `SH` and one `SF` row per subject; the cross-workload `SX` rows are
+Subjects: all five v2 subjects (dash, associative_cache, lru_cache, s3_fifo,
+tiny_lfu). The matrix is one `SH` and one `SF` row per subject; the cross-workload `SX` rows are
 blocked on a missing tool.
 
 **Where results go:** `outputs/paper_outputs/snia_runs/<mode>/<subject>/<run>/`,
@@ -97,8 +96,8 @@ Differences from the v2 Zipf runs:
 
 | Parameter | Where it goes | Value |
 | --- | --- | --- |
-| MSR sizes | `sizes` in each subject's `[evaluation.profiles.msr]` (the same list for all four, so subjects are comparable) | `[16384, 131072]` |
-| Timeout | `--simulator-timeout-s` in both command templates | `1700` |
+| MSR sizes | `sizes` in each subject's `[evaluation.profiles.msr]` (the same list for all five, so subjects are comparable) | `[16384, 131072]` |
+| Timeout | `--simulator-timeout-s` in both command templates | `1700`; `4000` for s3_fifo (SH04/SF04) |
 
 `--simulator-timeout-s` bounds each trace's sweep over both sizes. dash makes
 one Caffeine call per size (its `numOfSegments` is derived from the size via
@@ -106,7 +105,11 @@ one Caffeine call per size (its `numOfSegments` is derived from the size via
 subject gets the same budget per trace. The value is the slowest baseline trace
 in `measure_baseline.py --evaluation-profile msr` × ~3, rounded up, floor 600
 (config's default): associative_cache on web_0 took 544 s, so 544 × 3 ≈ 1633 →
-1700. A variant that times out is rejected at fitness, so a tight value turns
+1700 for dash, associative_cache, lru_cache and tiny_lfu. s3_fifo gets its own
+value by the same rule: its baseline web_0 sweep took 1305 s (138 s @ 16384 +
+1167 s @ 131072; hm_0 1125 s), so 1305 × 3 ≈ 3915 → 4000. The shared 1700 would
+reject the s3_fifo baseline itself and every variant that keeps its linear-scan
+lookup. A variant that times out is rejected at fitness, so a tight value turns
 slow-but-good variants into losses. per-op-time has its own fixed 120 s limit
 and doesn't depend on the trace.
 
@@ -114,10 +117,12 @@ dash and associative_cache log every get/put at DEBUG (~5.5–6 GB of Rust logs
 per call). Their `[evaluation.profiles.msr]` sets `simulator-log-level =
 "INFO"`, which caps the cdylib's log level on MSR calls whatever `--log-level`
 is (one dash hm_0 @ 16384 call: 447 s / 6.0 GB → 7 s / 3 KB, identical
-hit-rate CSV). The commands keep `--log-level DEBUG`.
+hit-rate CSV). The commands keep `--log-level DEBUG`. s3_fifo needs no cap:
+its per-op JNI logs are `trace!`, filtered out at DEBUG.
 
-**Prerequisites (done in PR 264):** the traces and SNIA NOTICE are committed
-under `inputs/traces/msr/`; the four manifests declare
+**Prerequisites (done in PR 264; s3_fifo's profile and anchor in PR 267):** the
+traces and SNIA NOTICE are committed under `inputs/traces/msr/`; the five
+manifests declare
 `[evaluation.profiles.msr]` with
 `traces = ["lirs:inputs/traces/msr/web_0.trace.gz", "lirs:inputs/traces/msr/hm_0.trace.gz"]`
 and `sizes = [16384, 131072]`; each subject's anchor is committed at
@@ -129,7 +134,9 @@ The dash anchor is re-measured after the segment-hash fix (see
 ## Commands
 
 Substitute `<S>` (subject) from the row. Apart from `--evaluation-profile msr`
-and the [timeout](#parameters), these are the v2 templates.
+and the [timeout](#parameters), these are the v2 templates. For the s3_fifo rows
+(SH04/SF04) use `--simulator-timeout-s 4000` instead of `1700`; everything else
+is identical.
 
 **only_hit_rate** (`SH` rows):
 
@@ -206,10 +213,12 @@ status](#checking-run-status) for the live state. v2 counterparts: see
 | SH01 | only_hit_rate | dash | claude-opus-5-5 | done (re-run) | session_01Hio5C33x9Zp1SWGKDacQgj | `only_hit_rate/dash/dash_claude-opus-5-5_2026-11-05_22-12-54-777` | 0.546 vs 0.510 (c10/v002) | #266 |
 | SH02 | only_hit_rate | associative_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/associative_cache/associative_cache_claude-opus-5-5_2026-10-28_14-10-09-632` | 0.549 vs 0.527 (c10/v002) | |
 | SH03 | only_hit_rate | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_11-39-56-149` | 0.562 vs 0.528 (c10/v003) | |
+| SH04 | only_hit_rate | s3_fifo | claude-opus-5-5 | todo | | | | |
 | SH05 | only_hit_rate | tiny_lfu | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `only_hit_rate/tiny_lfu/tiny_lfu_claude-opus-5-5_2026-10-28_12-54-17-355` | 0.562 vs 0.504 (c09/v001) | |
 | SF01 | full_fitness_vector | dash | claude-opus-5-5 | done (re-run) | session_01Hio5C5m2zG4qiZfgqm2ddj | `full_fitness_vector/dash/dash_claude-opus-5-5_2026-11-05_22-15-04-763` | score 0.075 (c10/v002): hit-rate 0.535 vs 0.510, metadata 40 vs 40 B, per-op 58 vs 75 ns | #266 |
 | SF02 | full_fitness_vector | associative_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `full_fitness_vector/associative_cache/associative_cache_claude-opus-5-5_2026-10-29_09-31-16-763` | score 0.176 (c10/v002): hit-rate 0.541 vs 0.527, metadata 24 vs 40 B, per-op 33 vs 55 ns | |
 | SF03 | full_fitness_vector | lru_cache | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `full_fitness_vector/lru_cache/lru_cache_claude-opus-5-5_2026-10-28_19-54-39-536` | score 0.139 (c10/v003): hit-rate 0.538 vs 0.528, metadata 16 vs 48 B, per-op 35 vs 34 ns | |
+| SF04 | full_fitness_vector | s3_fifo | claude-opus-5-5 | todo | | | | |
 | SF05 | full_fitness_vector | tiny_lfu | claude-opus-5-5 | done | session_01Hio5C3pM7tnk71WAbEFUbo | `full_fitness_vector/tiny_lfu/tiny_lfu_claude-opus-5-5_2026-10-29_08-15-12-815` | score 0.297 (c09/v002): hit-rate 0.559 vs 0.504, metadata 24 vs 48 B, per-op 35 vs 102 ns | |
 | SX01 | rescore Zipf→MSR | the four (winners of their v2 Opus only_hit_rate runs) | claude-opus-5-5 | blocked | | | | |
 | SX02 | rescore MSR→Zipf | the four (SH01–SH03, SH05 winners) | claude-opus-5-5 | blocked | | | | |
@@ -229,9 +238,12 @@ files; cycle 10: usage limit); SF01 resumed once (cycle 9: usage limit), and its
 cycle-1 v001/v003 were rejected by a Gradle HTTP 429 from Maven Central (infra,
 not the variants), so cycle 1 ran with one survivor.
 
-SH04/SF04 (s3_fifo) are dropped: its linear-scan eviction takes ~1 h per variant
-on MSR, so it has no `msr` profile. IDs are not renumbered, so the number still
-matches the subject order dash, associative_cache, lru_cache, s3_fifo, tiny_lfu.
+SH04/SF04 (s3_fifo) are restored. Its msr baseline is hit-rate **0.541**,
+metadata 24 B, per-op get p50 227 ns (see
+`inputs/subjects/s3_fifo/baseline/eval/profiles/msr/fitness-vector.json`); the
+baseline measurement took ~43 min. Expect long cycles whenever a variant keeps
+the linear-scan lookup (~20+ min per trace). Row numbers follow the subject
+order dash, associative_cache, lru_cache, s3_fifo, tiny_lfu.
 
 SX rows need no LLM time, only simulator time, once the tool below exists.
 
