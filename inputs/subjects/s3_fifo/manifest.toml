@@ -30,3 +30,7 @@ insight = "baseline/insight.md"
 fitness-vector = "baseline/eval/fitness-vector.json"
 traces = ["lirs:inputs/traces/workload-a.trace.gz"]
 sizes = [2048]
+
+[evaluation.profiles.msr]
+traces = ["lirs:inputs/traces/msr/web_0.trace.gz", "lirs:inputs/traces/msr/hm_0.trace.gz"]
+sizes = [16384, 131072]
