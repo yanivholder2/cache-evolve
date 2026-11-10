@@ -1,0 +1,64 @@
+{
+  "variant": "v001",
+  "dimensions": [
+    {
+      "dim": "hit-rate",
+      "values": [
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.41619999999999996
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/web_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.5649000000000001
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 16384,
+          "hit_rate": 0.4522
+        },
+        {
+          "trace": "lirs:inputs/traces/msr/hm_0.trace.gz",
+          "size": 131072,
+          "hit_rate": 0.7277
+        }
+      ],
+      "summary": 0.54025,
+      "higher_is_better": true
+    },
+    {
+      "dim": "metadata-size",
+      "values": [
+        {
+          "type": "Entry<u64,u64>",
+          "bytes": 24
+        },
+        {
+          "type": "S3Fifo<u64,u64>",
+          "bytes": 152
+        }
+      ],
+      "summary": 24,
+      "higher_is_better": false
+    },
+    {
+      "dim": "per-op-time",
+      "values": [
+        {
+          "op": "get",
+          "p50_ns": 115,
+          "p99_ns": 123
+        },
+        {
+          "op": "put",
+          "p50_ns": 427,
+          "p99_ns": 1225
+        }
+      ],
+      "summary": 115,
+      "higher_is_better": false
+    }
+  ]
+}
