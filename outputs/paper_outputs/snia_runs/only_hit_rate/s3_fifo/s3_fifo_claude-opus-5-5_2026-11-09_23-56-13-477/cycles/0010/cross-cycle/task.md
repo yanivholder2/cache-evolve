@@ -1,0 +1,288 @@
+# Task: cross-cycle-insight-writer
+
+## Ledger (all cycles, cumulative)
+
+### Cycle 0001
+
+# Cycle 0001 Insight
+
+## Cohort outcome
+
+Three single-variable changes were tried against the baseline: a lower graduation threshold (v001), an O(1) hash-index/slab refactor with the policy left untouched (v002), and a 10/90 small/main split (v003). v001 won, but only barely. Neither policy change moved aggregate hit-rate much: each gained on hm_0 and lost on web_0.
+
+## Patterns
+
+- Both policy knobs (graduation threshold and small-queue size) split the two traces the same way. hm_0 rewards letting keys into main more easily or keeping more main capacity. web_0 penalises it, either through main pollution from keys accessed exactly twice or through medium-reuse keys getting ghosted early. A trace-agnostic constant change looks unlikely to win clearly on both.
+- The two policy knobs interact. v003 points to the strict `freq > 1` threshold as what limits a smaller small queue, and v001 points to unfiltered admission as what limits a looser threshold. Each fix seems to need the other's lever.
+- What happens to an entry once it is in main doesn't help. Resetting a graduate's freq didn't offset admission pollution, so the cost is paid when a key is admitted to main.
+- The refactor kept hit-rate identical to the baseline, so the policy is unchanged. But only hit-rate was measured for this cohort, so the per-op-time and metadata-size effects are still unknown.
+
+## Open questions
+
+- Does v002 actually reduce per-op-time, and does the extra index, slab and stamp state make metadata-size worse?
+- Does combining a small queue between 10% and 25% with a threshold of 1 keep hm_0's gain without web_0's loss?
+- Can an adaptive signal tell the two traces apart online, such as how much spare room main has or how often keys are reused in the small queue?
+
+## Continuation
+
+Check that per-op-time and metadata-size are being evaluated, and re-measure v002. If it is confirmed faster, use it as the parent for later policy work. Stop trying single-constant tweaks to the threshold or the split. Instead, change the threshold and the small-queue size together, or make graduation into main adaptive (conditioned on main having room or on the observed reuse rate), so that web_0 doesn't regress.
+
+
+### Cycle 0002
+
+# Cycle 0002 Insight
+
+## Cohort outcome
+
+All three variants built on cycle 0001's v001 (single-reuse graduation). v001 gated the looser threshold on main having room. v002 made the small/main split adaptive, ARC-style. v003 combined the looser threshold with a static 15% small queue. v001 won mostly by undoing its parent's change: main stays full once the cache warms up, so the gate falls back to the baseline two-reuse rule.
+
+## Patterns
+
+- Which keys get into main matters more than queue sizes. Both split variants moved hit-rate by close to noise, and their effect flipped sign across traces and cache sizes. The only clear gain came from stricter admission into a full main.
+- Under steady-state pressure, the one-reuse threshold costs hit-rate on web_0 and also on hm_0 at the large size. Its benefit holds only on hm_0 at the small size. Cycle 0001's "hm_0 wants a looser threshold" result was mostly a cold-start or small-cache effect.
+- Main occupancy doesn't work as an adaptive signal: it fills and stays full. Any adaptive gate needs a signal that keeps changing in steady state, such as the ghost hit rate or the small queue's reuse rate.
+- An unweighted ghost-hit controller probably drifts toward a larger small queue, because the two ghosts differ in size. That brings back the exactly-twice pollution. It also adds a second linear ghost scan on every miss.
+- Per-op-time and metadata-size are still unmeasured. Cycle 0001's request to re-measure the hash-index refactor wasn't followed, since all of this cycle's variants descended from the policy line.
+
+## Open questions
+
+- Can a steady-state signal (ghost hit rate, small-queue reuse rate) usefully switch the threshold between 1 and 2, or is the baseline rule simply right for these traces?
+- Does the adaptive split move at all? Where `small_size` settles on each trace was never logged.
+- How much per-op-time does the extra `main_ghost` scan cost, and how much does the O(1) refactor save?
+
+## Continuation
+
+Treat v001 (essentially the baseline two-reuse rule plus freq reset) as the policy base. Stop tuning the static split, and don't adopt the unweighted adaptive split. Spend one hypothesis on per-op-time and metadata-size, ideally moving the policy onto the O(1) index/slab refactor. If policy work continues, gate admission into main on a signal that keeps changing in steady state, not on main occupancy. A size-weighted ARC step that also logs where `small_size` settles is a secondary option.
+
+
+### Cycle 0003
+
+# Cycle 0003 Insight
+
+## Cohort outcome
+
+All three variants built on cycle 0002's v001. v001 moved that policy onto the O(1) index/slab structure without changing behaviour. v002 replaced the occupancy gate with a threshold that switches between 1 and 2 based on a windowed ghost-return rate. v003 gave keys returning from ghost one second-chance credit when they re-enter main. v001 won because it was the only variant that didn't regress: its hit-rate matched the parent bit for bit, and both policy variants held or fell in every cell.
+
+## Patterns
+
+- The ghost path doesn't make a good lever in either direction. Using ghost returns as a signal to loosen admission (v002) and rewarding returnees with credit (v003) both lost hit-rate. Under steady-state pressure the ghost mostly holds weak single-reuse keys that v001 refused to graduate, so a ghost return is weak evidence of value.
+- v002's switch fired on the wrong traces. It turned lenient on web_0 and on hm_0 at the large size, where strictness had helped, and gained nothing on hm_0 at the small size. Its ratio mixes up how often keys return over a long horizon with what strictness actually costs. The ghost is about 3× larger than the small queue, which inflates the ratio.
+- Main stays full, so any extra protection given to one population evicts someone else. v003's credit kept dead keys in main for an extra lap and pushed out entries that would have been hit.
+- Across three cycles, the baseline strict two-reuse rule plus the freq reset has held up every time. None of the threshold, split, gate or credit changes has beaten it on all traces.
+- Per-op-time and metadata-size have now been missing from the evaluation for three cycles in a row. The cost refactor has been checked for correctness (an oracle test enforces identical hit/miss behaviour), but nobody knows whether it is actually faster.
+
+## Open questions
+
+- How much does v001 reduce per-op-time, and how much does it increase metadata-size, compared with its linear-scan parent?
+- Where did v002's threshold settle on each trace? Its threshold-stats output was never captured.
+- Would a gate that directly compares the misses avoided by promoting against the main entries displaced by promoting do better than any rate-based proxy?
+
+## Continuation
+
+Use v001 (the O(1) index with the occupancy-gated two-reuse rule) as the parent. Before running more hypotheses, make sure the evaluation measures per-op-time and metadata-size. Drop ghost-rate threshold switching and flat ghost-return credit. If policy work continues, condition it on evidence each key carries with it (for example, its small-queue freq when it went to ghost), or compare the cost of promoting a key against the cost of displacing one directly. Otherwise, accept that the policy has plateaued and spend hypotheses on reducing cost and metadata.
+
+
+### Cycle 0004
+
+# Cycle 0004 Insight
+
+## Cohort outcome
+
+All three variants built on cycle 0003's v001 (the O(1) index with the occupancy-gated two-reuse rule). v001 gated the ghost→main fast path on the small-queue freq each key carried into the ghost: freq-0 returnees go back to small with freq 1. v002 was a cost-only change (fast hasher, 8-byte `Loc`, fewer lookups) and left hit-rate bit-identical. v003 gave freq-1 small tails one extra lap in small while main is full. v001 won on a slight summary gain, which came mostly from web_0 at the small size.
+
+## Patterns
+
+- Per-key evidence beats global rate proxies. After two cycles in which ghost-rate switching and flat returnee credit lost hit-rate, gating on each key's own ghost-time freq is the first ghost-path change that improves on its parent. It also confirms that how much a ghost return is worth depends on the trace: weak on web_0, sometimes real reuse on hm_0.
+- Both policy variants changed results mainly at the small cache size. At the large size the ghost covers a long reuse window and admitting to main costs little, so moving filtering between ghost, small and main barely changes which key is evicted. Every policy gain so far has been small and limited to the small size.
+- v001 and v003 both say the same thing: filtering in small is cheaper than filtering at main admission. They move different populations (freq-0 ghost returnees and freq-1 small tails), so they look complementary rather than redundant. v003's slight dip on web_0 at the large size suggests that when a key's two reuses are spread over a long window, that is weaker evidence than two reuses close together.
+- Per-op-time and metadata-size are still missing from the evaluation for the fourth cycle running. The H02 rationale assumed these dimensions were now reported, but v002's fitness vector held only hit-rate. Two cost variants (cycle 0003's v001 and this cycle's v002) are now waiting on measurement.
+
+## Open questions
+
+- Does combining v001's freq-gated ghost path with v003's single relap add up, or do the two compete for the same small slots?
+- Can freq-0 returnees win back hm_0 without giving up the web_0 gain? For example, let them into main only when main's tail has freq 0, or give them a stronger initial credit in small.
+- How much faster is v002 than its parent, and how much less metadata does it use? Its policy is identical, so any difference comes only from the hasher and the layout.
+
+## Continuation
+
+Use v001 (the freq-gated ghost path) as the policy parent, and port v002's cost changes onto it, since they don't change the policy. Before running more cost hypotheses, confirm that per-op-time and metadata-size are actually in the fitness vector. If policy work continues, try layering v003's relap onto v001, adding a recency requirement for the relapped key's second reuse, or routing freq-0 returnees based on main's tail. Expect small gains limited to the small cache size, and drop anything that relies on global rate signals.
+
+
+### Cycle 0005
+
+# Cycle 0005 Insight
+
+## Cohort outcome
+
+All three variants built on cycle 0004's v001 (freq-gated ghost path). v001 added the one-time small relap on top of it. v002 split freq-0 ghost returnees by their own ghost age, so quick returns go straight to main. v003 ported the cost-only changes and left hit-rate bit-identical. v002 won. It is the first variant in this lineage to gain on both traces at the small size without losing in any cell.
+
+## Patterns
+
+- Per-key evidence keeps paying off, and how recently a key returns is a stronger signal than whether it was reused in small. A key's ghost age costs nothing to read, since stamps already count ghost insertions, and it separated hm_0's real reuses (squeezed out of a small queue) from web_0's late, one-off rereferences. Global rate proxies never managed that split.
+- Both policy variants depend on the "reused once" signal the ghost gate uses. v001's relap resets freq to 0, which erases that signal, so failed relaps lost their direct ghost→main return. That probably cancelled the gain on hm_0 at the small size. Mechanisms layered onto the ghost gate have to preserve the per-key evidence it reads.
+- Windows that scale with `small_size` reach the large cache size. Before this cycle, policy gains were limited to the small size. Here v001's relap and v002's age window both moved cells at the large size, because their windows grow with the small queue. web_0 at the large size remains the one cell neither variant moved.
+- Per-op-time and metadata-size are still not in the fitness vector, for the fifth cycle running. This holds even though H03 assumed the leaderboard now reports them. Three cost-only variants are now waiting on measurement, and v003 is the one that combines the cost changes with the winning policy line.
+
+## Open questions
+
+- Does widening or narrowing the age window (`GHOST_RECENT_AGE_DIVISOR`) move web_0 at the large size?
+- Does v001's relap add to v002's gain if a failed relap is ghosted with freq 1 (or marked as relapped), so it keeps its ghost→main return?
+- How much do the cost changes actually save once the cost dimensions are measured? On 8-byte keys, alignment may cancel the ghost-deque saving.
+
+## Continuation
+
+Use v002 (the age-gated ghost path) as the policy parent, and port v003's cost changes onto it, since they leave hit/miss behaviour identical. Next, sweep the age window, and retry the relap on top of v002 with failed relaps keeping their freq-1 ghost signal. Drop freq-resetting relaps. Do not spend further hypotheses on cost work until per-op-time and metadata-size actually appear in the fitness vector.
+
+
+### Cycle 0006
+
+# Cycle 0006 Insight
+
+## Cohort outcome
+
+All three variants built on cycle 0005's v002 (the age-gated ghost path), and all three changed its ghost or small routing. v001 restacked the one-time relap, this time ghosting failed relaps at freq 1. v002 widened the freq-0 recency window to two small-queue turnovers. v003 added an age ceiling on freq ≥ 1 returnees. v003 won, but only because it moved the least: it rose slightly on hm_0 at the large size and dipped slightly in every other cell. None of the three cleanly beat the parent, so this cycle mapped where the policy's boundaries are rather than finding a new gain.
+
+## Patterns
+
+- The parent's ghost gate is close to a local optimum on all three axes probed. Stacking a second reward for one reuse (v001), loosening the recency floor (v002) and tightening admission for freq-1 returnees (v003) each gave back hit-rate on web_0, which is the trace the parent's gate was tuned against.
+- The two signals do different jobs. Ghost age is useful as a floor on freq-0 returnees, and about one small-queue turnover is the right boundary: going to two turnovers lets in web_0's late one-off rereferences. Age adds little as a ceiling on freq-1 returnees, because a reuse in small is still good evidence late in the ghost window.
+- Once failed relaps keep their freq-1 ghost signal, the relap duplicates what the ghost path already does, and it costs small-queue capacity. The cycle 0005 relap gain on web_0 at the large size came from the old freq-0 base and did not carry over.
+- web_0 at the large size has now resisted every ghost and small routing change, whether it loosened or tightened admission. Whatever limits that cell, it isn't how ghost returnees are routed.
+- Every small-queue re-admission (relap, re-routed returnee) pushes another resident out of small. At the small cache size this displacement keeps costing more than whatever main pollution it avoids.
+- Per-op-time and metadata-size are still absent from the evaluation, for the sixth cycle running.
+
+## Open questions
+
+- What actually limits web_0 at the large size: main's eviction order, the small/main split at that size, or first-admission filtering of keys never seen before?
+- Would a window narrower than one turnover sharpen the web_0 / hm_0 split, or is one turnover already at the boundary?
+- Is hm_0's modest large-size gain under v003 real, or is it noise?
+
+## Continuation
+
+Keep cycle 0005's v002 policy, with the age window at 1×, as the policy base. Drop relap stacking, windows wider than one turnover, and age ceilings on freq ≥ 1 returnees; the ghost-path routing axis looks exhausted. If policy work continues, move off the ghost path and target main's eviction or first-admission handling for web_0 at the large size, and try at most one narrower-window probe. Otherwise, port the pending cost-only changes and push for per-op-time and metadata-size to be measured.
+
+
+### Cycle 0007
+
+# Cycle 0007 Insight
+
+## Cohort outcome
+
+All three variants built on cycle 0005's v002 (the age-gated ghost path). v001 left freq-1 ghosts for main victims that had been hit. v002 gave keys that saturated freq in small one protected lap in main. v003 cut the freq-0 recency window to half a turnover. v001 won with an essentially flat summary: small gains at the large size, a slight loss on web_0 at the small size. It is the first change to move web_0 at the large size at all, but the gain is marginal. No variant clearly beat the parent.
+
+## Patterns
+
+- The ghost-age axis is now closed. A 2× window lost last cycle and a ½× window lost this cycle, so one turnover is a local optimum. The returnees in the second half of the window turned out to be real reuse on hm_0, not web_0 pollution.
+- Everything that feeds the shared ghost FIFO or its stamp clock interacts with the age gate. v001's main-victim ghosts took ghost space and shrank the effective freq-0 window, and that is where its loss at the small size came from. New ghost producers have to be separated from the parent's clock and budget.
+- The parent's quick freq-0 ghost returnees are a valuable population, not a weakly evidenced one. Any change in main that moves other entries ahead of them at the tail (v002) costs hit-rate, most of all on hm_0 at the small size. Main's own second chance already rewards keys that keep getting hit, so a head start at admission adds little.
+- web_0 at the large size moved slightly only when the change reached main victims (v001, and v002 barely). That fits the idea that its limit lies in main or first admission. But re-qualifying main victims is too small a population to explain the plateau.
+- Per-op-time and metadata-size are still missing, for the seventh cycle running.
+
+## Open questions
+
+- If main-victim ghosts get their own budget, or stop advancing the stamp clock, does v001 keep its large-size gains without the small-size loss?
+- What limits web_0 at the large size? First-admission filtering of never-seen keys and the small/main split at that size have not been probed yet.
+
+## Continuation
+
+Treat both cycle 0005's v002 and this cycle's v001 as possible parents. Their policies are nearly tied, and v001's mechanism is only worth keeping if it is decoupled. Try at most one decoupled v001 follow-up: a separate ghost budget, or main→ghost inserts that don't advance stamps. Otherwise move to first-admission handling or the small/main split for web_0 at the large size. Drop all ghost-age window tuning, and drop any main-admission freq boost that puts other entries ahead of quick ghost returnees.
+
+
+### Cycle 0008
+
+# Cycle 0008 Insight
+
+## Cohort outcome
+
+Each variant tested one structural lever named in cycle 0007's continuation. v001, from 0007's v001, decoupled the main-victim ghost and capped it at one small queue's worth of keys. v002, from 0007's v001, shrank small only at the large size and pinned the age window. v003, from 0005's v002, doubled the ghost budget. v003 won, but only narrowly: it gained on hm_0 at the small size, the losses elsewhere nearly cancelled that gain, and it was roughly neutral overall. No lever gained on both traces. Each one traded hm_0 against web_0.
+
+## Patterns
+
+- The two traces disagree on every lever. hm_0 gains from more probation, longer memory or a bigger ghost horizon at a tight capacity. web_0 is hurt by any change that gives privileges to keys returning after a long gap. The exception is main victims that were hit, which return over a horizon closer to `main_size` than to `small_size`.
+- The useful information in a ghost record is how long ago the key was seen and where it was evicted from, not just that it was seen. v001 showed that main victims and small victims need ghost horizons of different sizes. v003 showed that records in the extended zone should not get the same privileges as recent ones.
+- Cycle 0007 guessed that the shared stamp clock caused 0007-v001's web_0 loss at the small size. Restoring the clock did not recover that loss, so the guess was mostly wrong. Decoupling is still worth keeping, because it protects the freq-0 window.
+- The small/main split is a weak lever for web_0 at the large size, and it costs hm_0 more than web_0 gains. So the split does not explain that cell's plateau either. web_0 at the large size has moved only when main victims that were hit were remembered over a horizon of about `main_size`.
+- Per-op-time and metadata-size are still not measured, for the eighth cycle running. This matters more now, because v003 doubles ghost metadata.
+
+## Open questions
+
+- Does a decoupled main-victim ghost with a budget near `main_size` keep web_0's large-size gain and v001's protected freq-0 window?
+- Does a doubled ghost with tiered privileges help hm_0 at the small size without the web_0 losses? Under tiering, records in the extended zone would give freq-0 returnees the freq-1 small path but would not send freq ≥ 1 returnees straight to main.
+- Does a midpoint split, or a window rescaled to the new small, recover hm_0 at the large size? This is a low priority.
+
+## Continuation
+
+Two targeted follow-ups are worth one hypothesis each. First, scale v001's decoupled `main_ghost` budget toward `main_size`. Second, tier v003's extended ghost zone so that old records do not grant direct entry to main. Combining the two, once each works, is the natural next step. Drop small/main split tuning and uniform ghost-budget scaling. Do not retry stamp-clock fixes for web_0's small-size loss. Note: v003 is the nominal winner but is roughly neutral overall, so 0005's v002 is still an equally valid base.
+
+
+### Cycle 0009
+
+# Cycle 0009 Insight
+
+## Cohort outcome
+
+Two variants ran cycle 0008's suggested follow-ups. v001 tiered 0008-v003's doubled ghost. v002 scaled 0008-v001's `main_ghost` budget up to `main_size`. v003 took the first step off the ghost path: it applied a correlated-reference cap on small-queue hits that arrive soon after insertion, built on 0005-v002. v003 won on hm_0, gaining at both sizes. It lost at the small size on web_0 and was flat at the large size there.
+
+## Patterns
+
+- The hm_0 / web_0 trade-off held again, now for a fourth cycle in a row. Every lever helped one trace at the other's expense, and each variant's gain showed up only at the small size, or mostly there.
+- Both of 0008's follow-ups failed. Tiering removed direct-to-main entry for old freq ≥ 1 ghosts, and it turned out that privilege was part of hm_0's small-size gain. Ghost age alone does not separate useful late returnees from noisy ones. A three-times-larger `main_ghost` left both large-size cells unchanged. That refutes 0008's claim that a horizon of about `main_size` for hit main victims explains web_0's large-size plateau.
+- v003's gain comes from deferring main admission, not rejecting it. A key whose small-queue hits all fall in its insertion burst keeps freq 1 into the ghost. The freq ≥ 1 ghost→main path then admits it on a later, spaced return. hm_0 has burst-only keys that pollute a full main. On web_0, a quick reuse after insertion is real evidence.
+- web_0 at the large size has now resisted ghost routing, ghost age, ghost budgets, the split, main-victim memory and burst filtering. Cycle 0001's web_0 pollution does not come from burst-only keys.
+- Per-op-time and metadata-size are still not measured, for the ninth cycle running.
+
+## Open questions
+
+- Would a narrower correlated-reference window (a larger `CRP_DIVISOR`) keep hm_0's gain and spare web_0's quick reuses?
+- For web_0 at the large size, two candidates are left. Which main victims get ghosted at all (the `main_hit` gate)? How do main-ghost returnees get admitted (currently freq 0, straight into main)? Or is that cell simply at its ceiling for this policy family?
+
+## Continuation
+
+Use 0009-v003 (the correlated-reference cap on 0005-v002) as the policy base. Spend one hypothesis on narrowing its window. Drop ghost tiering by age, `main_ghost` budget scaling and uniform ghost-budget scaling, because those axes are exhausted. Spend at most one probe on web_0 at the large size, through the `main_hit` gate or the freq given to main-ghost returnees. If that probe also fails, treat the cell as a plateau and stop targeting it.
+
+
+### Cycle 0010
+
+# Cycle 0010 Insight
+
+## Cohort outcome
+
+All three variants built on 0009-v003, the correlated-reference (CRP) cap. v001 narrowed the CRP window. v002 exempted weak ghost returnees from the cap. v003 was the one allowed web_0 large-size probe: a gated main-victim ghost that readmits returnees with freq 1. v002 won, but it is close to a no-op. It moved web_0 at the small size up by a trace and slipped by a hair everywhere else. In practice, 0009-v003 is still the best policy.
+
+## Patterns
+
+- The hm_0 / web_0 trade-off held for a fifth cycle. v001 and v003 each moved the two traces in opposite directions. v002 was the only variant that didn't, and that is because it barely changed anything.
+- The 0009-v003 regression on web_0 at the small size comes from first-time keys. hm_0's burst repeats and web_0's real quick reuses fall in the same distance band after insertion, so the window size cannot separate them (v001). Returnees are not the cause either (v002). Neither insertion distance nor ghost history can tell these keys apart, so a fix needs a new signal that exists on a key's first admission.
+- web_0 at the large size does respond after all, but only to how main victims are readmitted, and v003 moved it the wrong way. The ungated main ghost in 0009 did nothing. The gated one with a freq-1 skip past small actively hurt web_0, yet it helped hm_0 at both sizes and web_0 at the small size. So the readmission path is a real lever. On web_0 its gate is stale: `main_hit` stays set across every second-chance pass.
+- v003 is the first variant in several cycles to gain on three of the four cells. Its only loss is the cell it targeted.
+- Per-op-time and metadata-size are still not measured, for the tenth cycle running.
+
+## Open questions
+
+- Would a recency-scoped `main_hit` remove v003's web_0 pollution at the large size and keep its other gains? Under this change the flag would clear on each second-chance decrement. A gentler readmission, either freq 0 or entry via small, is the alternative.
+- Is there any signal available at first admission that separates hm_0's burst-only keys from web_0's real quick reusers? Candidates are the hit count inside the window and whether main is full at the time. Or is that trade-off inherent to the cap?
+
+## Continuation
+
+Keep 0009-v003 as the base, not v002. Spend one hypothesis on fixing v003's readmission: make `main_hit` recency-scoped, readmit with freq 0, or both. This is the most promising thread, because it already gains on three cells. Drop CRP divisor tuning and returnee exemptions from the cap. Any further CRP work should use a signal available on first admission, such as the hit count inside the window, not insertion distance.
+
+
+## Write
+
+Exactly one file: `cross-cycle-insights.md` in the output dir. Use the following four fixed sections — preserve names and order:
+
+## Recurring wins
+
+- <pattern that has held up across multiple cycles>
+
+## Recurring failures
+
+- <approach that keeps not paying off, and why>
+
+## Open questions
+
+- <thread worth probing in upcoming cycles>
+
+## Per-policy notes
+
+- <observations grouped by eviction policy>
